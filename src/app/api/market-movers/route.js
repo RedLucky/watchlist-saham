@@ -11,7 +11,7 @@ import { mockStocks } from '@/data/mockStocks';
 
 export const dynamic = 'force-dynamic';
 
-const DATA_PROVIDER = process.env.DATA_PROVIDER || 'mock';
+const DATA_PROVIDER = process.env.DATA_PROVIDER || 'database';
 const TOP_N = 20;
 
 // RTI-style: minimum volume to appear (exclude saham macet / tidak likuid)
