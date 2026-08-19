@@ -1,7 +1,7 @@
 import { MockProvider } from './providers/MockProvider';
 import { DatabaseProvider } from './providers/DatabaseProvider';
 
-const providerType = process.env.DATA_PROVIDER || 'mock';
+const providerType = process.env.DATA_PROVIDER || 'database';
 
 let activeProvider;
 
