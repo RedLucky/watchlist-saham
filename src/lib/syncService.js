@@ -51,14 +51,34 @@ export async function getTargetTickers() {
  * Runs every SYNC_INTERVAL_MINS.
  */
 export async function fastSyncPrices() {
-  const allTickers = await getTargetTickers();
-  console.log(`[FastSync] Starting price update for ${allTickers.length} stocks...`);
+  console.log('[FastSync] Memulai sinkronisasi harga & volume (Round-Robin Queue)...');
+  
+  // 1. Ambil maksimal 50 ticker yang paling lama tidak di-update (Round-Robin).
+  const dbStocks = await prisma.stockData.findMany({
+    where: { NOT: { ticker: '^JKSE' } },
+    orderBy: { lastPriceSync: 'asc' },
+    take: 50,
+    select: { ticker: true }
+  });
+
+  let tickersToSync = dbStocks.map(s => toYahooTicker(s.ticker));
+
+  // Jika database masih kosong, gunakan fallback dari sectorUniverse
+  if (tickersToSync.length === 0) {
+    console.log('[FastSync] Database kosong, menggunakan fallback SECTOR_TICKERS...');
+    tickersToSync = getAllTickersForYahoo();
+  } else {
+    // Selalu tambahkan IHSG ke setiap batch agar tetap up-to-date
+    tickersToSync.push('^JKSE');
+  }
+
+  console.log(`[FastSync] Memproses ${tickersToSync.length} saham...`);
   
   const chunkSize = 20;
   let updatedCount = 0;
 
-  for (let i = 0; i < allTickers.length; i += chunkSize) {
-    const chunk = allTickers.slice(i, i + chunkSize);
+  for (let i = 0; i < tickersToSync.length; i += chunkSize) {
+    const chunk = tickersToSync.slice(i, i + chunkSize);
     
     try {
       const quotes = await Promise.allSettled(
@@ -96,8 +116,6 @@ export async function fastSyncPrices() {
           const computedPercent = getChangePercent(quote);
           const vol = BigInt(Math.round(Number(quote.regularMarketVolume || 0)));
           const turnover = BigInt(Math.round(currentPrice * Number(quote.regularMarketVolume || 0)));
-          // Estimasi frequency (karena Yahoo Finance tidak menyediakan data riil):
-          // Asumsikan rata-rata transaksi adalah 100 lembar (1 lot)
           const frequency = Math.round(Number(quote.regularMarketVolume || 0) / 100);
 
           await prisma.stockData.upsert({
