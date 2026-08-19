@@ -1,36 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# 👑 Alpha Legend - IDX Watchlist
 
-## Getting Started
+A smart web-based application designed to monitor, analyze, and screen stocks on the Indonesia Stock Exchange (IDX) using the methodologies of world-renowned legendary investors. This application is built to empower retail investors in making empirical data-driven decisions, managing their portfolios, and planning for early retirement (FIRE).
 
-First, run the development server:
+## ✨ Key Features
 
+- **🔍 Alpha Legends Screener:** Automatically screen stocks using 10 legendary formulas (Warren Buffett, Peter Lynch, Ben Graham, Joel Greenblatt, etc).
+- **💼 Portfolio & Transactions:** Track your asset values in real-time, calculate your Average Price, and monitor your portfolio growth performance.
+- **📈 Market Movers & Technicals:** Keep an eye on the IDX Composite (IHSG) index movements, top gainers, top losers, and industrial sector performance.
+- **🏖️ Pension Calculator (FIRE):** Simulate your retirement targets using a combination of Government Bonds (SBN) and Stocks, complete with a monthly stock lot purchasing guide.
+- **🔐 High-Level Security:** Equipped with a custom Edge-compatible JWT authentication, Next.js Middleware route protection, and user data privacy compliance.
+
+## 🛠️ Tech Stack
+
+- **Frontend:** Next.js (App Router), React, Tailwind CSS
+- **Backend:** Next.js Route Handlers (API), Edge Middleware
+- **Database:** PostgreSQL
+- **ORM:** Prisma
+- **Authentication:** JWT (JSON Web Tokens) using Web Crypto API
+- **Deployment:** Vercel & Neon.tech (Recommended)
+
+---
+
+## 🚀 Local Development Setup
+
+Follow the steps below to run this application on your local machine.
+
+### 1. System Requirements
+- [Node.js](https://nodejs.org/) (Version 18 or newer)
+- [Docker Desktop](https://www.docker.com/) (To run PostgreSQL locally)
+
+### 2. Clone and Install
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Clone the repository (if using git)
+git clone https://github.com/username/watchlist-saham.git
+cd watchlist-saham
+
+# Install dependencies
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 3. Environment Configuration
+Create a `.env` file in the root directory of your project and populate it with the following variables:
+```env
+# Connection to the local PostgreSQL database (via Docker)
+DATABASE_URL="postgresql://myuser:mypassword@localhost:5432/watchlist?schema=public"
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+# Secret key for JWT Token (Use a strong random string)
+JWT_SECRET="YourSuperSecretRandomStringHere123!@#"
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# (Optional) Google Analytics Measurement ID
+NEXT_PUBLIC_GA_ID=""
+```
 
-## Learn More
+### 4. Running the Database (Docker)
+Ensure Docker Desktop is running, then execute the following command to spin up the local PostgreSQL container:
+```bash
+docker-compose up -d db
+```
 
-To learn more about Next.js, take a look at the following resources:
+### 5. Database Schema Synchronization (Prisma)
+Once the database is running, generate the Prisma client and push the schema to create the tables:
+```bash
+npx prisma generate
+npx prisma db push
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 6. Run the Application
+```bash
+npm run dev
+```
+The application can now be accessed via your browser at: [http://localhost:3000](http://localhost:3000)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 🌐 Deployment Guide (Go-Live for Free)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+This application is highly optimized to run in Vercel's Serverless environment.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. **Database:** Create a free PostgreSQL database on [Neon.tech](https://neon.tech).
+2. **Repository:** Push this source code to a GitHub repository.
+3. **Vercel:** 
+   - Connect your GitHub repository to Vercel.
+   - Add the `DATABASE_URL` (from Neon) and your `JWT_SECRET` into the **Environment Variables** section in your Vercel project settings.
+   - Override the **Build Command** in Vercel to: `npx prisma generate && npx prisma db push && next build`.
+   - Click **Deploy**.
+
+---
+
+## 📜 Legal Disclaimer
+This application functions strictly as a mathematical calculation and analytical tool. **It is NOT Financial Advice.** Any material losses incurred in the capital market resulting from the use of this application are the sole responsibility of the user. We never encourage or instruct users to buy or sell specific stocks.
+
+---
+*Built for the future Alpha Legends of the Indonesia Stock Exchange.* 🇮🇩
