@@ -9,7 +9,7 @@ if (yf.default && typeof yf.default === 'object' && yf.default.quote) {
 } else if (yf.default && typeof yf.default === 'function') {
   yahooFinance = new yf.default();
 }
-try { yahooFinance.suppressNotices(['node-version', 'yahooFinance=v3']); } catch(e){}
+try { yahooFinance.suppressNotices(['node-version', 'yahooFinance=v3', 'yahooSurvey', 'ripHistorical', 'quoteSummary-mutilated']); } catch(e){}
 
 export const dynamic = 'force-dynamic';
 

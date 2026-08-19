@@ -21,7 +21,7 @@ try {
 }
 
 try {
-  yahooFinance.suppressNotices(['node-version', 'yahooFinance=v3']);
+  yahooFinance.suppressNotices(['node-version', 'yahooFinance=v3', 'yahooSurvey', 'ripHistorical', 'quoteSummary-mutilated']);
 } catch (_e) { /* noop */ }
 
 export { yahooFinance };

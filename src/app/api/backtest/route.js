@@ -4,7 +4,7 @@ import { evaluateStyleSignal } from '@/lib/signals/styleSignal';
 import yf from 'yahoo-finance2';
 const YFClass = yf.default || yf;
 const yahooFinance = typeof YFClass === 'function' ? new YFClass() : YFClass;
-try { yahooFinance.suppressNotices(['node-version', 'yahooFinance=v3']); } catch(e){}
+try { yahooFinance.suppressNotices(['node-version', 'yahooFinance=v3', 'yahooSurvey', 'ripHistorical', 'quoteSummary-mutilated']); } catch(e){}
 
 export const dynamic = 'force-dynamic';
 

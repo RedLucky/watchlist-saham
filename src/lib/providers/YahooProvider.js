@@ -12,7 +12,7 @@ if (yf.default && typeof yf.default === 'object' && yf.default.quote) {
 }
 
 try {
-  yahooFinance.suppressNotices(['node-version', 'yahooFinance=v3']);
+  yahooFinance.suppressNotices(['node-version', 'yahooFinance=v3', 'yahooSurvey', 'ripHistorical', 'quoteSummary-mutilated']);
 } catch (e) {}
 
 // Daftar gabungan dari indeks ISSI, Kompas100, LQ45, dan IDX80
