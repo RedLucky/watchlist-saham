@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Recommendation {
+  id               Int       @id @default(autoincrement())
+  userId           Int?
+  user             User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ticker           String
+  name             String
+  date             DateTime  @default(now())
+  mode             String
+  style            String
+  score            Int
+  priceAtRecommend Float
+  entryLow         Float
+  entryHigh        Float
+  targetPrice      Float
+  stopLoss         Float
+  rrRatio          Float
+  status           String    @default("OPEN")
+  exitPrice        Float?
+  exitDate         DateTime?
+  notes            String?   @db.Text
+
+  @@index([userId])
+  @@index([ticker])
+  @@index([date])
+}
+
+model Portfolio {
+  id            Int           @id @default(autoincrement())
+  userId        Int?
+  user          User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ticker        String
+  name          String
+  sector        String?
+  totalShares   Int           @default(0)
+  averagePrice  Float         @default(0)
+  investedValue Float         @default(0)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  transactions  Transaction[]
+
+  @@unique([userId, ticker])
+  @@index([userId])
+}
+
+model Transaction {
+  id          Int       @id @default(autoincrement())
+  portfolioId Int
+  ticker      String
+  type        String
+  price       Float
+  shares      Int
+  totalValue  Float
+  date        DateTime  @default(now())
+  notes       String?   @db.Text
+  portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  @@index([portfolioId])
+}
+
+model StockData {
+  id            Int      @id @default(autoincrement())
+  ticker        String   @unique
+  name          String
+  sector        String?
+  price         Float
+  changePercent Float?
+  volume        BigInt?
+  avgVolume3mo  BigInt?
+  fundamentals  String?  @db.Text
+  technicals    String?  @db.Text
+  historicalRaw String?  @db.Text
+  lastPriceSync DateTime @default(now())
+  lastDeepSync  DateTime @default(now())
+  frequency     Int?     @default(0)
+  turnover      BigInt?  @default(0)
+
+  @@index([ticker])
+  @@index([sector])
+  @@index([turnover])
+  @@index([frequency])
+}
+
+model PensionRecord {
+  id           Int      @id @default(autoincrement())
+  userId       Int?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  month        String   // "2026-08" format YYYY-MM
+  date         DateTime @default(now())
+  category     String   // "SBN", "SAHAM", "RDPU"
+  ticker       String   @default("") // e.g. "BMRI", empty string for SBN/RDPU
+  lots         Int?     // jumlah lot (saham only)
+  price        Float?   // harga per lembar saat beli
+  amount       Float    // nominal Rp yang dialokasikan
+  notes        String?  @db.Text
+  sbnAvailable Boolean  @default(true)
+
+  @@unique([userId, month, category, ticker])
+  @@index([userId, month])
+}
+
+model User {
+  id               Int              @id @default(autoincrement())
+  email            String           @unique
+  password         String
+  name             String
+  riskProfile      String           @default("MODERATE") // CONSERVATIVE, MODERATE, AGGRESSIVE
+  customPreset     String?          @db.Text // JSON string of custom stock tickers
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  lastLoginAt      DateTime?
+  hasAgreedTnc     Boolean          @default(false)
+  pensionRecords   PensionRecord[]
+  portfolios       Portfolio[]
+  recommendations  Recommendation[]
+}

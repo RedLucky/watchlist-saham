@@ -1,0 +1,255 @@
+'use client';
+
+import ScoreBar from './ScoreBar';
+import Tooltip from './Tooltip';
+import StockChart from './StockChart';
+
+export default function DetailPanel({ stock, mode, styleName }) {
+ if (!stock) return null;
+
+ const subScoreEntries = Object.entries(stock.subScores);
+
+
+ const formatPrice = (price) => {
+ const value = Number(price);
+ if (!Number.isFinite(value)) return '-';
+ return new Intl.NumberFormat('id-ID').format(value);
+ };
+
+ const formatPercentFromPrice = (value) => {
+ const base = Number(stock?.price);
+ const target = Number(value);
+ if (!Number.isFinite(base) || base <= 0 || !Number.isFinite(target)) return null;
+ return Number((((target - base) / base) * 100).toFixed(1));
+ };
+
+ const getRiskColor = (level) => {
+ switch (level) {
+ case 'Rendah': return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
+ case 'Sedang': return 'text-blue-400 bg-blue-500/10 border-blue-500/20';
+ case 'Menengah': return 'text-amber-400 bg-amber-500/10 border-amber-500/20';
+ case 'Tinggi': return 'text-red-400 bg-red-500/10 border-red-500/20';
+ default: return 'text-slate-400 bg-slate-500/10 border-slate-500/20';
+ }
+ };
+
+ const targetPct = formatPercentFromPrice(stock.target);
+ const stopLossPct = formatPercentFromPrice(stock.stopLoss);
+
+ return (
+ <div className="animate-slide-down overflow-hidden">
+ <div className="px-4 sm:px-6 pb-6 pt-4 space-y-6">
+ 
+ {/* Real Candlestick Chart */}
+ <StockChart ticker={stock.ticker} />
+
+ <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+ {/* Rincian Skor */}
+ <div className="lg:col-span-1">
+ <h4 className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">
+ Rincian Skor
+ </h4>
+ <div className="space-y-3">
+ {subScoreEntries.map(([key, data]) => (
+ <Tooltip key={key} term={key} className="w-full">
+ <ScoreBar
+ label={data.label}
+ score={data.score}
+ weight={data.weight}
+ />
+ </Tooltip>
+ ))}
+ </div>
+ {stock.sectorBoost > 0 && (
+ <div className="mt-3 p-2.5 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
+ <span className="text-xs text-emerald-400">
+ 🔥 +{stock.sectorBoost} bonus sektor (sektor performa terbaik)
+ </span>
+ </div>
+ )}
+ </div>
+
+ {/* Strategi Trading */}
+ <div className="lg:col-span-1">
+ <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
+ <h4 className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+ Strategi Trading
+ </h4>
+ <div className="grid grid-cols-2 gap-2 sm:flex">
+ <button 
+ onClick={() => {
+ const shares = parseInt(prompt(`Berapa lembar saham ${stock.ticker} yang ingin dibeli? (1 lot = 100 lembar)`,"100"));
+ if(shares > 0) {
+ fetch('/api/portfolio/buy', {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify({
+ ticker: stock.ticker,
+ name: stock.name,
+ sector: stock.sector,
+ price: stock.price,
+ shares: shares
+ })
+ }).then(() => alert(`${shares} lembar ${stock.ticker} berhasil ditambahkan ke portofolio!`));
+ }
+ }}
+ className="text-[11px] uppercase font-bold px-2.5 py-1.5 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border border-amber-500/30 rounded-md transition-colors whitespace-nowrap"
+ title="Simulasi beli ke portofolio"
+ >
+ + Portofolio
+ </button>
+ <button 
+ onClick={() => {
+ const inputPriceStr = prompt(`Masukkan harga entry untuk ${stock.ticker} (default: harga saat ini):`, stock.price);
+ if (inputPriceStr === null) return; // User cancelled
+ 
+ const inputPrice = parseFloat(inputPriceStr.replace(/[^\d.-]/g, ''));
+ if (isNaN(inputPrice) || inputPrice <= 0) {
+ alert('Harga tidak valid!');
+ return;
+ }
+
+ const modifiedStock = {
+ ...stock,
+ price: inputPrice,
+ entry: {
+ low: inputPrice,
+ high: inputPrice
+ }
+ };
+
+ fetch('/api/history', {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify({
+ stock: modifiedStock,
+ mode,
+ style: styleName
+ })
+ })
+ .then(r => r.json())
+ .then(res => {
+ if (res.error) alert(res.error);
+ else if (res.message) alert(res.message);
+ else alert(`${stock.ticker} mulai dipantau di Win Rate Dashboard dengan harga entry ${inputPrice}!`);
+ });
+ }}
+ className="text-[11px] uppercase font-bold px-2.5 py-1.5 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-md transition-colors whitespace-nowrap"
+ title="Catat dan pantau sistem trading ini di Win Rate Dashboard"
+ >
+ 🎯 Pantau
+ </button>
+ </div>
+ </div>
+
+ <div className="space-y-3">
+ <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.04]">
+ <div className="flex items-center justify-between mb-1">
+ <Tooltip term="entry">
+ <span className="text-xs text-slate-500 dark:text-slate-400">Area Beli</span>
+ </Tooltip>
+ <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 capitalize">
+ Setup {stock.setup}
+ </span>
+ </div>
+ <span className="text-lg font-semibold text-slate-900 dark:text-white">
+ {formatPrice(stock.entry.low)} – {formatPrice(stock.entry.high)}
+ </span>
+ </div>
+
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+ <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.04]">
+ <Tooltip term="target">
+ <span className="text-xs text-slate-500 dark:text-slate-400">Target Jual</span>
+ </Tooltip>
+ <div className="text-lg font-semibold text-emerald-400 mt-1">
+ {formatPrice(stock.target)}
+ </div>
+ <div className="text-[10px] text-emerald-400/60">
+ {targetPct === null ? '-' : `${targetPct > 0 ? '+' : ''}${targetPct}%`}
+ </div>
+ </div>
+ <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.04]">
+ <Tooltip term="stopLoss">
+ <span className="text-xs text-slate-500 dark:text-slate-400">Cut Loss</span>
+ </Tooltip>
+ <div className="text-lg font-semibold text-red-600 dark:text-red-300 bg-red-500/10 px-2 py-0.5 rounded leading-none inline-block mb-1">
+ {formatPrice(stock.stopLoss)}
+ </div>
+ <div className="text-[10px] text-red-400/60 block">
+ {stopLossPct === null ? '-' : `${stopLossPct}%`}
+ </div>
+ </div>
+ </div>
+
+ <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.04]">
+ <div>
+ <Tooltip term="riskReward">
+ <span className="text-xs text-slate-500 dark:text-slate-400">Risk/Reward</span>
+ </Tooltip>
+ <div className="text-lg font-bold text-slate-900 dark:text-white mt-1">{stock.riskReward}:1</div>
+ </div>
+ <div className={`px-3 py-1.5 rounded-lg border text-sm font-medium ${getRiskColor(stock.riskLevel?.level)}`}>
+ Risiko {stock.riskLevel?.level}
+ </div>
+ </div>
+
+ {/* Technical Metrics Summary */}
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 px-1">
+ <div className="flex flex-col">
+ <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Indikator</span>
+ <span className="text-xs text-slate-400 dark:text-slate-500">
+ {stock.subScores.technical.metrics?.shortMAName || '-'} / {stock.subScores.technical.metrics?.longMAName || '-'}
+ </span>
+ </div>
+ <div className="flex flex-col text-right">
+ <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">RSI ({stock.subScores.technical.metrics?.rsiPeriod || (stock.subScores.technical.metrics?.shortMAName === 'MA9' ? '7' : '14')})</span>
+ <span className="text-xs text-slate-400 dark:text-slate-500">{stock.subScores.technical.metrics?.rsi}</span>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ {/* Mengapa Saham Ini? */}
+ <div className="lg:col-span-1">
+ <h4 className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">
+ Mengapa Saham Ini?
+ </h4>
+ <div className="space-y-2.5">
+ {stock.explanations.map((explanation, index) => (
+ <div
+ key={index}
+ className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.04] animate-fade-in"
+ style={{ animationDelay: `${index * 0.08}s` }}
+ >
+ <span className="text-emerald-400 mt-0.5 flex-shrink-0">✓</span>
+ <p className="text-sm text-slate-400 dark:text-slate-500 leading-relaxed">{explanation}</p>
+ </div>
+ ))}
+ </div>
+
+ {/* Score detail pills */}
+ <div className="mt-4 flex flex-wrap gap-2">
+ {subScoreEntries
+ .filter(([, data]) => data.score >= 70)
+ .map(([key, data]) => (
+ <span
+ key={key}
+ className={`text-[11px] px-2 py-1 rounded-full border ${
+ data.score >= 85
+ ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400'
+ : 'border-blue-500/20 bg-blue-500/10 text-blue-400'
+ }`}
+ >
+ {data.label}: {data.score}
+ </span>
+ ))}
+ </div>
+ </div>
+
+ </div>
+ </div>
+ </div>
+ );
+}
