@@ -34,19 +34,27 @@ export async function GET(request) {
       const revGrowthVal = typeof fund.revenueGrowth === 'number' ? fund.revenueGrowth : (typeof s.revenueGrowth === 'number' ? s.revenueGrowth : (typeof s.salesGrowth === 'number' ? s.salesGrowth : 0));
       let profitGrowthVal = typeof fund.profitGrowth === 'number' ? fund.profitGrowth : (typeof s.profitGrowth === 'number' ? s.profitGrowth : (typeof s.epsGrowth === 'number' ? s.epsGrowth : null));
 
-      // Calculate profit growth if missing but netProfit array exists
+      // Calculate profit growth if missing but netProfit array exists (Robust CAGR / Normalized Turnaround)
       if (profitGrowthVal === null) {
         if (Array.isArray(fund.netProfit) && fund.netProfit.length >= 2) {
           const profits = fund.netProfit;
-          if (profits.length >= 3) {
-            const base1 = Math.max(Math.abs(profits[0]), 1);
-            const base2 = Math.max(Math.abs(profits[1]), 1);
-            const g1 = (profits[1] - profits[0]) / base1;
-            const g2 = (profits[2] - profits[1]) / base2;
-            profitGrowthVal = ((g1 + g2) / 2) * 100;
+          const first = profits[0];
+          const latest = profits[profits.length - 1];
+          const years = profits.length - 1;
+
+          if (first > 0 && latest > 0) {
+            // Standard Multi-Year Compound Annual Growth Rate (CAGR)
+            const cagr = (Math.pow(latest / first, 1 / years) - 1) * 100;
+            profitGrowthVal = Math.min(Math.max(cagr, -100), 500); // Clamp between -100% and +500%
+          } else if (first <= 0 && latest > 0) {
+            // Turnaround case (From negative to positive profit)
+            profitGrowthVal = 100.0; // Standard 100% turnaround indicator
+          } else if (first > 0 && latest <= 0) {
+            // Deterioration case (From positive to negative)
+            profitGrowthVal = -100.0;
           } else {
-            const base = Math.max(Math.abs(profits[0]), 1);
-            profitGrowthVal = ((profits[1] - profits[0]) / base) * 100;
+            // Both negative or zero
+            profitGrowthVal = 0;
           }
         } else {
           profitGrowthVal = 0;
