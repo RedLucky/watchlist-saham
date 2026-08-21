@@ -15,7 +15,7 @@ export default function AlphaLegendScreeners() {
     async function loadAlphaLegendData() {
       try {
         setLoading(true);
-        const res = await fetch('/api/alpha-legend');
+        const res = await fetch('/api/alpha-legend', { cache: 'no-store' });
         if (!res.ok) throw new Error('Gagal memuat data screening');
         const data = await res.json();
         setStocks(data.stocks || []);

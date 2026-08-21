@@ -7,8 +7,8 @@
  */
 
 export function calculateFundamentalScore(stock) {
-  const { roe, der, netProfit, revenueGrowth } = stock.fundamentals;
-  const sector = stock.sector;
+  const { roe, der, netProfit, revenueGrowth } = stock?.fundamentals || {};
+  const sector = stock?.sector;
 
   let score = 0;
   const details = [];
@@ -75,25 +75,30 @@ export function calculateFundamentalScore(stock) {
   const safeDER = Number.isFinite(der) ? der : null;
   let derScore = 50; // default if no data
 
-  if (safeDER !== null) {
-    if (sector === 'Financials') {
+  const isFinancial = sector && (sector.toLowerCase().includes('financial') || sector.toLowerCase().includes('bank'));
+
+  if (isFinancial) {
+    if (safeDER !== null) {
       // For banks: DER > 5 is normal. Score based on relative efficiency.
-      derScore = clamp(((15 - safeDER) / 15) * 100, 20, 80);
+      derScore = clamp(((15 - safeDER) / 15) * 100, 30, 85);
       if (safeDER < 8) {
-        details.push(`DER bank rendah (${safeDER.toFixed(1)}x) — sangat efisien`);
+        details.push(`DER bank rendah (${safeDER.toFixed(1)}x) — struktur liabilitas sangat efisien`);
       } else {
-        details.push(`DER bank wajar (${safeDER.toFixed(1)}x) — normal untuk perbankan`);
+        details.push(`DER bank wajar (${safeDER.toFixed(1)}x) — proporsional untuk model bisnis perbankan`);
       }
     } else {
-      // Non-financial: DER 0 = best, DER 1.5 = minimum acceptable
-      derScore = clamp(((1.5 - safeDER) / 1.5) * 100, 0, 100);
-      if (safeDER < 0.5) {
-        details.push(`Utang sangat rendah (DER: ${safeDER.toFixed(2)}) — posisi keuangan kuat`);
-      } else if (safeDER < 1.0) {
-        details.push(`Level utang manageable (DER: ${safeDER.toFixed(2)})`);
-      } else {
-        details.push(`Utang lebih tinggi (DER: ${safeDER.toFixed(2)}) — perlu dimonitor`);
-      }
+      derScore = 75;
+      details.push('Struktur modal perbankan berbasis simpanan nasabah (DPK) — solvabilitas terjaga');
+    }
+  } else if (safeDER !== null) {
+    // Non-financial: DER 0 = best, DER 1.5 = minimum acceptable
+    derScore = clamp(((1.5 - safeDER) / 1.5) * 100, 0, 100);
+    if (safeDER < 0.5) {
+      details.push(`Utang sangat rendah (DER: ${safeDER.toFixed(2)}) — posisi keuangan kuat`);
+    } else if (safeDER < 1.0) {
+      details.push(`Level utang terkelola baik (DER: ${safeDER.toFixed(2)})`);
+    } else {
+      details.push(`Utang lebih tinggi (DER: ${safeDER.toFixed(2)}) — perlu dimonitor`);
     }
   } else {
     details.push('Data DER belum tersedia');

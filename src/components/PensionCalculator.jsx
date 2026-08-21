@@ -36,8 +36,7 @@ export default function PensionCalculator() {
  const [activeSubTab, setActiveSubTab] = useState('calculator');
  const [mobileParamsOpen, setMobileParamsOpen] = useState(false);
  const [customDivYield, setCustomDivYield] = useState(null);
- const [stockGrowthRate, setStockGrowthRate] = useState(5.5);
-
+ const [customGrowthRate, setCustomGrowthRate] = useState(null);
  // Dynamic Preset Stock Prices & List
  const [presetStocks, setPresetStocks] = useState([]);
  const [bluechipOptions, setBluechipOptions] = useState(['BBRI', 'BMRI', 'BBCA', 'TLKM', 'ADRO', 'PGAS', 'KLBF', 'ASII']);
@@ -48,6 +47,7 @@ export default function PensionCalculator() {
  const [customTickerInput, setCustomTickerInput] = useState('');
  const [addingCustomTicker, setAddingCustomTicker] = useState(false);
  const [manualLots, setManualLots] = useState({});
+ const [isOptimizing, setIsOptimizing] = useState(false);
 
  // Tracker records state
   const [trackerRecords, setTrackerRecords] = useState([]);
@@ -67,7 +67,7 @@ export default function PensionCalculator() {
         if (parsed.expectedReturn) setExpectedReturn(parsed.expectedReturn);
         if (parsed.inflationRate) setInflationRate(parsed.inflationRate);
         if (parsed.customDivYield !== undefined) setCustomDivYield(parsed.customDivYield);
-        if (parsed.stockGrowthRate !== undefined) setStockGrowthRate(parsed.stockGrowthRate);
+        if (parsed.customGrowthRate !== undefined) setCustomGrowthRate(parsed.customGrowthRate);
       }
     } catch (e) {
       console.error('Error loading saved pension params:', e);
@@ -85,7 +85,7 @@ export default function PensionCalculator() {
       expectedReturn,
       inflationRate,
       customDivYield,
-      stockGrowthRate
+      customGrowthRate
     };
 
     try {
@@ -288,23 +288,132 @@ export default function PensionCalculator() {
  return { sbn: 0.50, stock: 0.35, rdpu: 0.15, label: '🟡 Moderat (50% SBN / 35% Saham / 15% RDPU)' };
  }, [riskProfile]);
 
- // Automatic average Dividend Yield from preset stocks
- const autoStockDivYield = useMemo(() => {
- if (!presetStocks || presetStocks.length === 0) return 6.5;
- const totalYield = presetStocks.reduce((sum, st) => {
- const y = Number(st.metrics?.dividendYield ?? st.divYield ?? 0);
- return sum + y;
- }, 0);
- const avg = totalYield / presetStocks.length;
- return avg > 0 ? Number(avg.toFixed(1)) : 6.5;
- }, [presetStocks]);
+  // 1. First, calculate the array of allocated stocks and their costs
+  const calculatedStocks = useMemo(() => {
+    if (!presetStocks || presetStocks.length === 0) return [];
+    
+    const stockAllocation = totalBudget * assetRatios.stock;
+    const isCustomModified = presetStocks.length !== 4;
+    const defaultWeights = [0.35, 0.30, 0.25, 0.10];
+    
+    let totalStockSpent = 0;
+    const mapped = presetStocks.map((st, idx) => {
+      const price = Number(stockPrices[st.ticker]) || st.price || 0;
+      const weight = isCustomModified ? (1 / presetStocks.length) : (defaultWeights[idx] || (1 / presetStocks.length));
+      const targetBudget = stockAllocation * weight;
+      const lotCost = price * 100;
+      
+      let isManual = false;
+      let lots = lotCost > 0 ? Math.floor(targetBudget / lotCost) : 0;
+      if (manualLots[st.ticker] !== undefined) {
+        lots = manualLots[st.ticker];
+        isManual = true;
+      }
+      
+      const cost = lots * lotCost;
+      totalStockSpent += cost;
+
+      return {
+        ...st,
+        price,
+        lotCost,
+        lots,
+        cost,
+        weightPct: `${(weight * 100).toFixed(0)}%`,
+        isManual
+      };
+    });
+
+    let stockCashChange = stockAllocation - totalStockSpent;
+
+    // Second pass: Exhaust leftover cash by buying 1 extra lot round-robin for non-manual stocks
+    let madePurchase = true;
+    while (madePurchase && stockCashChange > 0) {
+      madePurchase = false;
+      for (let st of mapped) {
+        if (!st.isManual && st.lotCost > 0 && stockCashChange >= st.lotCost) {
+          st.lots += 1;
+          st.cost += st.lotCost;
+          totalStockSpent += st.lotCost;
+          stockCashChange -= st.lotCost;
+          madePurchase = true;
+        }
+      }
+    }
+    return mapped;
+  }, [presetStocks, stockPrices, manualLots, totalBudget, assetRatios.stock]);
+
+  const handleOptimizeLots = async () => {
+    setIsOptimizing(true);
+    try {
+      const payload = {
+        budget: totalBudget * assetRatios.stock,
+        stocks: calculatedStocks.map(st => ({
+          ticker: st.ticker,
+          price: st.price,
+          yield: st.dividendYield || st.metrics?.dividendYield || st.divYield || 0,
+          growth: st.estimatedGrowth || st.growth || 5
+        }))
+      };
+
+      const res = await fetch('/api/pension/optimize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.optimalLots) {
+          setManualLots(data.optimalLots);
+        }
+      } else {
+        alert('Gagal mengambil hasil optimasi dari server.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Terjadi kesalahan saat memanggil AI Optimizer.');
+    } finally {
+      setIsOptimizing(false);
+    }
+  };
+
+  // Automatic average Dividend Yield (Weighted by Capital Allocation / Lots)
+  const autoStockDivYield = useMemo(() => {
+    if (!calculatedStocks || calculatedStocks.length === 0) return 6.5;
+    const totalCost = calculatedStocks.reduce((sum, st) => sum + st.cost, 0);
+    if (totalCost === 0) return 6.5;
+
+    const totalWeightedYield = calculatedStocks.reduce((sum, st) => {
+      const y = Number(st.dividendYield ?? st.metrics?.dividendYield ?? st.divYield ?? 0);
+      return sum + (y * st.cost);
+    }, 0);
+    
+    return Number((totalWeightedYield / totalCost).toFixed(1));
+  }, [calculatedStocks]);
 
  const effectiveDivYield = customDivYield !== null && customDivYield !== undefined ? Number(customDivYield) : autoStockDivYield;
 
+  // Automatic average Growth Rate (Weighted by Capital Allocation / Lots)
+  const autoStockGrowthRate = useMemo(() => {
+    if (!calculatedStocks || calculatedStocks.length === 0) return 5.5;
+    const totalCost = calculatedStocks.reduce((sum, st) => sum + st.cost, 0);
+    if (totalCost === 0) return 5.5;
+
+    const totalWeightedGrowth = calculatedStocks.reduce((sum, st) => {
+      const g = Number(st.estimatedGrowth ?? 0);
+      return sum + (g * st.cost);
+    }, 0);
+    
+    return Number((totalWeightedGrowth / totalCost).toFixed(1));
+  }, [calculatedStocks]);
+
+ const effectiveGrowthRate = customGrowthRate !== null && customGrowthRate !== undefined ? Number(customGrowthRate) : autoStockGrowthRate;
+
  // Total Stock Return = Dividend Yield + Capital Growth
  const estimatedStockReturn = useMemo(() => {
- return Number((effectiveDivYield + Number(stockGrowthRate || 0)).toFixed(1));
- }, [effectiveDivYield, stockGrowthRate]);
+ return Number((effectiveDivYield + effectiveGrowthRate).toFixed(1));
+ }, [effectiveDivYield, effectiveGrowthRate]);
 
  // Calculate Weighted Portfolio Return based on SBN (6.5%), Stock (Dividen + Growth), and RDPU (5.0%)
  const portfolioWeightedReturn = useMemo(() => {
@@ -365,58 +474,11 @@ export default function PensionCalculator() {
  };
  }
 
- // Allocate stock budget among preset stocks
- const isCustomModified = presetStocks.length !== 4;
- const defaultWeights = [0.35, 0.30, 0.25, 0.10];
- 
- let totalStockSpent = 0;
-
- const calculatedStocks = presetStocks.map((st, idx) => {
- const price = Number(stockPrices[st.ticker]) || st.price || 0;
- const weight = isCustomModified ? (1 / presetStocks.length) : defaultWeights[idx];
- const targetBudget = stockAllocation * weight;
- const lotCost = price * 100;
- 
- let isManual = false;
- let lots = lotCost > 0 ? Math.floor(targetBudget / lotCost) : 0;
- if (manualLots[st.ticker] !== undefined) {
- lots = manualLots[st.ticker];
- isManual = true;
- }
- 
- const cost = lots * lotCost;
- totalStockSpent += cost;
-
- return {
- ...st,
- price,
- lotCost,
- lots,
- cost,
- weightPct: `${(weight * 100).toFixed(0)}%`,
- isManual
- };
- });
-
- let stockCashChange = stockAllocation - totalStockSpent;
-
- // Second pass: Exhaust leftover cash by buying 1 extra lot round-robin for non-manual stocks
- let madePurchase = true;
- while (madePurchase && stockCashChange > 0) {
- madePurchase = false;
- for (let st of calculatedStocks) {
- if (!st.isManual && st.lotCost > 0 && stockCashChange >= st.lotCost) {
- st.lots += 1;
- st.cost += st.lotCost;
- totalStockSpent += st.lotCost;
- stockCashChange -= st.lotCost;
- madePurchase = true;
- }
- }
- }
-
- const finalRdpuTopup = baseRdpuAllocation + stockCashChange;
- const grandTotalAllocated = totalStockSpent + sbnAllocation + finalRdpuTopup;
+  // Allocate stock budget among preset stocks (Logic moved to calculatedStocks useMemo above)
+  const totalStockSpent = calculatedStocks.reduce((sum, st) => sum + st.cost, 0);
+  const stockCashChange = stockAllocation - totalStockSpent;
+  const finalRdpuTopup = baseRdpuAllocation + stockCashChange;
+  const grandTotalAllocated = totalStockSpent + sbnAllocation + finalRdpuTopup;
 
  const investmentRatioPct = ((totalBudget / (totalBudget + monthlyExpense)) * 100).toFixed(1);
  const monthsOfSafetyNet = (totalBudget / monthlyExpense).toFixed(1);
@@ -722,11 +784,21 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
  <label className="text-[10px] uppercase text-purple-700 dark:text-purple-400 font-extrabold block">Target Return</label>
  <button
  type="button"
- onClick={() => setExpectedReturn(portfolioWeightedReturn)}
+ onClick={() => {
+ setCustomDivYield(null);
+ setCustomGrowthRate(null);
+ // Force expectedReturn to the pure auto weighted return
+ const sbnWeight = sbnAvailable ? assetRatios.sbn : 0;
+ const rdpuWeight = sbnAvailable ? assetRatios.rdpu : (assetRatios.rdpu + assetRatios.sbn);
+ const stockWeight = assetRatios.stock;
+ const autoStockRet = autoStockDivYield + autoStockGrowthRate;
+ const autoWeighted = (sbnWeight * 6.5) + (stockWeight * autoStockRet) + (rdpuWeight * 5.0);
+ setExpectedReturn(Number(autoWeighted.toFixed(1)));
+ }}
  className="text-[9px] text-purple-700 dark:text-purple-300 font-extrabold hover:underline"
- title="Klik untuk menyamakan dengan bobot portofolio (SBN + Saham + RDPU)"
+ title="Reset Dividen & Growth ke Auto, lalu samakan dengan bobot portofolio"
  >
- ⚡ Sync ({portfolioWeightedReturn}%)
+ ⚡ Sync All ({portfolioWeightedReturn}%)
  </button>
  </div>
  <div className="flex items-center bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-lg px-2.5 py-1.5 focus-within:border-purple-400">
@@ -786,20 +858,33 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
  </div>
 
  <div className="space-y-1">
+ <div className="flex justify-between items-center">
  <label className="text-[10px] uppercase text-indigo-700 dark:text-indigo-400 font-extrabold block">Growth Saham</label>
+ {customGrowthRate !== null && (
+ <button
+ type="button"
+ onClick={() => setCustomGrowthRate(null)}
+ className="text-[8px] text-indigo-700 dark:text-indigo-300 font-bold hover:underline"
+ title="Reset ke rata-rata preset"
+ >
+ 🔄 Auto
+ </button>
+ )}
+ </div>
  <div className="flex items-center bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-lg px-2.5 py-1.5 focus-within:border-indigo-400">
  <input
  type="number"
  step="0.1"
- value={stockGrowthRate}
- onChange={(e) => setStockGrowthRate(Math.max(0, Number(e.target.value)))}
+ value={effectiveGrowthRate}
+ onChange={(e) => setCustomGrowthRate(Math.max(0, Number(e.target.value)))}
  className="w-full bg-transparent text-xs font-bold text-indigo-700 dark:text-indigo-300 focus:outline-none"
  />
  <span className="text-xs text-slate-700 dark:text-slate-400 font-bold">%</span>
  </div>
- <span className="text-[8.5px] text-slate-600 dark:text-slate-400 block font-medium">
- Total: {estimatedStockReturn}%/thn
- </span>
+ <div className="flex justify-between items-center text-[8.5px] text-slate-600 dark:text-slate-400 font-medium">
+ <span>{customGrowthRate === null ? `Preset avg: ${autoStockGrowthRate}%` : 'Manual Custom'}</span>
+ <span className="font-bold text-emerald-600 dark:text-emerald-400">Total: {estimatedStockReturn}%/thn</span>
+ </div>
  </div>
  </div>
 
@@ -992,6 +1077,11 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
  🌙 Syariah
  </span>
  )}
+ {st.isDividendTrap && (
+ <span className="text-[8px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold border border-amber-500/30 whitespace-nowrap leading-none" title="Peringatan: Ritel masuk jelang/pasca Dividen (Potensi Trap)">
+ ⚠️ Div. Trap
+ </span>
+ )}
  </div>
  </div>
  </div>
@@ -1039,7 +1129,7 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
 
  <div className="mt-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
  <div className="flex flex-col gap-2">
- <div className="flex items-center gap-2">
+ <div className="flex flex-wrap items-center gap-2">
  <input
  type="text"
  placeholder="Kode Saham..."
@@ -1054,8 +1144,15 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
  disabled={addingCustomTicker || !customTickerInput.trim()}
  className="px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs transition-all disabled:opacity-50"
  >
- {addingCustomTicker ? 'Mencari...' : '+ Tambah'}
+ {addingCustomTicker ? 'Menambahkan...' : 'Tambah'}
  </button>
+ <button
+    onClick={handleOptimizeLots}
+    disabled={isOptimizing || calculatedStocks.length === 0}
+    className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 disabled:opacity-50 text-white font-extrabold text-xs rounded-lg shadow-lg shadow-amber-500/20 transition-all flex items-center gap-1.5"
+  >
+    {isOptimizing ? '🔄 Optimizing...' : '✨ AI Optimize Lots'}
+  </button>
  </div>
 
  {/* Quick-Add Favorite Bluechips */}

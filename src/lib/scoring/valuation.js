@@ -19,12 +19,24 @@ const SECTOR_AVERAGES = {
   'Transportation & Logistics': { per: 14, pbv: 2.0 },
 };
 
+function getSectorAverage(sector) {
+  if (!sector) return { per: 15, pbv: 2.5 };
+  const lower = sector.toLowerCase().trim();
+  for (const [key, val] of Object.entries(SECTOR_AVERAGES)) {
+    if (key.toLowerCase().trim() === lower) return val;
+  }
+  return { per: 15, pbv: 2.5 };
+}
+
 export function calculateValuationScore(stock) {
-  const { per, pbv } = stock.fundamentals;
-  const sector = stock.sector;
-  const avg = SECTOR_AVERAGES[sector] || { per: 15, pbv: 2.5 };
+  const { per, pbv } = stock?.fundamentals || {};
+  const sector = stock?.sector;
+  const avg = getSectorAverage(sector);
   const safePER = Number.isFinite(per) ? per : null;
-  const safePBV = Number.isFinite(pbv) ? pbv : null;
+  let safePBV = Number.isFinite(pbv) ? pbv : null;
+  if (safePBV !== null && safePBV > 500) {
+    safePBV = Number((safePBV / 16200).toFixed(2));
+  }
   let score = 0;
   const details = [];
 

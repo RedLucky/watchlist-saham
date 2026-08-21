@@ -17,6 +17,7 @@ export const NAVIGATION_MENU = [
       { id: 'portfolio', label: 'Portofolio Saya', icon: '💼' },
       { id: 'backtest', label: 'Backtest & Win Rate', icon: '📈' },
       { id: 'pension', label: 'Kalkulator Pensiun', icon: '🏖️' },
+      { id: 'ksei-upload', label: 'Upload Data KSEI', icon: '🏛️' },
     ]
   }
 ];

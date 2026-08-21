@@ -8,6 +8,8 @@ import { DataProvider } from './DataProvider';
 import { prisma } from '../prisma';
 import { getSectorByTicker, normalizeSectorName, isSyariahStock } from '../sectorUniverse';
 import { calculateVolumeMA } from '../indicators';
+import { calculateRawDividendYield } from '../scoring/dividend';
+import { getBandarmologiVerdict } from '../scoring/smartMoney';
 
 export class DatabaseProvider extends DataProvider {
   async getMarketData() {
@@ -22,6 +24,7 @@ export class DatabaseProvider extends DataProvider {
       const allStocks = await prisma.stockData.findMany({
         where: {
           NOT: { ticker: '^JKSE' },
+          isDelisted: false,
           price: { gt: 0 }
         },
         select: { changePercent: true }
@@ -66,6 +69,7 @@ export class DatabaseProvider extends DataProvider {
       const stocks = await prisma.stockData.findMany({
         where: {
           NOT: { ticker: '^JKSE' },
+          isDelisted: false,
           price: { gt: 0 },
           sector: { not: null }
         },
@@ -148,19 +152,22 @@ export class DatabaseProvider extends DataProvider {
   async getStocks() {
     try {
       console.log(`[DatabaseProvider] Querying StockData...`);
-      const dbStocks = await prisma.stockData.findMany();
-      console.log(`[DatabaseProvider] Found ${dbStocks.length} total rows in DB.`);
+      const dbStocks = await prisma.stockData.findMany({
+        where: { isDelisted: false }
+      });
+      console.log(`[DatabaseProvider] Found ${dbStocks.length} total active rows in DB.`);
 
-      const MIN_VOL = 30000000;
+      const MIN_TURNOVER = 1_000_000_000; // 1 Miliar Rupiah (Batas aman likuiditas minimum)
       
       const filtered = dbStocks.filter(s => {
         if (s.ticker === '^JKSE') return false; // Exclude index
-        const meetsVol = Number(s.avgVolume3mo || 0) >= MIN_VOL;
+        const turnover = Number(s.avgVolume3mo || 0) * Number(s.price || 0);
+        const meetsLiquidity = turnover >= MIN_TURNOVER || (Number(s.volume || 0) * Number(s.price || 0)) >= MIN_TURNOVER;
         const hasPrice = s.price > 0;
-        return meetsVol && hasPrice;
+        return meetsLiquidity && hasPrice;
       });
 
-      console.log(`[DatabaseProvider] After liquidity filter: ${filtered.length}`);
+      console.log(`[DatabaseProvider] After liquidity filter (Turnover > 1M): ${filtered.length}`);
 
       // Calculate daily turnover for ranking
       const turnoverByTicker = {};
@@ -178,10 +185,21 @@ export class DatabaseProvider extends DataProvider {
       return filtered.map(s => {
         let fundamentals = {};
         let technicals = {};
-        
+        let shareholders = [];
+        let ownership = null;
+        let insiderTrades = null;
+        let dividendHistory = null;
+        let kseiLatest = null;
+        let kseiHistory = [];
         try {
           fundamentals = s.fundamentals ? JSON.parse(s.fundamentals) : {};
           technicals = s.technicals ? JSON.parse(s.technicals) : {};
+          shareholders = s.shareholders ? JSON.parse(s.shareholders) : [];
+          ownership = s.ownership ? JSON.parse(s.ownership) : null;
+          insiderTrades = s.insiderTrades ? JSON.parse(s.insiderTrades) : null;
+          dividendHistory = s.dividendHistory ? JSON.parse(s.dividendHistory) : null;
+          kseiLatest = s.kseiLatest ? JSON.parse(s.kseiLatest) : null;
+          kseiHistory = s.kseiHistory ? JSON.parse(s.kseiHistory) : [];
         } catch (e) {
           console.error(`Error parsing JSON for ${s.ticker}:`, e);
         }
@@ -206,10 +224,99 @@ export class DatabaseProvider extends DataProvider {
 
         const brokerData = deriveBrokerData(normalizedTechnicals, Number(s.price || 0));
         
-        // avgDailyTurnover = avgVolume3mo * current price (proper "average" metric)
+        // Accurate market cap calculation from KSEI Listed Shares
+        const sharesOutstanding = s.sharesOutstanding ? Number(s.sharesOutstanding) : (kseiLatest?.secNum ?? fundamentals.sharesOutstanding ?? null);
+        const resolvedMarketCap = (Number(s.price || 0) > 0 && sharesOutstanding > 0)
+          ? (Number(s.price) * sharesOutstanding)
+          : (fundamentals.marketCap ?? null);
+
+        // avgDailyTurnover = avgVolume3mo * current price
         const avgDailyTurnover = Number(s.avgVolume3mo || 0) * Number(s.price || 0);
-        // dailyTurnover = today's volume * price
         const dailyTurnover = Number(s.volume || 0) * Number(s.price || 0);
+
+        // Smart Money Quantitative Calculation
+        let turnoverSpikeRatio = 1;
+        if (avgDailyTurnover > 0) {
+          turnoverSpikeRatio = dailyTurnover / avgDailyTurnover;
+        }
+        
+        const priceChange = s.changePercent ?? 0;
+        
+        // --- Integrasi Data KSEI & Insider ---
+        let retailChangePct = 0;
+        if (kseiLatest && Number.isFinite(kseiLatest.deltaRetailPct)) {
+          retailChangePct = kseiLatest.deltaRetailPct;
+        } else if (shareholders && shareholders.length > 0) {
+          retailChangePct = shareholders[0].changePct || 0;
+        }
+        
+        const hasRecentInsider = insiderTrades && insiderTrades.length > 0;
+
+        // Check for Dividend Trap first
+        let isDividendTrap = false;
+        if (Array.isArray(dividendHistory) && dividendHistory.length > 0) {
+          const now = new Date();
+          for (const div of dividendHistory) {
+            if (div.TanggalCum) {
+              const cumDate = new Date(div.TanggalCum);
+              const diffDays = (cumDate.getTime() - now.getTime()) / (1000 * 3600 * 24);
+              if (diffDays >= -14 && diffDays <= 30) {
+                isDividendTrap = true;
+                break;
+              }
+            }
+          }
+        }
+
+        // Unified Bandarmologi Verdict
+        const verdictObj = getBandarmologiVerdict({
+          bfi: kseiLatest?.bfi ?? 0,
+          deltaSmartMoney: kseiLatest?.deltaSmartMoney ?? 0,
+          deltaRetail: kseiLatest?.deltaRetail ?? 0,
+          deltaForeign: kseiLatest?.deltaForeign ?? 0,
+          priceChange,
+          turnoverSpikeRatio,
+          isDividendTrap,
+          retailPercent: kseiLatest?.retailPercent ?? 0
+        });
+
+        const bandarmologiStatus = verdictObj.status;
+        const bandarmologiBadge = verdictObj.badge;
+
+        const smartMoney = {
+          turnoverSpikeRatio: Number(turnoverSpikeRatio.toFixed(2)),
+          status: bandarmologiStatus,
+          badge: bandarmologiBadge,
+          bfi: kseiLatest?.bfi ?? 0,
+          deltaRetail: kseiLatest?.deltaRetail ?? 0,
+          deltaSmartMoney: kseiLatest?.deltaSmartMoney ?? 0,
+          deltaForeign: kseiLatest?.deltaForeign ?? 0,
+          verdict: verdictObj
+        };
+
+        let hasStrongController = false;
+        let retailOwnership = kseiLatest?.retailPercent ?? 0;
+        let isHighRetail = retailOwnership > 50;
+
+        if (kseiLatest?.controllerPercent != null) {
+          hasStrongController = kseiLatest.controllerPercent > 50;
+        } else if (ownership && Array.isArray(ownership.shareholders)) {
+          let legacyRetail = 0;
+          ownership.shareholders.forEach(p => {
+            const isMasyarakat = p.Nama?.toLowerCase().includes('masyarakat') || p.Kategori?.toLowerCase().includes('masyarakat');
+            if (isMasyarakat) {
+              let rawStr = String(p.Persentase || '0').replace('%', '').trim();
+              legacyRetail += Number(rawStr);
+            } else {
+              let rawStr = String(p.Persentase || '0').replace('%', '').trim();
+              if (Number(rawStr) > 50) {
+                hasStrongController = true;
+              }
+            }
+          });
+          if (retailOwnership === 0) retailOwnership = legacyRetail;
+          isHighRetail = retailOwnership > 50;
+        }
 
         const resolvedSector = normalizeSectorName(s.sector || '') || getSectorByTicker(s.ticker);
         const isSyariah = isSyariahStock(s.ticker, resolvedSector);
@@ -218,23 +325,49 @@ export class DatabaseProvider extends DataProvider {
           ticker: s.ticker,
           name: s.name,
           sector: resolvedSector === 'INDEX' ? 'General' : resolvedSector,
+          subSector: s.subSector || null,
           price: s.price,
           isSyariah,
-          changePercent: s.changePercent ?? 0,
+          hasStrongController,
+          isHighRetail,
+          retailOwnership,
+          changePercent: priceChange,
+          isDividendTrap: bandarmologiStatus === "⚠️ Awas Dividend Trap!",
+          kseiLatest,
+          kseiHistory,
+          sharesOutstanding,
+          marketCap: resolvedMarketCap,
           fundamentals: {
+            marketCap: resolvedMarketCap,
+            sharesOutstanding,
             roe: fundamentals.roe ?? null,
             der: fundamentals.der ?? null,
             netProfit: fundamentals.netProfit ?? null,
             per: fundamentals.per ?? null,
-            pbv: fundamentals.pbv ?? null,
-            dividendYield: fundamentals.dividendYield ?? 0,
+            pbv: (fundamentals.pbv && fundamentals.pbv > 500) ? Number((fundamentals.pbv / 16200).toFixed(2)) : (fundamentals.pbv ?? null),
+            dividendYield: calculateRawDividendYield({
+              price: Number(s.price || 0),
+              dividendHistory,
+              fundamentals: {
+                ...fundamentals,
+                marketCap: resolvedMarketCap,
+              }
+            }),
             payoutRatio: fundamentals.payoutRatio ?? 0,
-            dividendStreakYears: fundamentals.dividendStreakYears ?? (fundamentals.dividendYield > 0 ? 5 : 0),
+            dividendStreakYears: fundamentals.dividendStreakYears ?? 0,
+            yahooDividendHistory: fundamentals.yahooDividendHistory ?? null,
             revenueGrowth: fundamentals.revenueGrowth ?? null,
-            cash: fundamentals.cash ?? 0
+            cash: fundamentals.cash ?? 0,
+            currentRatio: fundamentals.currentRatio ?? null,
+            freeCashflow: fundamentals.freeCashflow ?? null
           },
           technicals: normalizedTechnicals,
           brokerData,
+          shareholders,
+          ownership,
+          insiderTrades,
+          dividendHistory,
+          smartMoney,
           transactionAvg: avgDailyTurnover,
           dailyTurnover,
           status: 'active',

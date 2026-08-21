@@ -1,5 +1,8 @@
 'use client';
 
+import { useState } from 'react';
+import StockOwnershipModal from './StockOwnershipModal';
+
 // ── Formatting Helpers ────────────────────────────────────────────────────────
 
 const formatPrice = (price) => {
@@ -45,7 +48,7 @@ const formatPriceChange = (price, prevClose) => {
  return `${sign}${formatPrice(diff)}`;
 };
 
-function MoverRow({ item, type, index }) {
+function MoverRow({ item, type, index, onSelectStock }) {
  const isTrending = type === 'trending';
  const isGainer = type === 'gainers';
  const isUnusual = type === 'unusual';
@@ -72,8 +75,9 @@ function MoverRow({ item, type, index }) {
 
  return (
  <div
+ onClick={() => onSelectStock && onSelectStock(item)}
  className={`grid grid-cols-12 items-center gap-2 py-2.5 px-3 rounded-lg
- hover:bg-slate-100 dark:hover:bg-white/[0.04] transition-colors duration-150 group
+ hover:bg-slate-100 dark:hover:bg-white/[0.04] transition-colors duration-150 group cursor-pointer
  animate-fade-in stagger-${Math.min(index + 1, 10)}`}
  style={{ opacity: 0 }}
  >
@@ -85,16 +89,24 @@ function MoverRow({ item, type, index }) {
  {/* Avatar + Ticker + Name */}
  <div className="col-span-4 flex items-center gap-2.5 min-w-0">
  <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${avatarStyle}
- flex items-center justify-center text-[11px] font-bold shrink-0`}>
+ flex items-center justify-center text-[11px] font-bold shrink-0 group-hover:scale-105 transition-transform`}>
  {item.ticker.substring(0, 2)}
  </div>
  <div className="min-w-0">
- <div className="text-[13px] font-bold text-slate-900 dark:text-white leading-tight truncate">
+ <div className="text-[13px] font-bold text-slate-900 dark:text-white leading-tight truncate flex items-center gap-1.5">
  {item.ticker}
+ <span className="text-[9px] px-1 py-0.2 rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 opacity-0 group-hover:opacity-100 transition-opacity">
+ 👥
+ </span>
  </div>
- <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate">
+ <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate flex items-center gap-1">
  {item.name}
  </div>
+ {item.marketCap != null && (
+   <div className="text-[9px] font-semibold text-blue-500 dark:text-blue-400 mt-0.5">
+     MCap: {(item.marketCap / 1_000_000_000_000).toFixed(1)}T
+   </div>
+ )}
  </div>
  </div>
 
@@ -131,7 +143,7 @@ function MoverRow({ item, type, index }) {
  );
 }
 
-function MoverCard({ title, subtitle, icon, items, type, accentGradient, borderColor, loading }) {
+function MoverCard({ title, subtitle, icon, items, type, accentGradient, borderColor, loading, onSelectStock }) {
  return (
  <div className={`glass rounded-2xl overflow-hidden flex flex-col border ${borderColor}`}
  style={{ minHeight: 0 }}
@@ -173,27 +185,33 @@ function MoverCard({ title, subtitle, icon, items, type, accentGradient, borderC
  <div className="col-span-4 flex items-center gap-2.5">
  <div className="skeleton w-8 h-8 rounded-lg shrink-0"/>
  <div className="space-y-1.5 flex-1">
- <div className="skeleton h-3.5 w-14 rounded"/>
- <div className="skeleton h-2.5 w-24 rounded"/>
+ <div className="skeleton h-3.5 w-12 rounded"/>
+ <div className="skeleton h-2.5 w-20 rounded"/>
  </div>
  </div>
- <div className="col-span-3 space-y-1 text-right">
- <div className="skeleton h-3 w-14 rounded ml-auto"/>
+ <div className="col-span-3 text-right space-y-1.5">
+ <div className="skeleton h-3.5 w-14 rounded ml-auto"/>
+ <div className="skeleton h-2.5 w-10 rounded ml-auto"/>
+ </div>
+ <div className="col-span-4 text-right space-y-1.5">
+ <div className="skeleton h-3.5 w-16 rounded ml-auto"/>
  <div className="skeleton h-2.5 w-12 rounded ml-auto"/>
- </div>
- <div className="col-span-4 space-y-1 text-right">
- <div className="skeleton h-3 w-14 rounded ml-auto"/>
- <div className="skeleton h-3 w-16 rounded ml-auto"/>
  </div>
  </div>
  ))
  ) : items.length === 0 ? (
- <div className="py-10 text-center text-sm text-slate-500 dark:text-slate-400">
- Belum ada data tersedia
+ <div className="py-10 text-center text-xs text-slate-500 dark:text-slate-400">
+ Tidak ada data
  </div>
  ) : (
- items.map((item, i) => (
- <MoverRow key={item.ticker} item={item} type={type} index={i} />
+ items.map((item, index) => (
+ <MoverRow
+ key={item.ticker}
+ item={item}
+ type={type}
+ index={index}
+ onSelectStock={onSelectStock}
+ />
  ))
  )}
  </div>
@@ -204,6 +222,8 @@ function MoverCard({ title, subtitle, icon, items, type, accentGradient, borderC
 // ── Main Export ───────────────────────────────────────────────────────────────
 
 export default function MarketMovers({ data, loading }) {
+ const [selectedOwnershipStock, setSelectedOwnershipStock] = useState(null);
+
  return (
  <section className="space-y-2">
  {/* Section Label */}
@@ -226,6 +246,7 @@ export default function MarketMovers({ data, loading }) {
  loading={loading}
  accentGradient="from-amber-500/5 to-orange-500/5"
  borderColor="border-amber-500/15"
+ onSelectStock={setSelectedOwnershipStock}
  />
  <MoverCard
  title="Top Gainer"
@@ -236,6 +257,7 @@ export default function MarketMovers({ data, loading }) {
  loading={loading}
  accentGradient="from-emerald-500/5 to-teal-500/5"
  borderColor="border-emerald-500/15"
+ onSelectStock={setSelectedOwnershipStock}
  />
  <MoverCard
  title="Top Loser"
@@ -246,6 +268,7 @@ export default function MarketMovers({ data, loading }) {
  loading={loading}
  accentGradient="from-red-500/5 to-rose-500/5"
  borderColor="border-red-500/15"
+ onSelectStock={setSelectedOwnershipStock}
  />
  <MoverCard
  title="Unusual Volume"
@@ -256,8 +279,15 @@ export default function MarketMovers({ data, loading }) {
  loading={loading}
  accentGradient="from-cyan-500/5 to-blue-500/5"
  borderColor="border-cyan-500/15"
+ onSelectStock={setSelectedOwnershipStock}
  />
  </div>
+
+ <StockOwnershipModal
+   stock={selectedOwnershipStock}
+   isOpen={Boolean(selectedOwnershipStock)}
+   onClose={() => setSelectedOwnershipStock(null)}
+ />
  </section>
  );
 }

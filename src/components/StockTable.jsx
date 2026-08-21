@@ -4,6 +4,7 @@ import { useState } from 'react';
 import ScoreBadge from './ScoreBadge';
 import DetailPanel from './DetailPanel';
 import Tooltip from './Tooltip';
+import StockOwnershipModal from './StockOwnershipModal';
 
 function SortIcon({ active, asc }) {
  return (
@@ -19,6 +20,7 @@ function SortIcon({ active, asc }) {
 
 export default function StockTable({ stocks, loading, mode, style }) {
  const [expandedTicker, setExpandedTicker] = useState(null);
+ const [selectedOwnershipStock, setSelectedOwnershipStock] = useState(null);
  const [sortBy, setSortBy] = useState('score');
  const [sortAsc, setSortAsc] = useState(false);
 
@@ -155,7 +157,19 @@ export default function StockTable({ stocks, loading, mode, style }) {
  {stock.ticker.substring(0, 2)}
  </div>
  <div>
- <div className="font-semibold text-slate-900 dark:text-white text-sm">{stock.ticker}</div>
+ <div className="flex items-center gap-2">
+   <span className="font-semibold text-slate-900 dark:text-white text-sm">{stock.ticker}</span>
+   <button
+     onClick={(e) => {
+       e.stopPropagation();
+       setSelectedOwnershipStock(stock);
+     }}
+     className="text-[10px] px-1.5 py-0.5 rounded-md bg-indigo-500/15 hover:bg-indigo-500/30 text-indigo-400 dark:text-indigo-300 border border-indigo-500/30 font-bold transition-all flex items-center gap-1 shadow-sm"
+     title="Lihat Struktur & Riwayat Kepemilikan KSEI"
+   >
+     👥 Kepemilikan
+   </button>
+ </div>
  <div className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[140px]">{stock.name}</div>
  <div className="sm:hidden text-xs text-slate-500 dark:text-slate-400">{stock.sector}</div>
  <div className="sm:hidden text-xs text-slate-900 dark:text-white mt-0.5">
@@ -248,6 +262,12 @@ export default function StockTable({ stocks, loading, mode, style }) {
  );
  })}
  </div>
+
+ <StockOwnershipModal
+   stock={selectedOwnershipStock}
+   isOpen={Boolean(selectedOwnershipStock)}
+   onClose={() => setSelectedOwnershipStock(null)}
+ />
  </div>
  );
 }

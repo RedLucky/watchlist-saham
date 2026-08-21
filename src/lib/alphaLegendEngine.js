@@ -1,7 +1,7 @@
 import { ALPHA_LEGEND_SECTORS } from '../data/alphaLegendSectors';
 
 /**
- * Filter stocks according to 10 Top Investors Formulas
+ * Filter stocks according to 10 Top Investors Formulas & Growth Story Framework
  */
 export function evaluateAlphaLegends(stocks = []) {
   if (!Array.isArray(stocks) || stocks.length === 0) return [];
@@ -14,96 +14,102 @@ export function evaluateAlphaLegends(stocks = []) {
     const per = typeof stock.pe === 'number' ? stock.pe : (typeof stock.per === 'number' ? stock.per : Number(stock.pe || stock.per) || 0);
     const pbv = typeof stock.pbv === 'number' ? stock.pbv : Number(stock.pbv) || 0;
     const roe = typeof stock.roe === 'number' ? stock.roe : Number(stock.roe) || 0;
-    const der = typeof stock.der === 'number' ? stock.der : Number(stock.der) || 0;
-    const currentRatio = typeof stock.currentRatio === 'number' ? stock.currentRatio : Number(stock.currentRatio) || 0;
+    const der = stock.der != null && Number.isFinite(Number(stock.der)) ? Number(stock.der) : null;
+    const currentRatio = stock.currentRatio != null && Number.isFinite(Number(stock.currentRatio)) ? Number(stock.currentRatio) : null;
     const divYield = typeof stock.divYield === 'number' ? stock.divYield : (typeof stock.dividendYield === 'number' ? stock.dividendYield : Number(stock.divYield || stock.dividendYield) || 0);
     const revenueGrowth = typeof stock.revenueGrowth === 'number' ? stock.revenueGrowth : (typeof stock.salesGrowth === 'number' ? stock.salesGrowth : Number(stock.revenueGrowth || stock.salesGrowth) || 0);
     const profitGrowth = typeof stock.profitGrowth === 'number' ? stock.profitGrowth : (typeof stock.epsGrowth === 'number' ? stock.epsGrowth : Number(stock.profitGrowth || stock.epsGrowth) || 0);
-    const fcf = typeof stock.fcf === 'number' ? stock.fcf : (typeof stock.freeCashFlow === 'number' ? stock.freeCashFlow : Number(stock.fcf || stock.freeCashFlow) || 0);
-    const peg = typeof stock.peg === 'number' ? stock.peg : (profitGrowth > 0 ? Number((per / profitGrowth).toFixed(2)) : 0);
+    const fcf = typeof stock.fcf === 'number' ? stock.fcf : (typeof stock.freeCashflow === 'number' ? stock.freeCashflow : (typeof stock.freeCashFlow === 'number' ? stock.freeCashFlow : Number(stock.fcf || stock.freeCashflow) || 0));
+    const peg = profitGrowth > 0 ? Number((per / profitGrowth).toFixed(2)) : (per > 0 && per <= 15 ? 1.0 : 0);
     const piotroskiFScore = typeof stock.piotroskiFScore === 'number' ? stock.piotroskiFScore : Number(stock.piotroskiFScore) || 5;
     const altmanZScore = typeof stock.altmanZScore === 'number' ? stock.altmanZScore : Number(stock.altmanZScore) || 2.5;
+    const isFinancial = stock.sector === 'Financials' || (der === null);
 
     // 1. Warren Buffett Screening
-    // Predictability 10 yr (profit Growth > 5%), Debt <= 5x Earnings (DER < 1.2), ROE >= 15%, ROTC >= 12%, FCF > 0
-    const buffettPass = roe >= 15 && der <= 1.2 && fcf > 0 && profitGrowth >= 8;
+    // Predictability (profit/revenue Growth >= 5%), Debt <= 5x Earnings (DER <= 1.5), ROE >= 14%
+    const buffettPass = roe >= 14 && (isFinancial || (der !== null && der <= 1.5)) && (profitGrowth >= 5 || revenueGrowth >= 5);
     if (buffettPass) passedFormulaKeys.push('buffett');
-    evaluationDetails['buffett'] = { pass: buffettPass, label: 'Warren Buffett', reason: 'ROE ≥ 15%, Utang Terkendali, FCF Positif' };
+    evaluationDetails['buffett'] = { pass: buffettPass, label: 'Warren Buffett', reason: 'ROE ≥ 14%, Utang Terkendali, Pertumbuhan Konsisten' };
 
     // 2. Ben Graham - Enterprising Investors
-    // PER <= 9, CR >= 1.5, Debt/NCAV <= 110% (DER <= 0.8), Earnings Stability > 0, Dividend > 0
-    const grahamEnterprisingPass = per <= 12 && currentRatio >= 1.4 && der <= 0.9 && divYield > 0 && profitGrowth > 0;
+    // PER <= 15, DER <= 1.2, Profit Growth > 0 or Dividend > 0
+    const grahamEnterprisingPass = per > 0 && per <= 15 && (isFinancial || (der !== null && der <= 1.2)) && (divYield > 0 || profitGrowth > 0);
     if (grahamEnterprisingPass) passedFormulaKeys.push('graham_enterprising');
-    evaluationDetails['graham_enterprising'] = { pass: grahamEnterprisingPass, label: 'Ben Graham (Enterprising)', reason: 'PER Murah, Likuiditas Kuat, Dividen Routine' };
+    evaluationDetails['graham_enterprising'] = { pass: grahamEnterprisingPass, label: 'Ben Graham (Enterprising)', reason: 'PER Murah, Likuiditas Kuat, Dividen/Profit Positif' };
 
     // 3. Ben Graham - Defensive Investors
-    // CR >= 2, EPS Growth 10yr >= 30%, PER <= 15, P/E x PBV <= 22.5, DER <= 100%, DPS > 0
-    const grahamNumber = Math.sqrt(22.5 * per * pbv);
-    const grahamDefensivePass = per <= 15 && (per * pbv <= 22.5) && currentRatio >= 1.5 && der <= 1.0 && divYield > 0;
+    // Graham Number (PER x PBV <= 25), DER <= 1.2, Dividend Yield > 0
+    const grahamDefensivePass = per > 0 && pbv > 0 && (per * pbv <= 25) && (isFinancial || (der !== null && der <= 1.2)) && divYield > 0;
     if (grahamDefensivePass) passedFormulaKeys.push('graham_defensive');
-    evaluationDetails['graham_defensive'] = { pass: grahamDefensivePass, label: 'Ben Graham (Defensive)', reason: 'Graham Number (PERxPBV ≤ 22.5), Consist Dividen' };
+    evaluationDetails['graham_defensive'] = { pass: grahamDefensivePass, label: 'Ben Graham (Defensive)', reason: 'Graham Number (PERxPBV ≤ 25), Dividen Teratur' };
 
-    // 4. Peter Lynch - Fast Growers (EPS Growth >= 20%)
-    // PEG <= 1, DER < 80%, PER <= 40, EPS Growth 20-50%
-    const lynchFastPass = peg <= 1.0 && profitGrowth >= 18 && der <= 0.85 && per <= 40;
+    // 4. Peter Lynch - Fast Growers (EPS/Profit/Revenue Growth >= 15%)
+    // PEG <= 1.5, DER <= 1.2, PER <= 35
+    const lynchFastPass = (profitGrowth >= 15 || revenueGrowth >= 15) && per > 0 && per <= 35 && (isFinancial || (der !== null && der <= 1.2));
     if (lynchFastPass) passedFormulaKeys.push('lynch_fast');
-    evaluationDetails['lynch_fast'] = { pass: lynchFastPass, label: 'Peter Lynch (Fast Growers)', reason: 'EPS Growth ≥ 20%, PEG ≤ 1' };
+    evaluationDetails['lynch_fast'] = { pass: lynchFastPass, label: 'Peter Lynch (Fast Growers)', reason: 'Growth ≥ 15%, Valuasi Wajar' };
 
-    // 5. Peter Lynch - Stalwarts (EPS Growth 10% - 20%)
-    // Yield-adj PEG <= 1, DER < 80%, EPS Growth 10-20%
-    const lynchStalwartsPass = profitGrowth >= 10 && profitGrowth <= 22 && peg <= 1.2 && der <= 0.85;
+    // 5. Peter Lynch - Stalwarts (EPS Growth 5% - 20%)
+    // ROE >= 12%, Growth 5-20%, PER <= 25
+    const lynchStalwartsPass = roe >= 12 && (profitGrowth >= 5 || revenueGrowth >= 5) && per > 0 && per <= 25 && (isFinancial || (der !== null && der <= 1.2));
     if (lynchStalwartsPass) passedFormulaKeys.push('lynch_stalwarts');
-    evaluationDetails['lynch_stalwarts'] = { pass: lynchStalwartsPass, label: 'Peter Lynch (Stalwarts)', reason: 'EPS Growth 10-20%, Valuasi Layak' };
+    evaluationDetails['lynch_stalwarts'] = { pass: lynchStalwartsPass, label: 'Peter Lynch (Stalwarts)', reason: 'Blue Chip Stabil, ROE ≥ 12%, Valuasi Layak' };
 
-    // 6. Peter Lynch - Slow Growers (EPS Growth < 10%)
-    // Yield-adj PEG <= 1, Yield >= 3%, DER < 80%
-    const lynchSlowPass = profitGrowth < 10 && divYield >= 3.5 && der <= 0.8;
+    // 6. Peter Lynch - Slow Growers (High Dividend Yield >= 3.0%)
+    const lynchSlowPass = divYield >= 3.0 && (isFinancial || (der !== null && der <= 1.5));
     if (lynchSlowPass) passedFormulaKeys.push('lynch_slow');
-    evaluationDetails['lynch_slow'] = { pass: lynchSlowPass, label: 'Peter Lynch (Slow Growers)', reason: 'Yield Tinggi ≥ 3.5%, Neraca Kuat' };
+    evaluationDetails['lynch_slow'] = { pass: lynchSlowPass, label: 'Peter Lynch (Slow Growers)', reason: 'Yield Dividen Tinggi ≥ 3.0%, Neraca Stabil' };
 
     // 7. Joel Greenblatt - Magic Formula
-    // Higher ROC & Earnings Yield (EY = 1/PER)
-    const earningsYield = per > 0 ? (1 / per) * 100 : 0;
-    const greenblattScore = roe + earningsYield;
-    const greenblattPass = greenblattScore >= 20 && roe >= 14;
+    // Higher ROC/ROE (>= 12%) & Earnings Yield (EY = 1/PER >= 6.5%)
+    const earningsYield = per > 0 ? (100 / per) : 0;
+    const greenblattPass = roe >= 12 && earningsYield >= 6.5;
     if (greenblattPass) passedFormulaKeys.push('greenblatt');
-    evaluationDetails['greenblatt'] = { pass: greenblattPass, label: 'Joel Greenblatt (Magic Formula)', reason: 'Kombinasi ROC High & Earnings Yield High' };
+    evaluationDetails['greenblatt'] = { pass: greenblattPass, label: 'Joel Greenblatt (Magic Formula)', reason: 'Kombinasi ROE Tinggi & Earnings Yield Tinggi' };
 
     // 8. Terry Smith Screening
-    // ROCE >= 14%, OPM > 15%, Debt < 5x Net Income, FCF Yield > 3.3%
-    const terrySmithPass = roe >= 14 && fcf > 0 && der <= 0.9 && profitGrowth > 0;
+    // ROE >= 14%, Profit/Revenue Positif, Debt Terkendali
+    const terrySmithPass = roe >= 14 && (profitGrowth > 0 || revenueGrowth > 0) && (isFinancial || (der !== null && der <= 1.2));
     if (terrySmithPass) passedFormulaKeys.push('terry_smith');
-    evaluationDetails['terry_smith'] = { pass: terrySmithPass, label: 'Terry Smith', reason: 'High ROCE, Cash Flow Stabil' };
+    evaluationDetails['terry_smith'] = { pass: terrySmithPass, label: 'Terry Smith', reason: 'High ROE, Pertumbuhan Bisnis Berkualitas' };
 
     // 9. Ken Fisher Screening
-    // PSR <= 3 / <= 0.8, DER <= 40%, EPS Growth >= 15%
-    const psr = Number(stock.psr) || 1.1;
-    const kenFisherPass = psr <= 2.5 && der <= 0.7 && profitGrowth >= 12;
+    // PBV <= 1.8 / PSR Rendah, Growth >= 8%
+    const kenFisherPass = (pbv > 0 && pbv <= 1.8) && (isFinancial || (der !== null && der <= 1.0)) && (profitGrowth >= 8 || revenueGrowth >= 8);
     if (kenFisherPass) passedFormulaKeys.push('ken_fisher');
-    evaluationDetails['ken_fisher'] = { pass: kenFisherPass, label: 'Ken Fisher (PSR & Superstocks)', reason: 'PSR Rendah, Pertumbuhan EPS Presisi' };
+    evaluationDetails['ken_fisher'] = { pass: kenFisherPass, label: 'Ken Fisher (Superstocks)', reason: 'Valuasi PBV Wajar, Pertumbuhan Penjualan Bagus' };
 
     // 10. Nick Sleep Screening
-    // Repeat Purchase, Scale Economies Shared (SES), High ROIC
-    const nickSleepPass = roe >= 15 && revenueGrowth >= 10 && fcf > 0;
+    // Scale Economies Shared (SES), High ROE >= 12%, Revenue/Profit Growth >= 8%
+    const nickSleepPass = roe >= 12 && (revenueGrowth >= 8 || profitGrowth >= 8);
     if (nickSleepPass) passedFormulaKeys.push('nick_sleep');
-    evaluationDetails['nick_sleep'] = { pass: nickSleepPass, label: 'Nick Sleep (SES)', reason: 'Scale Economies Shared & ROIC Tinggi' };
+    evaluationDetails['nick_sleep'] = { pass: nickSleepPass, label: 'Nick Sleep (SES)', reason: 'Scale Economies Shared & ROE Tinggi' };
 
-    // Evaluate Growth Story Status
-    let growthStoryCategory = 'Tidak Masuk Kategori';
-    let growthStoryBadge = 'slate';
-    if (revenueGrowth >= 12 && profitGrowth >= 12 && roe >= 12) {
-      if (altmanZScore >= 2.6 && der <= 1.0) {
-        if (per <= 18 || peg <= 1.0) {
-          growthStoryCategory = 'Kandidat Kuat ⭐⭐⭐⭐⭐';
-          growthStoryBadge = 'emerald';
-        } else {
-          growthStoryCategory = 'Tunggu Harga Murah';
-          growthStoryBadge = 'amber';
-        }
-      } else {
-        growthStoryCategory = 'Hindari ⚠️ (Risiko Finansial)';
-        growthStoryBadge = 'rose';
-      }
+    // Comprehensive Growth Story & Business Profile Categorization
+    let growthStoryCategory = 'Watchlist / Konsolidasi 🟡';
+    let growthStoryBadge = 'amber';
+
+    if (der != null && der > 2.5 && roe < 0) {
+      growthStoryCategory = 'Hindari ⚠️ (Risiko Finansial)';
+      growthStoryBadge = 'rose';
+    } else if ((revenueGrowth >= 10 || profitGrowth >= 10) && roe >= 12 && (isFinancial || (der !== null && der <= 1.2)) && (per <= 18 || peg <= 1.2)) {
+      growthStoryCategory = 'Kandidat Kuat ⭐⭐⭐⭐⭐';
+      growthStoryBadge = 'emerald';
+    } else if ((revenueGrowth >= 10 || profitGrowth >= 10) && (per > 22 || pbv > 3.5)) {
+      growthStoryCategory = 'Tunggu Harga Murah ⏳';
+      growthStoryBadge = 'amber';
+    } else if (profitGrowth >= 15 || revenueGrowth >= 15) {
+      growthStoryCategory = 'Fast Grower 🚀';
+      growthStoryBadge = 'emerald';
+    } else if (roe >= 12 && (isFinancial || (der !== null && der <= 1.2))) {
+      growthStoryCategory = 'Stalwart (Blue Chip Stabil) 💎';
+      growthStoryBadge = 'indigo';
+    } else if (divYield >= 4.0) {
+      growthStoryCategory = 'Cash Cow (Dividen Tinggi) 💰';
+      growthStoryBadge = 'blue';
+    } else if (pbv > 0 && pbv <= 0.8 && per > 0 && per <= 10 && roe > 0) {
+      growthStoryCategory = 'Deep Value / Asset Play 🏛️';
+      growthStoryBadge = 'cyan';
     }
 
     return {
@@ -111,8 +117,8 @@ export function evaluateAlphaLegends(stocks = []) {
       per,
       pbv,
       roe,
-      der,
-      currentRatio,
+      der: der ?? 0,
+      currentRatio: currentRatio ?? 0,
       divYield,
       revenueGrowth,
       profitGrowth,

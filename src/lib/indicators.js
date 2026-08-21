@@ -17,8 +17,11 @@
  */
 export function calculateMA(prices, period) {
   const clean = sanitizePrices(prices);
-  if (clean.length === 0) return 0;
-  if (clean.length < period) return clean[clean.length - 1];
+  if (clean.length === 0 || period <= 0) return 0;
+  if (clean.length < period) {
+    // Not enough data for full period — compute MA from all available data
+    return clean.reduce((a, b) => a + b, 0) / clean.length;
+  }
   const slice = clean.slice(-period);
   return slice.reduce((a, b) => a + b, 0) / period;
 }
@@ -29,7 +32,7 @@ export function calculateMA(prices, period) {
  */
 export function calculateEMA(prices, period) {
   const clean = sanitizePrices(prices);
-  if (clean.length === 0) return 0;
+  if (clean.length === 0 || period <= 0) return 0;
   if (clean.length < period) return clean[clean.length - 1];
 
   const k = 2 / (period + 1);
@@ -169,7 +172,7 @@ export function calculateMACD(prices, fastPeriod = 12, slowPeriod = 26, signalPe
  */
 export function calculateBollingerBands(prices, period = 20, stdDevMultiplier = 2) {
   const clean = sanitizePrices(prices);
-  if (clean.length < period) {
+  if (clean.length < period || period <= 0) {
     const lastPrice = clean[clean.length - 1] || 0;
     return { upper: lastPrice, middle: lastPrice, lower: lastPrice, bandwidth: 0 };
   }
@@ -194,9 +197,9 @@ export function calculateBollingerBands(prices, period = 20, stdDevMultiplier = 
  */
 export function calculateVolumeMA(volumes, period = 20) {
   const clean = sanitizeVolumes(volumes);
-  if (clean.length === 0) return 0;
+  if (clean.length === 0 || period <= 0) return 0;
   const slice = clean.slice(-Math.min(period, clean.length));
-  return slice.reduce((a, b) => a + b, 0) / slice.length;
+  return slice.length > 0 ? slice.reduce((a, b) => a + b, 0) / slice.length : 0;
 }
 
 // ── Utility helpers ──────────────────────────────────────────────────────

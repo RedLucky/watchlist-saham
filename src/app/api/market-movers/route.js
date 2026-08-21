@@ -26,12 +26,42 @@ function toMoverDto(s) {
   const changePercent = Number(s.changePercent ?? 0);
   const avgVolume3mo = s.avgVolume3mo != null ? Number(s.avgVolume3mo) : null;
   const volumeRatio = s.volumeRatio != null ? Number(s.volumeRatio) : null;
+  let marketCap = null;
+  let kseiLatest = null;
+  let kseiHistory = [];
+  let ownership = null;
+  if (s.fundamentals) {
+    try {
+      const fund = typeof s.fundamentals === 'string' ? JSON.parse(s.fundamentals) : s.fundamentals;
+      marketCap = fund.marketCap;
+    } catch (e) {}
+  }
+  if (s.kseiLatest) {
+    try {
+      kseiLatest = typeof s.kseiLatest === 'string' ? JSON.parse(s.kseiLatest) : s.kseiLatest;
+    } catch (e) {}
+  }
+  if (s.kseiHistory) {
+    try {
+      kseiHistory = typeof s.kseiHistory === 'string' ? JSON.parse(s.kseiHistory) : s.kseiHistory;
+    } catch (e) {}
+  }
+  if (s.ownership) {
+    try {
+      ownership = typeof s.ownership === 'string' ? JSON.parse(s.ownership) : s.ownership;
+    } catch (e) {}
+  }
+
   return {
     ticker: s.ticker,
     name: s.name,
     sector: s.sector ?? '-',
     price,
     changePercent: Number(changePercent.toFixed(4)),
+    kseiLatest,
+    kseiHistory,
+    ownership,
+    sharesOutstanding: s.sharesOutstanding ? Number(s.sharesOutstanding) : null,
     // Volume (lembar saham)
     volume,
     // Turnover = Nilai transaksi hari ini (IDR)
@@ -40,6 +70,7 @@ function toMoverDto(s) {
     prevClose: changePercent !== -100
       ? Number((price / (1 + changePercent / 100)).toFixed(0))
       : price,
+    marketCap,
     // Unusual volume fields
     ...(avgVolume3mo != null && { avgVolume3mo }),
     ...(volumeRatio != null && { volumeRatio: Number(volumeRatio.toFixed(2)) }),
@@ -53,13 +84,14 @@ async function getMoversFromDB() {
   const rawTrending = await prisma.stockData.findMany({
     where: {
       NOT: { ticker: '^JKSE' },
+      isDelisted: false,
       price: { gt: MIN_PRICE },
       volume: { gte: MIN_VOLUME_TODAY }
     },
     orderBy: { turnover: 'desc' },
     take: TOP_N,
     select: {
-      ticker: true, name: true, sector: true, price: true, changePercent: true, volume: true, turnover: true
+      ticker: true, name: true, sector: true, price: true, changePercent: true, volume: true, turnover: true, fundamentals: true
     }
   });
 
@@ -67,6 +99,7 @@ async function getMoversFromDB() {
   const rawGainers = await prisma.stockData.findMany({
     where: {
       NOT: { ticker: '^JKSE' },
+      isDelisted: false,
       price: { gt: MIN_PRICE },
       volume: { gte: MIN_VOLUME_TODAY },
       changePercent: { gt: 0 }
@@ -74,7 +107,7 @@ async function getMoversFromDB() {
     orderBy: { changePercent: 'desc' },
     take: TOP_N,
     select: {
-      ticker: true, name: true, sector: true, price: true, changePercent: true, volume: true, turnover: true
+      ticker: true, name: true, sector: true, price: true, changePercent: true, volume: true, turnover: true, fundamentals: true
     }
   });
 
@@ -82,6 +115,7 @@ async function getMoversFromDB() {
   const rawLosers = await prisma.stockData.findMany({
     where: {
       NOT: { ticker: '^JKSE' },
+      isDelisted: false,
       price: { gt: MIN_PRICE },
       volume: { gte: MIN_VOLUME_TODAY },
       changePercent: { lt: 0 }
@@ -89,7 +123,7 @@ async function getMoversFromDB() {
     orderBy: { changePercent: 'asc' },
     take: TOP_N,
     select: {
-      ticker: true, name: true, sector: true, price: true, changePercent: true, volume: true, turnover: true
+      ticker: true, name: true, sector: true, price: true, changePercent: true, volume: true, turnover: true, fundamentals: true
     }
   });
 
@@ -98,13 +132,14 @@ async function getMoversFromDB() {
   const rawUnusualCandidates = await prisma.stockData.findMany({
     where: {
       NOT: { ticker: '^JKSE' },
+      isDelisted: false,
       price: { gt: MIN_PRICE },
       volume: { gte: MIN_VOLUME_TODAY },
       avgVolume3mo: { gt: 0 }
     },
     select: {
       ticker: true, name: true, sector: true, price: true, changePercent: true,
-      volume: true, turnover: true, avgVolume3mo: true
+      volume: true, turnover: true, avgVolume3mo: true, fundamentals: true
     }
   });
 

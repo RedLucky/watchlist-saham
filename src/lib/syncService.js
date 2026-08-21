@@ -9,18 +9,51 @@
  */
 import { yahooFinance } from './yahooClient';
 import { prisma } from './prisma';
-import { getSectorByTicker, getAllTickersForYahoo } from './sectorUniverse';
+import { getSectorByTicker, getSubSectorByTicker, getAllTickersForYahoo } from './sectorUniverse';
 import { calculateMA, calculateRSI, calculateATR, calculateMACD, calculateBollingerBands } from './indicators';
 
 const DEEP_SYNC_TIMEOUT_MS = parseInt(process.env.DEEP_SYNC_TIMEOUT_MS || '30000', 10);
 const DEEP_SYNC_RETRIES = parseInt(process.env.DEEP_SYNC_RETRIES || '1', 10);
 const RETRY_DELAY_MS = 1500;
 
+export async function ensureAllUniverseTickersSeeded() {
+  try {
+    const universeTickers = getAllTickersForYahoo().map(t => normalizeDbTicker(t));
+    const dbStocks = await prisma.stockData.findMany({ select: { ticker: true } });
+    const dbSet = new Set(dbStocks.map(s => s.ticker));
+
+    const missing = universeTickers.filter(t => t !== '^JKSE' && !dbSet.has(t));
+    if (missing.length > 0) {
+      console.log(`[Seed] Memasukkan ${missing.length} saham baru dari universe ke DB...`);
+      for (const ticker of missing) {
+        const sector = getSectorByTicker(ticker);
+        const subSector = getSubSectorByTicker(ticker);
+        await prisma.stockData.upsert({
+          where: { ticker },
+          update: {},
+          create: {
+            ticker,
+            name: ticker,
+            sector: sector === 'INDEX' ? null : sector,
+            subSector,
+            price: 0,
+            lastPriceSync: new Date(0),
+            lastDeepSync: new Date(0)
+          }
+        });
+      }
+    }
+  } catch (e) {
+    console.error('[Seed Error]', e.message);
+  }
+}
+
 /**
  * Gets the X tickers that haven't been deep-synced for the longest time.
  */
 export async function getOldestDeepSyncTickers(limit = 5) {
   const dbStocks = await prisma.stockData.findMany({
+    where: { isDelisted: false },
     orderBy: { lastDeepSync: 'asc' },
     take: limit,
     select: { ticker: true }
@@ -35,6 +68,7 @@ export async function getOldestDeepSyncTickers(limit = 5) {
  */
 export async function getTargetTickers() {
   const dbStocks = await prisma.stockData.findMany({
+    where: { isDelisted: false },
     select: { ticker: true }
   });
 
@@ -53,9 +87,12 @@ export async function getTargetTickers() {
 export async function fastSyncPrices() {
   console.log('[FastSync] Memulai sinkronisasi harga & volume (Round-Robin Queue)...');
   
+  // Pastikan semua ticker di sectorUniverse sudah terdaftar di DB
+  await ensureAllUniverseTickersSeeded();
+
   // 1. Ambil maksimal 50 ticker yang paling lama tidak di-update (Round-Robin).
   const dbStocks = await prisma.stockData.findMany({
-    where: { NOT: { ticker: '^JKSE' } },
+    where: { NOT: { ticker: '^JKSE' }, isDelisted: false },
     orderBy: { lastPriceSync: 'asc' },
     take: 50,
     select: { ticker: true }
@@ -162,6 +199,17 @@ export async function fastSyncPrices() {
  */
 export async function deepSyncStock(ticker) {
   const fullTicker = toYahooTicker(ticker);
+  const tickerClean = normalizeDbTicker(fullTicker);
+
+  const stockRec = await prisma.stockData.findUnique({
+    where: { ticker: tickerClean },
+    select: { isDelisted: true }
+  });
+
+  if (stockRec?.isDelisted) {
+    console.log(`[DeepSync] ⊘ Skipping delisted stock: ${tickerClean}`);
+    return { success: false, ticker: fullTicker, skipped: true, error: 'Delisted stock' };
+  }
 
   for (let attempt = 1; attempt <= DEEP_SYNC_RETRIES + 1; attempt++) {
     try {
@@ -188,15 +236,40 @@ export async function deepSyncStock(ticker) {
 }
 
 async function deepSyncStockOnce(fullTicker) {
+  const tickerClean = normalizeDbTicker(fullTicker);
   const period2 = new Date();
   const period1 = new Date();
-  period1.setFullYear(period1.getFullYear() - 1); // 1 year for MA200
+  period1.setFullYear(period1.getFullYear() - 5); // 5 years of historical data for long-term pension analysis
+  
+  // OPTIMIZATION: Check existing 10-year dividend history in DB
+  const existingDbStock = await prisma.stockData.findUnique({ 
+    where: { ticker: tickerClean }, 
+    select: { fundamentals: true }
+  });
+  
+  let existingDivHistory = [];
+  if (existingDbStock?.fundamentals) {
+     try {
+       const fund = JSON.parse(existingDbStock.fundamentals);
+       if (Array.isArray(fund.yahooDividendHistory) && fund.yahooDividendHistory.length > 0) {
+          existingDivHistory = fund.yahooDividendHistory;
+       }
+     } catch (e) {}
+  }
+
+  const periodDiv = new Date();
+  if (existingDivHistory.length > 0) {
+      periodDiv.setFullYear(periodDiv.getFullYear() - 1); // Only fetch delta (last 1 year) if we already have 10 years cached
+  } else {
+      periodDiv.setFullYear(periodDiv.getFullYear() - 10); // Fetch full 10 years
+  }
 
   let quote;
   let historical;
   let summary = {};
+  let divHistoryRaw = [];
   try {
-    [quote, historical, summary] = await Promise.all([
+    [quote, historical, summary, divHistoryRaw] = await Promise.all([
       withTimeout(yahooFinance.quote(fullTicker), 15000, `Quote timeout for ${fullTicker}`),
       withTimeout(
         yahooFinance.historical(fullTicker, {
@@ -209,11 +282,20 @@ async function deepSyncStockOnce(fullTicker) {
       ),
       withTimeout(
         yahooFinance.quoteSummary(fullTicker, {
-          modules: ['financialData', 'incomeStatementHistory', 'defaultKeyStatistics', 'summaryDetail']
+          modules: ['price', 'financialData', 'earnings', 'defaultKeyStatistics', 'summaryDetail']
         }),
         20000,
         `QuoteSummary timeout for ${fullTicker}`
-      ).catch(() => ({}))
+      ).catch(() => ({})),
+      withTimeout(
+        yahooFinance.historical(fullTicker, {
+          period1: periodDiv.toISOString().split('T')[0],
+          period2: period2.toISOString().split('T')[0],
+          events: 'dividends'
+        }),
+        20000,
+        `Dividend history timeout for ${fullTicker}`
+      ).catch(() => ([]))
     ]);
   } catch (apiErr) {
     throw new Error(`API call failed for ${fullTicker}: ${apiErr.message || apiErr}`);
@@ -245,11 +327,9 @@ async function deepSyncStockOnce(fullTicker) {
 
   // ── Extract Fundamentals ──────────────────────────────────────────────
 
-  const incomeHistory = summary?.incomeStatementHistory?.incomeStatementHistory || [];
-  const netProfit = incomeHistory.length >= 2
-    ? incomeHistory.slice(0, Math.min(3, incomeHistory.length))
-        .map(i => Number(i?.netIncome) || 0)
-        .reverse()
+  const yearlyFinancials = summary?.earnings?.financialsChart?.yearly || [];
+  const netProfit = yearlyFinancials.length >= 2
+    ? yearlyFinancials.slice(-3).map(y => Number(y?.earnings) || 0)
     : null; // null = data not available, let scoring handle it
 
   const roeRaw = summary?.financialData?.returnOnEquity ?? quote?.returnOnEquity;
@@ -258,17 +338,77 @@ async function deepSyncStockOnce(fullTicker) {
   const payoutRaw = summary?.summaryDetail?.payoutRatio;
   const revenueGrowthRaw = summary?.financialData?.revenueGrowth;
   const cashRaw = summary?.financialData?.totalCash;
+  const currentRatioRaw = summary?.financialData?.currentRatio;
+  const freeCashflowRaw = summary?.financialData?.freeCashflow;
+
+  // Merge newly fetched dividends with cached 10-year dividends (Append + Idempotent Dedup)
+  const mergedDivHistory = [...existingDivHistory];
+  const getDateStr = (d) => {
+      try { return new Date(d.date).toISOString().split('T')[0]; } 
+      catch(e) { return null; }
+  };
+
+  if (Array.isArray(divHistoryRaw)) {
+      for (const newDiv of divHistoryRaw) {
+          const newDateStr = getDateStr(newDiv);
+          if (newDateStr && !mergedDivHistory.some(d => getDateStr(d) === newDateStr)) {
+              mergedDivHistory.push(newDiv);
+          }
+      }
+  }
+  // Sort ascending by date
+  mergedDivHistory.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  // Calculate Dividend Streak based on the complete merged history (18-month corporate action window)
+  let streakYears = 0;
+  if (mergedDivHistory.length > 0) {
+    const sortedDesc = [...mergedDivHistory].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const now = new Date();
+    const latestDate = new Date(sortedDesc[0].date);
+    const monthsSinceLatest = (now.getTime() - latestDate.getTime()) / (1000 * 3600 * 24 * 30.44);
+    
+    if (monthsSinceLatest <= 18) {
+      const uniqueYears = new Set();
+      uniqueYears.add(latestDate.getFullYear());
+      for (let i = 0; i < sortedDesc.length - 1; i++) {
+        const current = new Date(sortedDesc[i].date);
+        const prev = new Date(sortedDesc[i + 1].date);
+        const monthsGap = (current.getTime() - prev.getTime()) / (1000 * 3600 * 24 * 30.44);
+        if (monthsGap <= 18) {
+          uniqueYears.add(prev.getFullYear());
+        } else {
+          break;
+        }
+      }
+      streakYears = uniqueYears.size;
+    }
+  }
+
+  const currentPrice = safeNumber(quote?.regularMarketPrice, prices[prices.length - 1] || 0);
+  const sharesOutstanding = Number(summary?.defaultKeyStatistics?.sharesOutstanding ?? quote?.sharesOutstanding ?? 0);
+  const calculatedMarketCap = (currentPrice > 0 && sharesOutstanding > 0) ? (currentPrice * sharesOutstanding) : null;
+  const resolvedMarketCap = safeNumber(summary?.summaryDetail?.marketCap ?? summary?.price?.marketCap ?? quote?.marketCap, calculatedMarketCap);
 
   const fundamentals = {
     roe: normalizePercent(roeRaw, null),
     der: normalizeRatio(derRaw, null),
     netProfit,
     per: safeNumber(summary?.summaryDetail?.trailingPE ?? quote?.trailingPE, null),
-    pbv: safeNumber(summary?.defaultKeyStatistics?.priceToBook ?? quote?.priceToBook, null),
+    pbv: (() => {
+      const raw = safeNumber(summary?.defaultKeyStatistics?.priceToBook ?? quote?.priceToBook, null);
+      if (raw !== null && raw > 500) return Number((raw / 16200).toFixed(2));
+      return raw !== null ? Number(raw.toFixed(2)) : null;
+    })(),
     dividendYield: normalizePercent(dividendYieldRaw, 0),
     payoutRatio: normalizePercent(payoutRaw, 0),
+    dividendStreakYears: streakYears,
+    yahooDividendHistory: mergedDivHistory,
     revenueGrowth: normalizePercent(revenueGrowthRaw, null),
     cash: Number.isFinite(cashRaw) ? Number(cashRaw) : 0,
+    currentRatio: safeNumber(currentRatioRaw, null),
+    freeCashflow: safeNumber(freeCashflowRaw, null),
+    sharesOutstanding: sharesOutstanding > 0 ? sharesOutstanding : null,
+    marketCap: resolvedMarketCap,
   };
 
   // ── Calculate Technicals ──────────────────────────────────────────────
@@ -288,7 +428,7 @@ async function deepSyncStockOnce(fullTicker) {
     rsi7: calculateRSI(prices, 7),
     rsi14: calculateRSI(prices, 14),
     resistance: safeNumber(quote?.fiftyTwoWeekHigh, Math.max(...prices) * 1.02),
-    support: safeNumber(quote?.fiftyTwoWeekLow, Math.min(...prices.filter(p => p > 0)) * 0.98),
+    support: safeNumber(quote?.fiftyTwoWeekLow, (() => { const pos = prices.filter(p => p > 0); return pos.length > 0 ? Math.min(...pos) * 0.98 : prices[prices.length - 1] || 0; })()),
     atr14: calculateATR(cleanRows, 14),
     macd,
     bollingerBands: bb,
@@ -296,9 +436,8 @@ async function deepSyncStockOnce(fullTicker) {
 
   // ── Persist to Database ───────────────────────────────────────────────
 
-  const tickerClean = normalizeDbTicker(fullTicker);
   const sector = getSectorByTicker(tickerClean);
-  const currentPrice = safeNumber(quote?.regularMarketPrice, prices[prices.length - 1] || 0);
+  const subSector = getSubSectorByTicker(tickerClean);
   const computedPercent = getChangePercent(quote);
   const vol = BigInt(Math.round(Number(quote?.regularMarketVolume || 0)));
   const turnover = BigInt(Math.round(currentPrice * Number(quote?.regularMarketVolume || 0)));
@@ -310,6 +449,7 @@ async function deepSyncStockOnce(fullTicker) {
     update: {
       name: quote?.shortName || tickerClean,
       sector: sector === 'INDEX' ? null : sector,
+      subSector: subSector,
       price: currentPrice,
       changePercent: computedPercent,
       volume: quote?.regularMarketVolume != null ? vol : undefined,
@@ -326,6 +466,7 @@ async function deepSyncStockOnce(fullTicker) {
       ticker: tickerClean,
       name: quote?.shortName || tickerClean,
       sector: sector === 'INDEX' ? null : sector,
+      subSector: subSector,
       price: currentPrice,
       changePercent: computedPercent,
       volume: vol,
@@ -410,8 +551,12 @@ function normalizePercent(value, fallback) {
 function normalizeRatio(value, fallback) {
   if (value == null || !Number.isFinite(Number(value))) return fallback;
   const num = Number(value);
-  // Yahoo Finance selalu mengembalikan Debt-to-Equity (DER) dalam format persentase (e.g. 80 untuk 0.8x, 350 untuk 3.5x).
-  // Kita selalu membaginya dengan 100 agar tersimpan sebagai rasio murni.
+  // Yahoo Finance mengembalikan Debt-to-Equity dalam format tidak konsisten:
+  // Kadang sebagai persentase (e.g. 85 = 0.85x, 350 = 3.5x),
+  // kadang sudah dalam format rasio (e.g. 0.85, 3.5).
+  // Guard: jika nilai < 10, asumsikan sudah dalam format rasio (DER nyata jarang > 10x);
+  // jika >= 10, bagi 100 untuk konversi dari persentase ke rasio.
+  if (Math.abs(num) < 10) return num;
   return num / 100;
 }
 

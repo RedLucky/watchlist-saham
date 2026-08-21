@@ -71,6 +71,7 @@ model StockData {
   ticker        String   @unique
   name          String
   sector        String?
+  subSector     String?
   price         Float
   changePercent Float?
   volume        BigInt?
@@ -82,11 +83,21 @@ model StockData {
   lastDeepSync  DateTime @default(now())
   frequency     Int?     @default(0)
   turnover      BigInt?  @default(0)
+  shareholders    String?  @db.Text
+  ownership       String?  @db.Text
+  insiderTrades   String?  @db.Text
+  dividendHistory String?  @db.Text
+  sharesOutstanding BigInt?
+  kseiLatest      String?  @db.Text
+  kseiHistory     String?  @db.Text
+  isDelisted      Boolean  @default(false)
 
   @@index([ticker])
   @@index([sector])
+  @@index([subSector])
   @@index([turnover])
   @@index([frequency])
+  @@index([isDelisted])
 }
 
 model PensionRecord {

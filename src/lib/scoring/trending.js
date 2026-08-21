@@ -8,13 +8,17 @@
 import { calculateVolumeMA } from '../indicators';
 
 export function calculateTrendingScore(stock) {
-  const { volumes } = stock.technicals;
-  const { transactionAvg, freqRank } = stock;
+  const { volumes } = stock?.technicals || {};
+  const { transactionAvg, freqRank, turnover, volume, price } = stock || {};
   let score = 0;
   const details = [];
   const safeVolumes = Array.isArray(volumes) && volumes.length > 0 ? volumes : [1];
   const safeRank = Number.isFinite(freqRank) ? freqRank : 999;
-  const safeTxn = Number.isFinite(transactionAvg) ? transactionAvg : 0;
+  const safeTxn = Number.isFinite(turnover) && turnover > 0 
+    ? turnover 
+    : (Number.isFinite(transactionAvg) && transactionAvg > 0 
+      ? transactionAvg 
+      : (Number(price || 0) * Number(volume || 0)));
 
   // 1. Volume vs 20-day Average (40%)
   // Use 20-day MA for more relevant comparison

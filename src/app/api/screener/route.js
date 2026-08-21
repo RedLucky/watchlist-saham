@@ -10,29 +10,55 @@ import { calculateSmartMoneyScore } from '@/lib/scoring/smartMoney';
 import { calculateTrendingScore } from '@/lib/scoring/trending';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
+
+function applyGlobalPenalties(s, baseScore) {
+  let score = baseScore;
+  return Math.max(0, score);
+}
 
 function getPassiveResults(validStocks) {
+  const compounders = ['BBCA', 'BBRI', 'BMRI', 'BBNI', 'TLKM', 'ASII', 'ICBP', 'AMRT', 'INDF', 'KLBF'];
+
   const passiveCandidates = validStocks.map(s => {
     const divScore = calculateDividendScore(s);
     const fundScore = calculateFundamentalScore(s);
-    const compositeScore = Math.round(((divScore.score || 0) * 0.6) + ((fundScore.score || 0) * 0.4));
+    const streak = divScore.metrics?.streakYears || s.fundamentals?.dividendStreakYears || 0;
+
+    // Passive Income Engine: High Dividend Yield Quality (70%) + Fundamental Stability (30%) + Moat/Veteran Bonus
+    let compositeScore = Math.round(((divScore.score || 0) * 0.70) + ((fundScore.score || 0) * 0.30));
+    if (compounders.includes(s.ticker)) compositeScore += 6;
+    if (streak >= 10) compositeScore += 4;
+    compositeScore = applyGlobalPenalties(s, Math.min(100, compositeScore));
 
     return {
       ticker: s.ticker,
       name: s.name,
       sector: s.sector,
       price: s.price,
+      changePercent: s.changePercent ?? 0,
       isSyariah: s.isSyariah ?? isSyariahStock(s.ticker, s.sector),
+      isDividendTrap: s.isDividendTrap,
+      kseiLatest: s.kseiLatest || null,
+      kseiHistory: s.kseiHistory || [],
+      ownership: s.ownership || null,
+      sharesOutstanding: s.sharesOutstanding || null,
+      fundamentals: s.fundamentals || null,
+      insiderTrades: s.insiderTrades || [],
       metrics: { ...(divScore.metrics || {}), ...(fundScore.metrics || {}) },
       divScore: divScore.score || 0,
       fundScore: fundScore.score || 0,
       score: compositeScore,
       details: [...(divScore.details || []), ...(fundScore.details || [])],
+      shareholders: s.shareholders || [],
+      smartMoney: s.smartMoney || null,
     };
   });
 
+  // Strict Passive Income Mandate: Must have unbroken 5+ year dividend streak & meaningful yield (>= 4%)
   let filteredPassive = passiveCandidates.filter(
-    s => (s.metrics.dividendYield ?? 0) > 0 && s.divScore >= 45 && s.fundScore >= 45
+    s => (s.metrics.streakYears ?? 0) >= 5 && (s.metrics.dividendYield ?? 0) >= 4.0 && s.divScore >= 60
   );
 
   if (filteredPassive.length === 0) {
@@ -40,7 +66,10 @@ function getPassiveResults(validStocks) {
   }
 
   return filteredPassive
-    .sort((a, b) => b.score - a.score)
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return (b.metrics.dividendYield || 0) - (a.metrics.dividendYield || 0);
+    })
     .slice(0, 10);
 }
 
@@ -53,10 +82,20 @@ function getDividendResults(validStocks) {
         name: s.name,
         sector: s.sector,
         price: s.price,
+        changePercent: s.changePercent ?? 0,
         isSyariah: s.isSyariah ?? isSyariahStock(s.ticker, s.sector),
+        isDividendTrap: s.isDividendTrap,
+        kseiLatest: s.kseiLatest || null,
+        kseiHistory: s.kseiHistory || [],
+        ownership: s.ownership || null,
+        sharesOutstanding: s.sharesOutstanding || null,
+        fundamentals: s.fundamentals || null,
+        insiderTrades: s.insiderTrades || [],
         metrics: divScore.metrics || {},
-        score: divScore.score || 0,
+        score: applyGlobalPenalties(s, divScore.score || 0),
         details: divScore.details || [],
+        shareholders: s.shareholders || [],
+        smartMoney: s.smartMoney || null,
       };
     })
     .filter(s => (s.metrics.dividendYield ?? 0) > 0)
@@ -72,10 +111,20 @@ function getCheapResults(validStocks) {
       name: s.name,
       sector: s.sector,
       price: s.price,
+      changePercent: s.changePercent ?? 0,
       isSyariah: s.isSyariah ?? isSyariahStock(s.ticker, s.sector),
+      isDividendTrap: s.isDividendTrap,
+      kseiLatest: s.kseiLatest || null,
+      kseiHistory: s.kseiHistory || [],
+      ownership: s.ownership || null,
+      sharesOutstanding: s.sharesOutstanding || null,
+      fundamentals: s.fundamentals || null,
+      insiderTrades: s.insiderTrades || [],
       metrics: valScore.metrics || {},
-      score: valScore.score || 0,
+      score: applyGlobalPenalties(s, valScore.score || 0),
       details: valScore.details || [],
+      shareholders: s.shareholders || [],
+      smartMoney: s.smartMoney || null,
     };
   });
 
@@ -103,12 +152,22 @@ function getQualityResults(validStocks) {
       name: s.name,
       sector: s.sector,
       price: s.price,
+      changePercent: s.changePercent ?? 0,
       isSyariah: s.isSyariah ?? isSyariahStock(s.ticker, s.sector),
+      isDividendTrap: s.isDividendTrap,
+      kseiLatest: s.kseiLatest || null,
+      kseiHistory: s.kseiHistory || [],
+      ownership: s.ownership || null,
+      sharesOutstanding: s.sharesOutstanding || null,
+      fundamentals: s.fundamentals || null,
+      insiderTrades: s.insiderTrades || [],
       metrics: { ...(valScore.metrics || {}), ...(fundScore.metrics || {}) },
       valScore: valScore.score || 0,
       fundScore: fundScore.score || 0,
       score: compositeScore,
       details: [...(valScore.details || []), ...(fundScore.details || [])],
+      shareholders: s.shareholders || [],
+      smartMoney: s.smartMoney || null,
     };
   });
 
@@ -143,6 +202,13 @@ function getPotentialResults(validStocks, swingStyle) {
       sector: s.sector,
       price: s.price,
       isSyariah: s.isSyariah ?? isSyariahStock(s.ticker, s.sector),
+      isDividendTrap: s.isDividendTrap,
+      kseiLatest: s.kseiLatest || null,
+      kseiHistory: s.kseiHistory || [],
+      ownership: s.ownership || null,
+      sharesOutstanding: s.sharesOutstanding || null,
+      fundamentals: s.fundamentals || null,
+      insiderTrades: s.insiderTrades || [],
       changePercent,
       volume,
       techScore: techScore.score || 0,
@@ -151,6 +217,8 @@ function getPotentialResults(validStocks, swingStyle) {
       metrics: { techScore: techScore.score || 0, smScore: smScore.score || 0, trendScore: trendScore.score || 0 },
       score: compositeScore,
       details: [...(techScore.details || []), ...(smScore.details || []), ...(trendScore.details || [])],
+      shareholders: s.shareholders || [],
+      smartMoney: s.smartMoney || null,
     };
   });
 
@@ -221,14 +289,23 @@ export async function GET(request) {
             ((valScore.score || 0) * 0.35) + 
             ((fundScore.score || 0) * 0.35)
           );
-          const finalPickScore = Math.min(100, baseScore + (matchCount * 5));
+          let finalPickScore = Math.min(100, baseScore + (matchCount * 5));
+          finalPickScore = applyGlobalPenalties(s, finalPickScore);
 
           stockMap[s.ticker] = {
             ticker: s.ticker,
             name: s.name,
             sector: s.sector,
             price: s.price,
+            changePercent: s.changePercent ?? 0,
             isSyariah: s.isSyariah ?? isSyariahStock(s.ticker, s.sector),
+            isDividendTrap: s.isDividendTrap,
+            kseiLatest: s.kseiLatest || null,
+            kseiHistory: s.kseiHistory || [],
+            ownership: s.ownership || null,
+            sharesOutstanding: s.sharesOutstanding || null,
+            fundamentals: s.fundamentals || null,
+            insiderTrades: s.insiderTrades || [],
             matchCount,
             matchedScreeners,
             metrics: {
@@ -249,6 +326,8 @@ export async function GET(request) {
               ...(valScore.details || []),
               ...(fundScore.details || []),
             ],
+            shareholders: s.shareholders || [],
+            smartMoney: s.smartMoney || null,
           };
         });
 
@@ -297,12 +376,21 @@ export async function GET(request) {
         return NextResponse.json({ error: 'Invalid type parameter' }, { status: 400 });
     }
 
-    return NextResponse.json({
-      type,
-      results,
-      count: results.length,
-      lastUpdated: new Date().toISOString(),
-    });
+    return NextResponse.json(
+      {
+        type,
+        results,
+        count: results.length,
+        lastUpdated: new Date().toISOString(),
+      },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
+    );
   } catch (err) {
     console.error('[screener API error]:', err);
     return NextResponse.json(

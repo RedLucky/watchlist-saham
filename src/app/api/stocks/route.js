@@ -12,12 +12,14 @@ import { prisma } from '@/lib/prisma';
 import { initBackgroundSync } from '@/lib/worker';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 // Start background worker
 initBackgroundSync();
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
+  const requestedTicker = searchParams.get('ticker');
   let modeName = searchParams.get('mode') || 'auto';
   let styleName = searchParams.get('style') || 'swing';
 
@@ -28,6 +30,26 @@ export async function GET(request) {
     provider.getSectorPerformance(),
     provider.getStocks()
   ]);
+
+  if (requestedTicker) {
+    const cleanTicker = requestedTicker.toUpperCase().trim();
+    const s = providerStocks.find(x => x.ticker === cleanTicker);
+    if (s) {
+      return NextResponse.json({
+        ticker: s.ticker,
+        name: s.name,
+        sector: s.sector,
+        price: s.price,
+        changePercent: s.changePercent ?? 0,
+        isSyariah: s.isSyariah || false,
+        sharesOutstanding: s.sharesOutstanding || null,
+        kseiLatest: s.kseiLatest || null,
+        kseiHistory: s.kseiHistory || [],
+        ownership: s.ownership || null,
+        smartMoney: s.smartMoney || null,
+      });
+    }
+  }
 
   // 1. Market Mode Context
   let detection = 'user';
@@ -89,6 +111,13 @@ export async function GET(request) {
       name: s.name,
       sector: s.sector,
       price: s.price,
+      isSyariah: s.rawData?.isSyariah || false,
+      isDividendTrap: s.rawData?.isDividendTrap || false,
+      changePercent: s.rawData?.changePercent || 0,
+      kseiLatest: s.rawData?.kseiLatest || null,
+      kseiHistory: s.rawData?.kseiHistory || [],
+      ownership: s.rawData?.ownership || null,
+      sharesOutstanding: s.rawData?.sharesOutstanding || null,
       score: s.score,
       subScores: subScoresClean,
       entry: tradeSetup.entry,
@@ -98,6 +127,8 @@ export async function GET(request) {
       riskLevel: tradeSetup.riskLevel,
       setup: tradeSetup.setup,
       sectorBoost: s.sectorBoost,
+      shareholders: s.rawData?.shareholders || [],
+      smartMoney: s.rawData?.smartMoney || null,
       explanations,
     };
   });
@@ -136,6 +167,7 @@ export async function GET(request) {
   });
 
   return NextResponse.json({
+    timestamp: Date.now(),
     mode: {
       name: modeConfig.name,
       label: modeConfig.label,

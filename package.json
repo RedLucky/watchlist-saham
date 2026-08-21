@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3010",
+    "dev": "next dev -p 3050",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
@@ -17,7 +17,9 @@
     "mysql2": "^3.22.2",
     "next": "^16.3.1",
     "next-themes": "^0.4.6",
+    "node-cron": "^4.6.0",
     "prisma": "^6.12.0",
+    "puppeteer": "^25.8.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "yahoo-finance2": "^3.14.0"

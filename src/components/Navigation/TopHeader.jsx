@@ -20,26 +20,35 @@ export default function TopHeader({ user, handleLogout }) {
             </div>
           </div>
 
-          <div className="hidden lg:block flex-1"></div>
+          <div className="flex items-center gap-2 ml-auto">
+            <a
+              href="/admin/ksei"
+              className="text-xs font-bold px-3 py-1.5 rounded-xl bg-indigo-600/15 hover:bg-indigo-600/25 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 transition-all flex items-center gap-1.5 shadow-sm"
+              title="Kelola & Upload Data Kepemilikan KSEI Bulanan"
+            >
+              <span>🏛️</span>
+              <span className="hidden sm:inline">Upload KSEI</span>
+            </a>
 
-          {/* Right Side: ONLY User Info & Logout Button */}
-          {user && (
-            <div className="flex items-center gap-2 sm:gap-3 bg-slate-100 dark:bg-white/5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 flex-shrink-0 ml-auto">
-              <div className="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-white text-xs flex-shrink-0">
-                {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+            {/* Right Side: User Info & Logout Button */}
+            {user && (
+              <div className="flex items-center gap-2 sm:gap-3 bg-slate-100 dark:bg-white/5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 flex-shrink-0">
+                <div className="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-white text-xs flex-shrink-0">
+                  {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                </div>
+                <span className="text-xs font-bold text-slate-800 dark:text-white truncate max-w-[120px] sm:max-w-none">
+                  {user?.name}
+                </span>
+                <button
+                  onClick={handleLogout}
+                  className="text-xs text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 font-bold px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 transition-colors flex-shrink-0"
+                  title="Keluar dari Akun"
+                >
+                  Logout
+                </button>
               </div>
-              <span className="text-xs font-bold text-slate-800 dark:text-white truncate max-w-[120px] sm:max-w-none">
-                {user?.name}
-              </span>
-              <button
-                onClick={handleLogout}
-                className="text-xs text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 font-bold px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 transition-colors flex-shrink-0"
-                title="Keluar dari Akun"
-              >
-                Logout
-              </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </header>

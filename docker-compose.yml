@@ -18,6 +18,18 @@ services:
         condition: service_healthy
     command: sh -c "npx prisma db push --skip-generate && node server.js"
 
+  scraper:
+    build:
+      context: .
+      dockerfile: Dockerfile.scraper
+    container_name: watchlist_scraper
+    restart: always
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/watchlist?schema=public
+    depends_on:
+      db:
+        condition: service_healthy
+
   db:
     image: postgres:15-alpine
     container_name: watchlist_db

@@ -16,6 +16,7 @@ import MarketMovers from './MarketMovers';
 import StockScreener from './StockScreener';
 import AlphaLegendScreeners from './AlphaLegend/AlphaLegendScreeners';
 import PensionCalculator from './PensionCalculator';
+import KseiUploadPanel from './KseiUploadPanel';
 import AuthModal from './AuthModal';
 import { ThemeToggle } from './ThemeToggle';
 
@@ -73,13 +74,12 @@ export default function Dashboard() {
  setLoading(true);
  setError(null);
 
- let url = `/api/stocks?mode=${mode}&style=${style}`;
- if (mode === 'custom' && customWeights) {
- url += `&cw=${encodeURIComponent(JSON.stringify(customWeights))}`;
- }
+ const customWeightsQuery = mode === 'custom' && customWeights
+        ? `&cw=${encodeURIComponent(JSON.stringify(customWeights))}`
+        : '';
 
  const [stocksRes, sectorsRes, marketRes, moversRes] = await Promise.all([
- fetch(url),
+ fetch(`/api/stocks?mode=${mode}&style=${style}${customWeightsQuery}&_t=${Date.now()}`),
  fetch('/api/sectors'),
  fetch('/api/market'),
  fetch('/api/market-movers'),
@@ -127,7 +127,7 @@ export default function Dashboard() {
  const interval = setInterval(() => {
  console.log('Auto-refreshing dashboard data...');
  void fetchData();
- }, 60000);
+ }, 30000);
 
  return () => {
  clearTimeout(firstFetchTimer);
@@ -280,6 +280,13 @@ export default function Dashboard() {
  {activeTab === 'pension' && (
  <div className="animate-in fade-in duration-300">
  <PensionCalculator />
+ </div>
+ )}
+
+ {/* TAB 7: UPLOAD DATA KSEI */}
+ {activeTab === 'ksei-upload' && (
+ <div className="animate-in fade-in duration-300">
+ <KseiUploadPanel />
  </div>
  )}
  </main>

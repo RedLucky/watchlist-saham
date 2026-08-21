@@ -1,0 +1,29 @@
+FROM node:20-alpine
+
+# Install Chromium and dependencies for Alpine
+RUN apk add --no-cache \
+      chromium \
+      nss \
+      freetype \
+      harfbuzz \
+      ca-certificates \
+      ttf-freefont \
+      nodejs \
+      npm
+
+# Tell Puppeteer to skip downloading Chrome and use the native Alpine one
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+# Generate Prisma Client
+RUN npx prisma generate
+
+# Start the node-cron scheduler
+CMD ["node", "src/scripts/scraper-cron.js"]

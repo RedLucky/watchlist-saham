@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { normalizeTicker, getSectorByTicker, isSyariahStock } from '@/lib/sectorUniverse';
+import { normalizeTicker, getSectorByTicker, getSubSectorByTicker, isSyariahStock } from '@/lib/sectorUniverse';
 
 export async function POST(request) {
   try {
@@ -13,6 +13,7 @@ export async function POST(request) {
 
     const cleanTicker = normalizeTicker(ticker);
     const sector = getSectorByTicker(cleanTicker);
+    const subSector = getSubSectorByTicker(cleanTicker);
     const isSyariah = isSyariahStock(cleanTicker);
 
     // Upsert to database so it becomes tracked
@@ -23,6 +24,7 @@ export async function POST(request) {
         ticker: cleanTicker,
         name: cleanTicker, // Will be updated by Yahoo later
         sector: sector,
+        subSector: subSector,
         isSyariah: isSyariah,
         lastPriceSync: new Date(0), // Set to epoch 0 so it's prioritized by fastSync
         lastDeepSync: new Date(0)   // Set to epoch 0 so it's prioritized by deepSync

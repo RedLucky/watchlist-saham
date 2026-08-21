@@ -2,6 +2,17 @@ import { NextResponse } from 'next/server';
 import { getActiveProvider } from '@/lib/dataService';
 import { evaluateAlphaLegends } from '@/lib/alphaLegendEngine';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+// Helper: pick the first finite numeric value from candidates, or fallback
+function safeNum(...args) {
+  for (const v of args) {
+    if (typeof v === 'number' && Number.isFinite(v)) return v;
+  }
+  return args[args.length - 1]; // last arg is the fallback
+}
+
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -46,6 +57,7 @@ export async function GET(request) {
         symbol: s.ticker || s.symbol,
         name: s.name || s.ticker,
         sector: s.sector || '',
+        subSector: s.subSector || null,
         industry: s.industry || s.sector || '',
         price: s.price || 0,
         pe: perVal,
@@ -53,15 +65,17 @@ export async function GET(request) {
         pbv: pbvVal,
         roe: roeVal,
         der: derVal,
-        currentRatio: typeof fund.currentRatio === 'number' ? fund.currentRatio : (typeof s.currentRatio === 'number' ? s.currentRatio : 1.5),
+        currentRatio: safeNum(fund.currentRatio, s.currentRatio, null),
         divYield: divYieldVal,
         revenueGrowth: revGrowthVal,
         profitGrowth: profitGrowthVal,
-        fcf: typeof fund.fcf === 'number' ? fund.fcf : (typeof s.fcf === 'number' ? s.fcf : 100),
+        fcf: safeNum(fund.freeCashflow, s.fcf, 0),
         peg: profitGrowthVal > 0 ? Number((perVal / profitGrowthVal).toFixed(2)) : 0,
-        piotroskiFScore: typeof fund.piotroskiFScore === 'number' ? fund.piotroskiFScore : (typeof s.piotroskiFScore === 'number' ? s.piotroskiFScore : 6),
-        altmanZScore: typeof fund.altmanZScore === 'number' ? fund.altmanZScore : (typeof s.altmanZScore === 'number' ? s.altmanZScore : 2.8),
-        psr: typeof fund.psr === 'number' ? fund.psr : (typeof s.psr === 'number' ? s.psr : 1.1)
+        piotroskiFScore: safeNum(fund.piotroskiFScore, s.piotroskiFScore, 5),
+        altmanZScore: safeNum(fund.altmanZScore, s.altmanZScore, 2.5),
+        psr: safeNum(fund.psr, s.psr, null),
+        shareholders: s.shareholders || [],
+        smartMoney: s.smartMoney || null
       };
     });
 

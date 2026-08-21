@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, Fragment } from 'react';
 import ScoreBadge from './ScoreBadge';
+import StockOwnershipModal from './StockOwnershipModal';
 
 export default function StockScreener() {
  const [activeTab, setActiveTab] = useState('pick');
@@ -9,6 +10,7 @@ export default function StockScreener() {
  const [loading, setLoading] = useState(true);
  const [error, setError] = useState(null);
  const [expandedRow, setExpandedRow] = useState(null);
+ const [selectedOwnershipStock, setSelectedOwnershipStock] = useState(null);
  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'desc' });
 
  const tabs = [
@@ -26,7 +28,7 @@ export default function StockScreener() {
  setError(null);
  setSortConfig({ key: null, direction: 'desc' });
  try {
- const res = await fetch(`/api/screener?type=${activeTab}`);
+ const res = await fetch(`/api/screener?type=${activeTab}&_t=${Date.now()}`);
  if (!res.ok) throw new Error('Gagal mengambil data screener');
  const json = await res.json();
  setData(json.results || []);
@@ -427,48 +429,231 @@ export default function StockScreener() {
  Konvensional
  </span>
  )}
+ {item.isDividendTrap && (
+ <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-bold" title="Peringatan: Potensi jebakan dividen">
+ ⚠️ Div. Trap
+ </span>
+ )}
+ {item.hasStrongController && (
+ <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-bold" title="Kepemilikan Pengendali > 50%">
+ 👑 Pengendali Kuat
+ </span>
+ )}
+ <button
+   onClick={(e) => {
+     e.stopPropagation();
+     setSelectedOwnershipStock(item);
+   }}
+   className="text-[9px] px-2 py-0.5 rounded-full bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-300 border border-indigo-500/40 font-bold transition-all flex items-center gap-1 shadow-sm"
+   title="Lihat Struktur & Riwayat Kepemilikan KSEI"
+ >
+   👥 Kepemilikan
+ </button>
  <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 border border-slate-300 dark:border-white/10 truncate max-w-[80px]">
  {item.sector}
  </span>
+ {item.metrics?.streakYears >= 5 && (
+    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-black flex items-center gap-0.5" title={`Rutin membagikan dividen ${item.metrics.streakYears} tahun berturut-turut`}>
+      🏆 {item.metrics.streakYears}th Rutin
+    </span>
+  )}
+  {item.metrics?.streakYears >= 3 && item.metrics?.streakYears < 5 && (
+    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30 font-bold flex items-center gap-0.5" title={`Membagikan dividen ${item.metrics.streakYears} tahun berturut-turut`}>
+      🎖️ {item.metrics.streakYears}th Rutin
+    </span>
+  )}
  </div>
- <div className="text-xs text-slate-400 dark:text-slate-500 truncate max-w-[120px] sm:max-w-[200px]">
- {item.name}
+ <div className="flex items-center gap-2 mt-0.5">
+   <div className="text-xs text-slate-400 dark:text-slate-500 truncate max-w-[120px] sm:max-w-[200px]">
+   {item.name}
+   </div>
+   {item.fundamentals?.marketCap && (
+     <div className="text-[9px] px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold border border-blue-100 dark:border-blue-800/30">
+       MCap: {(item.fundamentals.marketCap / 1_000_000_000_000).toFixed(1)}T
+     </div>
+   )}
  </div>
  </div>
  </div>
  </td>
  {renderRowCells(item)}
  </tr>
- 
+
  {/* Expandable Details Row */}
  {expandedRow === item.ticker && (
- <tr>
- <td colSpan="6" className="bg-slate-50 dark:bg-slate-900/60 px-4 py-4">
- <div className="pl-12 grid grid-cols-1 md:grid-cols-2 gap-4 animate-in slide-in-from-top-2 duration-300">
- <div>
- <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wider mb-2">Alasan Penilaian</h4>
- <ul className="space-y-1.5">
- {item.details?.map((detail, i) => (
- <li key={i} className="text-xs text-slate-600 dark:text-slate-300 flex gap-2">
- <span className="text-emerald-400 mt-0.5">✓</span>
- <span>{detail}</span>
- </li>
- )) || (
- <li className="text-xs text-slate-500 dark:text-slate-400 italic">Tidak ada detail tersedia</li>
- )}
- </ul>
- </div>
- </div>
- </td>
- </tr>
- )}
- </Fragment>
- ))
- )}
+              <tr>
+                <td colSpan="6" className="bg-slate-50 dark:bg-slate-900/60 px-4 py-4">
+                  <div className="pl-12 grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-top-2 duration-300">
+                    {/* Left Column: Alasan Penilaian & Smart Money Metrics */}
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wider mb-2">Alasan Penilaian</h4>
+                        <ul className="space-y-1.5">
+                          {item.details?.map((detail, i) => (
+                            <li key={i} className="text-xs text-slate-600 dark:text-slate-300 flex gap-2">
+                              <span className="text-emerald-500 font-bold mt-0.5">✓</span>
+                              <span>{detail}</span>
+                            </li>
+                          )) || (
+                            <li className="text-xs text-slate-500 dark:text-slate-400 italic">Tidak ada detail tersedia</li>
+                          )}
+                        </ul>
+                      </div>
+
+                      {item.smartMoney && (
+                        <div className="pt-2 border-t border-slate-200 dark:border-slate-800/60">
+                          <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wider mb-2">
+                            ⚡ Volume & Smart Money Analysis
+                          </h4>
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between p-2 rounded-lg bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
+                              <span className="text-[10px] text-slate-500 dark:text-slate-400">Lonjakan Harian</span>
+                              <span className={`text-xs font-bold ${
+                                item.smartMoney.turnoverSpikeRatio > 1.5 ? 'text-amber-500' : 'text-slate-700 dark:text-slate-300'
+                              }`}>
+                                {(item.smartMoney.turnoverSpikeRatio * 100).toFixed(0)}%
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between p-2 rounded-lg bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
+                              <span className="text-[10px] text-slate-500 dark:text-slate-400">Status Bandarmologi</span>
+                              <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                                item.smartMoney.badge === 'emerald' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                                item.smartMoney.badge === 'rose' ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400' :
+                                item.smartMoney.badge === 'amber' ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' :
+                                'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                              }`}>
+                                {item.smartMoney.status}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Right Column: KSEI Multi-Month Flow & Shareholders */}
+                    <div className="space-y-4">
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wider">
+                            📊 Pergerakan Ritel & Smart Money (KSEI)
+                          </h4>
+                          <button
+                            onClick={() => setSelectedOwnershipStock(item)}
+                            className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
+                          >
+                            Detail Lengkap ↗
+                          </button>
+                        </div>
+                        {(() => {
+                          let history = item.kseiHistory;
+                          if (typeof history === 'string') {
+                            try { history = JSON.parse(history); } catch (e) { history = []; }
+                          }
+                          if (Array.isArray(history) && history.length > 0) {
+                            return (
+                              <div className="flex gap-2 overflow-x-auto pb-2">
+                                {[...history].reverse().slice(0, 6).map((sh, idx) => {
+                                  const deltaRetail = sh.deltaRetail || 0;
+                                  const deltaForeign = sh.deltaForeign || 0;
+                                  return (
+                                    <div key={idx} className={`p-2.5 min-w-[125px] rounded-lg border transition-all ${
+                                      idx === 0 
+                                        ? 'bg-slate-50 dark:bg-slate-800/80 border-slate-300 dark:border-slate-700 shadow-sm'
+                                        : 'bg-white dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/50'
+                                    }`}>
+                                      <div className="text-[10px] text-slate-500 dark:text-slate-400 font-bold mb-0.5">{sh.date}</div>
+                                      <div className="text-xs font-black text-slate-900 dark:text-white">
+                                        Ritel: {sh.retailPercent?.toFixed(1) ?? '0.0'}%
+                                      </div>
+                                      <div className={`text-[10px] font-bold flex items-center gap-0.5 mt-0.5 ${
+                                        deltaRetail > 0 ? 'text-emerald-600 dark:text-emerald-400' : deltaRetail < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'
+                                      }`}>
+                                        {deltaRetail > 0 ? `📈 Ritel +${Math.abs(deltaRetail).toLocaleString('id-ID')} lbr` :
+                                         deltaRetail < 0 ? `📉 Ritel -${Math.abs(deltaRetail).toLocaleString('id-ID')} lbr` :
+                                         '➖ Ritel 0 lbr'}
+                                      </div>
+                                      {deltaForeign !== 0 && (
+                                        <div className={`text-[9px] font-bold mt-0.5 ${
+                                          deltaForeign > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                                        }`}>
+                                          {deltaForeign > 0 ? `🌐 Asing: +${Math.abs(deltaForeign).toLocaleString('id-ID')}` :
+                                           `🌐 Asing: -${Math.abs(deltaForeign).toLocaleString('id-ID')}`}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          }
+
+                          if (item.shareholders && item.shareholders.length > 0) {
+                            return (
+                              <div className="flex gap-2 overflow-x-auto pb-2">
+                                {item.shareholders.slice(0, 3).map((sh, idx) => (
+                                  <div key={idx} className="p-2 min-w-[100px] rounded-lg border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                                    <div className="text-[9px] text-slate-500 font-medium mb-0.5">{sh.month}</div>
+                                    <div className="text-xs font-black text-slate-900 dark:text-white">{sh.count.toLocaleString('id-ID')}%</div>
+                                    <div className="text-[9px] font-bold text-slate-400">{sh.changePct > 0 ? '+' : ''}{sh.changePct}%</div>
+                                  </div>
+                                ))}
+                              </div>
+                            );
+                          }
+
+                          return <div className="text-[10px] text-slate-500 italic">Data histori kepemilikan KSEI belum tersedia untuk emiten ini.</div>;
+                        })()}
+                      </div>
+
+                      {item.ownership && item.ownership.shareholders && (
+                        <div>
+                          <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wider mb-2">
+                            🏢 Top Shareholders ({'>'}5%)
+                          </h4>
+                          <div className="space-y-1.5">
+                            {item.ownership.shareholders.filter(s => s.Kategori === 'Lebih dari 5%').slice(0, 3).map((sh, idx) => (
+                              <div key={idx} className="flex justify-between items-center p-2 rounded-lg bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
+                                <div className="text-[10px] font-medium text-slate-700 dark:text-slate-300 truncate pr-2 max-w-[140px]" title={sh.Nama}>{sh.Nama}</div>
+                                <div className="text-[10px] font-bold text-slate-900 dark:text-white shrink-0">{sh.Persentase}%</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {item.insiderTrades && item.insiderTrades.length > 0 && (
+                        <div>
+                          <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wider mb-2">
+                            🚨 Insider Transactions
+                          </h4>
+                          <div className="space-y-1.5">
+                            {item.insiderTrades.slice(0, 3).map((trade, idx) => (
+                              <a key={idx} href={trade.url} target="_blank" rel="noreferrer" className="block p-2 rounded-lg bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-800/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/20 transition-colors">
+                                <div className="text-[9px] text-indigo-500 mb-0.5">{new Date(trade.date).toLocaleDateString('id-ID')}</div>
+                                <div className="text-[10px] font-semibold text-slate-800 dark:text-slate-200 line-clamp-2 leading-snug">{trade.title}</div>
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            )}
+          </Fragment>
+        ))
+      )}
  </tbody>
  </table>
  </div>
  </div>
+
+ <StockOwnershipModal
+   stock={selectedOwnershipStock}
+   isOpen={Boolean(selectedOwnershipStock)}
+   onClose={() => setSelectedOwnershipStock(null)}
+ />
  </div>
  );
 }

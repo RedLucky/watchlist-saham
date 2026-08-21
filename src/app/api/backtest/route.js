@@ -128,7 +128,9 @@ export async function GET(request) {
 
         if (exitPriceRaw !== null) {
           const exitPriceEffective = exitPriceRaw * (1 - feePerSide);
-          const pnlPercent = ((exitPriceEffective - currentPosition.entryPriceEffective) / currentPosition.entryPriceEffective) * 100;
+          const pnlPercent = currentPosition.entryPriceEffective > 0
+            ? ((exitPriceEffective - currentPosition.entryPriceEffective) / currentPosition.entryPriceEffective) * 100
+            : 0;
           currentCapital *= (1 + pnlPercent / 100);
 
           const type = pnlPercent > 0.05 ? 'WIN' : pnlPercent < -0.05 ? 'LOSS' : 'FLAT';
@@ -157,7 +159,9 @@ export async function GET(request) {
       const last = bars[bars.length - 1];
       const exitPriceRaw = last.close;
       const exitPriceEffective = exitPriceRaw * (1 - feePerSide);
-      const pnlPercent = ((exitPriceEffective - currentPosition.entryPriceEffective) / currentPosition.entryPriceEffective) * 100;
+      const pnlPercent = currentPosition.entryPriceEffective > 0
+        ? ((exitPriceEffective - currentPosition.entryPriceEffective) / currentPosition.entryPriceEffective) * 100
+        : 0;
       currentCapital *= (1 + pnlPercent / 100);
       const type = pnlPercent > 0.05 ? 'WIN' : pnlPercent < -0.05 ? 'LOSS' : 'FLAT';
 
