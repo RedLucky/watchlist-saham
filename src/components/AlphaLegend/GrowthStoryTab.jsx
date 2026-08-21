@@ -302,25 +302,43 @@ export default function GrowthStoryTab({ stocks = [] }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 font-medium">
-              {growthStocks.map((stock, i) => (
-                <tr key={i} className="hover:bg-slate-50 dark:hover:bg-white/5">
-                  <td className="p-3">
-                    <div className="font-extrabold text-slate-900 dark:text-white">{stock.symbol}</div>
-                    <div className="text-[10px] text-slate-500">{stock.name || stock.symbol}</div>
-                  </td>
-                  <td className="p-3 font-semibold">Rp {(stock.price || 0).toLocaleString('id-ID')}</td>
-                  <td className="p-3 text-emerald-600 font-bold">+{stock.revenueGrowth}%</td>
-                  <td className="p-3 text-emerald-600 font-bold">+{stock.profitGrowth}%</td>
-                  <td className="p-3">{stock.roe}%</td>
-                  <td className="p-3">{stock.altmanZScore}</td>
-                  <td className="p-3">{stock.piotroskiFScore}/9</td>
-                  <td className="p-3 text-right">
-                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-                      {stock.growthStoryCategory || 'Kandidat Kuat ⭐⭐⭐⭐⭐'}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {growthStocks.map((stock, i) => {
+                const revGrowth = Number(stock.revenueGrowth ?? 0);
+                const profitGrowth = Number(stock.profitGrowth ?? 0);
+                const roe = Number(stock.roe ?? 0);
+                const zScore = Number(stock.altmanZScore ?? 0);
+                const fScore = Number(stock.piotroskiFScore ?? 0);
+
+                return (
+                  <tr key={i} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                    <td className="p-3">
+                      <div className="font-extrabold text-slate-900 dark:text-white">{stock.symbol}</div>
+                      <div className="text-[10px] text-slate-500 line-clamp-1">{stock.name || stock.symbol}</div>
+                    </td>
+                    <td className="p-3 font-semibold">Rp {(stock.price || 0).toLocaleString('id-ID')}</td>
+                    <td className={`p-3 font-bold ${revGrowth >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                      {revGrowth >= 0 ? `+${revGrowth.toFixed(1)}%` : `${revGrowth.toFixed(1)}%`}
+                    </td>
+                    <td className={`p-3 font-bold ${profitGrowth >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                      {profitGrowth >= 0 ? `+${profitGrowth.toFixed(1)}%` : `${profitGrowth.toFixed(1)}%`}
+                    </td>
+                    <td className="p-3 font-bold text-slate-800 dark:text-slate-200">
+                      {roe.toFixed(1)}%
+                    </td>
+                    <td className="p-3 font-semibold text-slate-700 dark:text-slate-300">
+                      {zScore > 0 ? zScore.toFixed(2) : '-'}
+                    </td>
+                    <td className="p-3 font-semibold text-slate-700 dark:text-slate-300">
+                      {fScore > 0 ? `${Math.round(fScore)}/9` : '-'}
+                    </td>
+                    <td className="p-3 text-right">
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                        {stock.growthStoryCategory || 'Kandidat Kuat ⭐⭐⭐⭐⭐'}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
