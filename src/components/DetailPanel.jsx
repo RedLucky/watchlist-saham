@@ -263,15 +263,15 @@ export default function DetailPanel({ stock, mode, styleName }) {
               return (
                 <div key={idx} className={`p-3 min-w-[140px] rounded-xl border transition-all ${
                   idx === 0 
-                    ? 'bg-slate-800 border-slate-600 shadow-md'
-                    : 'bg-slate-800/60 border-slate-700/60'
+                    ? 'bg-white dark:bg-slate-800 border-indigo-300 dark:border-slate-600 shadow-sm'
+                    : 'bg-slate-50/90 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700/60'
                 }`}>
-                  <div className="text-[10px] text-slate-400 font-bold mb-1">{sh.date}</div>
-                  <div className="text-xs font-black text-white">
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 font-bold mb-1">{sh.date}</div>
+                  <div className="text-xs font-black text-slate-900 dark:text-white">
                     Ritel: {sh.retailPercent?.toFixed(1) ?? '0.0'}%
                   </div>
                   <div className={`text-[10px] font-bold mt-1 ${
-                    deltaRetail > 0 ? 'text-emerald-400' : deltaRetail < 0 ? 'text-rose-400' : 'text-slate-400'
+                    deltaRetail > 0 ? 'text-emerald-600 dark:text-emerald-400' : deltaRetail < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-400'
                   }`}>
                     {deltaRetail > 0 ? `📈 Ritel +${Math.abs(deltaRetail).toLocaleString('id-ID')} lbr` :
                      deltaRetail < 0 ? `📉 Ritel -${Math.abs(deltaRetail).toLocaleString('id-ID')} lbr` :
@@ -279,7 +279,7 @@ export default function DetailPanel({ stock, mode, styleName }) {
                   </div>
                   {deltaForeign !== 0 && (
                     <div className={`text-[9px] font-bold mt-0.5 ${
-                      deltaForeign > 0 ? 'text-emerald-400' : 'text-rose-400'
+                      deltaForeign > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
                     }`}>
                       {deltaForeign > 0 ? `🌐 Asing: +${Math.abs(deltaForeign).toLocaleString('id-ID')}` :
                        `🌐 Asing: -${Math.abs(deltaForeign).toLocaleString('id-ID')}`}
@@ -292,12 +292,12 @@ export default function DetailPanel({ stock, mode, styleName }) {
         ) : stock.shareholders && stock.shareholders.length > 0 ? (
           <div className="flex gap-4 overflow-x-auto pb-2">
             {stock.shareholders.map((sh, idx) => (
-              <div key={idx} className="p-3 min-w-[120px] rounded-xl border bg-slate-800 border-slate-700">
-                <div className="text-[10px] text-slate-500 font-medium mb-1">{sh.month}</div>
-                <div className="text-sm font-black text-white">
+              <div key={idx} className="p-3 min-w-[120px] rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium mb-1">{sh.month}</div>
+                <div className="text-sm font-black text-slate-900 dark:text-white">
                   {sh.count.toLocaleString('id-ID')}%
                 </div>
-                <div className="text-[10px] text-slate-400 mt-1">
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
                   {sh.changePct > 0 ? '+' : ''}{sh.changePct}%
                 </div>
               </div>

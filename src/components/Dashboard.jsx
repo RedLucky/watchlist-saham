@@ -236,8 +236,6 @@ export default function Dashboard() {
  {/* Main Stock Ranking Table */}
  <StockTable stocks={stocks} loading={loading} />
 
- {/* Historical Recommendations & Win-Rate Track Record */}
- <HistoryPanel />
  </div>
  )}
 
@@ -269,11 +267,12 @@ export default function Dashboard() {
  </div>
  )}
 
- {/* TAB 5: BACKTEST & WIN RATE */}
+ {/* TAB 5: RIWAYAT & WIN RATE */}
  {activeTab === 'backtest' && (
- <div className="animate-in fade-in duration-300">
- <BacktestPanel />
- </div>
+   <div className="animate-in fade-in duration-300 space-y-6">
+     <HistoryPanel />
+     <BacktestPanel />
+   </div>
  )}
 
  {/* TAB 6: KALKULATOR PENSIUN */}

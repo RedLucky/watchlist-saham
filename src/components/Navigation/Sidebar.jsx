@@ -15,7 +15,7 @@ export const NAVIGATION_MENU = [
     category: 'Alat & Manajemen',
     items: [
       { id: 'portfolio', label: 'Portofolio Saya', icon: '💼' },
-      { id: 'backtest', label: 'Backtest & Win Rate', icon: '📈' },
+      { id: 'backtest', label: 'Riwayat & Win Rate', icon: '📈' },
       { id: 'pension', label: 'Kalkulator Pensiun', icon: '🏖️' },
       { id: 'ksei-upload', label: 'Upload Data KSEI', icon: '🏛️' },
     ]

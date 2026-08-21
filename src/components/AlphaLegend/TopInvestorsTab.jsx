@@ -3,17 +3,17 @@
 import React, { useState, useMemo } from 'react';
 
 const TOP_INVESTORS = [
-  { id: 'all', name: 'Semua Investor (10)', icon: '👑', desc: 'Tampilkan semua saham yang lolos minimal 1 formula investor legendaris.' },
-  { id: 'buffett', name: 'Warren Buffett', icon: '📈', desc: 'Predictability 10 Thn, Long Term Debt ≤ 5x Earnings, ROE ≥ 15%, ROTC ≥ 12%, FCF > 0.' },
-  { id: 'graham_enterprising', name: 'Ben Graham (Enterprising)', icon: '🏛️', desc: 'PER ≤ 9 (12), CR ≥ 1.5, Debt/NCAV ≤ 110%, Earnings Stability 5 Thn, Dividend 5 Thn.' },
-  { id: 'graham_defensive', name: 'Ben Graham (Defensive)', icon: '🛡️', desc: 'Graham Number (PER x PBV ≤ 22.5), CR ≥ 2, LT Debt ≤ Net Current Asset, DER ≤ 100%.' },
-  { id: 'lynch_fast', name: 'Peter Lynch (Fast Growers)', icon: '⚡', desc: 'EPS Growth ≥ 20%, PEG ≤ 1, Inventory/Sales ≤ 5ppt, DER < 80%, PER ≤ 40.' },
-  { id: 'lynch_stalwarts', name: 'Peter Lynch (Stalwarts)', icon: '🏢', desc: 'EPS Growth 10%–20%, Yield-adj PEG ≤ 1, DER < 80%, Sales ≥ 1.9B.' },
-  { id: 'lynch_slow', name: 'Peter Lynch (Slow Growers)', icon: '🐢', desc: 'EPS Growth < 10%, Yield-adj PEG ≤ 1, Yield ≥ 3.5%, DER < 80%.' },
-  { id: 'greenblatt', name: 'Joel Greenblatt (Magic Formula)', icon: '🪄', desc: 'Kombinasi Peringkat ROC (Return on Capital) Tinggi & Earnings Yield (EY) Tinggi.' },
-  { id: 'terry_smith', name: 'Terry Smith', icon: '🇬🇧', desc: 'The English Warren Buffett: ROCE ≥ 14%, OPM > 15%, Debt < 5x Net Income, TIER > 10.' },
-  { id: 'ken_fisher', name: 'Ken Fisher (PSR & Superstocks)', icon: '🎣', desc: 'Price to Sales Ratio (PSR ≤ 3 / ≤ 0.8), DER ≤ 40%, PRR ≤ 15, EPS Growth ≥ 15%.' },
-  { id: 'nick_sleep', name: 'Nick Sleep (SES)', icon: '🛋️', desc: 'Scale Economies Shared: Repeat Purchase, Runway Panjang, Sales Vol Naik, ROIC Tinggi.' },
+  { id: 'all', name: 'Konsensus Multitokoh (≥3)', icon: '👑', desc: 'Saham luar biasa yang lolos minimal 3 formula investor legendaris sekaligus.' },
+  { id: 'buffett', name: 'Warren Buffett', icon: '📈', desc: 'Wide Moat: ROE ≥ 15%, Revenue Growth ≥ 8%, DER ≤ 1.0x, PER ≤ 20x, PBV ≤ 3.5x.' },
+  { id: 'graham_defensive', name: 'Ben Graham (Defensive)', icon: '🛡️', desc: 'Graham Number (PER x PBV ≤ 22.5), PER ≤ 15x, PBV ≤ 1.5x, Dividen Rutin ≥ 5 Thn.' },
+  { id: 'graham_enterprising', name: 'Ben Graham (Enterprising)', icon: '🏛️', desc: 'Deep Value: PER ≤ 10x, PBV ≤ 1.0x (Diskon Aset Bersih), DER ≤ 1.0x, ROE Positif.' },
+  { id: 'lynch_fast', name: 'Peter Lynch (Fast Growers)', icon: '⚡', desc: 'Fast Growers: Revenue Growth ≥ 15%, ROE ≥ 15%, DER ≤ 1.0x, PER Wajar ≤ 28x.' },
+  { id: 'lynch_stalwarts', name: 'Peter Lynch (Stalwarts)', icon: '🏢', desc: 'Blue Chip Mapan: ROE ≥ 14%, Pertumbuhan Stabil ≥ 6%, PER ≤ 16x, DER Terkendali.' },
+  { id: 'lynch_slow', name: 'Peter Lynch (Slow Growers)', icon: '🐢', desc: 'Dividend Champions: Yield Dividen Tinggi ≥ 6.0%, Rekam Jejak Rutin ≥ 5 Thn, PER ≤ 15x.' },
+  { id: 'greenblatt', name: 'Joel Greenblatt (Magic Formula)', icon: '🪄', desc: 'Magic Formula: ROE Tinggi ≥ 16% dikombinasikan dengan Earnings Yield Tinggi (1/PER ≥ 9%).' },
+  { id: 'terry_smith', name: 'Terry Smith', icon: '🇬🇧', desc: 'Quality Compounder: Bisnis Superior dengan ROE ≥ 20%, Growth ≥ 10%, dan Utang Minimal.' },
+  { id: 'ken_fisher', name: 'Ken Fisher (Superstocks)', icon: '🎣', desc: 'Superstocks: Diskon Valuasi PBV ≤ 1.2x & PER ≤ 12x dengan Pertumbuhan Revenue ≥ 10%.' },
+  { id: 'nick_sleep', name: 'Nick Sleep (SES)', icon: '🛋️', desc: 'Scale Economies Shared: Efisiensi Skala Besar, ROE Tinggi ≥ 16%, Growth ≥ 12%.' },
 ];
 
 export default function TopInvestorsTab({ stocks = [] }) {
@@ -25,9 +25,13 @@ export default function TopInvestorsTab({ stocks = [] }) {
 
   const filteredStocks = useMemo(() => {
     if (selectedInvestorId === 'all') {
-      return stocks.filter(s => s.passedFormulaKeys && s.passedFormulaKeys.length > 0);
+      return stocks
+        .filter(s => s.passedFormulaKeys && s.passedFormulaKeys.length >= 3)
+        .sort((a, b) => (b.passedFormulaKeys?.length || 0) - (a.passedFormulaKeys?.length || 0) || (b.roe || 0) - (a.roe || 0));
     }
-    return stocks.filter(s => s.passedFormulaKeys && s.passedFormulaKeys.includes(selectedInvestorId));
+    return stocks
+      .filter(s => s.passedFormulaKeys && s.passedFormulaKeys.includes(selectedInvestorId))
+      .sort((a, b) => (b.roe || 0) - (a.roe || 0) || (a.per || 999) - (b.per || 999));
   }, [selectedInvestorId, stocks]);
 
   return (
@@ -59,7 +63,13 @@ export default function TopInvestorsTab({ stocks = [] }) {
             >
               <div className="flex items-center justify-between">
                 <span className="text-xl">{inv.icon}</span>
-                {inv.id !== 'all' && (
+                {inv.id === 'all' ? (
+                  <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md ${
+                    isActive ? 'bg-black/20 text-slate-950' : 'bg-slate-100 dark:bg-white/10 text-slate-500'
+                  }`}>
+                    {stocks.filter(s => s.passedFormulaKeys && s.passedFormulaKeys.length >= 3).length} Saham
+                  </span>
+                ) : (
                   <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md ${
                     isActive ? 'bg-black/20 text-slate-950' : 'bg-slate-100 dark:bg-white/10 text-slate-500'
                   }`}>
