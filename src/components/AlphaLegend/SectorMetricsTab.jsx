@@ -151,6 +151,7 @@ export default function SectorMetricsTab({ stocks = [] }) {
                     <th className="p-3">PER</th>
                     <th className="p-3">PBV</th>
                     <th className="p-3">ROE</th>
+                    <th className="p-3">CAGR Laba</th>
                     <th className="p-3">DER</th>
                     <th className="p-3">Div Yield</th>
                     <th className="p-3">Smart Money</th>
@@ -159,51 +160,57 @@ export default function SectorMetricsTab({ stocks = [] }) {
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 font-medium">
                   {matchingStocks.length > 0 ? (
-                    matchingStocks.map((stock, i) => (
-                      <tr 
-                        key={i}
-                        className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
-                      >
-                        <td className="p-3">
-                          <div className="font-extrabold text-slate-900 dark:text-white">{stock.symbol}</div>
-                          <div className="text-[10px] text-slate-500 line-clamp-2">{stock.name || stock.symbol}</div>
-                        </td>
-                        <td className="p-3 font-semibold text-slate-800 dark:text-slate-200">
-                          Rp {(stock.price || 0).toLocaleString('id-ID')}
-                        </td>
-                        <td className="p-3">{stock.per ? `${Number(stock.per).toFixed(1)}x` : '-'}</td>
-                        <td className="p-3">{stock.pbv ? `${Number(stock.pbv).toFixed(1)}x` : '-'}</td>
-                        <td className="p-3 text-emerald-600 dark:text-emerald-400 font-bold">{stock.roe ? `${Number(stock.roe).toFixed(1)}%` : '-'}</td>
-                        <td className="p-3">{stock.der ? `${Number(stock.der).toFixed(1)}x` : '-'}</td>
-                        <td className="p-3 text-blue-600 dark:text-blue-400">{stock.divYield ? `${Number(stock.divYield).toFixed(1)}%` : '-'}</td>
-                        <td className="p-3">
-                          {stock.smartMoney ? (
-                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                              stock.smartMoney.badge === 'emerald' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800' :
-                              stock.smartMoney.badge === 'rose' ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400 border border-rose-200 dark:border-rose-800' :
-                              stock.smartMoney.badge === 'amber' ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800' :
-                              'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+                    matchingStocks.map((stock, i) => {
+                      const cagrVal = stock.cagr ?? stock.profitGrowth;
+                      return (
+                        <tr 
+                          key={i}
+                          className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+                        >
+                          <td className="p-3">
+                            <div className="font-extrabold text-slate-900 dark:text-white">{stock.symbol}</div>
+                            <div className="text-[10px] text-slate-500 line-clamp-2">{stock.name || stock.symbol}</div>
+                          </td>
+                          <td className="p-3 font-semibold text-slate-800 dark:text-slate-200">
+                            Rp {(stock.price || 0).toLocaleString('id-ID')}
+                          </td>
+                          <td className="p-3">{stock.per ? `${Number(stock.per).toFixed(1)}x` : '-'}</td>
+                          <td className="p-3">{stock.pbv ? `${Number(stock.pbv).toFixed(1)}x` : '-'}</td>
+                          <td className="p-3 text-emerald-600 dark:text-emerald-400 font-bold">{stock.roe ? `${Number(stock.roe).toFixed(1)}%` : '-'}</td>
+                          <td className={`p-3 font-bold ${cagrVal >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                            {cagrVal != null ? `${cagrVal >= 0 ? '+' : ''}${Number(cagrVal).toFixed(1)}%` : '-'}
+                          </td>
+                          <td className="p-3">{stock.der ? `${Number(stock.der).toFixed(1)}x` : '-'}</td>
+                          <td className="p-3 text-blue-600 dark:text-blue-400">{stock.divYield ? `${Number(stock.divYield).toFixed(1)}%` : '-'}</td>
+                          <td className="p-3">
+                            {stock.smartMoney ? (
+                              <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                                stock.smartMoney.badge === 'emerald' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800' :
+                                stock.smartMoney.badge === 'rose' ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400 border border-rose-200 dark:border-rose-800' :
+                                stock.smartMoney.badge === 'amber' ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800' :
+                                'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+                              }`}>
+                                {stock.smartMoney.status.replace(/ [🟢🔴🟡⚪]/, '')}
+                              </span>
+                            ) : '-'}
+                          </td>
+                          <td className="p-3 text-right">
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                              stock.growthStoryBadge === 'emerald'
+                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                : stock.growthStoryBadge === 'amber'
+                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                                : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
                             }`}>
-                              {stock.smartMoney.status.replace(/ [🟢🔴🟡⚪]/, '')}
+                              {stock.growthStoryCategory || 'Potensial'}
                             </span>
-                          ) : '-'}
-                        </td>
-                        <td className="p-3 text-right">
-                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                            stock.growthStoryBadge === 'emerald'
-                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                              : stock.growthStoryBadge === 'amber'
-                              ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                              : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
-                          }`}>
-                            {stock.growthStoryCategory || 'Potensial'}
-                          </span>
-                        </td>
-                      </tr>
-                    ))
+                          </td>
+                        </tr>
+                      );
+                    })
                   ) : (
                     <tr>
-                      <td colSpan="9" className="p-8 text-center text-slate-400">
+                      <td colSpan="10" className="p-8 text-center text-slate-400">
                         Tidak ada data saham spesifik untuk sektor ini di database. Gunakan tombol sync untuk memperbarui.
                       </td>
                     </tr>

@@ -36,8 +36,23 @@ export function calculateFundamentalScore(stock) {
   // ── Profit Consistency & Growth (30%) ──────────────────────────────
   const profits = Array.isArray(netProfit) ? netProfit.filter(Number.isFinite) : [];
   let profitScore = 40; // default if insufficient data
+  let cagr = null;
 
   if (profits.length >= 2) {
+    const first = profits[0];
+    const latest = profits[profits.length - 1];
+    const years = profits.length - 1;
+
+    if (first > 0 && latest > 0) {
+      cagr = (Math.pow(latest / first, 1 / years) - 1) * 100;
+    } else if (first <= 0 && latest > 0) {
+      cagr = 100.0; // Turnaround
+    } else if (first > 0 && latest <= 0) {
+      cagr = -100.0; // Deteriorated
+    } else {
+      cagr = 0;
+    }
+
     const allPositive = profits.every(v => v > 0);
     let avgProfitGrowth = 0;
     
@@ -59,64 +74,61 @@ export function calculateFundamentalScore(stock) {
       profitScore = clamp(50 + avgProfitGrowth * 200, 50, 100);
       details.push(`Profit tumbuh konsisten — rata-rata pertumbuhan ${(avgProfitGrowth * 100).toFixed(1)}%`);
     } else if (allPositive) {
-      profitScore = 40;
-      details.push('Profit positif tapi tidak bertumbuh kuat');
+      profitScore = 60;
+      details.push('Profit konsisten positif walau pertumbuhan melambat');
+    } else if (isGrowing) {
+      profitScore = 50;
+      details.push('Profit dalam tren pemulihan (turnaround)');
     } else {
-      profitScore = 10;
-      details.push('Inkonsistensi profit terdeteksi');
+      profitScore = 20;
+      details.push('Perusahaan mengalami kerugian');
     }
   } else {
-    details.push('Data profit historis belum lengkap');
+    details.push('Data historis laba belum mencukupi');
   }
   score += profitScore * 0.30;
 
-  // ── Debt Safety — DER (20%) ────────────────────────────────────────
-  // For Financials sector, DER is structurally high and not penalized
+  // ── Financial Health / DER (20%) ────────────────────────────────────
   const safeDER = Number.isFinite(der) ? der : null;
-  let derScore = 50; // default if no data
+  let derScore = 50;
+  const isFinance = sector === 'Financials' || sector === 'Finance';
 
-  const isFinancial = sector && (sector.toLowerCase().includes('financial') || sector.toLowerCase().includes('bank'));
-
-  if (isFinancial) {
-    if (safeDER !== null) {
-      // For banks: DER > 5 is normal. Score based on relative efficiency.
-      derScore = clamp(((15 - safeDER) / 15) * 100, 30, 85);
-      if (safeDER < 8) {
-        details.push(`DER bank rendah (${safeDER.toFixed(1)}x) — struktur liabilitas sangat efisien`);
+  if (safeDER !== null) {
+    if (isFinance) {
+      derScore = 70;
+      details.push(`Sektor Finansial — DER ${safeDER.toFixed(2)}x (dievaluasi dengan standar industri keuangan)`);
+    } else {
+      if (safeDER <= 0.5) {
+        derScore = 100;
+        details.push(`Struktur modal sangat sehat — DER rendah ${safeDER.toFixed(2)}x`);
+      } else if (safeDER <= 1.0) {
+        derScore = 80;
+        details.push(`Struktur modal sehat — DER ${safeDER.toFixed(2)}x di bawah batas aman`);
+      } else if (safeDER <= 2.0) {
+        derScore = 50;
+        details.push(`Tingkat utang moderat — DER ${safeDER.toFixed(2)}x`);
       } else {
-        details.push(`DER bank wajar (${safeDER.toFixed(1)}x) — proporsional untuk model bisnis perbankan`);
+        derScore = 20;
+        details.push(`Tingkat utang tinggi — DER ${safeDER.toFixed(2)}x`);
       }
-    } else {
-      derScore = 75;
-      details.push('Struktur modal perbankan berbasis simpanan nasabah (DPK) — solvabilitas terjaga');
-    }
-  } else if (safeDER !== null) {
-    // Non-financial: DER 0 = best, DER 1.5 = minimum acceptable
-    derScore = clamp(((1.5 - safeDER) / 1.5) * 100, 0, 100);
-    if (safeDER < 0.5) {
-      details.push(`Utang sangat rendah (DER: ${safeDER.toFixed(2)}) — posisi keuangan kuat`);
-    } else if (safeDER < 1.0) {
-      details.push(`Level utang terkelola baik (DER: ${safeDER.toFixed(2)})`);
-    } else {
-      details.push(`Utang lebih tinggi (DER: ${safeDER.toFixed(2)}) — perlu dimonitor`);
     }
   } else {
     details.push('Data DER belum tersedia');
   }
   score += derScore * 0.20;
 
-  // ── Revenue Growth Quality (15%) ───────────────────────────────────
+  // ── Revenue Growth (15%) ───────────────────────────────────────────
   const safeRevGrowth = Number.isFinite(revenueGrowth) ? revenueGrowth : null;
-  let revScore = 40; // default if no data
-
+  let revScore = 50;
   if (safeRevGrowth !== null) {
-    // Diminishing returns curve: rapid initial scoring, plateaus at high growth
-    revScore = clamp(50 + Math.log1p(Math.max(0, safeRevGrowth)) * 20, 0, 100);
     if (safeRevGrowth >= 15) {
+      revScore = 100;
       details.push(`Pertumbuhan revenue kuat di ${safeRevGrowth.toFixed(1)}%`);
-    } else if (safeRevGrowth >= 5) {
-      details.push(`Pertumbuhan revenue stabil di ${safeRevGrowth.toFixed(1)}%`);
+    } else if (safeRevGrowth >= 8) {
+      revScore = 80;
+      details.push(`Pertumbuhan revenue sehat di ${safeRevGrowth.toFixed(1)}%`);
     } else if (safeRevGrowth >= 0) {
+      revScore = 55;
       details.push(`Pertumbuhan revenue lambat di ${safeRevGrowth.toFixed(1)}%`);
     } else {
       details.push(`Revenue menurun ${safeRevGrowth.toFixed(1)}%`);
@@ -134,6 +146,7 @@ export function calculateFundamentalScore(stock) {
       roe: safeROE,
       der: safeDER,
       revenueGrowth: safeRevGrowth,
+      cagr: cagr !== null ? Number(cagr.toFixed(1)) : null,
     },
   };
 }

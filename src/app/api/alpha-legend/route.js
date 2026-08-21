@@ -77,6 +77,7 @@ export async function GET(request) {
         divYield: divYieldVal,
         revenueGrowth: revGrowthVal,
         profitGrowth: profitGrowthVal,
+        cagr: profitGrowthVal,
         fcf: safeNum(fund.freeCashflow, s.fcf, 0),
         peg: profitGrowthVal > 0 ? Number((perVal / profitGrowthVal).toFixed(2)) : 0,
         piotroskiFScore: safeNum(fund.piotroskiFScore, s.piotroskiFScore, 5),

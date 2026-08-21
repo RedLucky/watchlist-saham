@@ -77,6 +77,7 @@ function getDividendResults(validStocks) {
   return validStocks
     .map(s => {
       const divScore = calculateDividendScore(s);
+      const fundScore = calculateFundamentalScore(s);
       return {
         ticker: s.ticker,
         name: s.name,
@@ -91,7 +92,7 @@ function getDividendResults(validStocks) {
         sharesOutstanding: s.sharesOutstanding || null,
         fundamentals: s.fundamentals || null,
         insiderTrades: s.insiderTrades || [],
-        metrics: divScore.metrics || {},
+        metrics: { ...(fundScore.metrics || {}), ...(divScore.metrics || {}) },
         score: applyGlobalPenalties(s, divScore.score || 0),
         details: divScore.details || [],
         shareholders: s.shareholders || [],
@@ -106,6 +107,7 @@ function getDividendResults(validStocks) {
 function getCheapResults(validStocks) {
   const cheapCandidates = validStocks.map(s => {
     const valScore = calculateValuationScore(s);
+    const fundScore = calculateFundamentalScore(s);
     return {
       ticker: s.ticker,
       name: s.name,
@@ -120,7 +122,7 @@ function getCheapResults(validStocks) {
       sharesOutstanding: s.sharesOutstanding || null,
       fundamentals: s.fundamentals || null,
       insiderTrades: s.insiderTrades || [],
-      metrics: valScore.metrics || {},
+      metrics: { ...(fundScore.metrics || {}), ...(valScore.metrics || {}) },
       score: applyGlobalPenalties(s, valScore.score || 0),
       details: valScore.details || [],
       shareholders: s.shareholders || [],
@@ -186,6 +188,7 @@ function getPotentialResults(validStocks, swingStyle) {
     const techScore = calculateTechnicalScore(s, swingStyle);
     const smScore = calculateSmartMoneyScore(s);
     const trendScore = calculateTrendingScore(s);
+    const fundScore = calculateFundamentalScore(s);
     
     const compositeScore = Math.round(
       ((techScore.score || 0) * 0.4) + 
@@ -214,7 +217,7 @@ function getPotentialResults(validStocks, swingStyle) {
       techScore: techScore.score || 0,
       smScore: smScore.score || 0,
       trendScore: trendScore.score || 0,
-      metrics: { techScore: techScore.score || 0, smScore: smScore.score || 0, trendScore: trendScore.score || 0 },
+      metrics: { ...(fundScore.metrics || {}), techScore: techScore.score || 0, smScore: smScore.score || 0, trendScore: trendScore.score || 0 },
       score: compositeScore,
       details: [...(techScore.details || []), ...(smScore.details || []), ...(trendScore.details || [])],
       shareholders: s.shareholders || [],
@@ -315,6 +318,7 @@ export async function GET(request) {
               pbv: pbvVal,
               roe: roeVal,
               der: derVal,
+              cagr: fundScore.metrics?.cagr ?? null,
             },
             divScore: divScore.score || 0,
             valScore: valScore.score || 0,

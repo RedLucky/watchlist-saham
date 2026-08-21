@@ -109,6 +109,7 @@ export default function TopInvestorsTab({ stocks = [] }) {
                 <th className="p-3">PER</th>
                 <th className="p-3">PBV</th>
                 <th className="p-3">ROE</th>
+                <th className="p-3">CAGR Laba</th>
                 <th className="p-3">DER</th>
                 <th className="p-3">PEG</th>
                 <th className="p-3 text-right">Formula Lolos</th>
@@ -116,36 +117,42 @@ export default function TopInvestorsTab({ stocks = [] }) {
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 font-medium">
               {filteredStocks.length > 0 ? (
-                filteredStocks.map((stock, i) => (
-                  <tr key={i} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                    <td className="p-3">
-                      <div className="font-extrabold text-slate-900 dark:text-white">{stock.symbol}</div>
-                      <div className="text-[10px] text-slate-500">{stock.name || stock.symbol}</div>
-                    </td>
-                    <td className="p-3 font-semibold">Rp {(stock.price || 0).toLocaleString('id-ID')}</td>
-                    <td className="p-3">{stock.per ? `${stock.per.toFixed(1)}x` : '-'}</td>
-                    <td className="p-3">{stock.pbv ? `${stock.pbv.toFixed(1)}x` : '-'}</td>
-                    <td className="p-3 text-emerald-600 dark:text-emerald-400 font-bold">{stock.roe ? `${stock.roe.toFixed(1)}%` : '-'}</td>
-                    <td className="p-3">{stock.der ? `${stock.der.toFixed(1)}x` : '-'}</td>
-                    <td className="p-3">{stock.peg ? `${stock.peg.toFixed(2)}` : '-'}</td>
-                    <td className="p-3 text-right space-x-1 space-y-1">
-                      {stock.passedFormulaKeys && stock.passedFormulaKeys.map(key => {
-                        const invObj = TOP_INVESTORS.find(t => t.id === key);
-                        return (
-                          <span
-                            key={key}
-                            className="inline-block px-2 py-0.5 rounded-md text-[9px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-300 dark:border-amber-700/50"
-                          >
-                            {invObj ? invObj.name.split(' ')[0] : key}
-                          </span>
-                        );
-                      })}
-                    </td>
-                  </tr>
-                ))
+                filteredStocks.map((stock, i) => {
+                  const cagrVal = stock.cagr ?? stock.profitGrowth;
+                  return (
+                    <tr key={i} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                      <td className="p-3">
+                        <div className="font-extrabold text-slate-900 dark:text-white">{stock.symbol}</div>
+                        <div className="text-[10px] text-slate-500">{stock.name || stock.symbol}</div>
+                      </td>
+                      <td className="p-3 font-semibold">Rp {(stock.price || 0).toLocaleString('id-ID')}</td>
+                      <td className="p-3">{stock.per ? `${stock.per.toFixed(1)}x` : '-'}</td>
+                      <td className="p-3">{stock.pbv ? `${stock.pbv.toFixed(1)}x` : '-'}</td>
+                      <td className="p-3 text-emerald-600 dark:text-emerald-400 font-bold">{stock.roe ? `${stock.roe.toFixed(1)}%` : '-'}</td>
+                      <td className={`p-3 font-bold ${cagrVal >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                        {cagrVal != null ? `${cagrVal >= 0 ? '+' : ''}${Number(cagrVal).toFixed(1)}%` : '-'}
+                      </td>
+                      <td className="p-3">{stock.der ? `${stock.der.toFixed(1)}x` : '-'}</td>
+                      <td className="p-3">{stock.peg ? `${stock.peg.toFixed(2)}` : '-'}</td>
+                      <td className="p-3 text-right space-x-1 space-y-1">
+                        {stock.passedFormulaKeys && stock.passedFormulaKeys.map(key => {
+                          const invObj = TOP_INVESTORS.find(t => t.id === key);
+                          return (
+                            <span
+                              key={key}
+                              className="inline-block px-2 py-0.5 rounded-md text-[9px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-300 dark:border-amber-700/50"
+                            >
+                              {invObj ? invObj.name.split(' ')[0] : key}
+                            </span>
+                          );
+                        })}
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
-                  <td colSpan="8" className="p-8 text-center text-slate-400">
+                  <td colSpan="9" className="p-8 text-center text-slate-400">
                     Tidak ada saham yang memenuhi kriteria filter tokoh investor ini.
                   </td>
                 </tr>
