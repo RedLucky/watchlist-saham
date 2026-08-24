@@ -1,15 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import yf from 'yahoo-finance2';
-let yahooFinance = yf;
-if (yf.default && typeof yf.default === 'object' && yf.default.quote) {
-  yahooFinance = yf.default;
-} else if (typeof yf === 'function') {
-  yahooFinance = new yf();
-} else if (yf.default && typeof yf.default === 'function') {
-  yahooFinance = new yf.default();
-}
-try { yahooFinance.suppressNotices(['node-version', 'yahooFinance=v3', 'yahooSurvey', 'ripHistorical', 'quoteSummary-mutilated']); } catch(e){}
+import { yahooFinance } from '@/lib/yahooClient';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,7 +29,7 @@ export async function GET(request) {
       period1: strPeriod1,
       period2: strPeriod2,
       interval: '1d'
-    });
+    }, { validateResult: false });
 
     const chartData = normalizeChartRows(historical);
 

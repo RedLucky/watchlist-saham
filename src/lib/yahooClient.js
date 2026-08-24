@@ -16,12 +16,24 @@ try {
   } else if (YfModule && YfModule.quote) {
     yahooFinance = YfModule;
   }
-} catch (e) {
-  console.warn('[YahooClient] Init warning:', e.message);
+} catch (_e) {
+  /* noop */
 }
 
 try {
   yahooFinance.suppressNotices(['node-version', 'yahooFinance=v3', 'yahooSurvey', 'ripHistorical', 'quoteSummary-mutilated']);
+} catch (_e) { /* noop */ }
+
+try {
+  if (typeof yahooFinance._setOpts === 'function') {
+    yahooFinance._setOpts({
+      validation: {
+        logErrors: false,
+        logOptionsErrors: false,
+        allowAdditionalProps: true,
+      }
+    });
+  }
 } catch (_e) { /* noop */ }
 
 export { yahooFinance };

@@ -1,10 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getStyleConfig } from '@/lib/modes';
 import { evaluateStyleSignal } from '@/lib/signals/styleSignal';
-import yf from 'yahoo-finance2';
-const YFClass = yf.default || yf;
-const yahooFinance = typeof YFClass === 'function' ? new YFClass() : YFClass;
-try { yahooFinance.suppressNotices(['node-version', 'yahooFinance=v3', 'yahooSurvey', 'ripHistorical', 'quoteSummary-mutilated']); } catch(e){}
+import { yahooFinance } from '@/lib/yahooClient';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,7 +31,7 @@ export async function GET(request) {
       period1: strPeriod1,
       period2: strPeriod2,
       interval: '1d'
-    });
+    }, { validateResult: false });
 
     const bars = normalizeBars(historical);
     const shortMAPeriod = Number(style?.indicators?.maShort || 20);

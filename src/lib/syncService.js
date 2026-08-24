@@ -270,20 +270,20 @@ async function deepSyncStockOnce(fullTicker) {
   let divHistoryRaw = [];
   try {
     [quote, historical, summary, divHistoryRaw] = await Promise.all([
-      withTimeout(yahooFinance.quote(fullTicker), 15000, `Quote timeout for ${fullTicker}`),
+      withTimeout(yahooFinance.quote(fullTicker, {}, { validateResult: false }), 15000, `Quote timeout for ${fullTicker}`),
       withTimeout(
         yahooFinance.historical(fullTicker, {
           period1: period1.toISOString().split('T')[0],
           period2: period2.toISOString().split('T')[0],
           interval: '1d'
-        }),
+        }, { validateResult: false }),
         20000,
         `Historical timeout for ${fullTicker}`
       ),
       withTimeout(
         yahooFinance.quoteSummary(fullTicker, {
           modules: ['price', 'financialData', 'earnings', 'defaultKeyStatistics', 'summaryDetail']
-        }),
+        }, { validateResult: false }),
         20000,
         `QuoteSummary timeout for ${fullTicker}`
       ).catch(() => ({})),
@@ -292,7 +292,7 @@ async function deepSyncStockOnce(fullTicker) {
           period1: periodDiv.toISOString().split('T')[0],
           period2: period2.toISOString().split('T')[0],
           events: 'dividends'
-        }),
+        }, { validateResult: false }),
         20000,
         `Dividend history timeout for ${fullTicker}`
       ).catch(() => ([]))
