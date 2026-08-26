@@ -1,19 +1,6 @@
 import { DataProvider } from './DataProvider';
-import yf from 'yahoo-finance2';
+import { yahooFinance } from '../yahooClient';
 import { getSectorByTicker } from '../sectorUniverse';
-
-let yahooFinance = yf;
-if (yf.default && typeof yf.default === 'object' && yf.default.quote) {
-  yahooFinance = yf.default;
-} else if (yf.default && typeof yf.default === 'function') {
-  try { yahooFinance = new yf.default(); } catch(e) { yahooFinance = yf.default; }
-} else if (typeof yf === 'function') {
-  try { yahooFinance = new yf(); } catch(e) { yahooFinance = yf; }
-}
-
-try {
-  yahooFinance.suppressNotices(['node-version', 'yahooFinance=v3', 'yahooSurvey', 'ripHistorical', 'quoteSummary-mutilated']);
-} catch (e) {}
 
 // Daftar gabungan dari indeks ISSI, Kompas100, LQ45, dan IDX80
 const TARGET_TICKERS = [
@@ -176,21 +163,29 @@ export class YahooProvider extends DataProvider {
       // Mengambil quote awal untuk mengecek averageDailyVolume3Month > 30M
       const validQuoteMap = {};
       
-      // Bagi ke dalam chunk kecil agar tidak di-timeout
-      const chunkSize = 20;
+      // Bagi ke dalam chunk 50 ticker per batch query
+      const chunkSize = 50;
       for (let i = 0; i < TARGET_TICKERS.length; i += chunkSize) {
         const chunk = TARGET_TICKERS.slice(i, i + chunkSize);
-        await Promise.all(chunk.map(async (ticker) => {
-          try {
-            const q = await yahooFinance.quote(ticker);
-            // Syarat: Volume rata-rata 3 bulan >= 30,000,000
-            if (q && q.averageDailyVolume3Month && q.averageDailyVolume3Month >= 30000000) {
-              validQuoteMap[ticker] = q;
+        try {
+          const quotes = await yahooFinance.quote(chunk, {}, { validateResult: false });
+          const qList = Array.isArray(quotes) ? quotes : (quotes ? [quotes] : []);
+          for (const q of qList) {
+            if (q && q.symbol && q.averageDailyVolume3Month && q.averageDailyVolume3Month >= 30000000) {
+              validQuoteMap[q.symbol] = q;
             }
-          } catch (e) {
-            // Abaikan saham yang tidak ditemukan / disuspensi
           }
-        }));
+        } catch (e) {
+          // Fallback individual jika batch gagal
+          await Promise.allSettled(chunk.map(async (ticker) => {
+            try {
+              const q = await yahooFinance.quote(ticker, {}, { validateResult: false });
+              if (q && q.averageDailyVolume3Month && q.averageDailyVolume3Month >= 30000000) {
+                validQuoteMap[ticker] = q;
+              }
+            } catch (_err) {}
+          }));
+        }
       }
 
       const validTickers = Object.keys(validQuoteMap);

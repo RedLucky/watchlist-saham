@@ -111,82 +111,91 @@ export async function fastSyncPrices() {
 
   console.log(`[FastSync] Memproses ${tickersToSync.length} saham...`);
   
-  const chunkSize = 20;
+  const chunkSize = 50;
   let updatedCount = 0;
 
   for (let i = 0; i < tickersToSync.length; i += chunkSize) {
     const chunk = tickersToSync.slice(i, i + chunkSize);
-    
+    let quotesList = [];
+
+    // TAHAP 1: Coba Batch Query (1 HTTP Request untuk 50 Ticker)
     try {
-      const quotes = await Promise.allSettled(
-        chunk.map(async (ticker) => {
-          const quote = await withTimeout(
-            yahooFinance.quote(ticker),
-            12000,
-            `FastSync quote timeout for ${ticker}`
-          );
-          return quote;
-        })
+      const rawBatch = await withTimeout(
+        yahooFinance.quote(chunk, {}, { validateResult: false }),
+        15000,
+        `FastSync batch quote timeout (chunk ${i / chunkSize + 1})`
       );
-      
-      for (const q of quotes) {
-        if (q.status !== 'fulfilled') {
-          console.error(`[FastSync] Quote Error:`, q.reason?.message || q.reason);
+      quotesList = Array.isArray(rawBatch) ? rawBatch : (rawBatch ? [rawBatch] : []);
+    } catch (batchErr) {
+      console.warn(`[FastSync] Batch quote warning: ${batchErr.message || batchErr}. Fallback to individual settled quotes...`);
+      // Fallback: Jika batch gagal, ambil per ticker dengan Promise.allSettled
+      try {
+        const settled = await Promise.allSettled(
+          chunk.map(t => withTimeout(yahooFinance.quote(t, {}, { validateResult: false }), 8000, `Quote timeout ${t}`))
+        );
+        quotesList = settled
+          .filter(r => r.status === 'fulfilled' && r.value?.symbol)
+          .map(r => r.value);
+      } catch (fallbackErr) {
+        console.error(`[FastSync] Fallback settled error:`, fallbackErr.message);
+      }
+    }
+
+    // TAHAP 2: Upsert Quotes ke Database
+    for (const quote of quotesList) {
+      if (!quote?.symbol) continue;
+
+      try {
+        const ticker = normalizeDbTicker(quote.symbol);
+        const sector = getSectorByTicker(ticker);
+
+        // Skip index tickers from sector assignment
+        if (sector === 'INDEX') {
+          await upsertIndexData(ticker, quote);
+          updatedCount++;
           continue;
         }
 
-        const quote = q.value;
-        if (!quote?.symbol) continue;
+        const currentPrice = safeNumber(quote.regularMarketPrice, 0);
+        const computedPercent = getChangePercent(quote);
+        const vol = BigInt(Math.round(Number(quote.regularMarketVolume || 0)));
+        const turnover = BigInt(Math.round(currentPrice * Number(quote.regularMarketVolume || 0)));
+        const frequency = Math.round(Number(quote.regularMarketVolume || 0) / 100);
 
-        try {
-          const ticker = normalizeDbTicker(quote.symbol);
-          const sector = getSectorByTicker(ticker);
-
-          // Skip index tickers from sector assignment
-          if (sector === 'INDEX') {
-            await upsertIndexData(ticker, quote);
-            updatedCount++;
-            continue;
+        await prisma.stockData.upsert({
+          where: { ticker },
+          update: {
+            price: currentPrice,
+            changePercent: computedPercent,
+            volume: quote.regularMarketVolume != null ? vol : undefined,
+            turnover: quote.regularMarketVolume != null ? turnover : undefined,
+            frequency: quote.regularMarketVolume != null ? frequency : undefined,
+            avgVolume3mo: quote.averageDailyVolume3Month != null ? BigInt(Math.round(Number(quote.averageDailyVolume3Month))) : undefined,
+            sector,
+            lastPriceSync: new Date()
+          },
+          create: {
+            ticker,
+            name: quote.shortName || quote.symbol,
+            price: currentPrice,
+            changePercent: computedPercent,
+            volume: vol,
+            turnover: turnover,
+            frequency: frequency,
+            avgVolume3mo: BigInt(Math.round(Number(quote.averageDailyVolume3Month || 0))),
+            sector,
+            lastPriceSync: new Date()
           }
-
-          const currentPrice = safeNumber(quote.regularMarketPrice, 0);
-          const computedPercent = getChangePercent(quote);
-          const vol = BigInt(Math.round(Number(quote.regularMarketVolume || 0)));
-          const turnover = BigInt(Math.round(currentPrice * Number(quote.regularMarketVolume || 0)));
-          const frequency = Math.round(Number(quote.regularMarketVolume || 0) / 100);
-
-          await prisma.stockData.upsert({
-            where: { ticker },
-            update: {
-              price: currentPrice,
-              changePercent: computedPercent,
-              volume: quote.regularMarketVolume != null ? vol : undefined,
-              turnover: quote.regularMarketVolume != null ? turnover : undefined,
-              frequency: quote.regularMarketVolume != null ? frequency : undefined,
-              avgVolume3mo: quote.averageDailyVolume3Month != null ? BigInt(Math.round(Number(quote.averageDailyVolume3Month))) : undefined,
-              sector,
-              lastPriceSync: new Date()
-            },
-            create: {
-              ticker,
-              name: quote.shortName || quote.symbol,
-              price: currentPrice,
-              changePercent: computedPercent,
-              volume: vol,
-              turnover: turnover,
-              frequency: frequency,
-              avgVolume3mo: BigInt(Math.round(Number(quote.averageDailyVolume3Month || 0))),
-              sector,
-              lastPriceSync: new Date()
-            }
-          });
-          updatedCount++;
-        } catch (dbErr) {
-          console.error(`[FastSync] DB Error for ${quote.symbol}:`, dbErr.message);
-        }
+        });
+        updatedCount++;
+      } catch (dbErr) {
+        console.error(`[FastSync] DB Error for ${quote.symbol}:`, dbErr.message);
       }
-    } catch (err) {
-      console.error(`[FastSync] Batch Error:`, err.message);
+    }
+
+    // Small delay between chunks to avoid Yahoo rate limits
+    if (i + chunkSize < tickersToSync.length) {
+      await new Promise(r => setTimeout(r, 100));
     }
   }
   
