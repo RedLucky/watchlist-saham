@@ -84,17 +84,17 @@ export async function getTargetTickers() {
  * Fast Sync: Updates price, volume, and changePercent for all tracked stocks.
  * Runs every SYNC_INTERVAL_MINS.
  */
-export async function fastSyncPrices() {
-  console.log('[FastSync] Memulai sinkronisasi harga & volume (Round-Robin Queue)...');
+export async function fastSyncPrices(limit = 250) {
+  console.log(`[FastSync] Memulai sinkronisasi harga & volume (Round-Robin Queue, limit: ${limit || 'ALL'})...`);
   
   // Pastikan semua ticker di sectorUniverse sudah terdaftar di DB
   await ensureAllUniverseTickersSeeded();
 
-  // 1. Ambil maksimal 50 ticker yang paling lama tidak di-update (Round-Robin).
+  // 1. Ambil ticker yang paling lama tidak di-update (Round-Robin).
   const dbStocks = await prisma.stockData.findMany({
     where: { NOT: { ticker: '^JKSE' }, isDelisted: false },
     orderBy: { lastPriceSync: 'asc' },
-    take: 50,
+    ...(limit ? { take: limit } : {}),
     select: { ticker: true }
   });
 

@@ -108,7 +108,7 @@ async function runFastSync() {
       total: all.length,
       ticker: 'Starting...',
     };
-    const updatedCount = await fastSyncPrices();
+    const updatedCount = await fastSyncPrices(null);
     syncStatus = {
       ...syncStatus,
       current: all.length,

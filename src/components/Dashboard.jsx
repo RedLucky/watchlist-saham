@@ -135,19 +135,25 @@ export default function Dashboard() {
  };
  }, [user, fetchData]);
 
- const handleManualSync = async () => {
- try {
- await fetch('/api/sync', {
- method: 'POST',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({ type: 'price' })
- });
- alert('Sinkronisasi harga dimulai di latar belakang.');
- void fetchData();
- } catch (e) {
- alert('Gagal memulai sinkronisasi.');
- }
- };
+  const handleManualSync = async () => {
+    try {
+      setSyncInfo(prev => ({ ...prev, isSyncing: true }));
+      await fetch('/api/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'price' })
+      });
+      // Poll progress and refresh dashboard data
+      setTimeout(() => {
+        void fetchData();
+      }, 3000);
+      setTimeout(() => {
+        void fetchData();
+      }, 8000);
+    } catch (e) {
+      console.error('Failed to trigger manual sync:', e);
+    }
+  };
 
  // Auth Loading State
  if (checkingAuth) {
