@@ -5,6 +5,7 @@ import { deepSyncStock } from '@/lib/syncService';
 import { calculateFundamentalScore } from '@/lib/scoring/fundamental';
 import { calculateTechnicalScore } from '@/lib/scoring/technical';
 import { calculateTrendingScore } from '@/lib/scoring/trending';
+import { calculateSmartMoneyScore, getBandarmologiVerdict } from '@/lib/scoring/smartMoney';
 
 export const dynamic = 'force-dynamic';
 
@@ -110,88 +111,10 @@ export async function GET(request, { params }) {
       isBreakoutVolume: volumeSpikeRatio >= 1.5 && (stock.changePercent || 0) > 1.5
     };
 
-    // Estimate Piotroski F-Score (out of 9)
-    let computedFScore = 5; // default moderate score
-    let computedZScore = 2.5; // default neutral
-    if (fundamentals) {
-      let score = 0;
-      const roe = fundamentals.roe || 0;
-      const fcf = fundamentals.freeCashflow || 0;
-      const der = fundamentals.der || 0;
-      const currentRatio = fundamentals.currentRatio || 0;
-      const revenueGrowth = fundamentals.revenueGrowth || 0;
-      const netProfitList = Array.isArray(fundamentals.netProfit) ? fundamentals.netProfit : [];
-      
-      // 1. ROA/ROE > 0 (Profitability)
-      if (roe > 0) score++;
-      // 2. FCF > 0 (Cash Flow)
-      if (fcf > 0) score++;
-      // 3. FCF > Net Profit (Cash Flow quality)
-      if (netProfitList.length > 0) {
-        const latestProfit = netProfitList[netProfitList.length - 1];
-        if (fcf > latestProfit) score++;
-      }
-      // 4. Net Profit growth (latest > previous)
-      if (netProfitList.length >= 2) {
-        if (netProfitList[netProfitList.length - 1] > netProfitList[netProfitList.length - 2]) score++;
-      }
-      // 5. Debt leverage (DER <= 1.0)
-      if (der > 0 && der <= 1.0) score++;
-      // 6. Liquidity (Current Ratio >= 1.5)
-      if (currentRatio >= 1.5) score++;
-      // 7. Sales growth (Revenue growth > 0)
-      if (revenueGrowth > 0) score++;
-      // 8. ROE > 12% (Efficiency)
-      if (roe > 12) score++;
-      // 9. Profit CAGR > 0 (Long term growth)
-      if (cagr > 0) score++;
-      
-      computedFScore = Math.max(1, Math.min(9, score));
-    }
-
-    // Estimate Altman Z-Score
-    const sectorUpper = (stock.sector || '').toUpperCase();
-    if (sectorUpper === 'FINANCIALS' || sectorUpper === 'FINANCE') {
-      computedZScore = 3.0; // Banks typically safe zones by default due to deposit backing
-    } else if (fundamentals) {
-      let z = 0.5; // base
-      const cr = fundamentals.currentRatio || 1.2;
-      const der = fundamentals.der || 1.0;
-      const roe = fundamentals.roe || 8;
-      
-      // Liquidity contribution (proxy for working capital / assets)
-      z += Math.min(1.5, cr * 0.5);
-      
-      // Debt contribution (proxy for equity / debt leverage)
-      if (der > 0) {
-        z += Math.min(1.5, 1.0 / der);
-      } else {
-        z += 1.5;
-      }
-      
-      // Profitability contribution
-      if (roe > 0) {
-        z += Math.min(1.0, (roe / 100) * 4);
-      }
-      
-      computedZScore = Number(Math.max(0.5, Math.min(4.5, z + 1.0)).toFixed(2));
-    }
-
-    // Assign to fundamentals object
-    fundamentals.piotroskiFScore = computedFScore;
-    fundamentals.altmanZScore = computedZScore;
-
-    const enrichedStock = {
-      ...stock,
-      fundamentals,
-      technicals
-    };
-
-    // Calculate Projections
+    // 1. Projections (EPS, BVPS, CAGR, Graham, Fair Value)
     const projections = {};
     const price = stock.price || 0;
     
-    // EPS & BVPS
     let eps = 0;
     let bvps = 0;
     let cagr = 0;
@@ -241,20 +164,139 @@ export async function GET(request, { params }) {
       projections.cagrPercent = Number((cagr * 100).toFixed(1));
     }
 
-    // Scores
-    let fundamentalScore = null;
-    let technicalScore = null;
-    let trendingScore = null;
+    // 2. Estimate Piotroski F-Score (out of 9)
+    let computedFScore = 5; // default moderate score
+    let computedZScore = 2.5; // default neutral
+    if (fundamentals) {
+      let score = 0;
+      const roe = fundamentals.roe || 0;
+      const fcf = fundamentals.freeCashflow || 0;
+      const der = fundamentals.der || 0;
+      const currentRatio = fundamentals.currentRatio || 0;
+      const revenueGrowth = fundamentals.revenueGrowth || 0;
+      const netProfitList = Array.isArray(fundamentals.netProfit) ? fundamentals.netProfit : [];
+      
+      // 1. ROA/ROE > 0 (Profitability)
+      if (roe > 0) score++;
+      // 2. FCF > 0 (Cash Flow)
+      if (fcf > 0) score++;
+      // 3. FCF > Net Profit (Cash Flow quality)
+      if (netProfitList.length > 0) {
+        const latestProfit = netProfitList[netProfitList.length - 1];
+        if (fcf > latestProfit) score++;
+      }
+      // 4. Net Profit growth (latest > previous)
+      if (netProfitList.length >= 2) {
+        if (netProfitList[netProfitList.length - 1] > netProfitList[netProfitList.length - 2]) score++;
+      }
+      // 5. Debt leverage (DER <= 1.0)
+      if (der > 0 && der <= 1.0) score++;
+      // 6. Liquidity (Current Ratio >= 1.5)
+      if (currentRatio >= 1.5) score++;
+      // 7. Sales growth (Revenue growth > 0)
+      if (revenueGrowth > 0) score++;
+      // 8. ROE > 12% (Efficiency)
+      if (roe > 12) score++;
+      // 9. Profit CAGR > 0 (Long term growth)
+      if (cagr > 0) score++;
+      
+      computedFScore = Math.max(1, Math.min(9, score));
+    }
+
+    // 3. Estimate Altman Z-Score
+    const sectorUpper = (stock.sector || '').toUpperCase();
+    if (sectorUpper === 'FINANCIALS' || sectorUpper === 'FINANCE') {
+      computedZScore = 3.0; // Banks typically safe zones by default due to deposit backing
+    } else if (fundamentals) {
+      let z = 0.5; // base
+      const cr = fundamentals.currentRatio || 1.2;
+      const der = fundamentals.der || 1.0;
+      const roe = fundamentals.roe || 8;
+      
+      // Liquidity contribution (proxy for working capital / assets)
+      z += Math.min(1.5, cr * 0.5);
+      
+      // Debt contribution (proxy for equity / debt leverage)
+      if (der > 0) {
+        z += Math.min(1.5, 1.0 / der);
+      } else {
+        z += 1.5;
+      }
+      
+      // Profitability contribution
+      if (roe > 0) {
+        z += Math.min(1.0, (roe / 100) * 4);
+      }
+      
+      computedZScore = Number(Math.max(0.5, Math.min(4.5, z + 1.0)).toFixed(2));
+    }
+
+    // Assign to fundamentals object
+    fundamentals.piotroskiFScore = computedFScore;
+    fundamentals.altmanZScore = computedZScore;
+
+    const enrichedStock = {
+      ...stock,
+      fundamentals,
+      technicals,
+      kseiLatest
+    };
+
+    // 4. Bandarmologi & Smart Money Verdict
+    let smartMoneyScoreObj = null;
+    let bandarmologiVerdict = null;
+    try {
+      smartMoneyScoreObj = calculateSmartMoneyScore(enrichedStock);
+    } catch(e) {}
+    try {
+      bandarmologiVerdict = getBandarmologiVerdict({
+        bfi: kseiLatest?.bfi,
+        deltaSmartMoney: kseiLatest?.deltaSmartMoney,
+        deltaRetail: kseiLatest?.deltaRetail,
+        deltaForeign: kseiLatest?.deltaForeign,
+        priceChange: stock.changePercent,
+        turnoverSpikeRatio: volumeAnalysis.volumeSpikeRatio,
+        retailPercent: kseiLatest?.retailPercent
+      });
+    } catch(e) {}
+
+    const bandarmologi = {
+      score: smartMoneyScoreObj?.score || 50,
+      bfiScore: Number(kseiLatest?.bfi || 0),
+      wyckoffPhase: bandarmologiVerdict?.wyckoffPhase || (smartMoneyScoreObj?.score >= 70 ? 1 : 3),
+      wyckoffPhaseName: bandarmologiVerdict?.title || 'Fase Konsolidasi / Akumulasi',
+      status: bandarmologiVerdict?.status || 'Netral',
+      smartMoneyStatus: (kseiLatest?.deltaSmartMoney > 0 || (smartMoneyScoreObj?.score || 0) >= 60) ? 'Net Inflow ↑' : 'Net Outflow ↓',
+      foreignPercent: Number(kseiLatest?.foreignPercent || 0),
+      retailPercent: Number(kseiLatest?.retailPercent || 0),
+      pensionPercent: Number(kseiLatest?.pensionPercent || 0),
+      controllerPercent: Number(kseiLatest?.controllerPercent || 0),
+      mutualFundPercent: Number(kseiLatest?.mutualFundPercent || 0),
+      deltaForeign: Number(kseiLatest?.deltaForeign || 0),
+      deltaRetail: Number(kseiLatest?.deltaRetail || 0),
+      deltaSmartMoney: Number(kseiLatest?.deltaSmartMoney || 0),
+      details: smartMoneyScoreObj?.details || []
+    };
+
+    // 5. Scores (extract numeric score values)
+    let fundamentalScoreObj = null;
+    let technicalScoreObj = null;
+    let trendingScoreObj = null;
 
     try {
-      fundamentalScore = calculateFundamentalScore(enrichedStock);
+      fundamentalScoreObj = calculateFundamentalScore(enrichedStock);
     } catch(e) {}
     try {
-      technicalScore = calculateTechnicalScore(enrichedStock);
+      technicalScoreObj = calculateTechnicalScore(enrichedStock);
     } catch(e) {}
     try {
-      trendingScore = calculateTrendingScore(enrichedStock);
+      trendingScoreObj = calculateTrendingScore(enrichedStock);
     } catch(e) {}
+
+    const fundamentalScore = typeof fundamentalScoreObj === 'object' ? (fundamentalScoreObj?.score ?? 50) : Number(fundamentalScoreObj) || 50;
+    const technicalScore = typeof technicalScoreObj === 'object' ? (technicalScoreObj?.score ?? 50) : Number(technicalScoreObj) || 50;
+    const trendingScore = typeof trendingScoreObj === 'object' ? (trendingScoreObj?.score ?? 50) : Number(trendingScoreObj) || 50;
+    const smartMoneyScore = typeof smartMoneyScoreObj === 'object' ? (smartMoneyScoreObj?.score ?? 50) : Number(smartMoneyScoreObj) || 50;
 
     const responseData = {
       ...enrichedStock,
@@ -266,16 +308,24 @@ export async function GET(request, { params }) {
       realTimeData,
       volumeAnalysis,
       projections,
+      bandarmologi,
       scores: {
         fundamental: fundamentalScore,
         technical: technicalScore,
-        trending: trendingScore
+        trending: trendingScore,
+        smartMoney: smartMoneyScore,
+        details: {
+          fundamental: fundamentalScoreObj?.details || [],
+          technical: technicalScoreObj?.details || [],
+          trending: trendingScoreObj?.details || [],
+          smartMoney: smartMoneyScoreObj?.details || []
+        }
       }
     };
 
     return NextResponse.json(serializeData(responseData));
   } catch (error) {
     console.error('Error fetching stock:', error);
-    return NextResponse.json({ error: 'Terjadi kesalahan pada server' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Terjadi kesalahan pada server' }, { status: 500 });
   }
 }

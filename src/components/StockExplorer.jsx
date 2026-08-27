@@ -328,6 +328,7 @@ export default function StockExplorer({ user }) {
   const vol = stockDetail?.volumeAnalysis || {};
   const rt = stockDetail?.realTimeData || {};
   const scores = stockDetail?.scores || {};
+  const b = stockDetail?.bandarmologi || {};
   const isUp = (stockDetail?.changePercent || 0) >= 0;
 
   return (
@@ -846,11 +847,13 @@ export default function StockExplorer({ user }) {
                     </h3>
                   </div>
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                    stockDetail.kseiLatest?.summary?.bfiScore >= 60 
+                    (b.bfiScore || 0) >= 3 
                       ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' 
+                      : (b.bfiScore || 0) <= -3 
+                      ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300' 
                       : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
                   }`}>
-                    BFI {stockDetail.kseiLatest?.summary?.bfiScore || 50}
+                    BFI {b.bfiScore != null ? b.bfiScore.toFixed(1) : 0}
                   </span>
                 </div>
 
@@ -858,31 +861,31 @@ export default function StockExplorer({ user }) {
                   <div className="flex justify-between">
                     <span className="text-slate-500">Wyckoff Phase:</span>
                     <span className="font-bold text-indigo-600 dark:text-indigo-400">
-                      {stockDetail.kseiLatest?.summary?.wyckoffPhase || 'Accumulation'}
+                      {b.wyckoffPhaseName || `Fase ${b.wyckoffPhase || 1}`}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">Smart Money:</span>
-                    <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                      {stockDetail.kseiLatest?.summary?.smartMoneyStatus || 'Net Inflow ↑'}
+                    <span className={`font-bold ${b.smartMoneyStatus?.includes('Inflow') ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600'}`}>
+                      {b.smartMoneyStatus || 'Netral'}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">Asing (Foreign):</span>
                     <span className="font-bold text-slate-800 dark:text-slate-200">
-                      {stockDetail.kseiLatest?.latest?.foreignPercent ? `${stockDetail.kseiLatest.latest.foreignPercent.toFixed(1)}%` : '-'}
+                      {b.foreignPercent ? `${b.foreignPercent.toFixed(1)}%` : '-'}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">Ritel (Domestic):</span>
                     <span className="font-bold text-slate-800 dark:text-slate-200">
-                      {stockDetail.kseiLatest?.latest?.retailPercent ? `${stockDetail.kseiLatest.latest.retailPercent.toFixed(1)}%` : '-'}
+                      {b.retailPercent ? `${b.retailPercent.toFixed(1)}%` : '-'}
                     </span>
                   </div>
                 </div>
               </div>
               <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500">
-                Dominasi: <span className="font-semibold text-slate-800 dark:text-slate-200">{stockDetail.kseiLatest?.latest?.foreignPercent > 50 ? 'Asing (Foreign Heavy)' : 'Domestik'}</span>
+                Dominasi: <span className="font-semibold text-slate-800 dark:text-slate-200">{b.foreignPercent > 50 ? 'Asing (Foreign Heavy)' : 'Domestik'}</span>
               </div>
             </div>
 
