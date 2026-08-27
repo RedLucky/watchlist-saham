@@ -354,442 +354,575 @@ export default function StockScreener() {
     }
   };
 
- return (
- <div className="space-y-6">
- 
- {/* Sub-tab Navigation */}
- <div className="overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
- <div className="flex gap-2 p-1 bg-slate-100 dark:bg-white/5 rounded-xl border border-slate-300 dark:border-white/10 w-max">
- {tabs.map((tab) => (
- <button
- key={tab.id}
- onClick={() => { setActiveTab(tab.id); setExpandedRow(null); }}
- className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-sm font-bold transition-all duration-300 whitespace-nowrap ${
- activeTab === tab.id
- ? 'bg-gradient-to-r from-amber-600 via-indigo-600 to-purple-600 text-white font-extrabold shadow-lg'
- : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-white/10'
- }`}
- >
- {tab.label}
- </button>
- ))}
- </div>
- </div>
- 
- <div className="text-[11px] sm:text-sm text-slate-500 dark:text-slate-400 px-2">
- {tabs.find(t => t.id === activeTab)?.desc}
- </div>
+  // Shared Detail Renderer for both Desktop Expanded Row and Mobile Card Accordion
+  const renderItemDetails = (item) => {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        {/* Left Column: Alasan Penilaian & Smart Money Metrics */}
+        <div className="space-y-3">
+          <div>
+            <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wider mb-2">
+              Alasan Penilaian
+            </h4>
+            <ul className="space-y-1.5">
+              {item.details?.map((detail, i) => (
+                <li key={i} className="text-xs text-slate-600 dark:text-slate-300 flex gap-2">
+                  <span className="text-emerald-500 font-bold mt-0.5 shrink-0">✓</span>
+                  <span>{detail}</span>
+                </li>
+              )) || (
+                <li className="text-xs text-slate-500 dark:text-slate-400 italic">Tidak ada detail tersedia</li>
+              )}
+            </ul>
+          </div>
 
- {/* Main Content Area */}
- <div className="glass-panel overflow-hidden border border-slate-300 dark:border-white/10 rounded-2xl shadow-xl">
- <div className="overflow-x-auto overflow-y-auto max-h-[75vh]">
- <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800/30">
- <thead className="bg-slate-100 dark:bg-slate-900 sticky top-0 z-20 shadow-xs border-b border-slate-200 dark:border-slate-800">
- <tr>
- <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider w-10 bg-slate-100 dark:bg-slate-900">No</th>
- <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider bg-slate-100 dark:bg-slate-900">Saham</th>
- {renderTableHeaders()}
- </tr>
- </thead>
- <tbody className="divide-y divide-slate-200 dark:divide-slate-800/30">
- {loading ? (
- // Loading Skeleton
- [...Array(5)].map((_, i) => (
- <tr key={i} className="animate-pulse">
- <td className="px-4 py-4"><div className="h-4 bg-slate-200 dark:bg-white/10 rounded w-4"></div></td>
- <td className="px-4 py-4">
- <div className="flex items-center gap-3">
- <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-white/10"></div>
- <div>
- <div className="h-4 bg-slate-200 dark:bg-white/10 rounded w-16 mb-2"></div>
- <div className="h-3 bg-slate-200 dark:bg-white/10 rounded w-24"></div>
- </div>
- </div>
- </td>
- <td className="px-4 py-4"><div className="h-4 bg-slate-200 dark:bg-white/10 rounded w-16 ml-auto"></div></td>
- <td className="px-4 py-4"><div className="h-4 bg-slate-200 dark:bg-white/10 rounded w-12 ml-auto"></div></td>
- <td className="px-4 py-4 hidden sm:table-cell"><div className="h-4 bg-slate-200 dark:bg-white/10 rounded w-12 ml-auto"></div></td>
- <td className="px-4 py-4"><div className="h-6 bg-slate-200 dark:bg-white/10 rounded-full w-10 mx-auto"></div></td>
- </tr>
- ))
- ) : error ? (
- <tr>
- <td colSpan="8" className="px-4 py-10 text-center text-red-400">
- ⚠️ {error}
- </td>
- </tr>
- ) : sortedData.length === 0 ? (
- <tr>
- <td colSpan="8" className="px-4 py-10 text-center text-slate-500 dark:text-slate-400">
- Tidak ada saham yang memenuhi kriteria screener ini.
- </td>
- </tr>
- ) : (
- sortedData.map((item, idx) => (
- <Fragment key={item.ticker}>
- <tr 
- className="hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer group"
- onClick={() => toggleRow(item.ticker)}
- >
- <td className="px-4 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400 text-center">
- {idx + 1}
- </td>
- <td className="px-4 py-4 whitespace-nowrap">
- <div className="flex items-center gap-3">
- <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-600/20 border border-indigo-500/30 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
- <span className="text-xs font-bold text-indigo-400">{item.ticker.substring(0, 2)}</span>
- </div>
- <div>
- <div className="flex items-center gap-1.5 flex-wrap">
- <span className="font-bold text-slate-900 dark:text-white">{item.ticker}</span>
- {item.isSyariah ? (
- <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold"title="Saham Syariah (DES / ISSI)">
- 🌙 Syariah
- </span>
- ) : (
- <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 border border-slate-300 dark:border-white/10 font-medium"title="Konvensional">
- Konvensional
- </span>
- )}
- {item.isDividendTrap && (
- <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-bold" title="Peringatan: Potensi jebakan dividen">
- ⚠️ Div. Trap
- </span>
- )}
- {item.hasStrongController && (
- <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-bold" title="Kepemilikan Pengendali > 50%">
- 👑 Pengendali Kuat
- </span>
- )}
- <button
-   onClick={(e) => {
-     e.stopPropagation();
-     setSelectedOwnershipStock(item);
-   }}
-   className="text-[9px] px-2 py-0.5 rounded-full bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-300 border border-indigo-500/40 font-bold transition-all flex items-center gap-1 shadow-sm"
-   title="Lihat Struktur & Riwayat Kepemilikan KSEI"
- >
-   👥 Kepemilikan
- </button>
- <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 border border-slate-300 dark:border-white/10 truncate max-w-[80px]">
- {item.sector}
- </span>
- {item.metrics?.streakYears >= 5 && (
-    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-black flex items-center gap-0.5" title={`Rutin membagikan dividen ${item.metrics.streakYears} tahun berturut-turut`}>
-      🏆 {item.metrics.streakYears}th Rutin
-    </span>
-  )}
-  {item.metrics?.streakYears >= 3 && item.metrics?.streakYears < 5 && (
-    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30 font-bold flex items-center gap-0.5" title={`Membagikan dividen ${item.metrics.streakYears} tahun berturut-turut`}>
-      🎖️ {item.metrics.streakYears}th Rutin
-    </span>
-  )}
- </div>
- <div className="flex items-center gap-2 mt-0.5">
-   <div className="text-xs text-slate-400 dark:text-slate-500 truncate max-w-[120px] sm:max-w-[200px]">
-   {item.name}
-   </div>
-   {item.fundamentals?.marketCap && (
-     <div className="text-[9px] px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold border border-blue-100 dark:border-blue-800/30">
-       MCap: {(item.fundamentals.marketCap / 1_000_000_000_000).toFixed(1)}T
-     </div>
-   )}
- </div>
- </div>
- </div>
- </td>
- {renderRowCells(item)}
- </tr>
+          {item.smartMoney && (
+            <div className="pt-2 border-t border-slate-200 dark:border-slate-800/60">
+              <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wider mb-2">
+                ⚡ Volume & Smart Money Analysis
+              </h4>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="p-2 rounded-lg bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Lonjakan Harian</span>
+                  <span className={`text-xs font-bold ${
+                    item.smartMoney.turnoverSpikeRatio > 1.5 ? 'text-amber-500' : 'text-slate-700 dark:text-slate-300'
+                  }`}>
+                    {(item.smartMoney.turnoverSpikeRatio * 100).toFixed(0)}%
+                  </span>
+                </div>
+                <div className="p-2 rounded-lg bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Status Bandarmologi</span>
+                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold block truncate mt-0.5 ${
+                    item.smartMoney.badge === 'emerald' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                    item.smartMoney.badge === 'rose' ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400' :
+                    item.smartMoney.badge === 'amber' ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' :
+                    'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                  }`}>
+                    {item.smartMoney.status}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
- {/* Expandable Details Row */}
- {expandedRow === item.ticker && (
-              <tr>
-                <td colSpan="8" className="bg-slate-50 dark:bg-slate-900/60 px-4 py-4">
-                  <div className="pl-12 grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-top-2 duration-300">
-                    {/* Left Column: Alasan Penilaian & Smart Money Metrics */}
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wider mb-2">Alasan Penilaian</h4>
-                        <ul className="space-y-1.5">
-                          {item.details?.map((detail, i) => (
-                            <li key={i} className="text-xs text-slate-600 dark:text-slate-300 flex gap-2">
-                              <span className="text-emerald-500 font-bold mt-0.5">✓</span>
-                              <span>{detail}</span>
-                            </li>
-                          )) || (
-                            <li className="text-xs text-slate-500 dark:text-slate-400 italic">Tidak ada detail tersedia</li>
+        {/* Right Column: KSEI Multi-Month Flow & Shareholders */}
+        <div className="space-y-3">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wider">
+                📊 Pergerakan Ritel & Smart Money (KSEI)
+              </h4>
+              <button
+                onClick={() => setSelectedOwnershipStock(item)}
+                className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
+              >
+                Detail Lengkap ↗
+              </button>
+            </div>
+            {(() => {
+              let history = item.kseiHistory;
+              if (typeof history === 'string') {
+                try { history = JSON.parse(history); } catch (e) { history = []; }
+              }
+              if (Array.isArray(history) && history.length > 0) {
+                return (
+                  <div className="flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none]">
+                    {[...history].reverse().slice(0, 6).map((sh, idx) => {
+                      const deltaRetail = sh.deltaRetail || 0;
+                      const deltaForeign = sh.deltaForeign || 0;
+                      return (
+                        <div key={idx} className={`p-2 min-w-[115px] rounded-lg border shrink-0 transition-all ${
+                          idx === 0 
+                            ? 'bg-slate-100 dark:bg-slate-800/90 border-slate-300 dark:border-slate-700 shadow-sm'
+                            : 'bg-white dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/50'
+                        }`}>
+                          <div className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">{sh.date}</div>
+                          <div className="text-xs font-black text-slate-900 dark:text-white">
+                            Ritel: {sh.retailPercent?.toFixed(1) ?? '0.0'}%
+                          </div>
+                          <div className={`text-[10px] font-bold flex items-center gap-0.5 mt-0.5 ${
+                            deltaRetail > 0 ? 'text-emerald-600 dark:text-emerald-400' : deltaRetail < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'
+                          }`}>
+                            {deltaRetail > 0 ? `📈 +${Math.abs(deltaRetail).toLocaleString('id-ID')}` :
+                             deltaRetail < 0 ? `📉 -${Math.abs(deltaRetail).toLocaleString('id-ID')}` :
+                             '➖ 0 lbr'}
+                          </div>
+                          {deltaForeign !== 0 && (
+                            <div className={`text-[9px] font-bold mt-0.5 ${
+                              deltaForeign > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                            }`}>
+                              {deltaForeign > 0 ? `🌐 +${Math.abs(deltaForeign).toLocaleString('id-ID')}` :
+                               `🌐 -${Math.abs(deltaForeign).toLocaleString('id-ID')}`}
+                            </div>
                           )}
-                        </ul>
-                      </div>
-
-                      {item.smartMoney && (
-                        <div className="pt-2 border-t border-slate-200 dark:border-slate-800/60">
-                          <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wider mb-2">
-                            ⚡ Volume & Smart Money Analysis
-                          </h4>
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between p-2 rounded-lg bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
-                              <span className="text-[10px] text-slate-500 dark:text-slate-400">Lonjakan Harian</span>
-                              <span className={`text-xs font-bold ${
-                                item.smartMoney.turnoverSpikeRatio > 1.5 ? 'text-amber-500' : 'text-slate-700 dark:text-slate-300'
-                              }`}>
-                                {(item.smartMoney.turnoverSpikeRatio * 100).toFixed(0)}%
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between p-2 rounded-lg bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
-                              <span className="text-[10px] text-slate-500 dark:text-slate-400">Status Bandarmologi</span>
-                              <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                                item.smartMoney.badge === 'emerald' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                                item.smartMoney.badge === 'rose' ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400' :
-                                item.smartMoney.badge === 'amber' ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' :
-                                'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
-                              }`}>
-                                {item.smartMoney.status}
-                              </span>
-                            </div>
-                          </div>
                         </div>
-                      )}
+                      );
+                    })}
+                  </div>
+                );
+              }
+              return <div className="text-[10px] text-slate-500 italic">Data histori kepemilikan KSEI belum tersedia.</div>;
+            })()}
+          </div>
+
+          {item.ownership && item.ownership.shareholders && (
+            <div>
+              <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wider mb-2">
+                🏢 Top Shareholders ({'>'}5%)
+              </h4>
+              <div className="space-y-1.5">
+                {item.ownership.shareholders.filter(s => s.Kategori === 'Lebih dari 5%').slice(0, 3).map((sh, idx) => (
+                  <div key={idx} className="flex justify-between items-center p-2 rounded-lg bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
+                    <div className="text-[10px] font-medium text-slate-700 dark:text-slate-300 truncate pr-2 max-w-[140px]" title={sh.Nama}>{sh.Nama}</div>
+                    <div className="text-[10px] font-bold text-slate-900 dark:text-white shrink-0">{sh.Persentase}%</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Insider Trades */}
+          <div>
+            {(() => {
+              let trades = [];
+              if (Array.isArray(item.insiderTrades) && item.insiderTrades.length > 0) {
+                trades = item.insiderTrades.filter(t => t.name || t.insiderName).map(t => ({
+                  name: t.name || t.insiderName,
+                  role: t.position || t.role || 'Direksi / Manajemen',
+                  action: t.action || (t.type === 'SELL' ? 'SELL' : 'BUY'),
+                  date: t.date ? new Date(t.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }) : 'Snapshot',
+                  shares: Number(t.shares || t.volume || 0),
+                  price: Number(t.price || item.price || 0),
+                  purpose: t.purpose || (t.action === 'SELL' ? 'Divestasi / Realisasi' : 'Investasi Langsung'),
+                }));
+              }
+
+              return (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1">
+                      🚨 Transaksi Orang Dalam (Insider)
+                    </h4>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300">
+                      BEI ⚡
+                    </span>
+                  </div>
+
+                  {trades.length === 0 ? (
+                    <div className="text-[10px] text-slate-500 italic p-2 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/60">
+                      Belum ada catatan transaksi orang dalam terkini.
                     </div>
-
-                    {/* Right Column: KSEI Multi-Month Flow & Shareholders */}
-                    <div className="space-y-4">
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wider">
-                            📊 Pergerakan Ritel & Smart Money (KSEI)
-                          </h4>
-                          <button
-                            onClick={() => setSelectedOwnershipStock(item)}
-                            className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
+                  ) : (
+                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                      {trades.slice(0, 3).map((trade, idx) => {
+                        const isBuy = trade.action === 'BUY';
+                        const totalLots = Math.round((trade.shares || 0) / 100);
+                        return (
+                          <div
+                            key={idx}
+                            className="p-2.5 rounded-xl border bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/70 shadow-xs space-y-1.5"
                           >
-                            Detail Lengkap ↗
-                          </button>
-                        </div>
-                        {(() => {
-                          let history = item.kseiHistory;
-                          if (typeof history === 'string') {
-                            try { history = JSON.parse(history); } catch (e) { history = []; }
-                          }
-                          if (Array.isArray(history) && history.length > 0) {
-                            return (
-                              <div className="flex gap-2 overflow-x-auto pb-2">
-                                {[...history].reverse().slice(0, 6).map((sh, idx) => {
-                                  const deltaRetail = sh.deltaRetail || 0;
-                                  const deltaForeign = sh.deltaForeign || 0;
-                                  return (
-                                    <div key={idx} className={`p-2.5 min-w-[125px] rounded-lg border transition-all ${
-                                      idx === 0 
-                                        ? 'bg-slate-50 dark:bg-slate-800/80 border-slate-300 dark:border-slate-700 shadow-sm'
-                                        : 'bg-white dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/50'
-                                    }`}>
-                                      <div className="text-[10px] text-slate-500 dark:text-slate-400 font-bold mb-0.5">{sh.date}</div>
-                                      <div className="text-xs font-black text-slate-900 dark:text-white">
-                                        Ritel: {sh.retailPercent?.toFixed(1) ?? '0.0'}%
-                                      </div>
-                                      <div className={`text-[10px] font-bold flex items-center gap-0.5 mt-0.5 ${
-                                        deltaRetail > 0 ? 'text-emerald-600 dark:text-emerald-400' : deltaRetail < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'
-                                      }`}>
-                                        {deltaRetail > 0 ? `📈 Ritel +${Math.abs(deltaRetail).toLocaleString('id-ID')} lbr` :
-                                         deltaRetail < 0 ? `📉 Ritel -${Math.abs(deltaRetail).toLocaleString('id-ID')} lbr` :
-                                         '➖ Ritel 0 lbr'}
-                                      </div>
-                                      {deltaForeign !== 0 && (
-                                        <div className={`text-[9px] font-bold mt-0.5 ${
-                                          deltaForeign > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
-                                        }`}>
-                                          {deltaForeign > 0 ? `🌐 Asing: +${Math.abs(deltaForeign).toLocaleString('id-ID')}` :
-                                           `🌐 Asing: -${Math.abs(deltaForeign).toLocaleString('id-ID')}`}
-                                        </div>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            );
-                          }
-
-                          if (item.shareholders && item.shareholders.length > 0) {
-                            return (
-                              <div className="flex gap-2 overflow-x-auto pb-2">
-                                {item.shareholders.slice(0, 3).map((sh, idx) => (
-                                  <div key={idx} className="p-2 min-w-[100px] rounded-lg border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-                                    <div className="text-[9px] text-slate-500 font-medium mb-0.5">{sh.month}</div>
-                                    <div className="text-xs font-black text-slate-900 dark:text-white">{sh.count.toLocaleString('id-ID')}%</div>
-                                    <div className="text-[9px] font-bold text-slate-400">{sh.changePct > 0 ? '+' : ''}{sh.changePct}%</div>
-                                  </div>
-                                ))}
-                              </div>
-                            );
-                          }
-
-                          return <div className="text-[10px] text-slate-500 italic">Data histori kepemilikan KSEI belum tersedia untuk emiten ini.</div>;
-                        })()}
-                      </div>
-
-                      {item.ownership && item.ownership.shareholders && (
-                        <div>
-                          <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wider mb-2">
-                            🏢 Top Shareholders ({'>'}5%)
-                          </h4>
-                          <div className="space-y-1.5">
-                            {item.ownership.shareholders.filter(s => s.Kategori === 'Lebih dari 5%').slice(0, 3).map((sh, idx) => (
-                              <div key={idx} className="flex justify-between items-center p-2 rounded-lg bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
-                                <div className="text-[10px] font-medium text-slate-700 dark:text-slate-300 truncate pr-2 max-w-[140px]" title={sh.Nama}>{sh.Nama}</div>
-                                <div className="text-[10px] font-bold text-slate-900 dark:text-white shrink-0">{sh.Persentase}%</div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* 3. AJAIB-STYLE INSIDER TRANSACTIONS FEED */}
-                      <div>
-                        {(() => {
-                          let trades = [];
-                          if (Array.isArray(item.insiderTrades) && item.insiderTrades.length > 0) {
-                            trades = item.insiderTrades.filter(t => t.name || t.insiderName).map(t => ({
-                              name: t.name || t.insiderName,
-                              role: t.position || t.role || 'Direksi / Manajemen',
-                              action: t.action || (t.type === 'SELL' ? 'SELL' : 'BUY'),
-                              date: t.date ? new Date(t.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }) : 'Snapshot',
-                              shares: Number(t.shares || t.volume || 0),
-                              price: Number(t.price || item.price || 0),
-                              purpose: t.purpose || (t.action === 'SELL' ? 'Divestasi / Realisasi' : 'Investasi Langsung'),
-                              url: t.url
-                            }));
-                          }
-
-                          if (trades.length === 0 && item.ownership?.shareholders?.length > 0) {
-                            const holders = item.ownership.shareholders.filter(s => s.Jumlah > 0 || s.Persentase > 0);
-                            trades = holders.slice(0, 3).map((sh, idx) => {
-                              const isDirector = sh.Kategori === 'Direksi';
-                              const isController = sh.Pengendali === true || sh.Kategori === 'Lebih dari 5%';
-                              const shares = Number(sh.Jumlah || 0);
-                              const pct = Number(sh.Persentase || 0);
-                              return {
-                                name: sh.Nama || `Insider ${idx + 1}`,
-                                role: isDirector ? 'Direksi Perusahaan' : isController ? 'Pemegang Saham Pengendali' : (sh.Kategori || 'Manajemen'),
-                                action: 'BUY',
-                                date: 'Snapshot BEI',
-                                shares: shares > 0 ? shares : Math.round((pct / 100) * 1000000000),
-                                price: item.price || 0,
-                                purpose: isDirector ? 'Program Kepemilikan Manajemen (MESOP)' : 'Kepemilikan Strategis Pengendali',
-                                url: null
-                              };
-                            });
-                          }
-
-                          if (trades.length === 0 && item.ownership?.directors?.length > 0) {
-                            trades = item.ownership.directors.slice(0, 2).map((dir) => ({
-                              name: dir.Nama,
-                              role: dir.Jabatan || 'Direksi',
-                              action: 'BUY',
-                              date: 'Snapshot BEI',
-                              shares: 250000,
-                              price: item.price || 0,
-                              purpose: 'Pelaksanaan Program Opsi Saham Manajemen (MESOP)',
-                              url: null
-                            }));
-                          }
-
-                          return (
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between">
-                                <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1">
-                                  🚨 Transaksi Orang Dalam (Insider)
-                                </h4>
-                                <span className="text-[9px] px-1.5 py-0.5 rounded font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300">
-                                  Ajaib ⚡
-                                </span>
-                              </div>
-
-                              {trades.length === 0 ? (
-                                <div className="text-[10px] text-slate-500 italic p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/60">
-                                  Belum ada catatan transaksi orang dalam untuk emiten ini.
+                            <div className="flex items-start justify-between gap-1">
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className={`px-1.5 py-0.2 rounded text-[9px] font-black uppercase shrink-0 ${
+                                    isBuy 
+                                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300'
+                                      : 'bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300'
+                                  }`}>
+                                    {isBuy ? '🟢 BELI' : '🔴 JUAL'}
+                                  </span>
+                                  <span className="text-xs font-black text-slate-900 dark:text-white truncate" title={trade.name}>
+                                    {trade.name}
+                                  </span>
                                 </div>
+                                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                                  {trade.role}
+                                </div>
+                              </div>
+                              <span className="text-[9px] font-medium text-slate-400 shrink-0">{trade.date}</span>
+                            </div>
+
+                            <div className="flex items-center justify-between text-[10px] bg-slate-50 dark:bg-slate-900/50 px-2 py-1 rounded-lg border border-slate-100 dark:border-slate-800">
+                              <span>Harga: <strong>Rp {(trade.price || item.price || 0).toLocaleString('id-ID')}</strong></span>
+                              <span className={`font-black ${isBuy ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                {isBuy ? '+' : '-'}{totalLots.toLocaleString('id-ID')} Lot
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-5">
+      {/* Sub-tab Navigation (Horizontal Scrollable on Mobile) */}
+      <div className="overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden snap-x">
+        <div className="flex gap-2 p-1 bg-slate-100 dark:bg-white/5 rounded-xl border border-slate-300 dark:border-white/10 w-max">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => { setActiveTab(tab.id); setExpandedRow(null); }}
+              className={`snap-start px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-bold transition-all duration-300 whitespace-nowrap ${
+                activeTab === tab.id
+                  ? 'bg-gradient-to-r from-amber-600 via-indigo-600 to-purple-600 text-white font-extrabold shadow-md'
+                  : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-white/10'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      
+      {/* Tab Description & Mobile Sort Controls */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
+        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+          {tabs.find(t => t.id === activeTab)?.desc}
+        </p>
+
+        {/* Mobile Sort Pills Bar */}
+        <div className="md:hidden flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none] pb-1">
+          <span className="text-[11px] font-bold text-slate-400 shrink-0">Urutkan:</span>
+          {[
+            { key: 'score', label: '⚡ Skor' },
+            { key: 'price', label: '💵 Harga' },
+            { key: 'dividendYield', label: '📈 Yield' },
+            { key: 'cagr', label: '📊 CAGR' },
+            { key: 'per', label: '🏷️ PER' },
+          ].map(s => {
+            const isActive = sortConfig.key === s.key;
+            return (
+              <button
+                key={s.key}
+                onClick={() => handleSort(s.key)}
+                className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all shrink-0 border ${
+                  isActive
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                }`}
+              >
+                {s.label} {isActive ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── 1. MOBILE CARD VIEW (Phone & Small Screens) ───────────────────── */}
+      <div className="md:hidden space-y-3">
+        {loading ? (
+          [...Array(4)].map((_, i) => (
+            <div key={i} className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 animate-pulse space-y-3">
+              <div className="flex justify-between items-center">
+                <div className="h-5 bg-slate-200 dark:bg-slate-800 rounded w-24"></div>
+                <div className="h-6 bg-slate-200 dark:bg-slate-800 rounded-full w-12"></div>
+              </div>
+              <div className="h-12 bg-slate-100 dark:bg-slate-800/60 rounded-xl"></div>
+            </div>
+          ))
+        ) : error ? (
+          <div className="p-6 text-center text-red-500 bg-red-50 dark:bg-red-950/20 rounded-2xl border border-red-200 dark:border-red-900/30">
+            ⚠️ {error}
+          </div>
+        ) : sortedData.length === 0 ? (
+          <div className="p-8 text-center text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+            Tidak ada saham yang memenuhi kriteria screener ini.
+          </div>
+        ) : (
+          sortedData.map((item, idx) => {
+            const isExpanded = expandedRow === item.ticker;
+            const safeChangePercent = Number.isFinite(item.changePercent) ? item.changePercent : 0;
+            const cagrVal = item.metrics?.cagr;
+
+            return (
+              <div 
+                key={item.ticker}
+                className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm transition-all"
+              >
+                {/* Card Top: Rank, Ticker, Badges, Score */}
+                <div className="flex items-start justify-between gap-2 mb-3">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="w-6 h-6 rounded-full bg-slate-100 dark:bg-white/10 flex items-center justify-center text-[10px] font-black text-slate-500 dark:text-slate-400 shrink-0">
+                      #{idx + 1}
+                    </span>
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-600/20 border border-indigo-500/30 flex items-center justify-center shrink-0">
+                      <span className="text-xs font-black text-indigo-600 dark:text-indigo-400">{item.ticker.substring(0, 2)}</span>
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1 flex-wrap">
+                        <span className="font-black text-base text-slate-900 dark:text-white">{item.ticker}</span>
+                        {item.isSyariah && <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold">🌙 Syariah</span>}
+                        {item.hasStrongController && <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold">👑 Pengendali</span>}
+                        {item.isDividendTrap && <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-rose-500/20 text-rose-600 dark:text-rose-400 font-bold">⚠️ Trap</span>}
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[170px]">{item.name || item.sector}</p>
+                    </div>
+                  </div>
+
+                  {/* Score Badge */}
+                  <div className="flex flex-col items-end shrink-0">
+                    <ScoreBadge score={item.score} />
+                    {item.matchCount != null && (
+                      <span className="text-[9px] font-extrabold text-amber-600 dark:text-amber-400 mt-1">
+                        ⭐ {item.matchCount}/4 Kriteria
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Primary Metrics 2x2 Grid */}
+                <div className="grid grid-cols-2 gap-2 bg-slate-50 dark:bg-white/[0.03] p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800/60 mb-3">
+                  <div>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Harga Terkini</span>
+                    <div className="flex items-baseline gap-1.5 flex-wrap">
+                      <span className="text-sm font-black text-slate-900 dark:text-white">
+                        Rp {(item.price ?? 0).toLocaleString('id-ID')}
+                      </span>
+                      <span className={`text-[10px] font-bold ${safeChangePercent > 0 ? 'text-emerald-600 dark:text-emerald-400' : safeChangePercent < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'}`}>
+                        {safeChangePercent > 0 ? '+' : ''}{safeChangePercent.toFixed(2)}%
+                      </span>
+                    </div>
+                  </div>
+
+                  {activeTab === 'pick' && (
+                    <div>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Div Yield / CAGR</span>
+                      <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                        {(item.metrics?.dividendYield ?? 0).toFixed(1)}% <span className="text-slate-400 font-normal">|</span> {cagrVal != null ? `${cagrVal >= 0 ? '+' : ''}${Number(cagrVal).toFixed(1)}%` : '-'}
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'passive' && (
+                    <div>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Div Yield / ROE</span>
+                      <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                        {(item.metrics?.dividendYield ?? 0).toFixed(1)}% <span className="text-slate-400 font-normal">|</span> {item.metrics?.roe != null ? `${Number(item.metrics.roe).toFixed(1)}%` : '-'}
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'dividend' && (
+                    <div>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Yield / Payout</span>
+                      <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                        {(item.metrics?.dividendYield ?? 0).toFixed(1)}% <span className="text-slate-400 font-normal">|</span> {item.metrics?.payoutRatio != null ? `${Number(item.metrics.payoutRatio).toFixed(0)}%` : '-'}
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'cheap' && (
+                    <div>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">PER / PBV</span>
+                      <div className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                        {item.metrics?.per != null ? `${Number(item.metrics.per).toFixed(1)}x` : '-'} <span className="text-slate-400 font-normal">|</span> {item.metrics?.pbv != null ? `${Number(item.metrics.pbv).toFixed(1)}x` : '-'}
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'quality' && (
+                    <div>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">PER / ROE</span>
+                      <div className="text-xs font-bold text-purple-600 dark:text-purple-400">
+                        {item.metrics?.per != null ? `${Number(item.metrics.per).toFixed(1)}x` : '-'} <span className="text-slate-400 font-normal">|</span> {item.metrics?.roe != null ? `${Number(item.metrics.roe).toFixed(1)}%` : '-'}
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'potential' && (
+                    <div>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Volume Transaksi</span>
+                      <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                        {item.volume ? (Number(item.volume) / 10000).toLocaleString('id-ID', { maximumFractionDigits: 0 }) + ' Lot' : '-'}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Sub-Badges row */}
+                {item.matchedScreeners?.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mb-2.5">
+                    {item.matchedScreeners.map((sc, i) => (
+                      <span key={i} className="text-[9px] px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/40 font-bold">
+                        {sc}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Card Action Footer */}
+                <div className="flex items-center justify-between pt-2 border-t border-slate-200/80 dark:border-slate-800/60">
+                  <button
+                    onClick={() => setSelectedOwnershipStock(item)}
+                    className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/60 flex items-center gap-1"
+                  >
+                    <span>👥</span> Struktur KSEI
+                  </button>
+
+                  <button
+                    onClick={() => toggleRow(item.ticker)}
+                    className="text-xs font-extrabold text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1"
+                  >
+                    <span>{isExpanded ? 'Tutup Detail ▲' : 'Buka Analisis ▼'}</span>
+                  </button>
+                </div>
+
+                {/* Accordion Expandable Content */}
+                {isExpanded && (
+                  <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-800 animate-in fade-in duration-200">
+                    {renderItemDetails(item)}
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* ── 2. DESKTOP & TABLET TABLE VIEW ───────────────────────────────── */}
+      <div className="hidden md:block glass-panel overflow-hidden border border-slate-300 dark:border-white/10 rounded-2xl shadow-xl">
+        <div className="overflow-x-auto overflow-y-auto max-h-[75vh]">
+          <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800/30">
+            <thead className="bg-slate-100 dark:bg-slate-900 sticky top-0 z-20 shadow-xs border-b border-slate-200 dark:border-slate-800">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider w-10 bg-slate-100 dark:bg-slate-900">No</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider bg-slate-100 dark:bg-slate-900">Saham</th>
+                {renderTableHeaders()}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-800/30">
+              {loading ? (
+                [...Array(5)].map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    <td className="px-4 py-4"><div className="h-4 bg-slate-200 dark:bg-white/10 rounded w-4"></div></td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-white/10"></div>
+                        <div>
+                          <div className="h-4 bg-slate-200 dark:bg-white/10 rounded w-16 mb-2"></div>
+                          <div className="h-3 bg-slate-200 dark:bg-white/10 rounded w-24"></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4"><div className="h-4 bg-slate-200 dark:bg-white/10 rounded w-16 ml-auto"></div></td>
+                    <td className="px-4 py-4"><div className="h-4 bg-slate-200 dark:bg-white/10 rounded w-12 ml-auto"></div></td>
+                    <td className="px-4 py-4 hidden sm:table-cell"><div className="h-4 bg-slate-200 dark:bg-white/10 rounded w-12 ml-auto"></div></td>
+                    <td className="px-4 py-4"><div className="h-6 bg-slate-200 dark:bg-white/10 rounded-full w-10 mx-auto"></div></td>
+                  </tr>
+                ))
+              ) : error ? (
+                <tr>
+                  <td colSpan="8" className="px-4 py-10 text-center text-red-400">
+                    ⚠️ {error}
+                  </td>
+                </tr>
+              ) : sortedData.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="px-4 py-10 text-center text-slate-500 dark:text-slate-400">
+                    Tidak ada saham yang memenuhi kriteria screener ini.
+                  </td>
+                </tr>
+              ) : (
+                sortedData.map((item, idx) => (
+                  <Fragment key={item.ticker}>
+                    <tr 
+                      className="hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer group"
+                      onClick={() => toggleRow(item.ticker)}
+                    >
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400 text-center">
+                        {idx + 1}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-600/20 border border-indigo-500/30 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                            <span className="text-xs font-bold text-indigo-400">{item.ticker.substring(0, 2)}</span>
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-bold text-slate-900 dark:text-white">{item.ticker}</span>
+                              {item.isSyariah ? (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold" title="Saham Syariah (DES / ISSI)">
+                                  🌙 Syariah
+                                </span>
                               ) : (
-                                <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
-                                  {trades.map((trade, idx) => {
-                                    const isBuy = trade.action === 'BUY';
-                                    const totalRp = (trade.shares || 0) * (trade.price || item.price || 0);
-                                    const totalLots = Math.round((trade.shares || 0) / 100);
-                                    return (
-                                      <div
-                                        key={idx}
-                                        className="p-3 rounded-xl border bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/70 shadow-xs space-y-2.5"
-                                      >
-                                        {/* Main Line: [Badge BELI/JUAL] Name (Role) & Date */}
-                                        <div className="flex items-start justify-between gap-2">
-                                          <div className="min-w-0">
-                                            <div className="flex items-center gap-1.5 flex-wrap">
-                                              <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase shrink-0 ${
-                                                isBuy 
-                                                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30'
-                                                  : 'bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300 border border-rose-300 dark:border-rose-500/30'
-                                              }`}>
-                                                {isBuy ? '🟢 BELI' : '🔴 JUAL'}
-                                              </span>
-                                              <span className="text-xs font-black text-slate-900 dark:text-white truncate" title={trade.name}>
-                                                {trade.name}
-                                              </span>
-                                            </div>
-                                            <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                              {trade.role}
-                                            </div>
-                                          </div>
-                                          <span className="text-[9px] font-medium text-slate-400 shrink-0">{trade.date}</span>
-                                        </div>
-
-                                        {/* Explicit 4-Box Metrics: Harga, Lot, Lembar, Total Nilai */}
-                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[9px] bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-800">
-                                          <div>
-                                            <span className="text-slate-400 block font-medium">Harga Transaksi</span>
-                                            <span className="font-extrabold text-slate-900 dark:text-white">
-                                              Rp {(trade.price || item.price || 0).toLocaleString('id-ID')}
-                                            </span>
-                                          </div>
-                                          <div>
-                                            <span className="text-slate-400 block font-medium">Jumlah Lot</span>
-                                            <span className={`font-black ${isBuy ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                                              {isBuy ? '+' : '-'}{totalLots.toLocaleString('id-ID')} Lot
-                                            </span>
-                                          </div>
-                                          <div>
-                                            <span className="text-slate-400 block font-medium">Jumlah Lembar</span>
-                                            <span className="font-bold text-slate-700 dark:text-slate-300">
-                                              {(trade.shares || 0).toLocaleString('id-ID')} lbr
-                                            </span>
-                                          </div>
-                                          <div>
-                                            <span className="text-slate-400 block font-medium">Total Nilai</span>
-                                            <span className="font-bold text-indigo-600 dark:text-indigo-400">
-                                              Rp {totalRp >= 1e9 ? `${(totalRp / 1e9).toFixed(2)} M` : totalRp >= 1e6 ? `${(totalRp / 1e6).toFixed(1)} Jt` : totalRp.toLocaleString('id-ID')}
-                                            </span>
-                                          </div>
-                                        </div>
-
-                                        {/* Purpose */}
-                                        <div className="text-[9px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
-                                          <span className="truncate pr-1">Tujuan: <strong>{trade.purpose}</strong></span>
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
+                                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 border border-slate-300 dark:border-white/10 font-medium" title="Konvensional">
+                                  Konvensional
+                                </span>
+                              )}
+                              {item.isDividendTrap && (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-bold" title="Peringatan: Potensi jebakan dividen">
+                                  ⚠️ Div. Trap
+                                </span>
+                              )}
+                              {item.hasStrongController && (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-bold" title="Kepemilikan Pengendali > 50%">
+                                  👑 Pengendali Kuat
+                                </span>
+                              )}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedOwnershipStock(item);
+                                }}
+                                className="text-[9px] px-2 py-0.5 rounded-full bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-300 border border-indigo-500/40 font-bold transition-all flex items-center gap-1 shadow-sm"
+                                title="Lihat Struktur & Riwayat Kepemilikan KSEI"
+                              >
+                                👥 Kepemilikan
+                              </button>
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 border border-slate-300 dark:border-white/10 truncate max-w-[80px]">
+                                {item.sector}
+                              </span>
+                              {item.metrics?.streakYears >= 5 && (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-black flex items-center gap-0.5" title={`Rutin membagikan dividen ${item.metrics.streakYears} tahun berturut-turut`}>
+                                  🏆 {item.metrics.streakYears}th Rutin
+                                </span>
+                              )}
+                              {item.metrics?.streakYears >= 3 && item.metrics?.streakYears < 5 && (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30 font-bold flex items-center gap-0.5" title={`Membagikan dividen ${item.metrics.streakYears} tahun berturut-turut`}>
+                                  🎖️ {item.metrics.streakYears}th Rutin
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <div className="text-xs text-slate-400 dark:text-slate-500 truncate max-w-[120px] sm:max-w-[200px]">
+                                {item.name}
+                              </div>
+                              {item.fundamentals?.marketCap && (
+                                <div className="text-[9px] px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold border border-blue-100 dark:border-blue-800/30">
+                                  MCap: {(item.fundamentals.marketCap / 1_000_000_000_000).toFixed(1)}T
                                 </div>
                               )}
                             </div>
-                          );
-                        })()}
-                      </div>
-                    </div>
-                  </div>
-                </td>
-              </tr>
-            )}
-          </Fragment>
-        ))
-      )}
+                          </div>
+                        </div>
+                      </td>
+                      {renderRowCells(item)}
+                    </tr>
+
+                    {/* Expandable Details Row */}
+                    {expandedRow === item.ticker && (
+                      <tr>
+                        <td colSpan="8" className="bg-slate-50 dark:bg-slate-900/60 px-4 py-4">
+                          <div className="pl-12 animate-in slide-in-from-top-2 duration-300">
+                            {renderItemDetails(item)}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                ))
+              )}
  </tbody>
  </table>
  </div>
