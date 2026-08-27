@@ -510,16 +510,16 @@ export default function StockExplorer({ user }) {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <span className="text-lg">📊</span>
-                    <h3 className="font-bold text-xs uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200">
                       Valuasi Harga
                     </h3>
                   </div>
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                     (proj.marginOfSafety || 0) > 15 
-                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' 
+                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300' 
                       : (proj.marginOfSafety || 0) < -15 
-                      ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300' 
-                      : 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
+                      ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300' 
+                      : 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300'
                   }`}>
                     {(proj.marginOfSafety || 0) > 15 ? 'Undervalued ✅' : (proj.marginOfSafety || 0) < -15 ? 'Overvalued 🔴' : 'Wajar ⚠️'}
                   </span>
@@ -527,37 +527,38 @@ export default function StockExplorer({ user }) {
 
                 <div className="space-y-2 text-xs">
                   <div className="flex justify-between">
-                    <span className="text-slate-500">PER (TTM):</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200">{f.per ? `${f.per.toFixed(2)}x` : '-'}</span>
+                    <span className="text-slate-600 dark:text-slate-400">PER (TTM):</span>
+                    <span className="font-bold text-slate-900 dark:text-slate-100">{f.per ? `${f.per.toFixed(2)}x` : '-'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">PBV:</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200">{f.pbv ? `${f.pbv.toFixed(2)}x` : '-'}</span>
+                    <span className="text-slate-600 dark:text-slate-400">PBV:</span>
+                    <span className="font-bold text-slate-900 dark:text-slate-100">{f.pbv ? `${f.pbv.toFixed(2)}x` : '-'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">PEG Ratio:</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200">
+                    <span className="text-slate-600 dark:text-slate-400">PEG Ratio:</span>
+                    <span className="font-bold text-slate-900 dark:text-slate-100">
                       {f.per && proj.cagrPercent && proj.cagrPercent > 0 
                         ? (f.per / proj.cagrPercent).toFixed(2) 
                         : '-'}
                     </span>
                   </div>
-                  <div className="flex justify-between pt-1 border-t border-slate-100 dark:border-slate-800">
-                    <span className="text-slate-500">Graham Number:</span>
+                  <div className="flex justify-between pt-1 border-t border-slate-200 dark:border-slate-800">
+                    <span className="text-slate-600 dark:text-slate-400">Graham Number:</span>
                     <span className="font-bold text-indigo-600 dark:text-indigo-400">
                       {proj.grahamNumber ? `Rp ${proj.grahamNumber.toLocaleString('id-ID')}` : '-'}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Fair Value (DCF):</span>
+                    <span className="text-slate-600 dark:text-slate-400">Fair Value (DCF):</span>
                     <span className="font-bold text-emerald-600 dark:text-emerald-400">
                       {proj.fairValue ? `Rp ${proj.fairValue.toLocaleString('id-ID')}` : '-'}
                     </span>
                   </div>
                 </div>
               </div>
-              <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500">
-                Margin of Safety: <span className="font-bold text-slate-800 dark:text-slate-200">{proj.marginOfSafety != null ? `${proj.marginOfSafety}%` : '-'}</span>
+              <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400 flex items-center justify-between">
+                <span>Margin of Safety:</span>
+                <span className="font-bold text-slate-900 dark:text-slate-100">{proj.marginOfSafety != null ? `${proj.marginOfSafety}%` : '-'}</span>
               </div>
             </div>
 
@@ -567,45 +568,45 @@ export default function StockExplorer({ user }) {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <span className="text-lg">📈</span>
-                    <h3 className="font-bold text-xs uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200">
                       Growth & Proyeksi
                     </h3>
                   </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300">
                     12 Bulan
                   </span>
                 </div>
 
                 <div className="space-y-2 text-xs">
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Revenue Growth:</span>
-                    <span className={`font-bold ${f.revenueGrowth > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-800 dark:text-slate-200'}`}>
+                    <span className="text-slate-600 dark:text-slate-400">Revenue Growth:</span>
+                    <span className={`font-bold ${f.revenueGrowth > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-slate-100'}`}>
                       {f.revenueGrowth != null ? `${f.revenueGrowth.toFixed(1)}%` : '-'}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Profit CAGR (3th):</span>
+                    <span className="text-slate-600 dark:text-slate-400">Profit CAGR (3th):</span>
                     <span className="font-bold text-emerald-600 dark:text-emerald-400">
                       {proj.cagrPercent != null ? `+${proj.cagrPercent}%` : '-'}
                     </span>
                   </div>
-                  <div className="flex justify-between pt-1 border-t border-slate-100 dark:border-slate-800">
-                    <span className="text-slate-500">Target Harga 12M:</span>
+                  <div className="flex justify-between pt-1 border-t border-slate-200 dark:border-slate-800">
+                    <span className="text-slate-600 dark:text-slate-400">Target Harga 12M:</span>
                     <span className="font-bold text-indigo-600 dark:text-indigo-400 text-sm">
                       {proj.projectedPrice12m ? `Rp ${proj.projectedPrice12m.toLocaleString('id-ID')}` : '-'}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Potensi Upside:</span>
-                    <span className={`font-bold ${proj.projectedUpside >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600'}`}>
+                    <span className="text-slate-600 dark:text-slate-400">Potensi Upside:</span>
+                    <span className={`font-bold ${proj.projectedUpside >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                       {proj.projectedUpside != null ? `${proj.projectedUpside >= 0 ? '+' : ''}${proj.projectedUpside}%` : '-'}
                     </span>
                   </div>
                 </div>
               </div>
-              <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 flex items-center justify-between">
+              <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400 flex items-center justify-between">
                 <span>Tren Laba:</span>
-                <span className="font-bold text-slate-800 dark:text-slate-200">
+                <span className="font-bold text-slate-900 dark:text-slate-100">
                   {Array.isArray(f.netProfit) && f.netProfit.length >= 2 && f.netProfit[f.netProfit.length - 1] > f.netProfit[0] ? 'Bertumbuh 🚀' : 'Fluktuatif ⚖️'}
                 </span>
               </div>
@@ -617,37 +618,37 @@ export default function StockExplorer({ user }) {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <span className="text-lg">🏛️</span>
-                    <h3 className="font-bold text-xs uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200">
                       Dividen
                     </h3>
                   </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300">
                     Yield {f.dividendYield ? `${f.dividendYield.toFixed(1)}%` : '0%'}
                   </span>
                 </div>
 
                 <div className="space-y-2 text-xs">
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Dividend Yield:</span>
+                    <span className="text-slate-600 dark:text-slate-400">Dividend Yield:</span>
                     <span className="font-bold text-emerald-600 dark:text-emerald-400">
                       {f.dividendYield ? `${f.dividendYield.toFixed(2)}%` : '-'}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Payout Ratio (DPR):</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200">
+                    <span className="text-slate-600 dark:text-slate-400">Payout Ratio (DPR):</span>
+                    <span className="font-bold text-slate-900 dark:text-slate-100">
                       {f.payoutRatio ? `${f.payoutRatio.toFixed(1)}%` : '-'}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Streak Dividen:</span>
+                    <span className="text-slate-600 dark:text-slate-400">Streak Dividen:</span>
                     <span className="font-bold text-indigo-600 dark:text-indigo-400">
                       {f.dividendStreakYears ? `${f.dividendStreakYears} Tahun Beruntun` : 'Tidak rutin'}
                     </span>
                   </div>
-                  <div className="flex justify-between pt-1 border-t border-slate-100 dark:border-slate-800">
-                    <span className="text-slate-500">Dividen Terakhir:</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200">
+                  <div className="flex justify-between pt-1 border-t border-slate-200 dark:border-slate-800">
+                    <span className="text-slate-600 dark:text-slate-400">Dividen Terakhir:</span>
+                    <span className="font-bold text-slate-900 dark:text-slate-100">
                       {Array.isArray(stockDetail.dividendHistory) && stockDetail.dividendHistory.length > 0 
                         ? `Rp ${stockDetail.dividendHistory[0].amount || stockDetail.dividendHistory[0].dividend || '-'}` 
                         : '-'}
@@ -655,8 +656,8 @@ export default function StockExplorer({ user }) {
                   </div>
                 </div>
               </div>
-              <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500">
-                Status: <span className="font-semibold text-slate-700 dark:text-slate-300">{f.dividendYield >= 5 ? 'High Dividend Aristocrat 💎' : f.dividendYield > 0 ? 'Membagikan Dividen ✅' : 'Tanpa Dividen'}</span>
+              <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400">
+                Status: <span className="font-semibold text-slate-900 dark:text-slate-200">{f.dividendYield >= 5 ? 'High Dividend Aristocrat 💎' : f.dividendYield > 0 ? 'Membagikan Dividen ✅' : 'Tanpa Dividen'}</span>
               </div>
             </div>
 
@@ -666,53 +667,53 @@ export default function StockExplorer({ user }) {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <span className="text-lg">📋</span>
-                    <h3 className="font-bold text-xs uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200">
                       Order Book & Spread
                     </h3>
                   </div>
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                     rt.spreadPercent != null && rt.spreadPercent < 0.5 
-                      ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' 
-                      : 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
+                      ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300' 
+                      : 'bg-amber-50 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300'
                   }`}>
                     {rt.spreadPercent != null && rt.spreadPercent < 0.5 ? 'Sangat Likuid ⚡' : 'Likuiditas Normal'}
                   </span>
                 </div>
 
                 <div className="space-y-2 text-xs">
-                  <div className="grid grid-cols-2 gap-2 bg-slate-50 dark:bg-slate-800/60 p-2 rounded-xl border border-slate-100 dark:border-slate-800">
+                  <div className="grid grid-cols-2 gap-2 bg-slate-50 dark:bg-slate-800/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
                     <div className="text-center border-r border-slate-200 dark:border-slate-700 pr-1">
                       <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold block">BEST BID</span>
                       <span className="text-sm font-black text-slate-900 dark:text-white">
                         {rt.bid ? `Rp ${rt.bid.toLocaleString('id-ID')}` : '-'}
                       </span>
-                      {rt.bidSize && <span className="text-[10px] text-slate-400 block">{rt.bidSize} lot</span>}
+                      {rt.bidSize && <span className="text-[10px] text-slate-500 dark:text-slate-400 block">{rt.bidSize} lot</span>}
                     </div>
                     <div className="text-center pl-1">
                       <span className="text-[10px] text-rose-600 dark:text-rose-400 font-bold block">BEST ASK</span>
                       <span className="text-sm font-black text-slate-900 dark:text-white">
                         {rt.ask ? `Rp ${rt.ask.toLocaleString('id-ID')}` : '-'}
                       </span>
-                      {rt.askSize && <span className="text-[10px] text-slate-400 block">{rt.askSize} lot</span>}
+                      {rt.askSize && <span className="text-[10px] text-slate-500 dark:text-slate-400 block">{rt.askSize} lot</span>}
                     </div>
                   </div>
 
                   <div className="flex justify-between pt-1">
-                    <span className="text-slate-500">Spread:</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200">
+                    <span className="text-slate-600 dark:text-slate-400">Spread:</span>
+                    <span className="font-bold text-slate-900 dark:text-slate-100">
                       {rt.spread != null ? `Rp ${rt.spread} (${rt.spreadPercent}%)` : '-'}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Turnover Hari Ini:</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200">
+                    <span className="text-slate-600 dark:text-slate-400">Turnover Hari Ini:</span>
+                    <span className="font-bold text-slate-900 dark:text-slate-100">
                       {vol.turnover ? `Rp ${(vol.turnover / 1e9).toFixed(2)} M` : '-'}
                     </span>
                   </div>
                 </div>
               </div>
-              <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500">
-                Frekuensi: <span className="font-semibold text-slate-800 dark:text-slate-200">{vol.frequency ? `${vol.frequency.toLocaleString('id-ID')}x transaksi` : '-'}</span>
+              <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400">
+                Frekuensi: <span className="font-semibold text-slate-900 dark:text-slate-100">{vol.frequency ? `${vol.frequency.toLocaleString('id-ID')}x transaksi` : '-'}</span>
               </div>
             </div>
 
@@ -722,12 +723,12 @@ export default function StockExplorer({ user }) {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <span className="text-lg">🔬</span>
-                    <h3 className="font-bold text-xs uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200">
                       Fundamental & Kualitas
                     </h3>
                   </div>
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                    f.roe >= 15 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                    f.roe >= 15 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
                   }`}>
                     ROE {f.roe ? `${f.roe.toFixed(1)}%` : '-'}
                   </span>
@@ -735,44 +736,44 @@ export default function StockExplorer({ user }) {
 
                 <div className="space-y-2 text-xs">
                   <div className="flex justify-between">
-                    <span className="text-slate-500">ROE:</span>
+                    <span className="text-slate-600 dark:text-slate-400">ROE:</span>
                     <span className="font-bold text-emerald-600 dark:text-emerald-400">{f.roe ? `${f.roe.toFixed(1)}%` : '-'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">DER (Hutang):</span>
-                    <span className={`font-bold ${f.der > 2 ? 'text-amber-600' : 'text-slate-800 dark:text-slate-200'}`}>
+                    <span className="text-slate-600 dark:text-slate-400">DER (Hutang):</span>
+                    <span className={`font-bold ${f.der > 2 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-900 dark:text-slate-100'}`}>
                       {f.der != null ? `${f.der.toFixed(2)}x` : '-'}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Current Ratio:</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200">{f.currentRatio ? `${f.currentRatio.toFixed(2)}x` : '-'}</span>
+                    <span className="text-slate-600 dark:text-slate-400">Current Ratio:</span>
+                    <span className="font-bold text-slate-900 dark:text-slate-100">{f.currentRatio ? `${f.currentRatio.toFixed(2)}x` : '-'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Free Cash Flow:</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200">
+                    <span className="text-slate-600 dark:text-slate-400">Free Cash Flow:</span>
+                    <span className="font-bold text-slate-900 dark:text-slate-100">
                       {f.freeCashflow ? `Rp ${(f.freeCashflow / 1e9).toFixed(1)} M` : '-'}
                     </span>
                   </div>
-                  <div className="flex justify-between pt-1 border-t border-slate-100 dark:border-slate-800">
-                    <span className="text-slate-500">Piotroski F-Score:</span>
+                  <div className="flex justify-between pt-1 border-t border-slate-200 dark:border-slate-800">
+                    <span className="text-slate-600 dark:text-slate-400">Piotroski F-Score:</span>
                     <span className={`font-bold ${
-                      f.piotroskiFScore >= 7 ? 'text-emerald-600 dark:text-emerald-400' : f.piotroskiFScore <= 3 ? 'text-rose-600' : 'text-slate-800 dark:text-slate-200'
+                      f.piotroskiFScore >= 7 ? 'text-emerald-600 dark:text-emerald-400' : f.piotroskiFScore <= 3 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-slate-100'
                     }`}>
                       {f.piotroskiFScore != null ? `${f.piotroskiFScore}/9` : '-'}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Altman Z-Score:</span>
+                    <span className="text-slate-600 dark:text-slate-400">Altman Z-Score:</span>
                     <span className={`font-bold ${
-                      f.altmanZScore >= 2.99 ? 'text-emerald-600 dark:text-emerald-400' : f.altmanZScore < 1.81 ? 'text-rose-600' : 'text-amber-600'
+                      f.altmanZScore >= 2.99 ? 'text-emerald-600 dark:text-emerald-400' : f.altmanZScore < 1.81 ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'
                     }`}>
                       {f.altmanZScore != null ? `${f.altmanZScore} (${f.altmanZScore >= 2.99 ? 'Aman' : f.altmanZScore < 1.81 ? 'Distress' : 'Abu-abu'})` : '-'}
                     </span>
                   </div>
                 </div>
               </div>
-              <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 flex items-center justify-between">
+              <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400 flex items-center justify-between">
                 <span>Kesehatan Neraca:</span>
                 <span className="font-bold text-emerald-600 dark:text-emerald-400">
                   {f.altmanZScore != null && f.altmanZScore >= 2.99 ? 'Sangat Sehat 🛡️' : f.altmanZScore != null && f.altmanZScore < 1.81 ? 'Rawan ⚠️' : 'Moderat ⚖️'}
@@ -786,13 +787,13 @@ export default function StockExplorer({ user }) {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <span className="text-lg">⚡</span>
-                    <h3 className="font-bold text-xs uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200">
                       Teknikal & Volume
                     </h3>
                   </div>
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                     vol.volumeSpikeRatio >= 1.5 
-                      ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300' 
+                      ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300' 
                       : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
                   }`}>
                     {vol.volumeStatus || 'Normal'}
@@ -801,36 +802,36 @@ export default function StockExplorer({ user }) {
 
                 <div className="space-y-2 text-xs">
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Volume Spike Ratio:</span>
+                    <span className="text-slate-600 dark:text-slate-400">Volume Spike Ratio:</span>
                     <span className="font-bold text-indigo-600 dark:text-indigo-400">
                       {vol.volumeSpikeRatio ? `${vol.volumeSpikeRatio}x rata-rata` : '-'}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">RSI 14 (Momentum):</span>
+                    <span className="text-slate-600 dark:text-slate-400">RSI 14 (Momentum):</span>
                     <span className={`font-bold ${
-                      t.rsi14 >= 70 ? 'text-rose-600' : t.rsi14 <= 30 ? 'text-emerald-600' : 'text-slate-800 dark:text-slate-200'
+                      t.rsi14 >= 70 ? 'text-rose-600 dark:text-rose-400' : t.rsi14 <= 30 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-slate-100'
                     }`}>
                       {t.rsi14 ? `${t.rsi14.toFixed(1)} (${t.rsi14 >= 70 ? 'Overbought' : t.rsi14 <= 30 ? 'Oversold' : 'Netral'})` : '-'}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Support / Resist:</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200">
+                    <span className="text-slate-600 dark:text-slate-400">Support / Resist:</span>
+                    <span className="font-bold text-slate-900 dark:text-slate-100">
                       {t.support ? `Rp ${Math.round(t.support)}` : '-'} / {t.resistance ? `Rp ${Math.round(t.resistance)}` : '-'}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">MA20 / MA50:</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200">
+                    <span className="text-slate-600 dark:text-slate-400">MA20 / MA50:</span>
+                    <span className="font-bold text-slate-900 dark:text-slate-100">
                       {t.ma20 ? `${Math.round(t.ma20)}` : '-'} / {t.ma50 ? `${Math.round(t.ma50)}` : '-'}
                     </span>
                   </div>
                 </div>
               </div>
-              <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 flex items-center justify-between">
+              <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400 flex items-center justify-between">
                 <span>Konfirmasi Volume:</span>
-                <span className="font-bold text-slate-800 dark:text-slate-200">
+                <span className="font-bold text-slate-900 dark:text-slate-100">
                   {vol.isBreakoutVolume ? 'Breakout Volume 🔥' : 'Volume Stabil'}
                 </span>
               </div>
@@ -842,15 +843,15 @@ export default function StockExplorer({ user }) {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <span className="text-lg">👥</span>
-                    <h3 className="font-bold text-xs uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200">
                       Bandarmologi & KSEI
                     </h3>
                   </div>
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                     (b.bfiScore || 0) >= 3 
-                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' 
+                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300' 
                       : (b.bfiScore || 0) <= -3 
-                      ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300' 
+                      ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300' 
                       : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
                   }`}>
                     BFI {b.bfiScore != null ? b.bfiScore.toFixed(1) : 0}
@@ -859,47 +860,47 @@ export default function StockExplorer({ user }) {
 
                 <div className="space-y-2 text-xs">
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Wyckoff Phase:</span>
+                    <span className="text-slate-600 dark:text-slate-400">Wyckoff Phase:</span>
                     <span className="font-bold text-indigo-600 dark:text-indigo-400">
                       {b.wyckoffPhaseName || `Fase ${b.wyckoffPhase || 1}`}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Smart Money:</span>
-                    <span className={`font-bold ${b.smartMoneyStatus?.includes('Inflow') ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600'}`}>
+                    <span className="text-slate-600 dark:text-slate-400">Smart Money:</span>
+                    <span className={`font-bold ${b.smartMoneyStatus?.includes('Inflow') ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                       {b.smartMoneyStatus || 'Netral'}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Asing (Foreign):</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200">
+                    <span className="text-slate-600 dark:text-slate-400">Asing (Foreign):</span>
+                    <span className="font-bold text-slate-900 dark:text-slate-100">
                       {b.foreignPercent ? `${b.foreignPercent.toFixed(1)}%` : '-'}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Ritel (Domestic):</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200">
+                    <span className="text-slate-600 dark:text-slate-400">Ritel (Domestic):</span>
+                    <span className="font-bold text-slate-900 dark:text-slate-100">
                       {b.retailPercent ? `${b.retailPercent.toFixed(1)}%` : '-'}
                     </span>
                   </div>
                 </div>
               </div>
-              <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500">
-                Dominasi: <span className="font-semibold text-slate-800 dark:text-slate-200">{b.foreignPercent > 50 ? 'Asing (Foreign Heavy)' : 'Domestik'}</span>
+              <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400">
+                Dominasi: <span className="font-semibold text-slate-900 dark:text-slate-100">{b.foreignPercent > 50 ? 'Asing (Foreign Heavy)' : 'Domestik'}</span>
               </div>
             </div>
 
             {/* CARD 8: SKOR KOMPOSIT */}
-            <div className="bg-gradient-to-br from-indigo-900/40 via-purple-900/20 to-slate-900/60 border border-indigo-500/30 rounded-2xl p-4 shadow-sm flex flex-col justify-between">
+            <div className="bg-gradient-to-br from-indigo-50/90 via-purple-50/50 to-slate-50 dark:from-slate-900 dark:via-indigo-950/40 dark:to-slate-900 border border-indigo-200 dark:border-indigo-500/30 rounded-2xl p-4 shadow-sm flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <span className="text-lg">🎯</span>
-                    <h3 className="font-bold text-xs uppercase tracking-wider text-indigo-300">
+                    <h3 className="font-bold text-xs uppercase tracking-wider text-indigo-900 dark:text-indigo-300">
                       Skor Komposit
                     </h3>
                   </div>
-                  <span className="text-sm font-black text-indigo-400">
+                  <span className="text-sm font-black text-indigo-600 dark:text-indigo-400">
                     {Math.round(((scores.fundamental || 50) + (scores.technical || 50) + (scores.trending || 50)) / 3)}/100
                   </span>
                 </div>
@@ -907,37 +908,38 @@ export default function StockExplorer({ user }) {
                 <div className="space-y-2 text-xs">
                   <div>
                     <div className="flex justify-between text-[11px] mb-1">
-                      <span className="text-slate-400">Fundamental:</span>
-                      <span className="font-bold text-white">{scores.fundamental || 50}</span>
+                      <span className="text-slate-600 dark:text-slate-400">Fundamental:</span>
+                      <span className="font-bold text-slate-900 dark:text-white">{scores.fundamental || 50}</span>
                     </div>
-                    <div className="w-full bg-slate-700/50 rounded-full h-1.5 overflow-hidden">
+                    <div className="w-full bg-slate-200 dark:bg-slate-700/60 rounded-full h-1.5 overflow-hidden">
                       <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${scores.fundamental || 50}%` }}></div>
                     </div>
                   </div>
 
                   <div>
                     <div className="flex justify-between text-[11px] mb-1">
-                      <span className="text-slate-400">Teknikal & Volume:</span>
-                      <span className="font-bold text-white">{scores.technical || 50}</span>
+                      <span className="text-slate-600 dark:text-slate-400">Teknikal & Volume:</span>
+                      <span className="font-bold text-slate-900 dark:text-white">{scores.technical || 50}</span>
                     </div>
-                    <div className="w-full bg-slate-700/50 rounded-full h-1.5 overflow-hidden">
+                    <div className="w-full bg-slate-200 dark:bg-slate-700/60 rounded-full h-1.5 overflow-hidden">
                       <div className="bg-indigo-500 h-1.5 rounded-full" style={{ width: `${scores.technical || 50}%` }}></div>
                     </div>
                   </div>
 
                   <div>
                     <div className="flex justify-between text-[11px] mb-1">
-                      <span className="text-slate-400">Momentum / Flow:</span>
-                      <span className="font-bold text-white">{scores.trending || 50}</span>
+                      <span className="text-slate-600 dark:text-slate-400">Momentum / Flow:</span>
+                      <span className="font-bold text-slate-900 dark:text-white">{scores.trending || 50}</span>
                     </div>
-                    <div className="w-full bg-slate-700/50 rounded-full h-1.5 overflow-hidden">
+                    <div className="w-full bg-slate-200 dark:bg-slate-700/60 rounded-full h-1.5 overflow-hidden">
                       <div className="bg-amber-500 h-1.5 rounded-full" style={{ width: `${scores.trending || 50}%` }}></div>
                     </div>
                   </div>
                 </div>
               </div>
-              <div className="mt-3 pt-2 border-t border-slate-700/50 text-[11px] text-indigo-200">
-                Rekomendasi Algoritma: <span className="font-bold">
+              <div className="mt-3 pt-2 border-t border-indigo-100 dark:border-slate-800 text-[11px] text-slate-600 dark:text-indigo-200 flex items-center justify-between">
+                <span>Rekomendasi Algoritma:</span>
+                <span className="font-bold text-indigo-700 dark:text-indigo-300">
                   {((scores.fundamental || 50) + (scores.technical || 50) + (scores.trending || 50)) / 3 >= 70 ? 'Strong Accumulate 🚀' : 'Watchlist / Hold 🔍'}
                 </span>
               </div>
@@ -953,7 +955,7 @@ export default function StockExplorer({ user }) {
                   <h3 className="font-bold text-slate-900 dark:text-white text-sm md:text-base">
                     Grafik Interaktif — {stockDetail.ticker}
                   </h3>
-                  <p className="text-xs text-slate-500">Candlestick, Volume, Moving Averages (MA20/50) & Support/Resistance</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-400">Candlestick, Volume, Moving Averages (MA20/50) & Support/Resistance</p>
                 </div>
               </div>
             </div>
@@ -974,7 +976,7 @@ export default function StockExplorer({ user }) {
                 Koleksi Saham Saya
               </h2>
             </div>
-            <p className="text-xs md:text-sm text-slate-500 mt-0.5">
+            <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 mt-0.5">
               Simpan dan kelompokkan saham hasil riset ke dalam koleksi pribadi (maks 50 koleksi)
             </p>
           </div>
@@ -994,12 +996,12 @@ export default function StockExplorer({ user }) {
 
         {/* Collections List Pills/Cards */}
         {loadingCollections ? (
-          <div className="text-center py-6 text-xs text-slate-400">Memuat koleksi...</div>
+          <div className="text-center py-6 text-xs text-slate-500 dark:text-slate-400">Memuat koleksi...</div>
         ) : collections.length === 0 ? (
           <div className="text-center py-8 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-6">
             <span className="text-3xl block mb-2">📁</span>
-            <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Belum ada koleksi yang dibuat</p>
-            <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+            <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Belum ada koleksi yang dibuat</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
               Klik &quot;Buat Koleksi Baru&quot; untuk mulai mengelompokkan saham favorit Anda, misalnya &quot;Blue Chip Dividen&quot; atau &quot;Growth Watchlist&quot;.
             </p>
           </div>
@@ -1013,7 +1015,7 @@ export default function StockExplorer({ user }) {
                   onClick={() => setSelectedCollection(col)}
                   className={`cursor-pointer rounded-xl p-3.5 border transition-all relative group text-left ${
                     isSelected
-                      ? 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-500 dark:border-indigo-500 ring-2 ring-indigo-500/20'
+                      ? 'bg-indigo-50/80 dark:bg-indigo-950/40 border-indigo-500 dark:border-indigo-500 ring-2 ring-indigo-500/20'
                       : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700/60 hover:border-indigo-300'
                   }`}
                 >
@@ -1030,7 +1032,7 @@ export default function StockExplorer({ user }) {
                           setIsCollectionPublic(col.isPublic || false);
                           setShowEditModal(true);
                         }}
-                        className="p-1 text-slate-400 hover:text-indigo-600 rounded"
+                        className="p-1 text-slate-500 hover:text-indigo-600 rounded"
                         title="Edit Koleksi"
                       >
                         ✏️
@@ -1040,7 +1042,7 @@ export default function StockExplorer({ user }) {
                           e.stopPropagation();
                           handleDeleteCollection(col.id, col.name);
                         }}
-                        className="p-1 text-slate-400 hover:text-rose-600 rounded"
+                        className="p-1 text-slate-500 hover:text-rose-600 rounded"
                         title="Hapus Koleksi"
                       >
                         🗑️
@@ -1051,9 +1053,9 @@ export default function StockExplorer({ user }) {
                   <h4 className="font-bold text-xs md:text-sm text-slate-900 dark:text-white mt-2 line-clamp-1">
                     {col.name}
                   </h4>
-                  <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1">
+                  <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-400 mt-1">
                     <span>{col._count?.items || 0} Saham</span>
-                    {col.isPublic && <span className="text-[10px] text-indigo-500 font-semibold">🌐 Publik</span>}
+                    {col.isPublic && <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold">🌐 Publik</span>}
                   </div>
                 </div>
               );
@@ -1063,7 +1065,7 @@ export default function StockExplorer({ user }) {
 
         {/* Selected Collection Stocks Table / 4-Column Cards */}
         {selectedCollection && (
-          <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-4">
+          <div className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <span className="text-xl">{selectedCollection.emoji}</span>
@@ -1072,7 +1074,7 @@ export default function StockExplorer({ user }) {
                     Isi Koleksi: {selectedCollection.name}
                   </h3>
                   {selectedCollection.description && (
-                    <p className="text-xs text-slate-400">{selectedCollection.description}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">{selectedCollection.description}</p>
                   )}
                 </div>
               </div>
@@ -1080,7 +1082,7 @@ export default function StockExplorer({ user }) {
               {selectedCollection.shareCode && (
                 <button
                   onClick={() => handleCopyShareLink(selectedCollection.shareCode)}
-                  className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 self-start sm:self-auto"
+                  className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 self-start sm:self-auto"
                 >
                   🔗 {copiedShareCode === selectedCollection.shareCode ? 'Link Tersalin! ✅' : 'Bagikan Koleksi'}
                 </button>
@@ -1088,9 +1090,9 @@ export default function StockExplorer({ user }) {
             </div>
 
             {loadingItems ? (
-              <div className="text-center py-6 text-xs text-slate-400">Memuat saham dalam koleksi...</div>
+              <div className="text-center py-6 text-xs text-slate-500 dark:text-slate-400">Memuat saham dalam koleksi...</div>
             ) : collectionItems.length === 0 ? (
-              <div className="text-center py-6 text-xs text-slate-400 bg-slate-50 dark:bg-slate-800/30 rounded-xl">
+              <div className="text-center py-6 text-xs text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
                 Koleksi ini masih kosong. Cari saham di atas lalu klik &quot;Simpan ke Koleksi&quot;.
               </div>
             ) : (
@@ -1102,25 +1104,25 @@ export default function StockExplorer({ user }) {
                   return (
                     <div
                       key={item.id}
-                      className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 rounded-xl p-3.5 hover:border-indigo-400/60 transition-all flex flex-col justify-between group"
+                      className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl p-3.5 hover:border-indigo-400/60 shadow-sm transition-all flex flex-col justify-between group"
                     >
                       <div>
                         <div className="flex items-center justify-between mb-1.5">
                           <div className="flex items-center gap-1.5">
                             <span className="font-black text-sm text-slate-900 dark:text-white">{item.ticker}</span>
-                            <span className="text-[10px] text-slate-400 truncate max-w-[90px]">{s.sector || ''}</span>
+                            <span className="text-[10px] text-slate-600 dark:text-slate-400 truncate max-w-[90px]">{s.sector || ''}</span>
                           </div>
                           <div className="flex items-center gap-1">
                             <button
                               onClick={() => handleSelectStock(item.ticker)}
-                              className="text-xs p-1 text-slate-400 hover:text-indigo-600"
+                              className="text-xs p-1 text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400"
                               title="Lihat Detail Saham"
                             >
                               🔍
                             </button>
                             <button
                               onClick={() => handleRemoveStockFromCollection(selectedCollection.id, item.ticker)}
-                              className="text-xs p-1 text-slate-400 hover:text-rose-600"
+                              className="text-xs p-1 text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400"
                               title="Hapus dari Koleksi"
                             >
                               ✕
@@ -1129,12 +1131,12 @@ export default function StockExplorer({ user }) {
                         </div>
 
                         <div className="flex items-baseline justify-between mb-2">
-                          <span className="text-base font-bold text-slate-900 dark:text-white">
+                          <span className="text-base font-black text-slate-900 dark:text-white">
                             Rp {s.price ? s.price.toLocaleString('id-ID') : '-'}
                           </span>
                           <span
                             className={`text-xs font-bold px-1.5 py-0.5 rounded ${
-                              isItemUp ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'
+                              isItemUp ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300' : 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300'
                             }`}
                           >
                             {isItemUp ? '+' : ''}{s.changePercent ? s.changePercent.toFixed(2) : 0}%
@@ -1142,13 +1144,13 @@ export default function StockExplorer({ user }) {
                         </div>
 
                         {item.notes && (
-                          <div className="text-[11px] text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900/60 p-2 rounded-lg border border-slate-100 dark:border-slate-800 line-clamp-2">
+                          <div className="text-[11px] text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-900 p-2 rounded-lg border border-slate-200 dark:border-slate-700 line-clamp-2">
                             📝 {item.notes}
                           </div>
                         )}
                       </div>
 
-                      <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700/40 text-[10px] text-slate-400 flex items-center justify-between">
+                      <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700/60 text-[10px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
                         <span>Ditambahkan: {new Date(item.addedAt).toLocaleDateString('id-ID')}</span>
                       </div>
                     </div>
