@@ -254,7 +254,7 @@ export default function StockChart({ ticker }) {
     });
     dynamicPriceLinesRef.current = [];
 
-    // Draw Entry Line
+    // Draw Entry / Exit Line
     if (pattern.entryPrice) {
       const entryLine = candlestickSeriesRef.current.createPriceLine({
         price: pattern.entryPrice,
@@ -262,7 +262,7 @@ export default function StockChart({ ticker }) {
         lineWidth: 2,
         lineStyle: 0,
         axisLabelVisible: true,
-        title: `🎯 Entry (${pattern.shortName})`,
+        title: pattern.direction === 'bearish' ? `🚪 Exit (${pattern.shortName})` : `🎯 Entry (${pattern.shortName})`,
       });
       dynamicPriceLinesRef.current.push(entryLine);
     }
@@ -275,20 +275,21 @@ export default function StockChart({ ticker }) {
         lineWidth: 2,
         lineStyle: 2,
         axisLabelVisible: true,
-        title: '🛡️ Stop Loss',
+        title: pattern.direction === 'bearish' ? '⚠️ Cut Loss Darurat' : '🛡️ Stop Loss',
       });
       dynamicPriceLinesRef.current.push(slLine);
     }
 
-    // Draw Take Profit Line
+    // Draw Take Profit / Downside Target Line
     if (pattern.takeProfitPrice) {
+      const isBearish = pattern.direction === 'bearish';
       const tpLine = candlestickSeriesRef.current.createPriceLine({
         price: pattern.takeProfitPrice,
-        color: '#10b981',
+        color: isBearish ? '#f59e0b' : '#10b981',
         lineWidth: 2,
         lineStyle: 2,
         axisLabelVisible: true,
-        title: '🚀 Take Profit Target',
+        title: isBearish ? '📉 Target Penurunan (Support)' : '🚀 Target Take Profit',
       });
       dynamicPriceLinesRef.current.push(tpLine);
     }
@@ -509,16 +510,18 @@ export default function StockChart({ ticker }) {
                       <span className="font-bold text-indigo-600 dark:text-indigo-400">{currentPattern.action}</span>
                     </div>
                     <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700/60">
-                      <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Area Entry Ideal</span>
+                      <span className="text-slate-500 dark:text-slate-400 block text-[11px]">{currentPattern.entryLabel || 'Area Entry'}</span>
                       <span className="font-bold text-slate-900 dark:text-white">{currentPattern.entryRange}</span>
                     </div>
                     <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700/60">
-                      <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Stop Loss Proteksi</span>
+                      <span className="text-slate-500 dark:text-slate-400 block text-[11px]">{currentPattern.slLabel || 'Stop Loss'}</span>
                       <span className="font-bold text-rose-600 dark:text-rose-400">{currentPattern.stopLoss}</span>
                     </div>
                     <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700/60">
-                      <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Target Take Profit</span>
-                      <span className="font-bold text-emerald-600 dark:text-emerald-400">{currentPattern.takeProfit}</span>
+                      <span className="text-slate-500 dark:text-slate-400 block text-[11px]">{currentPattern.tpLabel || 'Target Take Profit'}</span>
+                      <span className={`font-bold ${currentPattern.direction === 'bearish' ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                        {currentPattern.takeProfit}
+                      </span>
                     </div>
                   </div>
                 </div>

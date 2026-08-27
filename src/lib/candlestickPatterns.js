@@ -1,6 +1,11 @@
 /**
  * Candlestick Pattern Recognition & Market Psychology Engine
- * Analyzes OHLCV data array to detect standard classical candlestick formations.
+ * Calibrated specifically for IDX (Indonesian Stock Exchange) Spot Equity Trading.
+ * 
+ * Rules for IDX spot trading (Long only):
+ * 1. Bullish: Entry at Close, TP > Entry (+4%..+8%), SL < Entry (-2%..-3% at Swing Low)
+ * 2. Bearish: Immediate Exit/TP at Close, Downside Support Target < Close (-4%..-6%), SL/Cut Loss at Support Breakdown
+ * 3. Neutral: Wait & See, Upper Resistance > Close, Lower Support < Close
  */
 
 export function analyzeCandlestickPatterns(data = []) {
@@ -65,7 +70,7 @@ export function analyzeCandlestickPatterns(data = []) {
     return 'sideways';
   }
 
-  // Scan across candles for the entire year
+  // Scan across candles for the entire series
   for (let i = 2; i <= latestIndex; i++) {
     const c0 = getCandleProps(sorted[i]);       // Current candle
     const c1 = getCandleProps(sorted[i - 1]);   // 1 candle ago
@@ -80,6 +85,9 @@ export function analyzeCandlestickPatterns(data = []) {
       c1.body <= c2.body * 0.4 && c1.close < c2.bodyCenter &&
       c0.isBullish && c0.close > c2.bodyCenter
     ) {
+      const entry = Math.round(c0.close);
+      const sl = Math.round(Math.min(c2.low, c1.low, c0.low) * 0.98);
+      const tp = Math.round(c0.close * 1.06);
       detected = {
         name: 'Morning Star (Bintang Fajar)',
         shortName: 'Morning Star',
@@ -92,12 +100,16 @@ export function analyzeCandlestickPatterns(data = []) {
         time: c0.time,
         psychology: 'Penjual mendominasi pada candle pertama, namun kehilangan momentum di candle kedua (doji/small body). Candle ketiga dikuasai pembeli secara agresif, menandakan pembalikan arah naik yang sangat solid.',
         action: 'Buy on Confirmation / Entry Bertahap',
-        entryRange: `Rp ${Math.round(c0.close).toLocaleString('id-ID')} - Rp ${Math.round(c0.close * 1.015).toLocaleString('id-ID')}`,
-        entryPrice: Math.round(c0.close),
-        stopLossPrice: Math.round(Math.min(c2.low, c1.low, c0.low) * 0.98),
-        takeProfitPrice: Math.round(c0.close * 1.06),
-        stopLoss: `Rp ${Math.round(Math.min(c2.low, c1.low, c0.low) * 0.98).toLocaleString('id-ID')}`,
-        takeProfit: `Rp ${Math.round(c0.close * 1.06).toLocaleString('id-ID')}`,
+        entryLabel: 'Area Entry Ideal',
+        entryRange: `Rp ${entry.toLocaleString('id-ID')}`,
+        entryPrice: entry,
+        slLabel: 'Stop Loss Proteksi',
+        stopLoss: `Rp ${sl.toLocaleString('id-ID')}`,
+        stopLossPrice: sl,
+        tpLabel: 'Target Take Profit',
+        takeProfit: `Rp ${tp.toLocaleString('id-ID')}`,
+        takeProfitPrice: tp,
+        supportTarget: null,
       };
     }
 
@@ -107,6 +119,10 @@ export function analyzeCandlestickPatterns(data = []) {
       c1.body <= c2.body * 0.4 && c1.close > c2.bodyCenter &&
       c0.isBearish && c0.close < c2.bodyCenter
     ) {
+      const exitPrice = Math.round(c0.close);
+      const downsideTarget = Math.round(c0.close * 0.94);
+      const slEmergency = Math.round(c0.low * 0.975);
+      const resistance = Math.round(Math.max(c2.high, c1.high, c0.high) * 1.01);
       detected = {
         name: 'Evening Star (Bintang Senja)',
         shortName: 'Evening Star',
@@ -118,13 +134,18 @@ export function analyzeCandlestickPatterns(data = []) {
         reliabilityLevel: 'Sangat Tinggi (88%)',
         time: c0.time,
         psychology: 'Kekuatan pembeli melemah di puncak tren. Tekanan jual masif pada candle ketiga mengonfirmasi distribusi dan sinyal pembalikan tren turun.',
-        action: 'Take Profit / Kurangi Posisi / Hindari Beli',
-        entryRange: '-',
-        entryPrice: null,
-        stopLossPrice: Math.round(Math.max(c2.high, c1.high, c0.high) * 1.01),
-        takeProfitPrice: Math.round(c0.close * 0.94),
-        stopLoss: `Rp ${Math.round(Math.max(c2.high, c1.high, c0.high) * 1.01).toLocaleString('id-ID')}`,
-        takeProfit: `Rp ${Math.round(c0.close * 0.94).toLocaleString('id-ID')}`,
+        action: 'Amankan Profit / Pasang Trailing Stop / Hindari Beli',
+        entryLabel: 'Area Jual / Exit Sekarang',
+        entryRange: `Rp ${exitPrice.toLocaleString('id-ID')}`,
+        entryPrice: exitPrice,
+        slLabel: 'Cut Loss Darurat (Jika Masih Hold)',
+        stopLoss: `Rp ${slEmergency.toLocaleString('id-ID')}`,
+        stopLossPrice: slEmergency,
+        tpLabel: 'Target Penurunan (Support Dituju)',
+        takeProfit: `Rp ${downsideTarget.toLocaleString('id-ID')}`,
+        takeProfitPrice: downsideTarget,
+        supportTarget: downsideTarget,
+        resistancePrice: resistance,
       };
     }
 
@@ -134,6 +155,9 @@ export function analyzeCandlestickPatterns(data = []) {
       c1.close > c2.close && c0.close > c1.close &&
       c0.body > c0.range * 0.5 && c1.body > c1.range * 0.5
     ) {
+      const entry = Math.round(c0.close);
+      const sl = Math.round(c2.low * 0.985);
+      const tp = Math.round(c0.close * 1.08);
       detected = {
         name: 'Three White Soldiers (3 Prajurit)',
         shortName: '3 Soldiers',
@@ -146,12 +170,15 @@ export function analyzeCandlestickPatterns(data = []) {
         time: c0.time,
         psychology: 'Tiga candle hijau beruntun dengan penutupan semakin tinggi menunjukkan aksi akumulasi terstruktur dan tren naik yang sangat stabil.',
         action: 'Follow the Trend / Hold Posisi',
-        entryRange: `Rp ${Math.round(c0.close).toLocaleString('id-ID')}`,
-        entryPrice: Math.round(c0.close),
-        stopLossPrice: Math.round(c2.low * 0.985),
-        takeProfitPrice: Math.round(c0.close * 1.08),
-        stopLoss: `Rp ${Math.round(c2.low * 0.985).toLocaleString('id-ID')}`,
-        takeProfit: `Rp ${Math.round(c0.close * 1.08).toLocaleString('id-ID')}`,
+        entryLabel: 'Area Entry Ideal',
+        entryRange: `Rp ${entry.toLocaleString('id-ID')}`,
+        entryPrice: entry,
+        slLabel: 'Stop Loss Proteksi',
+        stopLoss: `Rp ${sl.toLocaleString('id-ID')}`,
+        stopLossPrice: sl,
+        tpLabel: 'Target Take Profit',
+        takeProfit: `Rp ${tp.toLocaleString('id-ID')}`,
+        takeProfitPrice: tp,
       };
     }
 
@@ -161,6 +188,9 @@ export function analyzeCandlestickPatterns(data = []) {
       c1.close < c2.close && c0.close < c1.close &&
       c0.body > c0.range * 0.5 && c1.body > c1.range * 0.5
     ) {
+      const exitPrice = Math.round(c0.close);
+      const downsideTarget = Math.round(c0.close * 0.92);
+      const slEmergency = Math.round(c0.low * 0.975);
       detected = {
         name: 'Three Black Crows (3 Gagak Hitam)',
         shortName: '3 Crows',
@@ -172,13 +202,16 @@ export function analyzeCandlestickPatterns(data = []) {
         reliabilityLevel: 'Tinggi (85%)',
         time: c0.time,
         psychology: 'Tekanan jual intens terjadi 3 hari berturut-turut tanpa perlawanan berarti dari pihak pembeli. Downtrend kuat sedang berlangsung.',
-        action: 'Hindari Entry / Ketatkan Stop Loss',
-        entryRange: '-',
-        entryPrice: null,
-        stopLossPrice: Math.round(c0.high * 1.02),
-        takeProfitPrice: Math.round(c0.close * 0.92),
-        stopLoss: `Rp ${Math.round(c0.high * 1.02).toLocaleString('id-ID')}`,
-        takeProfit: `Rp ${Math.round(c0.close * 0.92).toLocaleString('id-ID')}`,
+        action: 'Hindari Beli / Kurangi Posisi',
+        entryLabel: 'Area Jual / Exit Sekarang',
+        entryRange: `Rp ${exitPrice.toLocaleString('id-ID')}`,
+        entryPrice: exitPrice,
+        slLabel: 'Cut Loss Darurat (Jika Masih Hold)',
+        stopLoss: `Rp ${slEmergency.toLocaleString('id-ID')}`,
+        stopLossPrice: slEmergency,
+        tpLabel: 'Target Penurunan (Support Dituju)',
+        takeProfit: `Rp ${downsideTarget.toLocaleString('id-ID')}`,
+        takeProfitPrice: downsideTarget,
       };
     }
 
@@ -188,6 +221,9 @@ export function analyzeCandlestickPatterns(data = []) {
       c0.open <= c1.close && c0.close >= c1.open &&
       c0.body > c1.body * 1.1
     ) {
+      const entry = Math.round(c0.close);
+      const sl = Math.round(c0.low * 0.985);
+      const tp = Math.round(c0.close * 1.05);
       detected = {
         name: 'Bullish Engulfing',
         shortName: 'Engulfing',
@@ -200,12 +236,15 @@ export function analyzeCandlestickPatterns(data = []) {
         time: c0.time,
         psychology: 'Candle hijau besar menelan seluruh badan candle merah sebelumnya. Minat beli baru masuk dalam jumlah besar menggeser kendali pasar ke tangan bulls.',
         action: 'Buy on Weakness / Buy Breakout',
-        entryRange: `Rp ${Math.round(c0.close).toLocaleString('id-ID')}`,
-        entryPrice: Math.round(c0.close),
-        stopLossPrice: Math.round(c0.low * 0.985),
-        takeProfitPrice: Math.round(c0.close * 1.05),
-        stopLoss: `Rp ${Math.round(c0.low * 0.985).toLocaleString('id-ID')}`,
-        takeProfit: `Rp ${Math.round(c0.close * 1.05).toLocaleString('id-ID')}`,
+        entryLabel: 'Area Entry Ideal',
+        entryRange: `Rp ${entry.toLocaleString('id-ID')}`,
+        entryPrice: entry,
+        slLabel: 'Stop Loss Proteksi',
+        stopLoss: `Rp ${sl.toLocaleString('id-ID')}`,
+        stopLossPrice: sl,
+        tpLabel: 'Target Take Profit',
+        takeProfit: `Rp ${tp.toLocaleString('id-ID')}`,
+        takeProfitPrice: tp,
       };
     }
 
@@ -215,6 +254,9 @@ export function analyzeCandlestickPatterns(data = []) {
       c0.open >= c1.close && c0.close <= c1.open &&
       c0.body > c1.body * 1.1
     ) {
+      const exitPrice = Math.round(c0.close);
+      const downsideTarget = Math.round(c0.close * 0.95);
+      const slEmergency = Math.round(c0.low * 0.975);
       detected = {
         name: 'Bearish Engulfing',
         shortName: 'Engulfing',
@@ -227,12 +269,15 @@ export function analyzeCandlestickPatterns(data = []) {
         time: c0.time,
         psychology: 'Candle merah besar menelan candle hijau sebelumnya. Penjual mengambil alih kendali pasar secara agresif setelah kenaikan harga.',
         action: 'Take Profit / Waspada Penurunan',
-        entryRange: '-',
-        entryPrice: null,
-        stopLossPrice: Math.round(c0.high * 1.015),
-        takeProfitPrice: Math.round(c0.close * 0.95),
-        stopLoss: `Rp ${Math.round(c0.high * 1.015).toLocaleString('id-ID')}`,
-        takeProfit: `Rp ${Math.round(c0.close * 0.95).toLocaleString('id-ID')}`,
+        entryLabel: 'Area Jual / Exit Sekarang',
+        entryRange: `Rp ${exitPrice.toLocaleString('id-ID')}`,
+        entryPrice: exitPrice,
+        slLabel: 'Cut Loss Darurat (Jika Masih Hold)',
+        stopLoss: `Rp ${slEmergency.toLocaleString('id-ID')}`,
+        stopLossPrice: slEmergency,
+        tpLabel: 'Target Penurunan (Support Dituju)',
+        takeProfit: `Rp ${downsideTarget.toLocaleString('id-ID')}`,
+        takeProfitPrice: downsideTarget,
       };
     }
 
@@ -241,6 +286,9 @@ export function analyzeCandlestickPatterns(data = []) {
       c1.isBearish && c0.isBullish &&
       c0.open < c1.low && c0.close > c1.bodyCenter && c0.close < c1.open
     ) {
+      const entry = Math.round(c0.close);
+      const sl = Math.round(c0.low * 0.985);
+      const tp = Math.round(c0.close * 1.045);
       detected = {
         name: 'Piercing Line',
         shortName: 'Piercing',
@@ -253,12 +301,15 @@ export function analyzeCandlestickPatterns(data = []) {
         time: c0.time,
         psychology: 'Harga dibuka lebih rendah namun ditutup menembus lebih dari 50% candle merah kemarin. Indikasi kuat adanya penolakan harga murah (*dip buying*).',
         action: 'Buy on Dip / Spekulatif Buy',
-        entryRange: `Rp ${Math.round(c0.close).toLocaleString('id-ID')}`,
-        entryPrice: Math.round(c0.close),
-        stopLossPrice: Math.round(c0.low * 0.985),
-        takeProfitPrice: Math.round(c0.close * 1.045),
-        stopLoss: `Rp ${Math.round(c0.low * 0.985).toLocaleString('id-ID')}`,
-        takeProfit: `Rp ${Math.round(c0.close * 1.045).toLocaleString('id-ID')}`,
+        entryLabel: 'Area Entry Ideal',
+        entryRange: `Rp ${entry.toLocaleString('id-ID')}`,
+        entryPrice: entry,
+        slLabel: 'Stop Loss Proteksi',
+        stopLoss: `Rp ${sl.toLocaleString('id-ID')}`,
+        stopLossPrice: sl,
+        tpLabel: 'Target Take Profit',
+        takeProfit: `Rp ${tp.toLocaleString('id-ID')}`,
+        takeProfitPrice: tp,
       };
     }
 
@@ -267,6 +318,9 @@ export function analyzeCandlestickPatterns(data = []) {
       c1.isBullish && c0.isBearish &&
       c0.open > c1.high && c0.close < c1.bodyCenter && c0.close > c1.open
     ) {
+      const exitPrice = Math.round(c0.close);
+      const downsideTarget = Math.round(c0.close * 0.95);
+      const slEmergency = Math.round(c0.low * 0.975);
       detected = {
         name: 'Dark Cloud Cover (Awan Gelap)',
         shortName: 'Dark Cloud',
@@ -279,12 +333,15 @@ export function analyzeCandlestickPatterns(data = []) {
         time: c0.time,
         psychology: 'Harga sempat dibuka lebih tinggi di atas resistance namun gagal bertahan dan ditutup di bawah separuh body hijau kemarin. Penjual menekan balik.',
         action: 'Take Profit / Pasang Trailing Stop',
-        entryRange: '-',
-        entryPrice: null,
-        stopLossPrice: Math.round(c0.high * 1.015),
-        takeProfitPrice: Math.round(c0.close * 0.95),
-        stopLoss: `Rp ${Math.round(c0.high * 1.015).toLocaleString('id-ID')}`,
-        takeProfit: `Rp ${Math.round(c0.close * 0.95).toLocaleString('id-ID')}`,
+        entryLabel: 'Area Jual / Exit Sekarang',
+        entryRange: `Rp ${exitPrice.toLocaleString('id-ID')}`,
+        entryPrice: exitPrice,
+        slLabel: 'Cut Loss Darurat (Jika Masih Hold)',
+        stopLoss: `Rp ${slEmergency.toLocaleString('id-ID')}`,
+        stopLossPrice: slEmergency,
+        tpLabel: 'Target Penurunan (Support Dituju)',
+        takeProfit: `Rp ${downsideTarget.toLocaleString('id-ID')}`,
+        takeProfitPrice: downsideTarget,
       };
     }
 
@@ -295,6 +352,9 @@ export function analyzeCandlestickPatterns(data = []) {
       c0.body > 0 &&
       (trend === 'downtrend' || c0.close <= c1.close)
     ) {
+      const entry = Math.round(c0.close);
+      const sl = Math.round(c0.low * 0.98);
+      const tp = Math.round(c0.close * 1.05);
       detected = {
         name: 'Hammer (Palu Reversal)',
         shortName: 'Hammer',
@@ -307,12 +367,15 @@ export function analyzeCandlestickPatterns(data = []) {
         time: c0.time,
         psychology: 'Penjual sempat menekan harga hingga titik terendah baru, tetapi pembeli bereaksi cepat memborong saham hingga harga ditutup di dekat puncaknya.',
         action: 'Buy on Support / Reversal Entry',
-        entryRange: `Rp ${Math.round(c0.close).toLocaleString('id-ID')}`,
-        entryPrice: Math.round(c0.close),
-        stopLossPrice: Math.round(c0.low * 0.98),
-        takeProfitPrice: Math.round(c0.close * 1.05),
-        stopLoss: `Rp ${Math.round(c0.low * 0.98).toLocaleString('id-ID')}`,
-        takeProfit: `Rp ${Math.round(c0.close * 1.05).toLocaleString('id-ID')}`,
+        entryLabel: 'Area Entry Ideal',
+        entryRange: `Rp ${entry.toLocaleString('id-ID')}`,
+        entryPrice: entry,
+        slLabel: 'Stop Loss Proteksi',
+        stopLoss: `Rp ${sl.toLocaleString('id-ID')}`,
+        stopLossPrice: sl,
+        tpLabel: 'Target Take Profit',
+        takeProfit: `Rp ${tp.toLocaleString('id-ID')}`,
+        takeProfitPrice: tp,
       };
     }
 
@@ -323,6 +386,9 @@ export function analyzeCandlestickPatterns(data = []) {
       c0.body > 0 &&
       (trend === 'uptrend' || c0.close >= c1.close)
     ) {
+      const exitPrice = Math.round(c0.close);
+      const downsideTarget = Math.round(c0.close * 0.95);
+      const slEmergency = Math.round(c0.low * 0.975);
       detected = {
         name: 'Shooting Star (Bintang Jatuh)',
         shortName: 'Shooting Star',
@@ -335,12 +401,15 @@ export function analyzeCandlestickPatterns(data = []) {
         time: c0.time,
         psychology: 'Pembeli mencoba mendorong harga ke level tertinggi baru, namun mengalami penolakan masif (*rejection*) dari para seller di area resistance.',
         action: 'Amankan Profit / Antisipasi Koreksi',
-        entryRange: '-',
-        entryPrice: null,
-        stopLossPrice: Math.round(c0.high * 1.015),
-        takeProfitPrice: Math.round(c0.close * 0.95),
-        stopLoss: `Rp ${Math.round(c0.high * 1.015).toLocaleString('id-ID')}`,
-        takeProfit: `Rp ${Math.round(c0.close * 0.95).toLocaleString('id-ID')}`,
+        entryLabel: 'Area Jual / Exit Sekarang',
+        entryRange: `Rp ${exitPrice.toLocaleString('id-ID')}`,
+        entryPrice: exitPrice,
+        slLabel: 'Cut Loss Darurat (Jika Masih Hold)',
+        stopLoss: `Rp ${slEmergency.toLocaleString('id-ID')}`,
+        stopLossPrice: slEmergency,
+        tpLabel: 'Target Penurunan (Support Dituju)',
+        takeProfit: `Rp ${downsideTarget.toLocaleString('id-ID')}`,
+        takeProfitPrice: downsideTarget,
       };
     }
 
@@ -350,6 +419,9 @@ export function analyzeCandlestickPatterns(data = []) {
       c0.lowerShadow <= c0.body * 0.35 &&
       trend === 'downtrend'
     ) {
+      const entry = Math.round(c0.close);
+      const sl = Math.round(c0.low * 0.985);
+      const tp = Math.round(c0.close * 1.04);
       detected = {
         name: 'Inverted Hammer',
         shortName: 'Inv Hammer',
@@ -362,12 +434,15 @@ export function analyzeCandlestickPatterns(data = []) {
         time: c0.time,
         psychology: 'Tanda awal masuknya pembeli setelah downtrend panjang. Membutuhkan 1 candle konfirmasi hijau berikutnya untuk validasi.',
         action: 'Pantau / Tunggu Candle Konfirmasi',
-        entryRange: `Rp ${Math.round(c0.close).toLocaleString('id-ID')}`,
-        entryPrice: Math.round(c0.close),
-        stopLossPrice: Math.round(c0.low * 0.985),
-        takeProfitPrice: Math.round(c0.close * 1.04),
-        stopLoss: `Rp ${Math.round(c0.low * 0.985).toLocaleString('id-ID')}`,
-        takeProfit: `Rp ${Math.round(c0.close * 1.04).toLocaleString('id-ID')}`,
+        entryLabel: 'Area Entry Ideal',
+        entryRange: `Rp ${entry.toLocaleString('id-ID')}`,
+        entryPrice: entry,
+        slLabel: 'Stop Loss Proteksi',
+        stopLoss: `Rp ${sl.toLocaleString('id-ID')}`,
+        stopLossPrice: sl,
+        tpLabel: 'Target Take Profit',
+        takeProfit: `Rp ${tp.toLocaleString('id-ID')}`,
+        takeProfitPrice: tp,
       };
     }
 
@@ -377,6 +452,9 @@ export function analyzeCandlestickPatterns(data = []) {
       c0.upperShadow <= c0.body * 0.35 &&
       trend === 'uptrend'
     ) {
+      const exitPrice = Math.round(c0.close);
+      const downsideTarget = Math.round(c0.close * 0.96);
+      const slEmergency = Math.round(c0.low * 0.975);
       detected = {
         name: 'Hanging Man',
         shortName: 'Hanging Man',
@@ -389,17 +467,23 @@ export function analyzeCandlestickPatterns(data = []) {
         time: c0.time,
         psychology: 'Munculnya ekor bawah panjang di puncak tren menandakan pembeli mulai kewalahan menahan tekanan jual mendadak.',
         action: 'Ketat Stop Loss / Take Profit Sebagian',
-        entryRange: '-',
-        entryPrice: null,
-        stopLossPrice: Math.round(c0.high * 1.015),
-        takeProfitPrice: Math.round(c0.close * 0.96),
-        stopLoss: `Rp ${Math.round(c0.high * 1.015).toLocaleString('id-ID')}`,
-        takeProfit: `Rp ${Math.round(c0.close * 0.96).toLocaleString('id-ID')}`,
+        entryLabel: 'Area Jual / Exit Sekarang',
+        entryRange: `Rp ${exitPrice.toLocaleString('id-ID')}`,
+        entryPrice: exitPrice,
+        slLabel: 'Cut Loss Darurat (Jika Masih Hold)',
+        stopLoss: `Rp ${slEmergency.toLocaleString('id-ID')}`,
+        stopLossPrice: slEmergency,
+        tpLabel: 'Target Penurunan (Support Dituju)',
+        takeProfit: `Rp ${downsideTarget.toLocaleString('id-ID')}`,
+        takeProfitPrice: downsideTarget,
       };
     }
 
     // ── 13. DRAGONFLY / GRAVESTONE DOJI ──────────────────────────────────
     else if (c0.isDoji && c0.lowerShadow >= c0.range * 0.7) {
+      const entry = Math.round(c0.close);
+      const sl = Math.round(c0.low * 0.98);
+      const tp = Math.round(c0.close * 1.05);
       detected = {
         name: 'Dragonfly Doji (Capung Reversal)',
         shortName: 'Dragonfly',
@@ -412,14 +496,20 @@ export function analyzeCandlestickPatterns(data = []) {
         time: c0.time,
         psychology: 'Harga dibuka dan ditutup pada titik tertinggi setelah penurunan tajam, menunjukkan penolakan kuat terhadap harga rendah.',
         action: 'Buy on Dip / Konfirmasi Candle',
-        entryRange: `Rp ${Math.round(c0.close).toLocaleString('id-ID')}`,
-        entryPrice: Math.round(c0.close),
-        stopLossPrice: Math.round(c0.low * 0.98),
-        takeProfitPrice: Math.round(c0.close * 1.05),
-        stopLoss: `Rp ${Math.round(c0.low * 0.98).toLocaleString('id-ID')}`,
-        takeProfit: `Rp ${Math.round(c0.close * 1.05).toLocaleString('id-ID')}`,
+        entryLabel: 'Area Entry Ideal',
+        entryRange: `Rp ${entry.toLocaleString('id-ID')}`,
+        entryPrice: entry,
+        slLabel: 'Stop Loss Proteksi',
+        stopLoss: `Rp ${sl.toLocaleString('id-ID')}`,
+        stopLossPrice: sl,
+        tpLabel: 'Target Take Profit',
+        takeProfit: `Rp ${tp.toLocaleString('id-ID')}`,
+        takeProfitPrice: tp,
       };
     } else if (c0.isDoji && c0.upperShadow >= c0.range * 0.7) {
+      const exitPrice = Math.round(c0.close);
+      const downsideTarget = Math.round(c0.close * 0.95);
+      const slEmergency = Math.round(c0.low * 0.975);
       detected = {
         name: 'Gravestone Doji (Batu Nisan)',
         shortName: 'Gravestone',
@@ -432,17 +522,23 @@ export function analyzeCandlestickPatterns(data = []) {
         time: c0.time,
         psychology: 'Harga dibuka dan ditutup pada titik terendah setelah sempat rally, menunjukkan penolakan total pada harga tinggi.',
         action: 'Hindari Beli / Take Profit',
-        entryRange: '-',
-        entryPrice: null,
-        stopLossPrice: Math.round(c0.high * 1.015),
-        takeProfitPrice: Math.round(c0.close * 0.95),
-        stopLoss: `Rp ${Math.round(c0.high * 1.015).toLocaleString('id-ID')}`,
-        takeProfit: `Rp ${Math.round(c0.close * 0.95).toLocaleString('id-ID')}`,
+        entryLabel: 'Area Jual / Exit Sekarang',
+        entryRange: `Rp ${exitPrice.toLocaleString('id-ID')}`,
+        entryPrice: exitPrice,
+        slLabel: 'Cut Loss Darurat (Jika Masih Hold)',
+        stopLoss: `Rp ${slEmergency.toLocaleString('id-ID')}`,
+        stopLossPrice: slEmergency,
+        tpLabel: 'Target Penurunan (Support Dituju)',
+        takeProfit: `Rp ${downsideTarget.toLocaleString('id-ID')}`,
+        takeProfitPrice: downsideTarget,
       };
     }
 
     // ── 14. STANDARD DOJI / INDECISION ───────────────────────────────────
     else if (c0.isDoji) {
+      const entry = Math.round(c0.close);
+      const sl = Math.round(c0.low * 0.985);
+      const tp = Math.round(c0.high * 1.03);
       detected = {
         name: 'Doji (Konsolidasi)',
         shortName: 'Doji',
@@ -455,17 +551,23 @@ export function analyzeCandlestickPatterns(data = []) {
         time: c0.time,
         psychology: 'Kekuatan pembeli dan penjual seimbang sempurna. Pasar sedang berada dalam keraguan (*indecision*) menunggu katalis baru.',
         action: 'Wait & See / Tunggu Arah Breakout',
-        entryRange: 'Menunggu konfirmasi',
-        entryPrice: Math.round(c0.close),
-        stopLossPrice: Math.round(c0.low * 0.985),
-        takeProfitPrice: Math.round(c0.high * 1.03),
-        stopLoss: `Rp ${Math.round(c0.low * 0.985).toLocaleString('id-ID')}`,
-        takeProfit: `Rp ${Math.round(c0.high * 1.03).toLocaleString('id-ID')}`,
+        entryLabel: 'Area Pantau',
+        entryRange: `Rp ${entry.toLocaleString('id-ID')}`,
+        entryPrice: entry,
+        slLabel: 'Batas Bawah Support',
+        stopLoss: `Rp ${sl.toLocaleString('id-ID')}`,
+        stopLossPrice: sl,
+        tpLabel: 'Target Atas Resistance',
+        takeProfit: `Rp ${tp.toLocaleString('id-ID')}`,
+        takeProfitPrice: tp,
       };
     }
 
     // ── 15. BULLISH / BEARISH MARUBOZU ───────────────────────────────────
     else if (c0.isBullish && c0.body >= c0.range * 0.9) {
+      const entry = Math.round(c0.close);
+      const sl = Math.round(c0.open * 0.985);
+      const tp = Math.round(c0.close * 1.06);
       detected = {
         name: 'Bullish Marubozu',
         shortName: 'Marubozu',
@@ -478,14 +580,20 @@ export function analyzeCandlestickPatterns(data = []) {
         time: c0.time,
         psychology: 'Candle hijau solid dari titik terendah hingga penutupan tertinggi. Pembeli mengontrol perdagangan sepanjang hari tanpa perlawanan.',
         action: 'Follow Momentum / Trend Riding',
-        entryRange: `Rp ${Math.round(c0.close).toLocaleString('id-ID')}`,
-        entryPrice: Math.round(c0.close),
-        stopLossPrice: Math.round(c0.open * 0.985),
-        takeProfitPrice: Math.round(c0.close * 1.06),
-        stopLoss: `Rp ${Math.round(c0.open * 0.985).toLocaleString('id-ID')}`,
-        takeProfit: `Rp ${Math.round(c0.close * 1.06).toLocaleString('id-ID')}`,
+        entryLabel: 'Area Entry Ideal',
+        entryRange: `Rp ${entry.toLocaleString('id-ID')}`,
+        entryPrice: entry,
+        slLabel: 'Stop Loss Proteksi',
+        stopLoss: `Rp ${sl.toLocaleString('id-ID')}`,
+        stopLossPrice: sl,
+        tpLabel: 'Target Take Profit',
+        takeProfit: `Rp ${tp.toLocaleString('id-ID')}`,
+        takeProfitPrice: tp,
       };
     } else if (c0.isBearish && c0.body >= c0.range * 0.9) {
+      const exitPrice = Math.round(c0.close);
+      const downsideTarget = Math.round(c0.close * 0.94);
+      const slEmergency = Math.round(c0.open * 0.975);
       detected = {
         name: 'Bearish Marubozu',
         shortName: 'Marubozu',
@@ -498,12 +606,15 @@ export function analyzeCandlestickPatterns(data = []) {
         time: c0.time,
         psychology: 'Candle merah solid dari pembukaan tertinggi hingga penutupan terendah. Penjual mengontrol pasar tanpa jeda.',
         action: 'Waspada Tekanan Lanjutan / Hindari Entry',
-        entryRange: '-',
-        entryPrice: null,
-        stopLossPrice: Math.round(c0.open * 1.015),
-        takeProfitPrice: Math.round(c0.close * 0.94),
-        stopLoss: `Rp ${Math.round(c0.open * 1.015).toLocaleString('id-ID')}`,
-        takeProfit: `Rp ${Math.round(c0.close * 0.94).toLocaleString('id-ID')}`,
+        entryLabel: 'Area Jual / Exit Sekarang',
+        entryRange: `Rp ${exitPrice.toLocaleString('id-ID')}`,
+        entryPrice: exitPrice,
+        slLabel: 'Cut Loss Darurat (Jika Masih Hold)',
+        stopLoss: `Rp ${slEmergency.toLocaleString('id-ID')}`,
+        stopLossPrice: slEmergency,
+        tpLabel: 'Target Penurunan (Support Dituju)',
+        takeProfit: `Rp ${downsideTarget.toLocaleString('id-ID')}`,
+        takeProfitPrice: downsideTarget,
       };
     }
 
@@ -525,12 +636,15 @@ export function analyzeCandlestickPatterns(data = []) {
     time: sorted[latestIndex].time,
     psychology: 'Pergerakan harga berada dalam rentang wajar tanpa formasi pembalikan ekstrim. Pasar bergerak sesuai tren mayor yang sedang berjalan.',
     action: 'Ikuti Tren Mayor / Pasang Support-Resistance',
-    entryRange: 'Gunakan level support',
-    entryPrice: null,
-    stopLossPrice: null,
-    takeProfitPrice: null,
-    stopLoss: 'Gunakan MA20 / Swing Low',
-    takeProfit: 'Gunakan Resistance terdekat',
+    entryLabel: 'Area Pantau',
+    entryRange: `Rp ${Math.round(sorted[latestIndex].close).toLocaleString('id-ID')}`,
+    entryPrice: Math.round(sorted[latestIndex].close),
+    slLabel: 'Batas Bawah Support',
+    stopLoss: `Rp ${Math.round(sorted[latestIndex].low * 0.985).toLocaleString('id-ID')}`,
+    stopLossPrice: Math.round(sorted[latestIndex].low * 0.985),
+    tpLabel: 'Target Atas Resistance',
+    takeProfit: `Rp ${Math.round(sorted[latestIndex].high * 1.03).toLocaleString('id-ID')}`,
+    takeProfitPrice: Math.round(sorted[latestIndex].high * 1.03),
   };
 
   const historyPatterns = patterns.slice(-5).reverse();
