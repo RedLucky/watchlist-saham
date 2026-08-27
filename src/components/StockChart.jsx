@@ -19,7 +19,7 @@ export default function StockChart({ ticker }) {
   const [patternAnalysis, setPatternAnalysis] = useState(null);
   const [showPatternModal, setShowPatternModal] = useState(false);
   const [showMarkersOnChart, setShowMarkersOnChart] = useState(true);
-  const [selectedRange, setSelectedRange] = useState('5Y');
+  const [selectedRange, setSelectedRange] = useState('1Y');
 
   // References to dynamic chart series and lines
   const chartInstanceRef = useRef(null);
@@ -214,10 +214,24 @@ export default function StockChart({ ticker }) {
           });
         }
 
-        // Fit Content
-        chart.timeScale().fitContent();
+        // Set default visible range to 1 Year ('1Y' / 1T)
+        if (data.length > 0) {
+          const lastItem = data[data.length - 1];
+          const lastDate = new Date(lastItem.time);
+          const fromDate = new Date(lastDate);
+          fromDate.setFullYear(fromDate.getFullYear() - 1);
+          const fromStr = fromDate.toISOString().split('T')[0];
+          const toStr = lastDate.toISOString().split('T')[0];
+          try {
+            chart.timeScale().setVisibleRange({ from: fromStr, to: toStr });
+          } catch (e) {
+            chart.timeScale().fitContent();
+          }
+        } else {
+          chart.timeScale().fitContent();
+        }
+
         setAnalytics(chartAnalytics || null);
-        
         setLoading(false);
 
         // Handle resize
