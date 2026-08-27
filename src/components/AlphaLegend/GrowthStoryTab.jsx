@@ -304,11 +304,10 @@ export default function GrowthStoryTab({ stocks = [] }) {
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 font-medium">
               {growthStocks.map((stock, i) => {
                 const revGrowth = Number(stock.revenueGrowth ?? 0);
-                const profitGrowth = Number(stock.profitGrowth ?? 0);
+                const profitGrowth = Number(stock.cagr ?? stock.profitGrowth ?? 0);
                 const roe = Number(stock.roe ?? 0);
                 const zScore = Number(stock.altmanZScore ?? 0);
                 const fScore = Number(stock.piotroskiFScore ?? 0);
-
                 return (
                   <tr key={i} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                     <td className="p-3">

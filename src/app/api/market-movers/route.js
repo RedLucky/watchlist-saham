@@ -78,34 +78,22 @@ function toMoverDto(s) {
 }
 
 async function getMoversFromDB() {
-  // ── Ajaib Trending: Trading Heat (Turnover + Volume Surge + Price Momentum) ─
-  const rawActiveCandidates = await prisma.stockData.findMany({
+  // ── RTI Trending: Top Turnover ───────────────────────────────────────────
+  // We sort by 'frequency' or 'turnover' directly in DB.
+  // Using turnover as the most robust liquidity indicator.
+  const rawTrending = await prisma.stockData.findMany({
     where: {
       NOT: { ticker: '^JKSE' },
       isDelisted: false,
       price: { gt: MIN_PRICE },
-      volume: { gte: 1000 }
+      volume: { gte: MIN_VOLUME_TODAY }
     },
+    orderBy: { turnover: 'desc' },
+    take: TOP_N,
     select: {
-      ticker: true, name: true, sector: true, price: true, changePercent: true,
-      volume: true, turnover: true, avgVolume3mo: true, fundamentals: true
+      ticker: true, name: true, sector: true, price: true, changePercent: true, volume: true, turnover: true, fundamentals: true
     }
   });
-
-  const rawTrending = rawActiveCandidates
-    .map(s => {
-      const vol = Number(s.volume || 0);
-      const avgVol = Number(s.avgVolume3mo || 1);
-      const turnover = s.turnover != null ? Number(s.turnover) : Math.round(vol * Number(s.price || 0));
-      const change = Math.abs(Number(s.changePercent || 0));
-      const volSurge = avgVol > 0 ? Math.min(vol / avgVol, 10) : 1;
-      
-      // Ajaib-style Heat Score: combines turnover baseline, volume surge multiplier, and price action
-      const heatScore = (Math.log10(Math.max(turnover, 1)) * 10) + (volSurge * 15) + (change * 2.5);
-      return { ...s, heatScore, volumeRatio: volSurge };
-    })
-    .sort((a, b) => b.heatScore - a.heatScore)
-    .slice(0, TOP_N);
 
   // ── RTI Top Gainer: % change harian positif tertinggi ────────────────────
   const rawGainers = await prisma.stockData.findMany({
