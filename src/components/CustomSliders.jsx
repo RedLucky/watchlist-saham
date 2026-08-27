@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 
 export default function CustomSliders({ initialWeights, onApply }) {
  const [weights, setWeights] = useState(initialWeights || {
- fundamental: 35,
- technical: 25,
- smartMoney: 10,
- trending: 10,
+ fundamental: 20,
+ technical: 20,
+ smartMoney: 20,
+ trending: 20,
  valuation: 10,
  liquidity: 5,
  dividend: 5,
