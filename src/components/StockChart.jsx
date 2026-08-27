@@ -6,6 +6,7 @@ import {
   CandlestickSeries,
   HistogramSeries,
   LineSeries,
+  createSeriesMarkers,
 } from 'lightweight-charts';
 import React, { useEffect, useRef, useState } from 'react';
 import { analyzeCandlestickPatterns } from '@/lib/candlestickPatterns';
@@ -17,6 +18,12 @@ export default function StockChart({ ticker }) {
   const [analytics, setAnalytics] = useState(null);
   const [patternAnalysis, setPatternAnalysis] = useState(null);
   const [showPatternModal, setShowPatternModal] = useState(false);
+  const [showMarkersOnChart, setShowMarkersOnChart] = useState(true);
+
+  // References to dynamic chart series and lines
+  const chartInstanceRef = useRef(null);
+  const candlestickSeriesRef = useRef(null);
+  const dynamicPriceLinesRef = useRef([]);
 
   useEffect(() => {
     let chart;
@@ -40,7 +47,7 @@ export default function StockChart({ ticker }) {
         // Initialize chart component
         chart = createChart(chartContainerRef.current, {
           width: chartContainerRef.current.clientWidth,
-          height: 350,
+          height: 360,
           layout: {
             background: { type: 'solid', color: 'transparent' },
             textColor: '#94a3b8',
@@ -59,7 +66,6 @@ export default function StockChart({ ticker }) {
             borderColor: 'rgba(255, 255, 255, 0.1)',
             timeVisible: true,
           },
-          // On mobile, keep page scroll smooth when finger is on the chart area.
           handleScroll: isMobile
             ? {
                 mouseWheel: false,
@@ -77,6 +83,8 @@ export default function StockChart({ ticker }) {
             : true,
         });
 
+        chartInstanceRef.current = chart;
+
         // Candlesticks
         const candlestickSeries = chart.addSeries(CandlestickSeries, {
           upColor: '#10b981',
@@ -86,6 +94,20 @@ export default function StockChart({ ticker }) {
           wickDownColor: '#ef4444',
         });
         candlestickSeries.setData(data);
+        candlestickSeriesRef.current = candlestickSeries;
+
+        // Draw Candlestick Pattern Markers directly on chart!
+        if (detectedPatterns.allDetected?.length > 0) {
+          const markers = detectedPatterns.allDetected.map(p => ({
+            time: p.time,
+            position: p.direction === 'bullish' ? 'belowBar' : 'aboveBar',
+            color: p.direction === 'bullish' ? '#10b981' : p.direction === 'bearish' ? '#ef4444' : '#f59e0b',
+            shape: p.direction === 'bullish' ? 'arrowUp' : p.direction === 'bearish' ? 'arrowDown' : 'circle',
+            text: `${p.emoji} ${p.shortName || p.name.split(' ')[0]}`,
+            size: 1.5,
+          }));
+          createSeriesMarkers(candlestickSeries, markers);
+        }
 
         // Volume
         const volumeSeries = chart.addSeries(HistogramSeries, {
@@ -181,26 +203,6 @@ export default function StockChart({ ticker }) {
             title: 'R-Zone High',
           });
         }
-        if (chartAnalytics?.bounds?.lower) {
-          candlestickSeries.createPriceLine({
-            price: chartAnalytics.bounds.lower,
-            color: '#22c55e',
-            lineWidth: 1,
-            lineStyle: 4,
-            axisLabelVisible: false,
-            title: 'Lower',
-          });
-        }
-        if (chartAnalytics?.bounds?.upper) {
-          candlestickSeries.createPriceLine({
-            price: chartAnalytics.bounds.upper,
-            color: '#f97316',
-            lineWidth: 1,
-            lineStyle: 4,
-            axisLabelVisible: false,
-            title: 'Upper',
-          });
-        }
 
         // Fit Content
         chart.timeScale().fitContent();
@@ -238,6 +240,62 @@ export default function StockChart({ ticker }) {
     };
   }, [ticker]);
 
+  // Function to draw or clear Entry/SL/TP levels of a selected pattern
+  const handleDrawPatternLevels = (pattern) => {
+    if (!candlestickSeriesRef.current || !pattern) return;
+
+    // Remove previous dynamic lines
+    dynamicPriceLinesRef.current.forEach(line => {
+      try {
+        candlestickSeriesRef.current.removePriceLine(line);
+      } catch (e) {
+        // ignore
+      }
+    });
+    dynamicPriceLinesRef.current = [];
+
+    // Draw Entry Line
+    if (pattern.entryPrice) {
+      const entryLine = candlestickSeriesRef.current.createPriceLine({
+        price: pattern.entryPrice,
+        color: '#3b82f6',
+        lineWidth: 2,
+        lineStyle: 0,
+        axisLabelVisible: true,
+        title: `🎯 Entry (${pattern.shortName})`,
+      });
+      dynamicPriceLinesRef.current.push(entryLine);
+    }
+
+    // Draw Stop Loss Line
+    if (pattern.stopLossPrice) {
+      const slLine = candlestickSeriesRef.current.createPriceLine({
+        price: pattern.stopLossPrice,
+        color: '#ef4444',
+        lineWidth: 2,
+        lineStyle: 2,
+        axisLabelVisible: true,
+        title: '🛡️ Stop Loss',
+      });
+      dynamicPriceLinesRef.current.push(slLine);
+    }
+
+    // Draw Take Profit Line
+    if (pattern.takeProfitPrice) {
+      const tpLine = candlestickSeriesRef.current.createPriceLine({
+        price: pattern.takeProfitPrice,
+        color: '#10b981',
+        lineWidth: 2,
+        lineStyle: 2,
+        axisLabelVisible: true,
+        title: '🚀 Take Profit Target',
+      });
+      dynamicPriceLinesRef.current.push(tpLine);
+    }
+
+    setShowPatternModal(false);
+  };
+
   const currentPattern = patternAnalysis?.currentPattern;
 
   return (
@@ -247,12 +305,12 @@ export default function StockChart({ ticker }) {
         <div className="space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-1.5">
-              <span>📊</span> Grafik {ticker} (1 Tahun)
+              <span>📊</span> Grafik TradingView — {ticker} (1 Tahun)
             </h3>
             {currentPattern && (
               <span
                 onClick={() => setShowPatternModal(true)}
-                className={`cursor-pointer inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full transition-all hover:scale-105 shadow-sm ${
+                className={`cursor-pointer inline-flex items-center gap-1 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full transition-all hover:scale-105 shadow-sm ${
                   currentPattern.direction === 'bullish'
                     ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
                     : currentPattern.direction === 'bearish'
@@ -277,12 +335,14 @@ export default function StockChart({ ticker }) {
         </div>
 
         {/* CANDLESTICK PATTERN BUTTON */}
-        <button
-          onClick={() => setShowPatternModal(true)}
-          className="px-3.5 py-1.5 bg-gradient-to-r from-amber-500 via-indigo-600 to-indigo-700 hover:from-amber-400 hover:to-indigo-600 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 self-start sm:self-auto flex-shrink-0"
-        >
-          <span>🕯️</span> Analisis Pola Candlestick
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-shrink-0">
+          <button
+            onClick={() => setShowPatternModal(true)}
+            className="px-3.5 py-1.5 bg-gradient-to-r from-amber-500 via-indigo-600 to-indigo-700 hover:from-amber-400 hover:to-indigo-600 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5"
+          >
+            <span>🕯️</span> Analisis Pola Candlestick
+          </button>
+        </div>
       </div>
 
       {analytics && !loading && (
@@ -334,7 +394,7 @@ export default function StockChart({ ticker }) {
         </div>
       )}
       
-      <div ref={chartContainerRef} className="w-full h-[350px] touch-pan-y"/>
+      <div ref={chartContainerRef} className="w-full h-[360px] touch-pan-y"/>
 
       {/* ── CANDLESTICK PATTERN RECOGNITION MODAL ───────────────────────── */}
       {showPatternModal && (
@@ -349,7 +409,7 @@ export default function StockChart({ ticker }) {
                     Analisis Pola Candlestick — {ticker}
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Pengenalan pola formasi candlestick & proyeksi arah pergerakan harga
+                    Pola formasi digambar langsung dengan marker pada candlestick grafik TradingView
                   </p>
                 </div>
               </div>
@@ -430,9 +490,19 @@ export default function StockChart({ ticker }) {
 
                 {/* Actionable Trading Guidelines */}
                 <div className="space-y-2">
-                  <h5 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    📋 Rekomendasi Rencana Trading
-                  </h5>
+                  <div className="flex items-center justify-between">
+                    <h5 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                      📋 Rekomendasi Rencana Trading
+                    </h5>
+                    {(currentPattern.entryPrice || currentPattern.takeProfitPrice) && (
+                      <button
+                        onClick={() => handleDrawPatternLevels(currentPattern)}
+                        className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
+                      >
+                        📈 Gambar Level Entry/SL/TP di Grafik
+                      </button>
+                    )}
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                     <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700/60">
                       <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Saran Tindakan</span>
@@ -457,28 +527,32 @@ export default function StockChart({ ticker }) {
                 {patternAnalysis?.historyPatterns?.length > 1 && (
                   <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
                     <h5 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                      🕒 Riwayat Pola Sebelumnya (30 Hari Terakhir)
+                      🕒 Riwayat Pola Sebelumnya (Klik untuk gambar level)
                     </h5>
                     <div className="space-y-1.5">
                       {patternAnalysis.historyPatterns.slice(1).map((hist, idx) => (
                         <div
                           key={idx}
-                          className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/40 text-xs"
+                          onClick={() => handleDrawPatternLevels(hist)}
+                          className="cursor-pointer flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-800/40 hover:bg-indigo-50 dark:hover:bg-slate-700/50 border border-slate-200 dark:border-slate-700/40 text-xs transition-colors group"
                         >
                           <div className="flex items-center gap-2">
                             <span>{hist.emoji}</span>
-                            <span className="font-bold text-slate-800 dark:text-slate-200">{hist.name}</span>
+                            <span className="font-bold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600">{hist.name}</span>
                             <span className="text-[10px] text-slate-400">({hist.time})</span>
                           </div>
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                            hist.direction === 'bullish'
-                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                              : hist.direction === 'bearish'
-                              ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
-                              : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
-                          }`}>
-                            {hist.direction === 'bullish' ? '▲ Bullish' : hist.direction === 'bearish' ? '▼ Bearish' : '⚖️ Netral'}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                              hist.direction === 'bullish'
+                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                                : hist.direction === 'bearish'
+                                ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                                : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                            }`}>
+                              {hist.direction === 'bullish' ? '▲ Bullish' : hist.direction === 'bearish' ? '▼ Bearish' : '⚖️ Netral'}
+                            </span>
+                            <span className="text-[10px] text-indigo-500 opacity-0 group-hover:opacity-100 font-bold">Gambar ➔</span>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -495,7 +569,7 @@ export default function StockChart({ ticker }) {
                 onClick={() => setShowPatternModal(false)}
                 className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-sm transition-all"
               >
-                Tutup Analisis
+                Tutup
               </button>
             </div>
           </div>

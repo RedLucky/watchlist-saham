@@ -8,6 +8,7 @@ export function analyzeCandlestickPatterns(data = []) {
     return {
       currentPattern: null,
       historyPatterns: [],
+      allDetected: [],
       trendContext: 'neutral',
     };
   }
@@ -51,7 +52,7 @@ export function analyzeCandlestickPatterns(data = []) {
     };
   }
 
-  // Trend detection over last 10 candles
+  // Trend detection over lookback period
   function detectLocalTrend(endIdx, lookback = 10) {
     const startIdx = Math.max(0, endIdx - lookback);
     const subset = sorted.slice(startIdx, endIdx + 1);
@@ -64,10 +65,8 @@ export function analyzeCandlestickPatterns(data = []) {
     return 'sideways';
   }
 
-  // Scan across candles (prioritizing the last 30 candles for history)
-  const scanStart = Math.max(2, n - 35);
-
-  for (let i = scanStart; i <= latestIndex; i++) {
+  // Scan across candles for the entire year
+  for (let i = 2; i <= latestIndex; i++) {
     const c0 = getCandleProps(sorted[i]);       // Current candle
     const c1 = getCandleProps(sorted[i - 1]);   // 1 candle ago
     const c2 = getCandleProps(sorted[i - 2]);   // 2 candles ago
@@ -83,6 +82,7 @@ export function analyzeCandlestickPatterns(data = []) {
     ) {
       detected = {
         name: 'Morning Star (Bintang Fajar)',
+        shortName: 'Morning Star',
         emoji: '🌟',
         direction: 'bullish',
         directionLabel: 'POTENSI NAIK (BULLISH)',
@@ -93,6 +93,9 @@ export function analyzeCandlestickPatterns(data = []) {
         psychology: 'Penjual mendominasi pada candle pertama, namun kehilangan momentum di candle kedua (doji/small body). Candle ketiga dikuasai pembeli secara agresif, menandakan pembalikan arah naik yang sangat solid.',
         action: 'Buy on Confirmation / Entry Bertahap',
         entryRange: `Rp ${Math.round(c0.close).toLocaleString('id-ID')} - Rp ${Math.round(c0.close * 1.015).toLocaleString('id-ID')}`,
+        entryPrice: Math.round(c0.close),
+        stopLossPrice: Math.round(Math.min(c2.low, c1.low, c0.low) * 0.98),
+        takeProfitPrice: Math.round(c0.close * 1.06),
         stopLoss: `Rp ${Math.round(Math.min(c2.low, c1.low, c0.low) * 0.98).toLocaleString('id-ID')}`,
         takeProfit: `Rp ${Math.round(c0.close * 1.06).toLocaleString('id-ID')}`,
       };
@@ -106,6 +109,7 @@ export function analyzeCandlestickPatterns(data = []) {
     ) {
       detected = {
         name: 'Evening Star (Bintang Senja)',
+        shortName: 'Evening Star',
         emoji: '🌠',
         direction: 'bearish',
         directionLabel: 'POTENSI TURUN (BEARISH)',
@@ -116,6 +120,9 @@ export function analyzeCandlestickPatterns(data = []) {
         psychology: 'Kekuatan pembeli melemah di puncak tren. Tekanan jual masif pada candle ketiga mengonfirmasi distribusi dan sinyal pembalikan tren turun.',
         action: 'Take Profit / Kurangi Posisi / Hindari Beli',
         entryRange: '-',
+        entryPrice: null,
+        stopLossPrice: Math.round(Math.max(c2.high, c1.high, c0.high) * 1.01),
+        takeProfitPrice: Math.round(c0.close * 0.94),
         stopLoss: `Rp ${Math.round(Math.max(c2.high, c1.high, c0.high) * 1.01).toLocaleString('id-ID')}`,
         takeProfit: `Rp ${Math.round(c0.close * 0.94).toLocaleString('id-ID')}`,
       };
@@ -129,6 +136,7 @@ export function analyzeCandlestickPatterns(data = []) {
     ) {
       detected = {
         name: 'Three White Soldiers (3 Prajurit)',
+        shortName: '3 Soldiers',
         emoji: '🛡️',
         direction: 'bullish',
         directionLabel: 'POTENSI NAIK KUAT (BULLISH)',
@@ -139,6 +147,9 @@ export function analyzeCandlestickPatterns(data = []) {
         psychology: 'Tiga candle hijau beruntun dengan penutupan semakin tinggi menunjukkan aksi akumulasi terstruktur dan tren naik yang sangat stabil.',
         action: 'Follow the Trend / Hold Posisi',
         entryRange: `Rp ${Math.round(c0.close).toLocaleString('id-ID')}`,
+        entryPrice: Math.round(c0.close),
+        stopLossPrice: Math.round(c2.low * 0.985),
+        takeProfitPrice: Math.round(c0.close * 1.08),
         stopLoss: `Rp ${Math.round(c2.low * 0.985).toLocaleString('id-ID')}`,
         takeProfit: `Rp ${Math.round(c0.close * 1.08).toLocaleString('id-ID')}`,
       };
@@ -152,6 +163,7 @@ export function analyzeCandlestickPatterns(data = []) {
     ) {
       detected = {
         name: 'Three Black Crows (3 Gagak Hitam)',
+        shortName: '3 Crows',
         emoji: '🦅',
         direction: 'bearish',
         directionLabel: 'POTENSI TURUN KUAT (BEARISH)',
@@ -162,6 +174,9 @@ export function analyzeCandlestickPatterns(data = []) {
         psychology: 'Tekanan jual intens terjadi 3 hari berturut-turut tanpa perlawanan berarti dari pihak pembeli. Downtrend kuat sedang berlangsung.',
         action: 'Hindari Entry / Ketatkan Stop Loss',
         entryRange: '-',
+        entryPrice: null,
+        stopLossPrice: Math.round(c0.high * 1.02),
+        takeProfitPrice: Math.round(c0.close * 0.92),
         stopLoss: `Rp ${Math.round(c0.high * 1.02).toLocaleString('id-ID')}`,
         takeProfit: `Rp ${Math.round(c0.close * 0.92).toLocaleString('id-ID')}`,
       };
@@ -175,6 +190,7 @@ export function analyzeCandlestickPatterns(data = []) {
     ) {
       detected = {
         name: 'Bullish Engulfing',
+        shortName: 'Engulfing',
         emoji: '🚀',
         direction: 'bullish',
         directionLabel: 'POTENSI NAIK (BULLISH)',
@@ -185,6 +201,9 @@ export function analyzeCandlestickPatterns(data = []) {
         psychology: 'Candle hijau besar menelan seluruh badan candle merah sebelumnya. Minat beli baru masuk dalam jumlah besar menggeser kendali pasar ke tangan bulls.',
         action: 'Buy on Weakness / Buy Breakout',
         entryRange: `Rp ${Math.round(c0.close).toLocaleString('id-ID')}`,
+        entryPrice: Math.round(c0.close),
+        stopLossPrice: Math.round(c0.low * 0.985),
+        takeProfitPrice: Math.round(c0.close * 1.05),
         stopLoss: `Rp ${Math.round(c0.low * 0.985).toLocaleString('id-ID')}`,
         takeProfit: `Rp ${Math.round(c0.close * 1.05).toLocaleString('id-ID')}`,
       };
@@ -198,6 +217,7 @@ export function analyzeCandlestickPatterns(data = []) {
     ) {
       detected = {
         name: 'Bearish Engulfing',
+        shortName: 'Engulfing',
         emoji: '🩸',
         direction: 'bearish',
         directionLabel: 'POTENSI TURUN (BEARISH)',
@@ -208,6 +228,9 @@ export function analyzeCandlestickPatterns(data = []) {
         psychology: 'Candle merah besar menelan candle hijau sebelumnya. Penjual mengambil alih kendali pasar secara agresif setelah kenaikan harga.',
         action: 'Take Profit / Waspada Penurunan',
         entryRange: '-',
+        entryPrice: null,
+        stopLossPrice: Math.round(c0.high * 1.015),
+        takeProfitPrice: Math.round(c0.close * 0.95),
         stopLoss: `Rp ${Math.round(c0.high * 1.015).toLocaleString('id-ID')}`,
         takeProfit: `Rp ${Math.round(c0.close * 0.95).toLocaleString('id-ID')}`,
       };
@@ -220,6 +243,7 @@ export function analyzeCandlestickPatterns(data = []) {
     ) {
       detected = {
         name: 'Piercing Line',
+        shortName: 'Piercing',
         emoji: '⚡',
         direction: 'bullish',
         directionLabel: 'POTENSI NAIK (BULLISH)',
@@ -230,6 +254,9 @@ export function analyzeCandlestickPatterns(data = []) {
         psychology: 'Harga dibuka lebih rendah namun ditutup menembus lebih dari 50% candle merah kemarin. Indikasi kuat adanya penolakan harga murah (*dip buying*).',
         action: 'Buy on Dip / Spekulatif Buy',
         entryRange: `Rp ${Math.round(c0.close).toLocaleString('id-ID')}`,
+        entryPrice: Math.round(c0.close),
+        stopLossPrice: Math.round(c0.low * 0.985),
+        takeProfitPrice: Math.round(c0.close * 1.045),
         stopLoss: `Rp ${Math.round(c0.low * 0.985).toLocaleString('id-ID')}`,
         takeProfit: `Rp ${Math.round(c0.close * 1.045).toLocaleString('id-ID')}`,
       };
@@ -242,6 +269,7 @@ export function analyzeCandlestickPatterns(data = []) {
     ) {
       detected = {
         name: 'Dark Cloud Cover (Awan Gelap)',
+        shortName: 'Dark Cloud',
         emoji: '☁️',
         direction: 'bearish',
         directionLabel: 'POTENSI TURUN (BEARISH)',
@@ -252,6 +280,9 @@ export function analyzeCandlestickPatterns(data = []) {
         psychology: 'Harga sempat dibuka lebih tinggi di atas resistance namun gagal bertahan dan ditutup di bawah separuh body hijau kemarin. Penjual menekan balik.',
         action: 'Take Profit / Pasang Trailing Stop',
         entryRange: '-',
+        entryPrice: null,
+        stopLossPrice: Math.round(c0.high * 1.015),
+        takeProfitPrice: Math.round(c0.close * 0.95),
         stopLoss: `Rp ${Math.round(c0.high * 1.015).toLocaleString('id-ID')}`,
         takeProfit: `Rp ${Math.round(c0.close * 0.95).toLocaleString('id-ID')}`,
       };
@@ -266,6 +297,7 @@ export function analyzeCandlestickPatterns(data = []) {
     ) {
       detected = {
         name: 'Hammer (Palu Reversal)',
+        shortName: 'Hammer',
         emoji: '🔨',
         direction: 'bullish',
         directionLabel: 'POTENSI NAIK (BULLISH)',
@@ -276,6 +308,9 @@ export function analyzeCandlestickPatterns(data = []) {
         psychology: 'Penjual sempat menekan harga hingga titik terendah baru, tetapi pembeli bereaksi cepat memborong saham hingga harga ditutup di dekat puncaknya.',
         action: 'Buy on Support / Reversal Entry',
         entryRange: `Rp ${Math.round(c0.close).toLocaleString('id-ID')}`,
+        entryPrice: Math.round(c0.close),
+        stopLossPrice: Math.round(c0.low * 0.98),
+        takeProfitPrice: Math.round(c0.close * 1.05),
         stopLoss: `Rp ${Math.round(c0.low * 0.98).toLocaleString('id-ID')}`,
         takeProfit: `Rp ${Math.round(c0.close * 1.05).toLocaleString('id-ID')}`,
       };
@@ -290,6 +325,7 @@ export function analyzeCandlestickPatterns(data = []) {
     ) {
       detected = {
         name: 'Shooting Star (Bintang Jatuh)',
+        shortName: 'Shooting Star',
         emoji: '🌠',
         direction: 'bearish',
         directionLabel: 'POTENSI TURUN (BEARISH)',
@@ -300,6 +336,9 @@ export function analyzeCandlestickPatterns(data = []) {
         psychology: 'Pembeli mencoba mendorong harga ke level tertinggi baru, namun mengalami penolakan masif (*rejection*) dari para seller di area resistance.',
         action: 'Amankan Profit / Antisipasi Koreksi',
         entryRange: '-',
+        entryPrice: null,
+        stopLossPrice: Math.round(c0.high * 1.015),
+        takeProfitPrice: Math.round(c0.close * 0.95),
         stopLoss: `Rp ${Math.round(c0.high * 1.015).toLocaleString('id-ID')}`,
         takeProfit: `Rp ${Math.round(c0.close * 0.95).toLocaleString('id-ID')}`,
       };
@@ -313,6 +352,7 @@ export function analyzeCandlestickPatterns(data = []) {
     ) {
       detected = {
         name: 'Inverted Hammer',
+        shortName: 'Inv Hammer',
         emoji: '⛏️',
         direction: 'bullish',
         directionLabel: 'POTENSI NAIK (BULLISH)',
@@ -323,6 +363,9 @@ export function analyzeCandlestickPatterns(data = []) {
         psychology: 'Tanda awal masuknya pembeli setelah downtrend panjang. Membutuhkan 1 candle konfirmasi hijau berikutnya untuk validasi.',
         action: 'Pantau / Tunggu Candle Konfirmasi',
         entryRange: `Rp ${Math.round(c0.close).toLocaleString('id-ID')}`,
+        entryPrice: Math.round(c0.close),
+        stopLossPrice: Math.round(c0.low * 0.985),
+        takeProfitPrice: Math.round(c0.close * 1.04),
         stopLoss: `Rp ${Math.round(c0.low * 0.985).toLocaleString('id-ID')}`,
         takeProfit: `Rp ${Math.round(c0.close * 1.04).toLocaleString('id-ID')}`,
       };
@@ -336,6 +379,7 @@ export function analyzeCandlestickPatterns(data = []) {
     ) {
       detected = {
         name: 'Hanging Man',
+        shortName: 'Hanging Man',
         emoji: '⚠️',
         direction: 'bearish',
         directionLabel: 'POTENSI TURUN (BEARISH)',
@@ -346,6 +390,9 @@ export function analyzeCandlestickPatterns(data = []) {
         psychology: 'Munculnya ekor bawah panjang di puncak tren menandakan pembeli mulai kewalahan menahan tekanan jual mendadak.',
         action: 'Ketat Stop Loss / Take Profit Sebagian',
         entryRange: '-',
+        entryPrice: null,
+        stopLossPrice: Math.round(c0.high * 1.015),
+        takeProfitPrice: Math.round(c0.close * 0.96),
         stopLoss: `Rp ${Math.round(c0.high * 1.015).toLocaleString('id-ID')}`,
         takeProfit: `Rp ${Math.round(c0.close * 0.96).toLocaleString('id-ID')}`,
       };
@@ -355,6 +402,7 @@ export function analyzeCandlestickPatterns(data = []) {
     else if (c0.isDoji && c0.lowerShadow >= c0.range * 0.7) {
       detected = {
         name: 'Dragonfly Doji (Capung Reversal)',
+        shortName: 'Dragonfly',
         emoji: '🦗',
         direction: 'bullish',
         directionLabel: 'POTENSI NAIK (BULLISH)',
@@ -365,12 +413,16 @@ export function analyzeCandlestickPatterns(data = []) {
         psychology: 'Harga dibuka dan ditutup pada titik tertinggi setelah penurunan tajam, menunjukkan penolakan kuat terhadap harga rendah.',
         action: 'Buy on Dip / Konfirmasi Candle',
         entryRange: `Rp ${Math.round(c0.close).toLocaleString('id-ID')}`,
+        entryPrice: Math.round(c0.close),
+        stopLossPrice: Math.round(c0.low * 0.98),
+        takeProfitPrice: Math.round(c0.close * 1.05),
         stopLoss: `Rp ${Math.round(c0.low * 0.98).toLocaleString('id-ID')}`,
         takeProfit: `Rp ${Math.round(c0.close * 1.05).toLocaleString('id-ID')}`,
       };
     } else if (c0.isDoji && c0.upperShadow >= c0.range * 0.7) {
       detected = {
         name: 'Gravestone Doji (Batu Nisan)',
+        shortName: 'Gravestone',
         emoji: '🪦',
         direction: 'bearish',
         directionLabel: 'POTENSI TURUN (BEARISH)',
@@ -381,6 +433,9 @@ export function analyzeCandlestickPatterns(data = []) {
         psychology: 'Harga dibuka dan ditutup pada titik terendah setelah sempat rally, menunjukkan penolakan total pada harga tinggi.',
         action: 'Hindari Beli / Take Profit',
         entryRange: '-',
+        entryPrice: null,
+        stopLossPrice: Math.round(c0.high * 1.015),
+        takeProfitPrice: Math.round(c0.close * 0.95),
         stopLoss: `Rp ${Math.round(c0.high * 1.015).toLocaleString('id-ID')}`,
         takeProfit: `Rp ${Math.round(c0.close * 0.95).toLocaleString('id-ID')}`,
       };
@@ -389,7 +444,8 @@ export function analyzeCandlestickPatterns(data = []) {
     // ── 14. STANDARD DOJI / INDECISION ───────────────────────────────────
     else if (c0.isDoji) {
       detected = {
-        name: 'Doji (Konsolidasi / Keraguan Pasar)',
+        name: 'Doji (Konsolidasi)',
+        shortName: 'Doji',
         emoji: '⚖️',
         direction: 'neutral',
         directionLabel: 'KONSOLIDASI (NETRAL)',
@@ -400,6 +456,9 @@ export function analyzeCandlestickPatterns(data = []) {
         psychology: 'Kekuatan pembeli dan penjual seimbang sempurna. Pasar sedang berada dalam keraguan (*indecision*) menunggu katalis baru.',
         action: 'Wait & See / Tunggu Arah Breakout',
         entryRange: 'Menunggu konfirmasi',
+        entryPrice: Math.round(c0.close),
+        stopLossPrice: Math.round(c0.low * 0.985),
+        takeProfitPrice: Math.round(c0.high * 1.03),
         stopLoss: `Rp ${Math.round(c0.low * 0.985).toLocaleString('id-ID')}`,
         takeProfit: `Rp ${Math.round(c0.high * 1.03).toLocaleString('id-ID')}`,
       };
@@ -408,7 +467,8 @@ export function analyzeCandlestickPatterns(data = []) {
     // ── 15. BULLISH / BEARISH MARUBOZU ───────────────────────────────────
     else if (c0.isBullish && c0.body >= c0.range * 0.9) {
       detected = {
-        name: 'Bullish Marubozu (Dominasi Pembeli Mutlak)',
+        name: 'Bullish Marubozu',
+        shortName: 'Marubozu',
         emoji: '🟩',
         direction: 'bullish',
         directionLabel: 'POTENSI NAIK KUAT (BULLISH)',
@@ -419,12 +479,16 @@ export function analyzeCandlestickPatterns(data = []) {
         psychology: 'Candle hijau solid dari titik terendah hingga penutupan tertinggi. Pembeli mengontrol perdagangan sepanjang hari tanpa perlawanan.',
         action: 'Follow Momentum / Trend Riding',
         entryRange: `Rp ${Math.round(c0.close).toLocaleString('id-ID')}`,
+        entryPrice: Math.round(c0.close),
+        stopLossPrice: Math.round(c0.open * 0.985),
+        takeProfitPrice: Math.round(c0.close * 1.06),
         stopLoss: `Rp ${Math.round(c0.open * 0.985).toLocaleString('id-ID')}`,
         takeProfit: `Rp ${Math.round(c0.close * 1.06).toLocaleString('id-ID')}`,
       };
     } else if (c0.isBearish && c0.body >= c0.range * 0.9) {
       detected = {
-        name: 'Bearish Marubozu (Dominasi Penjual Mutlak)',
+        name: 'Bearish Marubozu',
+        shortName: 'Marubozu',
         emoji: '🟥',
         direction: 'bearish',
         directionLabel: 'POTENSI TURUN KUAT (BEARISH)',
@@ -435,6 +499,9 @@ export function analyzeCandlestickPatterns(data = []) {
         psychology: 'Candle merah solid dari pembukaan tertinggi hingga penutupan terendah. Penjual mengontrol pasar tanpa jeda.',
         action: 'Waspada Tekanan Lanjutan / Hindari Entry',
         entryRange: '-',
+        entryPrice: null,
+        stopLossPrice: Math.round(c0.open * 1.015),
+        takeProfitPrice: Math.round(c0.close * 0.94),
         stopLoss: `Rp ${Math.round(c0.open * 1.015).toLocaleString('id-ID')}`,
         takeProfit: `Rp ${Math.round(c0.close * 0.94).toLocaleString('id-ID')}`,
       };
@@ -448,6 +515,7 @@ export function analyzeCandlestickPatterns(data = []) {
   // Get current active pattern (last candle or recent candle)
   const currentPattern = patterns.length > 0 ? patterns[patterns.length - 1] : {
     name: 'Formasi Standar (Normal Candle)',
+    shortName: 'Normal',
     emoji: '📊',
     direction: 'neutral',
     directionLabel: 'TIDAK ADA POLA EKSTRIM (NETRAL)',
@@ -458,16 +526,21 @@ export function analyzeCandlestickPatterns(data = []) {
     psychology: 'Pergerakan harga berada dalam rentang wajar tanpa formasi pembalikan ekstrim. Pasar bergerak sesuai tren mayor yang sedang berjalan.',
     action: 'Ikuti Tren Mayor / Pasang Support-Resistance',
     entryRange: 'Gunakan level support',
+    entryPrice: null,
+    stopLossPrice: null,
+    takeProfitPrice: null,
     stopLoss: 'Gunakan MA20 / Swing Low',
     takeProfit: 'Gunakan Resistance terdekat',
   };
 
   const historyPatterns = patterns.slice(-5).reverse();
+  const allDetected = patterns;
   const trendContext = detectLocalTrend(latestIndex);
 
   return {
     currentPattern,
     historyPatterns,
+    allDetected,
     trendContext,
   };
 }
