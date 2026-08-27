@@ -3,6 +3,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import StockChart from './StockChart';
 
+function getNominalChange(price, changePercent) {
+  if (!price || changePercent == null || !Number.isFinite(price) || !Number.isFinite(changePercent)) return 0;
+  const prevClose = price / (1 + changePercent / 100);
+  return Math.round(price - prevClose);
+}
+
 export default function StockExplorer({ user }) {
   // Search & Stock Data State
   const [searchQuery, setSearchQuery] = useState('');
@@ -391,23 +397,32 @@ export default function StockExplorer({ user }) {
                 ref={searchDropdownRef}
                 className="absolute z-50 left-0 right-0 mt-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl overflow-hidden max-h-72 overflow-y-auto"
               >
-                {suggestions.map((s) => (
-                  <button
-                    key={s.ticker}
-                    onClick={() => handleSelectStock(s.ticker)}
-                    className="w-full px-4 py-2.5 text-left flex items-center justify-between hover:bg-indigo-50 dark:hover:bg-slate-700/60 border-b border-slate-100 dark:border-slate-700/50 last:border-0 transition-colors"
-                  >
-                    <div>
-                      <span className="font-bold text-slate-900 dark:text-white mr-2">{s.ticker}</span>
-                      <span className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">{s.name}</span>
-                    </div>
-                    <div className="text-right flex-shrink-0 ml-2">
-                      <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                        Rp {s.price?.toLocaleString('id-ID') || '-'}
-                      </span>
-                    </div>
-                  </button>
-                ))}
+                {suggestions.map((s) => {
+                  const suggChange = getNominalChange(s.price, s.changePercent);
+                  const isSuggUp = (s.changePercent || 0) >= 0;
+                  return (
+                    <button
+                      key={s.ticker}
+                      onClick={() => handleSelectStock(s.ticker)}
+                      className="w-full px-4 py-2.5 text-left flex items-center justify-between hover:bg-indigo-50 dark:hover:bg-slate-700/60 border-b border-slate-100 dark:border-slate-700/50 last:border-0 transition-colors"
+                    >
+                      <div>
+                        <span className="font-bold text-slate-900 dark:text-white mr-2">{s.ticker}</span>
+                        <span className="text-xs text-slate-600 dark:text-slate-400 line-clamp-1">{s.name}</span>
+                      </div>
+                      <div className="text-right flex-shrink-0 ml-2">
+                        <div className="text-xs font-black text-slate-900 dark:text-slate-100">
+                          Rp {s.price?.toLocaleString('id-ID') || '-'}
+                        </div>
+                        {s.changePercent != null && (
+                          <div className={`text-[10px] font-bold ${isSuggUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                            {isSuggUp ? '+' : ''}{suggChange.toLocaleString('id-ID')} ({isSuggUp ? '+' : ''}{Number(s.changePercent).toFixed(2)}%)
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -464,15 +479,21 @@ export default function StockExplorer({ user }) {
                   <div className="text-2xl md:text-3xl font-black">
                     Rp {stockDetail.price?.toLocaleString('id-ID')}
                   </div>
-                  <div className="flex items-center justify-end gap-1.5 mt-0.5">
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold ${
-                        isUp ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'
-                      }`}
-                    >
-                      {isUp ? '▲ +' : '▼ '}
-                      {stockDetail.changePercent ? Number(stockDetail.changePercent).toFixed(2) : 0}%
-                    </span>
+                  <div className="flex items-center justify-end gap-1.5 mt-1">
+                    {(() => {
+                      const nominal = getNominalChange(stockDetail.price, stockDetail.changePercent);
+                      return (
+                        <span
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-bold ${
+                            isUp ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                          }`}
+                        >
+                          <span>{isUp ? '▲' : '▼'}</span>
+                          <span>{isUp ? '+' : ''}{nominal.toLocaleString('id-ID')}</span>
+                          <span>({isUp ? '+' : ''}{stockDetail.changePercent ? Number(stockDetail.changePercent).toFixed(2) : 0}%)</span>
+                        </span>
+                      );
+                    })()}
                   </div>
                 </div>
 
@@ -1134,13 +1155,19 @@ export default function StockExplorer({ user }) {
                           <span className="text-base font-black text-slate-900 dark:text-white">
                             Rp {s.price ? s.price.toLocaleString('id-ID') : '-'}
                           </span>
-                          <span
-                            className={`text-xs font-bold px-1.5 py-0.5 rounded ${
-                              isItemUp ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300' : 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300'
-                            }`}
-                          >
-                            {isItemUp ? '+' : ''}{s.changePercent ? s.changePercent.toFixed(2) : 0}%
-                          </span>
+                          {(() => {
+                            const itemNominal = getNominalChange(s.price, s.changePercent);
+                            return (
+                              <span
+                                className={`text-xs font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 ${
+                                  isItemUp ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300' : 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300'
+                                }`}
+                              >
+                                <span>{isItemUp ? '+' : ''}{itemNominal.toLocaleString('id-ID')}</span>
+                                <span>({isItemUp ? '+' : ''}{s.changePercent ? Number(s.changePercent).toFixed(2) : 0}%)</span>
+                              </span>
+                            );
+                          })()}
                         </div>
 
                         {item.notes && (

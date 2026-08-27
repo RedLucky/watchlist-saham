@@ -24,7 +24,7 @@ export async function GET(request) {
 
   if (allList) {
     const list = await prisma.stockData.findMany({
-      select: { ticker: true, name: true, price: true },
+      select: { ticker: true, name: true, price: true, changePercent: true },
       orderBy: { ticker: 'asc' }
     });
     return NextResponse.json(list);
