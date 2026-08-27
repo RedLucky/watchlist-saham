@@ -48,26 +48,31 @@ export default function StockChart({ ticker }) {
         const detectedPatterns = analyzeCandlestickPatterns(data);
         setPatternAnalysis(detectedPatterns);
 
+        const isDark = typeof window !== 'undefined' && document.documentElement.classList.contains('dark');
+        const textColor = isDark ? '#94a3b8' : '#475569';
+        const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
+        const borderColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)';
+
         // Initialize chart component
         chart = createChart(chartContainerRef.current, {
           width: chartContainerRef.current.clientWidth,
           height: 360,
           layout: {
             background: { type: 'solid', color: 'transparent' },
-            textColor: '#94a3b8',
+            textColor: textColor,
           },
           grid: {
-            vertLines: { color: 'rgba(255, 255, 255, 0.05)' },
-            horzLines: { color: 'rgba(255, 255, 255, 0.05)' },
+            vertLines: { color: gridColor },
+            horzLines: { color: gridColor },
           },
           crosshair: {
             mode: CrosshairMode.Normal,
           },
           rightPriceScale: {
-            borderColor: 'rgba(255, 255, 255, 0.1)',
+            borderColor: borderColor,
           },
           timeScale: {
-            borderColor: 'rgba(255, 255, 255, 0.1)',
+            borderColor: borderColor,
             timeVisible: true,
           },
           handleScroll: isMobile
@@ -337,9 +342,9 @@ export default function StockChart({ ticker }) {
   const currentPattern = patternAnalysis?.currentPattern;
 
   return (
-    <div className="w-full relative rounded-xl overflow-hidden glass border border-slate-200 dark:border-white/5 bg-[#0d1321]">
+    <div className="w-full relative rounded-xl overflow-hidden glass border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0d1321]">
       {/* ── TOP TOOLBAR, TIMEFRAME SELECTOR & PATTERN BUTTON ───────────── */}
-      <div className="px-4 py-3 border-b border-slate-200 dark:border-white/5 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+      <div className="px-4 py-3 border-b border-slate-200 dark:border-white/10 flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-slate-50/90 dark:bg-white/[0.02]">
         <div className="space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-1.5">
@@ -350,10 +355,10 @@ export default function StockChart({ ticker }) {
                 onClick={() => setShowPatternModal(true)}
                 className={`cursor-pointer inline-flex items-center gap-1 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full transition-all hover:scale-105 shadow-sm ${
                   currentPattern.direction === 'bullish'
-                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/40'
                     : currentPattern.direction === 'bearish'
-                    ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
-                    : 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                    ? 'bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-400 border border-rose-300 dark:border-rose-500/40'
+                    : 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-400 border border-amber-300 dark:border-amber-500/40'
                 }`}
               >
                 <span>{currentPattern.emoji}</span>
@@ -362,20 +367,20 @@ export default function StockChart({ ticker }) {
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-slate-400 overflow-x-auto whitespace-nowrap pb-0.5">
-            <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/[0.03]"><span className="w-2 h-2 rounded-full bg-[#10b981]"></span> Up</span>
-            <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/[0.03]"><span className="w-2 h-2 rounded-full bg-[#ef4444]"></span> Down</span>
-            <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/[0.03]"><span className="w-2 h-0.5 bg-[#3b82f6]"></span> MA20</span>
-            <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/[0.03]"><span className="w-2 h-0.5 bg-[#a855f7]"></span> MA50</span>
-            <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/[0.03]"><span className="w-2 h-0.5 bg-[#10b981]"></span> Support</span>
-            <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/[0.03]"><span className="w-2 h-0.5 bg-[#ef4444]"></span> Resistance</span>
+          <div className="flex items-center gap-1.5 text-[10px] overflow-x-auto whitespace-nowrap pb-0.5">
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-200/80 dark:bg-white/[0.05] font-semibold text-slate-700 dark:text-slate-300"><span className="w-2 h-2 rounded-full bg-[#10b981]"></span> Up</span>
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-200/80 dark:bg-white/[0.05] font-semibold text-slate-700 dark:text-slate-300"><span className="w-2 h-2 rounded-full bg-[#ef4444]"></span> Down</span>
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-200/80 dark:bg-white/[0.05] font-semibold text-slate-700 dark:text-slate-300"><span className="w-2 h-0.5 bg-[#3b82f6]"></span> MA20</span>
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-200/80 dark:bg-white/[0.05] font-semibold text-slate-700 dark:text-slate-300"><span className="w-2 h-0.5 bg-[#a855f7]"></span> MA50</span>
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-200/80 dark:bg-white/[0.05] font-semibold text-slate-700 dark:text-slate-300"><span className="w-2 h-0.5 bg-[#10b981]"></span> Support</span>
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-200/80 dark:bg-white/[0.05] font-semibold text-slate-700 dark:text-slate-300"><span className="w-2 h-0.5 bg-[#ef4444]"></span> Resistance</span>
           </div>
         </div>
 
         {/* TIMEFRAME BUTTONS & CANDLESTICK PATTERN BUTTON */}
         <div className="flex items-center gap-2 self-start lg:self-auto flex-wrap flex-shrink-0">
           {/* Timeframe Range Selector (1M, 3M, 6M, 1Y, 3Y, 5Y) */}
-          <div className="flex items-center bg-slate-800/80 rounded-xl p-1 border border-slate-700/60 shadow-inner">
+          <div className="flex items-center bg-slate-200/90 dark:bg-slate-800/90 rounded-xl p-1 border border-slate-300 dark:border-slate-700/60 shadow-inner">
             {[
               { id: '1M', label: '1B' },
               { id: '3M', label: '3B' },
@@ -387,10 +392,10 @@ export default function StockChart({ ticker }) {
               <button
                 key={r.id}
                 onClick={() => handleRangeChange(r.id)}
-                className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                className={`px-2.5 py-1 text-[11px] font-black rounded-lg transition-all ${
                   selectedRange === r.id
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-300/80 dark:hover:bg-slate-700/60'
                 }`}
               >
                 {r.label}

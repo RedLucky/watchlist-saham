@@ -918,8 +918,8 @@ export default function StockExplorer({ user }) {
                     >
                       {/* ── BACKGROUND SCORE WATERMARK ── */}
                       {score != null && (
-                        <div className="absolute -right-1 -bottom-2 pointer-events-none select-none z-0 overflow-hidden opacity-[0.09] dark:opacity-[0.14] group-hover:opacity-[0.16] dark:group-hover:opacity-[0.22] transition-opacity flex flex-col items-end">
-                          <span className="text-[9px] font-black uppercase tracking-widest leading-none mr-1 -mb-1 font-mono text-slate-800 dark:text-slate-100">
+                        <div className="absolute right-6 bottom-3 pointer-events-none select-none z-0 overflow-hidden opacity-25 dark:opacity-30 group-hover:opacity-40 dark:group-hover:opacity-45 transition-opacity flex flex-col items-end">
+                          <span className="text-[10px] font-black uppercase tracking-widest leading-none mr-1 -mb-1 font-mono text-slate-900 dark:text-slate-100">
                             SKOR
                           </span>
                           <span
@@ -1033,23 +1033,7 @@ export default function StockExplorer({ user }) {
 
                       <div className="relative z-10 mt-2.5 pt-2 border-t border-slate-200/80 dark:border-slate-700/60 text-[10px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
                         <span>Ditambahkan: {new Date(item.addedAt).toLocaleDateString('id-ID')}</span>
-                        <div className="flex items-center gap-1.5">
-                          {score != null && (
-                            <span
-                              className={`px-1.5 py-0.5 rounded text-[10px] font-extrabold ${
-                                score >= 70
-                                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300'
-                                  : score <= 40
-                                  ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300'
-                                  : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/80 dark:text-indigo-300'
-                              }`}
-                              title="Skor Komposit Algoritma"
-                            >
-                              ★ {score}
-                            </span>
-                          )}
-                          <span className="text-indigo-600 dark:text-indigo-400 font-bold group-hover:underline">Buka Riset ➔</span>
-                        </div>
+                        <span className="text-indigo-600 dark:text-indigo-400 font-bold group-hover:underline">Buka Riset ➔</span>
                       </div>
                     </div>
                   );
