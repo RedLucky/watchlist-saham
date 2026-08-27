@@ -123,16 +123,30 @@ export async function GET(request, { params }) {
       const netProfitList = Array.isArray(fundamentals.netProfit) ? fundamentals.netProfit : [];
       if (netProfitList.length > 0) {
         const latestProfit = netProfitList[netProfitList.length - 1];
-        eps = latestProfit / Number(stock.sharesOutstanding);
+        const shares = Number(stock.sharesOutstanding);
+        if (shares > 0 && Number.isFinite(latestProfit)) {
+          eps = latestProfit / shares;
+        }
       }
       
       if (netProfitList.length >= 2) {
         const first = netProfitList[0];
         const last = netProfitList[netProfitList.length - 1];
-        if (first > 0 && last > 0) {
-          cagr = Math.pow(last / first, 1 / (netProfitList.length - 1)) - 1;
+        const years = netProfitList.length - 1;
+        if (first > 0 && last > 0 && years > 0) {
+          cagr = Math.pow(last / first, 1 / years) - 1;
         }
       }
+    }
+
+    // EPS Fallback: Price / PER if direct netProfit is unavailable
+    if (eps === 0 && fundamentals.per && fundamentals.per > 0 && price > 0) {
+      eps = price / fundamentals.per;
+    }
+
+    // CAGR Fallback: use revenueGrowth if profit CAGR is unavailable
+    if (cagr === 0 && fundamentals.revenueGrowth && Number.isFinite(fundamentals.revenueGrowth)) {
+      cagr = fundamentals.revenueGrowth / 100;
     }
 
     if (fundamentals.pbv && fundamentals.pbv > 0) {
