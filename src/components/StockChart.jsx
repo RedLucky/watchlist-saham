@@ -48,11 +48,6 @@ export default function StockChart({ ticker }) {
         const detectedPatterns = analyzeCandlestickPatterns(data);
         setPatternAnalysis(detectedPatterns);
 
-        const isDark = typeof window !== 'undefined' && document.documentElement.classList.contains('dark');
-        const textColor = isDark ? '#94a3b8' : '#475569';
-        const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
-        const borderColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)';
-
         // Initialize chart component
         chart = createChart(chartContainerRef.current, {
           width: chartContainerRef.current.clientWidth,
@@ -60,24 +55,19 @@ export default function StockChart({ ticker }) {
           layout: {
             background: { type: 'solid', color: 'transparent' },
             textColor: textColor,
-          },
           grid: {
             vertLines: { color: gridColor },
             horzLines: { color: gridColor },
           },
-          crosshair: {
-            mode: CrosshairMode.Normal,
           },
           rightPriceScale: {
             borderColor: borderColor,
           },
           timeScale: {
             borderColor: borderColor,
-            timeVisible: true,
           },
           handleScroll: isMobile
             ? {
-                mouseWheel: false,
                 pressedMouseMove: true,
                 horzTouchDrag: false,
                 vertTouchDrag: false,
@@ -405,13 +395,12 @@ export default function StockChart({ ticker }) {
 
           <button
             onClick={() => setShowPatternModal(true)}
-            className="px-3 py-1.5 bg-gradient-to-r from-amber-500 via-indigo-600 to-indigo-700 hover:from-amber-400 hover:to-indigo-600 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5"
+            className="px-3 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 dark:bg-amber-500/20 dark:hover:bg-amber-500/30 text-amber-900 dark:text-amber-300 border border-amber-400/60 dark:border-amber-500/40 text-xs font-black rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 hover:scale-[1.02] active:scale-95"
           >
-            <span>🕯️</span> Pola Candle
+            <span className="text-sm">🕯️</span> Pola Candle
           </button>
         </div>
       </div>
-
       {analytics && !loading && (
         <div className="px-4 py-2.5 border-b border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-white/[0.02]">
           <div className="flex gap-2 overflow-x-auto text-[11px] pb-1 snap-x">
@@ -419,9 +408,9 @@ export default function StockChart({ ticker }) {
               <span className="text-slate-500 dark:text-slate-400">Arah Trend</span>
               <div className={`font-bold ${
                 analytics.trend?.direction === 'up'
-                  ? 'text-emerald-400'
+                  ? 'text-emerald-500'
                   : analytics.trend?.direction === 'down'
-                  ? 'text-red-400'
+                  ? 'text-rose-500'
                   : 'text-amber-600 dark:text-amber-300'
               }`}>
                 {analytics.trend?.label} ({analytics.trend?.confidence ?? 0}%)
@@ -430,13 +419,13 @@ export default function StockChart({ ticker }) {
             <div className="rounded-md bg-slate-100 dark:bg-white/5 px-2.5 py-2 min-w-[210px] shrink-0 snap-start">
               <span className="text-slate-500 dark:text-slate-400">Support / Resistance</span>
               <div className="font-bold text-slate-900 dark:text-white">
-                {formatPrice(analytics.support)} / {formatPrice(analytics.resistance)}
+                {formatPrice(analytics.support)} {' / '} {formatPrice(analytics.resistance)}
               </div>
             </div>
             <div className="rounded-md bg-slate-100 dark:bg-white/5 px-2.5 py-2 min-w-[250px] shrink-0 snap-start">
               <span className="text-slate-500 dark:text-slate-400">Zona S / R</span>
               <div className="font-bold text-slate-900 dark:text-white">
-                {formatPrice(analytics.supportZone?.low)}-{formatPrice(analytics.supportZone?.high)} / {formatPrice(analytics.resistanceZone?.low)}-{formatPrice(analytics.resistanceZone?.high)}
+                {formatPrice(analytics.supportZone?.low)}-{formatPrice(analytics.supportZone?.high)} {' / '} {formatPrice(analytics.resistanceZone?.low)}-{formatPrice(analytics.resistanceZone?.high)}
               </div>
             </div>
             <div className="rounded-md bg-slate-100 dark:bg-white/5 px-2.5 py-2 min-w-[200px] shrink-0 snap-start">
