@@ -884,6 +884,7 @@ export default function StockExplorer({ user }) {
                   const price = s.price || 0;
                   const isItemUp = (s.changePercent || 0) >= 0;
                   const itemNominal = getNominalChange(price, s.changePercent);
+                  const score = s.score;
 
                   // Target Buy Hit: price <= targetBuy
                   const isTargetBuyHit = item.targetBuy != null && price > 0 && price <= item.targetBuy;
@@ -909,13 +910,33 @@ export default function StockExplorer({ user }) {
                       onDragEnd={handleDragEnd}
                       onDrop={(e) => handleDrop(e, index)}
                       onClick={() => handleSelectStock(item.ticker, true)}
-                      className={`cursor-pointer border rounded-xl p-3.5 transition-all flex flex-col justify-between group relative select-none ${cardStyle} ${
+                      className={`cursor-pointer border rounded-xl p-3.5 transition-all flex flex-col justify-between group relative select-none overflow-hidden ${cardStyle} ${
                         isDragging ? 'opacity-30 scale-95 border-dashed border-indigo-500 shadow-none' : ''
                       } ${
                         isDragOver ? 'ring-2 ring-indigo-500 border-indigo-500 scale-[1.02] shadow-lg' : ''
                       }`}
                     >
-                      <div>
+                      {/* ── BACKGROUND SCORE WATERMARK ── */}
+                      {score != null && (
+                        <div className="absolute -right-1 -bottom-2 pointer-events-none select-none z-0 overflow-hidden opacity-[0.09] dark:opacity-[0.14] group-hover:opacity-[0.16] dark:group-hover:opacity-[0.22] transition-opacity flex flex-col items-end">
+                          <span className="text-[9px] font-black uppercase tracking-widest leading-none mr-1 -mb-1 font-mono text-slate-800 dark:text-slate-100">
+                            SKOR
+                          </span>
+                          <span
+                            className={`text-6xl font-black tracking-tighter leading-none font-mono ${
+                              score >= 70
+                                ? 'text-emerald-600 dark:text-emerald-400'
+                                : score <= 40
+                                ? 'text-rose-600 dark:text-rose-400'
+                                : 'text-indigo-600 dark:text-indigo-400'
+                            }`}
+                          >
+                            {score}
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="relative z-10">
                         {/* Target Alert Badge */}
                         {isTargetBuyHit && (
                           <div className="mb-2 px-2 py-0.5 bg-emerald-500 text-white text-[10px] font-black rounded-md flex items-center justify-between">
@@ -1010,9 +1031,25 @@ export default function StockExplorer({ user }) {
                         )}
                       </div>
 
-                      <div className="mt-2.5 pt-2 border-t border-slate-200/80 dark:border-slate-700/60 text-[10px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
+                      <div className="relative z-10 mt-2.5 pt-2 border-t border-slate-200/80 dark:border-slate-700/60 text-[10px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
                         <span>Ditambahkan: {new Date(item.addedAt).toLocaleDateString('id-ID')}</span>
-                        <span className="text-indigo-600 dark:text-indigo-400 font-bold group-hover:underline">Buka Riset ➔</span>
+                        <div className="flex items-center gap-1.5">
+                          {score != null && (
+                            <span
+                              className={`px-1.5 py-0.5 rounded text-[10px] font-extrabold ${
+                                score >= 70
+                                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300'
+                                  : score <= 40
+                                  ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300'
+                                  : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/80 dark:text-indigo-300'
+                              }`}
+                              title="Skor Komposit Algoritma"
+                            >
+                              ★ {score}
+                            </span>
+                          )}
+                          <span className="text-indigo-600 dark:text-indigo-400 font-bold group-hover:underline">Buka Riset ➔</span>
+                        </div>
                       </div>
                     </div>
                   );

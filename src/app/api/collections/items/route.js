@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserIdFromRequest } from '@/lib/auth';
+import { calculateFundamentalScore } from '@/lib/scoring/fundamental';
+import { calculateTechnicalScore } from '@/lib/scoring/technical';
+import { calculateTrendingScore } from '@/lib/scoring/trending';
+import { calculateSmartMoneyScore } from '@/lib/scoring/smartMoney';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,12 +55,73 @@ export async function GET(request) {
         name: true,
         price: true,
         changePercent: true,
-        sector: true
+        sector: true,
+        fundamentals: true,
+        technicals: true,
+        kseiLatest: true,
       }
     });
 
-    const stockMap = stocks.reduce((acc, stock) => {
-      acc[stock.ticker] = stock;
+    const stockMap = stocks.reduce((acc, rawStock) => {
+      let fScore = 50;
+      let tScore = 50;
+      let trendScore = 50;
+      let smartMoneyScore = 50;
+
+      let parsedFundamentals = {};
+      let parsedTechnicals = {};
+      let parsedKseiLatest = {};
+
+      try { parsedFundamentals = JSON.parse(rawStock.fundamentals || '{}'); } catch(e) {}
+      try { parsedTechnicals = JSON.parse(rawStock.technicals || '{}'); } catch(e) {}
+      try { parsedKseiLatest = JSON.parse(rawStock.kseiLatest || '{}'); } catch(e) {}
+
+      const parsedStock = {
+        ...rawStock,
+        fundamentals: parsedFundamentals,
+        technicals: parsedTechnicals,
+        kseiLatest: parsedKseiLatest,
+      };
+
+      try {
+        const fs = calculateFundamentalScore(parsedStock);
+        fScore = typeof fs === 'object' ? (fs?.score ?? 50) : Number(fs) || 50;
+      } catch (e) {}
+
+      try {
+        const ts = calculateTechnicalScore(parsedStock);
+        tScore = typeof ts === 'object' ? (ts?.score ?? 50) : Number(ts) || 50;
+      } catch (e) {}
+
+      try {
+        const trs = calculateTrendingScore(parsedStock);
+        trendScore = typeof trs === 'object' ? (trs?.score ?? 50) : Number(trs) || 50;
+      } catch (e) {}
+
+      try {
+        const sms = calculateSmartMoneyScore(parsedStock);
+        smartMoneyScore = typeof sms === 'object' ? (sms?.score ?? 50) : Number(sms) || 50;
+      } catch (e) {}
+
+      const compositeScore = Math.round(
+        (fScore * 0.45) + (tScore * 0.35) + (trendScore * 0.10) + (smartMoneyScore * 0.10)
+      );
+
+      acc[rawStock.ticker] = {
+        ticker: rawStock.ticker,
+        name: rawStock.name,
+        price: rawStock.price,
+        changePercent: rawStock.changePercent,
+        sector: rawStock.sector,
+        score: compositeScore,
+        scores: {
+          fundamental: fScore,
+          technical: tScore,
+          trending: trendScore,
+          smartMoney: smartMoneyScore,
+          composite: compositeScore,
+        }
+      };
       return acc;
     }, {});
 
