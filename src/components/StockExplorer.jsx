@@ -958,7 +958,7 @@ export default function StockExplorer({ user }) {
               </div>
             </div>
             <div className="w-full">
-              <StockChart ticker={stockDetail.ticker} />
+              <StockChart key={stockDetail.ticker} ticker={stockDetail.ticker} />
             </div>
           </div>
         </div>
