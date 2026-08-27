@@ -184,7 +184,9 @@ export default function StockExplorer({ user }) {
     loadTickers();
   }, []);
 
-  // Fetch Collections
+  const itemsCacheRef = useRef({});
+
+  // Fetch Collections (stable, no selectedCollection dependency)
   const fetchCollections = useCallback(async () => {
     setLoadingCollections(true);
     try {
@@ -193,30 +195,40 @@ export default function StockExplorer({ user }) {
         const data = await res.json();
         const list = Array.isArray(data) ? data : [];
         setCollections(list);
-        if (list.length > 0 && !selectedCollection) {
-          setSelectedCollection(list[0]);
-        }
+        setSelectedCollection(prev => {
+          if (!prev) return list.length > 0 ? list[0] : null;
+          const found = list.find(c => c.id === prev.id);
+          return found || (list.length > 0 ? list[0] : null);
+        });
       }
     } catch (err) {
       console.error('Failed to fetch collections:', err);
     } finally {
       setLoadingCollections(false);
     }
-  }, [selectedCollection]);
+  }, []);
 
   useEffect(() => {
     fetchCollections();
   }, [fetchCollections]);
 
-  // Fetch Collection Items when collection changes
-  const fetchCollectionItems = useCallback(async (collectionId) => {
+  // Fetch Collection Items with instant in-memory cache
+  const fetchCollectionItems = useCallback(async (collectionId, forceReload = false) => {
     if (!collectionId) return;
-    setLoadingItems(true);
+
+    if (itemsCacheRef.current[collectionId] && !forceReload) {
+      setCollectionItems(itemsCacheRef.current[collectionId]);
+    } else {
+      setLoadingItems(true);
+    }
+
     try {
       const res = await fetch(`/api/collections/items?collectionId=${collectionId}`);
       if (res.ok) {
         const data = await res.json();
-        setCollectionItems(Array.isArray(data) ? data : []);
+        const items = Array.isArray(data) ? data : [];
+        itemsCacheRef.current[collectionId] = items;
+        setCollectionItems(items);
       }
     } catch (err) {
       console.error('Failed to fetch collection items:', err);
@@ -231,7 +243,7 @@ export default function StockExplorer({ user }) {
     } else {
       setCollectionItems([]);
     }
-  }, [selectedCollection, fetchCollectionItems]);
+  }, [selectedCollection?.id, fetchCollectionItems]);
 
   // Main Autocomplete Filter
   useEffect(() => {
@@ -491,7 +503,7 @@ export default function StockExplorer({ user }) {
       alert(`✅ Saham ${selectedStock} berhasil disimpan ke koleksi!`);
       await fetchCollections();
       if (selectedCollection?.id === parseInt(targetCollectionId, 10)) {
-        fetchCollectionItems(selectedCollection.id);
+        fetchCollectionItems(selectedCollection.id, true);
       }
     } catch (err) {
       alert('Terjadi kesalahan saat menyimpan saham');
@@ -533,7 +545,7 @@ export default function StockExplorer({ user }) {
       setShowEditItemModal(false);
       setEditingItem(null);
       if (selectedCollection?.id) {
-        fetchCollectionItems(selectedCollection.id);
+        fetchCollectionItems(selectedCollection.id, true);
       }
     } catch (err) {
       alert('Terjadi kesalahan saat menyimpan perubahan');
@@ -559,7 +571,7 @@ export default function StockExplorer({ user }) {
         return;
       }
 
-      fetchCollectionItems(collectionId);
+      fetchCollectionItems(collectionId, true);
       fetchCollections();
     } catch (err) {
       alert('Terjadi kesalahan');
@@ -786,10 +798,22 @@ export default function StockExplorer({ user }) {
               </div>
             </div>
 
-            {loadingItems ? (
-              <div className="text-center py-6 text-xs text-slate-500 dark:text-slate-400">Memuat saham dalam koleksi...</div>
+            {loadingItems && collectionItems.length === 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
+                {[1, 2, 3, 4].map(idx => (
+                  <div key={idx} className="animate-pulse rounded-2xl p-4 bg-slate-100 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 space-y-3 h-[175px]">
+                    <div className="flex justify-between items-center">
+                      <div className="h-5 w-16 bg-slate-200 dark:bg-slate-700 rounded-md"></div>
+                      <div className="h-4 w-12 bg-slate-200 dark:bg-slate-700 rounded-md"></div>
+                    </div>
+                    <div className="h-3 w-28 bg-slate-200 dark:bg-slate-700 rounded-md"></div>
+                    <div className="h-6 w-24 bg-slate-200 dark:bg-slate-700 rounded-md mt-2"></div>
+                    <div className="h-8 w-full bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+                  </div>
+                ))}
+              </div>
             ) : collectionItems.length === 0 ? (
-              <div className="text-center py-6 text-xs text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+              <div className="text-center py-8 text-xs text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
                 Koleksi ini masih kosong. Cari saham di bawah lalu klik &quot;Simpan ke Koleksi&quot;.
               </div>
             ) : (
