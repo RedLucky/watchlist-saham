@@ -158,6 +158,8 @@ model CollectionItem {
   collectionId Int
   ticker       String
   notes        String?    @db.Text
+  targetBuy    Float?
+  targetSell   Float?
   addedAt      DateTime   @default(now())
   collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
 

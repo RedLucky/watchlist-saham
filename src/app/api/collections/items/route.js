@@ -77,7 +77,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { collectionId, ticker, notes } = body;
+    const { collectionId, ticker, notes, targetBuy, targetSell } = body;
 
     if (!collectionId || !ticker) {
       return NextResponse.json({ error: 'collectionId dan ticker diperlukan' }, { status: 400 });
@@ -95,11 +95,16 @@ export async function POST(request) {
 
     const normalizedTicker = ticker.toUpperCase().replace(/\.JK$/, '');
 
+    const parsedTargetBuy = targetBuy != null && targetBuy !== '' ? parseFloat(targetBuy) : null;
+    const parsedTargetSell = targetSell != null && targetSell !== '' ? parseFloat(targetSell) : null;
+
     const item = await prisma.collectionItem.create({
       data: {
         collectionId,
         ticker: normalizedTicker,
-        notes
+        notes: notes || null,
+        targetBuy: Number.isFinite(parsedTargetBuy) ? parsedTargetBuy : null,
+        targetSell: Number.isFinite(parsedTargetSell) ? parsedTargetSell : null,
       }
     });
 
@@ -121,7 +126,7 @@ export async function PUT(request) {
     }
 
     const body = await request.json();
-    const { id, notes } = body;
+    const { id, notes, targetBuy, targetSell } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'ID item diperlukan' }, { status: 400 });
@@ -136,9 +141,17 @@ export async function PUT(request) {
       return NextResponse.json({ error: 'Item tidak valid' }, { status: 403 });
     }
 
+    const parsedTargetBuy = targetBuy != null && targetBuy !== '' ? parseFloat(targetBuy) : null;
+    const parsedTargetSell = targetSell != null && targetSell !== '' ? parseFloat(targetSell) : null;
+
+    const updateData = {};
+    if (notes !== undefined) updateData.notes = notes || null;
+    if (targetBuy !== undefined) updateData.targetBuy = Number.isFinite(parsedTargetBuy) ? parsedTargetBuy : null;
+    if (targetSell !== undefined) updateData.targetSell = Number.isFinite(parsedTargetSell) ? parsedTargetSell : null;
+
     const updated = await prisma.collectionItem.update({
       where: { id },
-      data: { notes }
+      data: updateData
     });
 
     return NextResponse.json(updated);
