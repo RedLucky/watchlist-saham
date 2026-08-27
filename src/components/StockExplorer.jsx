@@ -749,37 +749,37 @@ export default function StockExplorer({ user }) {
                     </h3>
                   </div>
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                    f.roe >= 15 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                    f.roe != null && f.roe >= 15 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
                   }`}>
-                    ROE {f.roe ? `${f.roe.toFixed(1)}%` : '-'}
+                    ROE {f.roe != null ? `${Number(f.roe).toFixed(1)}%` : '-'}
                   </span>
                 </div>
 
                 <div className="space-y-2 text-xs">
                   <div className="flex justify-between">
                     <span className="text-slate-600 dark:text-slate-400">ROE:</span>
-                    <span className="font-bold text-emerald-600 dark:text-emerald-400">{f.roe ? `${f.roe.toFixed(1)}%` : '-'}</span>
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400">{f.roe != null ? `${Number(f.roe).toFixed(1)}%` : '-'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-600 dark:text-slate-400">DER (Hutang):</span>
-                    <span className={`font-bold ${f.der > 2 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-900 dark:text-slate-100'}`}>
-                      {f.der != null ? `${f.der.toFixed(2)}x` : '-'}
+                    <span className={`font-bold ${f.der != null && f.der > 2 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-900 dark:text-slate-100'}`}>
+                      {f.der != null ? `${Number(f.der).toFixed(2)}x` : '-'}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-600 dark:text-slate-400">Current Ratio:</span>
-                    <span className="font-bold text-slate-900 dark:text-slate-100">{f.currentRatio ? `${f.currentRatio.toFixed(2)}x` : '-'}</span>
+                    <span className="font-bold text-slate-900 dark:text-slate-100">{f.currentRatio != null ? `${Number(f.currentRatio).toFixed(2)}x` : '-'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-600 dark:text-slate-400">Free Cash Flow:</span>
                     <span className="font-bold text-slate-900 dark:text-slate-100">
-                      {f.freeCashflow ? `Rp ${(f.freeCashflow / 1e9).toFixed(1)} M` : '-'}
+                      {f.freeCashflow != null ? `Rp ${(Number(f.freeCashflow) / 1e9).toFixed(1)} M` : '-'}
                     </span>
                   </div>
                   <div className="flex justify-between pt-1 border-t border-slate-200 dark:border-slate-800">
                     <span className="text-slate-600 dark:text-slate-400">Piotroski F-Score:</span>
                     <span className={`font-bold ${
-                      f.piotroskiFScore >= 7 ? 'text-emerald-600 dark:text-emerald-400' : f.piotroskiFScore <= 3 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-slate-100'
+                      f.piotroskiFScore != null && f.piotroskiFScore >= 7 ? 'text-emerald-600 dark:text-emerald-400' : f.piotroskiFScore != null && f.piotroskiFScore <= 3 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-slate-100'
                     }`}>
                       {f.piotroskiFScore != null ? `${f.piotroskiFScore}/9` : '-'}
                     </span>
@@ -787,7 +787,7 @@ export default function StockExplorer({ user }) {
                   <div className="flex justify-between">
                     <span className="text-slate-600 dark:text-slate-400">Altman Z-Score:</span>
                     <span className={`font-bold ${
-                      f.altmanZScore >= 2.99 ? 'text-emerald-600 dark:text-emerald-400' : f.altmanZScore < 1.81 ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'
+                      f.altmanZScore != null && f.altmanZScore >= 2.99 ? 'text-emerald-600 dark:text-emerald-400' : f.altmanZScore != null && f.altmanZScore < 1.81 ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'
                     }`}>
                       {f.altmanZScore != null ? `${f.altmanZScore} (${f.altmanZScore >= 2.99 ? 'Aman' : f.altmanZScore < 1.81 ? 'Distress' : 'Abu-abu'})` : '-'}
                     </span>
@@ -813,7 +813,7 @@ export default function StockExplorer({ user }) {
                     </h3>
                   </div>
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                    vol.volumeSpikeRatio >= 1.5 
+                    vol.volumeSpikeRatio != null && vol.volumeSpikeRatio >= 1.5 
                       ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300' 
                       : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
                   }`}>
@@ -825,27 +825,27 @@ export default function StockExplorer({ user }) {
                   <div className="flex justify-between">
                     <span className="text-slate-600 dark:text-slate-400">Volume Spike Ratio:</span>
                     <span className="font-bold text-indigo-600 dark:text-indigo-400">
-                      {vol.volumeSpikeRatio ? `${vol.volumeSpikeRatio}x rata-rata` : '-'}
+                      {vol.volumeSpikeRatio != null ? `${vol.volumeSpikeRatio}x rata-rata` : '-'}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-600 dark:text-slate-400">RSI 14 (Momentum):</span>
                     <span className={`font-bold ${
-                      t.rsi14 >= 70 ? 'text-rose-600 dark:text-rose-400' : t.rsi14 <= 30 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-slate-100'
+                      t.rsi14 != null && t.rsi14 >= 70 ? 'text-rose-600 dark:text-rose-400' : t.rsi14 != null && t.rsi14 <= 30 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-slate-100'
                     }`}>
-                      {t.rsi14 ? `${t.rsi14.toFixed(1)} (${t.rsi14 >= 70 ? 'Overbought' : t.rsi14 <= 30 ? 'Oversold' : 'Netral'})` : '-'}
+                      {t.rsi14 != null ? `${Number(t.rsi14).toFixed(1)} (${Number(t.rsi14) >= 70 ? 'Overbought' : Number(t.rsi14) <= 30 ? 'Oversold' : 'Netral'})` : '-'}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-600 dark:text-slate-400">Support / Resist:</span>
                     <span className="font-bold text-slate-900 dark:text-slate-100">
-                      {t.support ? `Rp ${Math.round(t.support)}` : '-'} / {t.resistance ? `Rp ${Math.round(t.resistance)}` : '-'}
+                      {t.support != null ? `Rp ${Math.round(t.support).toLocaleString('id-ID')}` : '-'} / {t.resistance != null ? `Rp ${Math.round(t.resistance).toLocaleString('id-ID')}` : '-'}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-600 dark:text-slate-400">MA20 / MA50:</span>
                     <span className="font-bold text-slate-900 dark:text-slate-100">
-                      {t.ma20 ? `${Math.round(t.ma20)}` : '-'} / {t.ma50 ? `${Math.round(t.ma50)}` : '-'}
+                      {t.ma20 != null ? `${Math.round(t.ma20).toLocaleString('id-ID')}` : '-'} / {t.ma50 != null ? `${Math.round(t.ma50).toLocaleString('id-ID')}` : '-'}
                     </span>
                   </div>
                 </div>
@@ -875,7 +875,7 @@ export default function StockExplorer({ user }) {
                       ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300' 
                       : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
                   }`}>
-                    BFI {b.bfiScore != null ? b.bfiScore.toFixed(1) : 0}
+                    BFI {b.bfiScore != null ? Number(b.bfiScore).toFixed(1) : '0.0'}
                   </span>
                 </div>
 
@@ -895,19 +895,19 @@ export default function StockExplorer({ user }) {
                   <div className="flex justify-between">
                     <span className="text-slate-600 dark:text-slate-400">Asing (Foreign):</span>
                     <span className="font-bold text-slate-900 dark:text-slate-100">
-                      {b.foreignPercent ? `${b.foreignPercent.toFixed(1)}%` : '-'}
+                      {b.foreignPercent != null ? `${Number(b.foreignPercent).toFixed(1)}%` : '-'}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-600 dark:text-slate-400">Ritel (Domestic):</span>
                     <span className="font-bold text-slate-900 dark:text-slate-100">
-                      {b.retailPercent ? `${b.retailPercent.toFixed(1)}%` : '-'}
+                      {b.retailPercent != null ? `${Number(b.retailPercent).toFixed(1)}%` : '-'}
                     </span>
                   </div>
                 </div>
               </div>
               <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400">
-                Dominasi: <span className="font-semibold text-slate-900 dark:text-slate-100">{b.foreignPercent > 50 ? 'Asing (Foreign Heavy)' : 'Domestik'}</span>
+                Dominasi: <span className="font-semibold text-slate-900 dark:text-slate-100">{(b.foreignPercent || 0) > 50 ? 'Asing (Foreign Heavy)' : 'Domestik'}</span>
               </div>
             </div>
 
