@@ -753,12 +753,28 @@ export default function StockExplorer({ user }) {
                       {f.freeCashflow ? `Rp ${(f.freeCashflow / 1e9).toFixed(1)} M` : '-'}
                     </span>
                   </div>
+                  <div className="flex justify-between pt-1 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-slate-500">Piotroski F-Score:</span>
+                    <span className={`font-bold ${
+                      f.piotroskiFScore >= 7 ? 'text-emerald-600 dark:text-emerald-400' : f.piotroskiFScore <= 3 ? 'text-rose-600' : 'text-slate-800 dark:text-slate-200'
+                    }`}>
+                      {f.piotroskiFScore != null ? `${f.piotroskiFScore}/9` : '-'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Altman Z-Score:</span>
+                    <span className={`font-bold ${
+                      f.altmanZScore >= 2.99 ? 'text-emerald-600 dark:text-emerald-400' : f.altmanZScore < 1.81 ? 'text-rose-600' : 'text-amber-600'
+                    }`}>
+                      {f.altmanZScore != null ? `${f.altmanZScore} (${f.altmanZScore >= 2.99 ? 'Aman' : f.altmanZScore < 1.81 ? 'Distress' : 'Abu-abu'})` : '-'}
+                    </span>
+                  </div>
                 </div>
               </div>
               <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 flex items-center justify-between">
                 <span>Kesehatan Neraca:</span>
                 <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                  {f.der != null && f.der < 1.5 ? 'Sangat Sehat 🛡️' : 'Moderat ⚖️'}
+                  {f.altmanZScore != null && f.altmanZScore >= 2.99 ? 'Sangat Sehat 🛡️' : f.altmanZScore != null && f.altmanZScore < 1.81 ? 'Rawan ⚠️' : 'Moderat ⚖️'}
                 </span>
               </div>
             </div>
@@ -1357,3 +1373,4 @@ export default function StockExplorer({ user }) {
     </div>
   );
 }
+

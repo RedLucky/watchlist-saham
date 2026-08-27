@@ -110,6 +110,77 @@ export async function GET(request, { params }) {
       isBreakoutVolume: volumeSpikeRatio >= 1.5 && (stock.changePercent || 0) > 1.5
     };
 
+    // Estimate Piotroski F-Score (out of 9)
+    let computedFScore = 5; // default moderate score
+    let computedZScore = 2.5; // default neutral
+    if (fundamentals) {
+      let score = 0;
+      const roe = fundamentals.roe || 0;
+      const fcf = fundamentals.freeCashflow || 0;
+      const der = fundamentals.der || 0;
+      const currentRatio = fundamentals.currentRatio || 0;
+      const revenueGrowth = fundamentals.revenueGrowth || 0;
+      const netProfitList = Array.isArray(fundamentals.netProfit) ? fundamentals.netProfit : [];
+      
+      // 1. ROA/ROE > 0 (Profitability)
+      if (roe > 0) score++;
+      // 2. FCF > 0 (Cash Flow)
+      if (fcf > 0) score++;
+      // 3. FCF > Net Profit (Cash Flow quality)
+      if (netProfitList.length > 0) {
+        const latestProfit = netProfitList[netProfitList.length - 1];
+        if (fcf > latestProfit) score++;
+      }
+      // 4. Net Profit growth (latest > previous)
+      if (netProfitList.length >= 2) {
+        if (netProfitList[netProfitList.length - 1] > netProfitList[netProfitList.length - 2]) score++;
+      }
+      // 5. Debt leverage (DER <= 1.0)
+      if (der > 0 && der <= 1.0) score++;
+      // 6. Liquidity (Current Ratio >= 1.5)
+      if (currentRatio >= 1.5) score++;
+      // 7. Sales growth (Revenue growth > 0)
+      if (revenueGrowth > 0) score++;
+      // 8. ROE > 12% (Efficiency)
+      if (roe > 12) score++;
+      // 9. Profit CAGR > 0 (Long term growth)
+      if (cagr > 0) score++;
+      
+      computedFScore = Math.max(1, Math.min(9, score));
+    }
+
+    // Estimate Altman Z-Score
+    const sectorUpper = (stock.sector || '').toUpperCase();
+    if (sectorUpper === 'FINANCIALS' || sectorUpper === 'FINANCE') {
+      computedZScore = 3.0; // Banks typically safe zones by default due to deposit backing
+    } else if (fundamentals) {
+      let z = 0.5; // base
+      const cr = fundamentals.currentRatio || 1.2;
+      const der = fundamentals.der || 1.0;
+      const roe = fundamentals.roe || 8;
+      
+      // Liquidity contribution (proxy for working capital / assets)
+      z += Math.min(1.5, cr * 0.5);
+      
+      // Debt contribution (proxy for equity / debt leverage)
+      if (der > 0) {
+        z += Math.min(1.5, 1.0 / der);
+      } else {
+        z += 1.5;
+      }
+      
+      // Profitability contribution
+      if (roe > 0) {
+        z += Math.min(1.0, (roe / 100) * 4);
+      }
+      
+      computedZScore = Number(Math.max(0.5, Math.min(4.5, z + 1.0)).toFixed(2));
+    }
+
+    // Assign to fundamentals object
+    fundamentals.piotroskiFScore = computedFScore;
+    fundamentals.altmanZScore = computedZScore;
+
     const enrichedStock = {
       ...stock,
       fundamentals,
@@ -154,7 +225,9 @@ export async function GET(request, { params }) {
 
     if (eps > 0) {
       // Benjamin Graham Fair Value = EPS * (8.5 + 2 * CAGR%) * (4.4 / 6.5)
-      const fairVal = eps * (8.5 + 2 * (cagr * 100)) * (4.4 / 6.5);
+      // Clamp CAGR between 0% and 25% for conservative valuation
+      const cappedCAGR = Math.max(0, Math.min(25, cagr * 100));
+      const fairVal = eps * (8.5 + 2 * cappedCAGR) * (4.4 / 6.5);
       projections.fairValue = Math.round(fairVal);
       
       if (projections.fairValue > 0) {
