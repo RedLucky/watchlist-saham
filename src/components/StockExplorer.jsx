@@ -156,6 +156,10 @@ export default function StockExplorer({ user }) {
   const [editItemTargetSell, setEditItemTargetSell] = useState('');
   const [savingEditItem, setSavingEditItem] = useState(false);
 
+  // Drag and Drop reordering state for Collection Cards
+  const [draggedItemIndex, setDraggedItemIndex] = useState(null);
+  const [dragOverIndex, setDragOverIndex] = useState(null);
+
   const [copiedShareCode, setCopiedShareCode] = useState(null);
 
   const searchInputRef = useRef(null);
@@ -578,6 +582,62 @@ export default function StockExplorer({ user }) {
     }
   };
 
+  // ── DRAG & DROP REORDER HANDLERS ───────────────────────────────────────
+  const handleDragStart = (e, index) => {
+    setDraggedItemIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', index.toString());
+  };
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverIndex !== index) {
+      setDragOverIndex(index);
+    }
+  };
+
+  const handleDragEnd = () => {
+    setDraggedItemIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = async (e, targetIndex) => {
+    e.preventDefault();
+    if (draggedItemIndex === null || draggedItemIndex === targetIndex) {
+      setDraggedItemIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+
+    const updated = [...collectionItems];
+    const [moved] = updated.splice(draggedItemIndex, 1);
+    updated.splice(targetIndex, 0, moved);
+
+    // Optimistic UI update
+    setCollectionItems(updated);
+    if (selectedCollection?.id) {
+      itemsCacheRef.current[selectedCollection.id] = updated;
+    }
+    setDraggedItemIndex(null);
+    setDragOverIndex(null);
+
+    // Persist new order to server
+    try {
+      const orderedIds = updated.map(item => item.id);
+      await fetch('/api/collections/items', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          collectionId: selectedCollection.id,
+          orderedIds,
+        }),
+      });
+    } catch (err) {
+      console.error('Failed to persist item order:', err);
+    }
+  };
+
   const handleCopyShareLink = (shareCode) => {
     const url = `${window.location.origin}/api/collections?shareCode=${shareCode}`;
     navigator.clipboard.writeText(url);
@@ -817,9 +877,9 @@ export default function StockExplorer({ user }) {
                 Koleksi ini masih kosong. Cari saham di bawah lalu klik &quot;Simpan ke Koleksi&quot;.
               </div>
             ) : (
-              /* 4-COLUMN CARDS GRID FOR SAVED STOCKS */
+              /* 4-COLUMN CARDS GRID FOR SAVED STOCKS (DRAGGABLE & REORDERABLE) */
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
-                {collectionItems.map((item) => {
+                {collectionItems.map((item, index) => {
                   const s = item.stock || {};
                   const price = s.price || 0;
                   const isItemUp = (s.changePercent || 0) >= 0;
@@ -829,6 +889,9 @@ export default function StockExplorer({ user }) {
                   const isTargetBuyHit = item.targetBuy != null && price > 0 && price <= item.targetBuy;
                   // Target Sell Hit: price >= targetSell
                   const isTargetSellHit = item.targetSell != null && price > 0 && price >= item.targetSell;
+
+                  const isDragging = draggedItemIndex === index;
+                  const isDragOver = dragOverIndex === index && draggedItemIndex !== index;
 
                   let cardStyle = 'bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/80 hover:border-indigo-400/60 shadow-sm';
                   if (isTargetBuyHit) {
@@ -840,8 +903,17 @@ export default function StockExplorer({ user }) {
                   return (
                     <div
                       key={item.id}
+                      draggable={true}
+                      onDragStart={(e) => handleDragStart(e, index)}
+                      onDragOver={(e) => handleDragOver(e, index)}
+                      onDragEnd={handleDragEnd}
+                      onDrop={(e) => handleDrop(e, index)}
                       onClick={() => handleSelectStock(item.ticker, true)}
-                      className={`cursor-pointer border rounded-xl p-3.5 transition-all flex flex-col justify-between group relative ${cardStyle}`}
+                      className={`cursor-pointer border rounded-xl p-3.5 transition-all flex flex-col justify-between group relative select-none ${cardStyle} ${
+                        isDragging ? 'opacity-30 scale-95 border-dashed border-indigo-500 shadow-none' : ''
+                      } ${
+                        isDragOver ? 'ring-2 ring-indigo-500 border-indigo-500 scale-[1.02] shadow-lg' : ''
+                      }`}
                     >
                       <div>
                         {/* Target Alert Badge */}
@@ -860,10 +932,18 @@ export default function StockExplorer({ user }) {
 
                         <div className="flex items-center justify-between mb-1.5">
                           <div className="flex items-center gap-1.5">
+                            {/* Drag Grip Handle */}
+                            <span
+                              className="cursor-grab active:cursor-grabbing text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 text-xs px-0.5 select-none transition-colors"
+                              title="Tahan & geser untuk atur urutan kartu"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              ⠿
+                            </span>
                             <span className="font-black text-sm text-slate-900 dark:text-white group-hover:text-indigo-600 transition-colors">
                               {item.ticker}
                             </span>
-                            <span className="text-[10px] text-slate-600 dark:text-slate-400 truncate max-w-[90px]">
+                            <span className="text-[10px] text-slate-600 dark:text-slate-400 truncate max-w-[85px]">
                               {s.sector || ''}
                             </span>
                           </div>

@@ -160,6 +160,7 @@ model CollectionItem {
   notes        String?    @db.Text
   targetBuy    Float?
   targetSell   Float?
+  sortOrder    Int        @default(0)
   addedAt      DateTime   @default(now())
   collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
 

@@ -36,7 +36,10 @@ export async function GET(request) {
 
     const items = await prisma.collectionItem.findMany({
       where: { collectionId },
-      orderBy: { addedAt: 'desc' }
+      orderBy: [
+        { sortOrder: 'asc' },
+        { addedAt: 'asc' }
+      ]
     });
 
     const tickers = items.map(item => item.ticker);
@@ -105,6 +108,7 @@ export async function POST(request) {
         notes: notes || null,
         targetBuy: Number.isFinite(parsedTargetBuy) ? parsedTargetBuy : null,
         targetSell: Number.isFinite(parsedTargetSell) ? parsedTargetSell : null,
+        sortOrder: count,
       }
     });
 
@@ -194,6 +198,42 @@ export async function DELETE(request) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting item:', error);
+    return NextResponse.json({ error: 'Terjadi kesalahan server' }, { status: 500 });
+  }
+}
+
+export async function PATCH(request) {
+  try {
+    const userId = await getUserIdFromRequest(request);
+    if (!userId) {
+      return NextResponse.json({ error: 'Tidak ada akses' }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { collectionId, orderedIds } = body;
+
+    if (!collectionId || !Array.isArray(orderedIds)) {
+      return NextResponse.json({ error: 'collectionId dan orderedIds diperlukan' }, { status: 400 });
+    }
+
+    const collection = await prisma.collection.findUnique({ where: { id: collectionId } });
+    if (!collection || collection.userId !== userId) {
+      return NextResponse.json({ error: 'Koleksi tidak valid' }, { status: 403 });
+    }
+
+    // Update each item's sortOrder in transaction
+    await prisma.$transaction(
+      orderedIds.map((id, index) =>
+        prisma.collectionItem.update({
+          where: { id },
+          data: { sortOrder: index }
+        })
+      )
+    );
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error reordering collection items:', error);
     return NextResponse.json({ error: 'Terjadi kesalahan server' }, { status: 500 });
   }
 }
