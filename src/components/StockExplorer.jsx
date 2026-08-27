@@ -9,6 +9,100 @@ function getNominalChange(price, changePercent) {
   return Math.round(price - prevClose);
 }
 
+function getAlgorithmicRecommendation({ stockDetail, scores }) {
+  if (!stockDetail) return { label: 'Analisis Data...', desc: 'Sedang memuat data emiten', bgClass: 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200' };
+  
+  const f = stockDetail.fundamentals || {};
+  const t = stockDetail.technicals || {};
+  const proj = stockDetail.projections || {};
+  const vol = stockDetail.volumeAnalysis || {};
+  const b = stockDetail.bandarmologi || {};
+  
+  const fScore = scores?.fundamental ?? 50;
+  const tScore = scores?.technical ?? 50;
+  const trendScore = scores?.trending ?? 50;
+  const composite = Math.round((fScore + tScore + trendScore) / 3);
+
+  // 1. Strong Accumulate
+  if (composite >= 75 || (composite >= 70 && ((b.bfiScore || 0) >= 2 || b.smartMoneyStatus?.includes('Inflow')))) {
+    return {
+      label: 'Strong Accumulate 🚀',
+      desc: 'Sinergi fundamental solid, akumulasi smart money, dan tren teknikal prima.',
+      bgClass: 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700/60'
+    };
+  }
+
+  // 2. Value Buy / Undervalued Gems
+  if ((proj.marginOfSafety || 0) >= 20 && (f.piotroskiFScore || 0) >= 5 && (f.der || 0) <= 2) {
+    return {
+      label: 'Value Buy (Undervalued) 💎',
+      desc: `Diskon MoS +${proj.marginOfSafety}% di bawah Nilai Wajar (Fair Value Rp ${proj.fairValue?.toLocaleString('id-ID') || '-'}) dengan neraca aman.`,
+      bgClass: 'bg-cyan-100 text-cyan-900 dark:bg-cyan-950/80 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-700/60'
+    };
+  }
+
+  // 3. Breakout / Momentum Speculative
+  if (tScore >= 70 && (vol.isBreakoutVolume || (vol.volumeSpikeRatio || 0) >= 1.5)) {
+    return {
+      label: 'Breakout / Momentum Buy ⚡',
+      desc: `Konfirmasi breakout dengan lonjakan volume ${vol.volumeSpikeRatio || 1.5}x di atas rata-rata.`,
+      bgClass: 'bg-indigo-100 text-indigo-900 dark:bg-indigo-950/80 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700/60'
+    };
+  }
+
+  // 4. Dividend Play / Income
+  if ((f.dividendYield || 0) >= 4.5 && (f.payoutRatio || 0) <= 85) {
+    return {
+      label: 'Dividend Aristocrat 🏛️',
+      desc: `Yield dividen tinggi ${f.dividendYield.toFixed(1)}% dengan payout ratio sehat dan konsisten.`,
+      bgClass: 'bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60'
+    };
+  }
+
+  // 5. Buy on Weakness / Pullback
+  if (composite >= 55 && (t.rsi14 || 50) <= 45 && !b.smartMoneyStatus?.includes('Outflow')) {
+    return {
+      label: 'Buy on Weakness (Pullback) 🎯',
+      desc: 'Harga sedang terkoreksi sehat mendekati area support MA20/MA50 untuk entry bertahap.',
+      bgClass: 'bg-teal-100 text-teal-900 dark:bg-teal-950/80 dark:text-teal-300 border border-teal-300 dark:border-teal-700/60'
+    };
+  }
+
+  // 6. Take Profit / Overbought
+  if ((t.rsi14 || 50) >= 75 || (proj.marginOfSafety || 0) < -35) {
+    return {
+      label: 'Take Profit / Overbought 💰',
+      desc: `RSI jenuh beli (${t.rsi14 ? t.rsi14.toFixed(1) : 75}) atau valuasi telah melampaui harga wajar.`,
+      bgClass: 'bg-orange-100 text-orange-900 dark:bg-orange-950/80 dark:text-orange-300 border border-orange-300 dark:border-orange-700/60'
+    };
+  }
+
+  // 7. Waspada Distribusi
+  if (b.smartMoneyStatus?.includes('Outflow') || (b.bfiScore || 0) <= -2.5) {
+    return {
+      label: 'Waspada Distribusi ⚠️',
+      desc: 'Terdeteksi pelepasan posisi (net outflow) oleh institusi / smart money.',
+      bgClass: 'bg-rose-100 text-rose-900 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-300 dark:border-rose-700/60'
+    };
+  }
+
+  // 8. Avoid / Sell
+  if (composite < 40 || ((f.altmanZScore || 3) < 1.5 && (f.der || 0) > 3)) {
+    return {
+      label: 'Avoid / High Risk 🔴',
+      desc: 'Fundamental dan teknikal berisiko tinggi dengan rasio utang/kesehatan keuangan rawan.',
+      bgClass: 'bg-red-100 text-red-900 dark:bg-red-950/80 dark:text-red-300 border border-red-300 dark:border-red-700/60'
+    };
+  }
+
+  // 9. Default Watchlist / Neutral
+  return {
+    label: 'Watchlist / Hold 🔍',
+    desc: 'Metrik dalam rentang netral. Pantau perkembangan volume dan sinyal teknikal lanjutan.',
+    bgClass: 'bg-slate-100 text-slate-800 dark:bg-slate-800/90 dark:text-slate-200 border border-slate-300 dark:border-slate-700'
+  };
+}
+
 export default function StockExplorer({ user }) {
   // Search & Stock Data State
   const [searchQuery, setSearchQuery] = useState('');
@@ -911,60 +1005,72 @@ export default function StockExplorer({ user }) {
               </div>
             </div>
 
-            {/* CARD 8: SKOR KOMPOSIT */}
-            <div className="bg-gradient-to-br from-indigo-50/90 via-purple-50/50 to-slate-50 dark:from-slate-900 dark:via-indigo-950/40 dark:to-slate-900 border border-indigo-200 dark:border-indigo-500/30 rounded-2xl p-4 shadow-sm flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">🎯</span>
-                    <h3 className="font-bold text-xs uppercase tracking-wider text-indigo-900 dark:text-indigo-300">
-                      Skor Komposit
-                    </h3>
+            {/* CARD 8: SKOR KOMPOSIT & REKOMENDASI ALGORITMA */}
+            {(() => {
+              const rec = getAlgorithmicRecommendation({ stockDetail, scores });
+              const compScore = Math.round(((scores.fundamental ?? 50) + (scores.technical ?? 50) + (scores.trending ?? 50)) / 3);
+              return (
+                <div className="bg-gradient-to-br from-indigo-50/90 via-purple-50/50 to-slate-50 dark:from-slate-900 dark:via-indigo-950/40 dark:to-slate-900 border border-indigo-200 dark:border-indigo-500/30 rounded-2xl p-4 shadow-sm flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">🎯</span>
+                        <h3 className="font-bold text-xs uppercase tracking-wider text-indigo-950 dark:text-indigo-300">
+                          Skor Komposit
+                        </h3>
+                      </div>
+                      <span className="text-sm font-black text-indigo-600 dark:text-indigo-400">
+                        {compScore}/100
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 text-xs">
+                      <div>
+                        <div className="flex justify-between text-[11px] mb-1">
+                          <span className="text-slate-600 dark:text-slate-400">Fundamental:</span>
+                          <span className="font-bold text-slate-900 dark:text-slate-100">{scores.fundamental ?? 50}</span>
+                        </div>
+                        <div className="w-full bg-slate-200 dark:bg-slate-700/60 rounded-full h-1.5 overflow-hidden">
+                          <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${scores.fundamental ?? 50}%` }}></div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between text-[11px] mb-1">
+                          <span className="text-slate-600 dark:text-slate-400">Teknikal & Volume:</span>
+                          <span className="font-bold text-slate-900 dark:text-slate-100">{scores.technical ?? 50}</span>
+                        </div>
+                        <div className="w-full bg-slate-200 dark:bg-slate-700/60 rounded-full h-1.5 overflow-hidden">
+                          <div className="bg-indigo-500 h-1.5 rounded-full" style={{ width: `${scores.technical ?? 50}%` }}></div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between text-[11px] mb-1">
+                          <span className="text-slate-600 dark:text-slate-400">Momentum / Flow:</span>
+                          <span className="font-bold text-slate-900 dark:text-slate-100">{scores.trending ?? 50}</span>
+                        </div>
+                        <div className="w-full bg-slate-200 dark:bg-slate-700/60 rounded-full h-1.5 overflow-hidden">
+                          <div className="bg-amber-500 h-1.5 rounded-full" style={{ width: `${scores.trending ?? 50}%` }}></div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <span className="text-sm font-black text-indigo-600 dark:text-indigo-400">
-                    {Math.round(((scores.fundamental || 50) + (scores.technical || 50) + (scores.trending || 50)) / 3)}/100
-                  </span>
+
+                  <div className="mt-3 pt-2.5 border-t border-indigo-200/80 dark:border-slate-800 space-y-1.5">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-600 dark:text-slate-400 font-medium">Rekomendasi Algoritma:</span>
+                      <span className={`font-bold px-2 py-0.5 rounded-md text-[11px] ${rec.bgClass}`}>
+                        {rec.label}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-600 dark:text-slate-400 leading-tight">
+                      {rec.desc}
+                    </p>
+                  </div>
                 </div>
-
-                <div className="space-y-2 text-xs">
-                  <div>
-                    <div className="flex justify-between text-[11px] mb-1">
-                      <span className="text-slate-600 dark:text-slate-400">Fundamental:</span>
-                      <span className="font-bold text-slate-900 dark:text-white">{scores.fundamental || 50}</span>
-                    </div>
-                    <div className="w-full bg-slate-200 dark:bg-slate-700/60 rounded-full h-1.5 overflow-hidden">
-                      <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${scores.fundamental || 50}%` }}></div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between text-[11px] mb-1">
-                      <span className="text-slate-600 dark:text-slate-400">Teknikal & Volume:</span>
-                      <span className="font-bold text-slate-900 dark:text-white">{scores.technical || 50}</span>
-                    </div>
-                    <div className="w-full bg-slate-200 dark:bg-slate-700/60 rounded-full h-1.5 overflow-hidden">
-                      <div className="bg-indigo-500 h-1.5 rounded-full" style={{ width: `${scores.technical || 50}%` }}></div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between text-[11px] mb-1">
-                      <span className="text-slate-600 dark:text-slate-400">Momentum / Flow:</span>
-                      <span className="font-bold text-slate-900 dark:text-white">{scores.trending || 50}</span>
-                    </div>
-                    <div className="w-full bg-slate-200 dark:bg-slate-700/60 rounded-full h-1.5 overflow-hidden">
-                      <div className="bg-amber-500 h-1.5 rounded-full" style={{ width: `${scores.trending || 50}%` }}></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-3 pt-2 border-t border-indigo-100 dark:border-slate-800 text-[11px] text-slate-600 dark:text-indigo-200 flex items-center justify-between">
-                <span>Rekomendasi Algoritma:</span>
-                <span className="font-bold text-indigo-700 dark:text-indigo-300">
-                  {((scores.fundamental || 50) + (scores.technical || 50) + (scores.trending || 50)) / 3 >= 70 ? 'Strong Accumulate 🚀' : 'Watchlist / Hold 🔍'}
-                </span>
-              </div>
-            </div>
+              );
+            })()}
           </div>
 
           {/* ── INTERACTIVE CANDLESTICK CHART ────────────────────────────── */}
