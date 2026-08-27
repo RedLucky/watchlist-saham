@@ -8,9 +8,9 @@ export const MODES = {
     emoji: '⚖️',
     description: 'Strategi campuran yang menyeimbangkan fundamental dan sinyal teknikal. Bagus untuk sebagian besar kondisi pasar.',
     weights: {
-      fundamental: 25,
-      technical: 20,
-      smartMoney: 20,
+      fundamental: 30,
+      technical: 25,
+      smartMoney: 10,
       trending: 15,
       valuation: 10,
       liquidity: 5,
@@ -27,9 +27,9 @@ export const MODES = {
     description: 'Fokus pada saham momentum dan tren. Terbaik saat pasar sedang bullish dan volume tinggi.',
     weights: {
       fundamental: 15,
-      technical: 30,
-      smartMoney: 25,
-      trending: 20,
+      technical: 40,
+      smartMoney: 10,
+      trending: 25,
       valuation: 5,
       liquidity: 3,
       dividend: 2,
@@ -44,9 +44,9 @@ export const MODES = {
     emoji: '🛡️',
     description: 'Memprioritaskan saham yang lebih aman dengan kinerja stabil, fundamental kuat, dan dividen baik. Risiko lebih rendah.',
     weights: {
-      fundamental: 35,
+      fundamental: 40,
       technical: 20,
-      smartMoney: 15,
+      smartMoney: 10,
       trending: 5,
       valuation: 10,
       liquidity: 5,
@@ -80,9 +80,9 @@ export const MODES = {
     emoji: '🎛️',
     description: 'Anda mengontrol bobot sepenuhnya. Cocok untuk backtesting dan trader berpengalaman.',
     weights: {
-      fundamental: 20, // Default fallbacks
-      technical: 20,
-      smartMoney: 20,
+      fundamental: 25,
+      technical: 25,
+      smartMoney: 10,
       trending: 20,
       valuation: 10,
       liquidity: 5,
@@ -106,7 +106,7 @@ export const TRADING_STYLES = {
     // Lower market influence because scalping is highly tactical.
     marketInfluence: 0.35,
     indicators: { rsiPeriod: 7, maShort: 9, maLong: 20, volSpike: 1.5 },
-    weights: { technical: 40, trending: 25, smartMoney: 20, fundamental: 5, valuation: 5, liquidity: 3, dividend: 2 },
+    weights: { technical: 45, trending: 30, smartMoney: 10, fundamental: 5, valuation: 5, liquidity: 3, dividend: 2 },
     exit: { tp: 1.5, sl: 0.75 }, // Average of ranges
     maxHoldingDays: 2,
     qualityGate: { minTechnicalScore: 55, minRiskReward: 1.2, requireActionableSetup: true },
@@ -121,7 +121,7 @@ export const TRADING_STYLES = {
     // Balanced market-vs-style influence.
     marketInfluence: 0.50,
     indicators: { rsiPeriod: 14, maShort: 20, maLong: 50, volSpike: 1.2 },
-    weights: { technical: 30, smartMoney: 25, trending: 20, fundamental: 15, valuation: 5, liquidity: 3, dividend: 2 },
+    weights: { technical: 40, smartMoney: 10, trending: 25, fundamental: 15, valuation: 5, liquidity: 3, dividend: 2 },
     exit: { tp: 4.5, sl: 2.5 },
     maxHoldingDays: 5,
     qualityGate: { minTechnicalScore: 60, minRiskReward: 1.4, requireActionableSetup: true },
@@ -136,7 +136,7 @@ export const TRADING_STYLES = {
     // Higher market influence for multi-day positioning.
     marketInfluence: 0.65,
     indicators: { rsiPeriod: 14, maShort: 20, maLong: 50, volSpike: 1.1 },
-    weights: { fundamental: 25, technical: 20, smartMoney: 20, trending: 15, valuation: 10, liquidity: 5, dividend: 5 },
+    weights: { fundamental: 30, technical: 25, smartMoney: 10, trending: 15, valuation: 10, liquidity: 5, dividend: 5 },
     exit: { tp: 8.5, sl: 4.0 },
     maxHoldingDays: 14,
     qualityGate: { minTechnicalScore: 62, minRiskReward: 1.6, requireActionableSetup: true },

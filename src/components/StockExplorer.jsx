@@ -21,7 +21,9 @@ function getAlgorithmicRecommendation({ stockDetail, scores }) {
   const fScore = scores?.fundamental ?? 50;
   const tScore = scores?.technical ?? 50;
   const trendScore = scores?.trending ?? 50;
-  const composite = Math.round((fScore + tScore + trendScore) / 3);
+  const smartMoneyScore = scores?.smartMoney ?? 50;
+  // Bobot: Fundamental 40%, Teknikal 35%, Tren/Momentum 15%, Bandarmologi (KSEI bulanan) 10%
+  const composite = Math.round((fScore * 0.40) + (tScore * 0.35) + (trendScore * 0.15) + (smartMoneyScore * 0.10));
 
   // 1. Strong Accumulate
   if (composite >= 75 || (composite >= 70 && ((b.bfiScore || 0) >= 2 || b.smartMoneyStatus?.includes('Inflow')))) {
@@ -1014,56 +1016,73 @@ export default function StockExplorer({ user }) {
             {/* CARD 8: SKOR KOMPOSIT & REKOMENDASI ALGORITMA */}
             {(() => {
               const rec = getAlgorithmicRecommendation({ stockDetail, scores });
-              const compScore = Math.round(((scores.fundamental ?? 50) + (scores.technical ?? 50) + (scores.trending ?? 50)) / 3);
+              const fScore = scores.fundamental ?? 50;
+              const tScore = scores.technical ?? 50;
+              const trendScore = scores.trending ?? 50;
+              const smartMoneyScore = scores.smartMoney ?? 50;
+              // Bobot Terkalibrasi: Fundamental 40%, Teknikal 35%, Tren/Momentum 15%, Bandarmologi (KSEI bulanan) 10%
+              const compScore = Math.round((fScore * 0.40) + (tScore * 0.35) + (trendScore * 0.15) + (smartMoneyScore * 0.10));
               return (
                 <div className="bg-gradient-to-br from-indigo-50/90 via-purple-50/50 to-slate-50 dark:from-slate-900 dark:via-indigo-950/40 dark:to-slate-900 border border-indigo-200 dark:border-indigo-500/30 rounded-2xl p-4 shadow-sm flex flex-col justify-between">
                   <div>
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center justify-between mb-2.5">
                       <div className="flex items-center gap-2">
                         <span className="text-lg">🎯</span>
-                        <h3 className="font-bold text-xs uppercase tracking-wider text-indigo-950 dark:text-indigo-300">
-                          Skor Komposit
-                        </h3>
+                        <div>
+                          <h3 className="font-bold text-xs uppercase tracking-wider text-indigo-950 dark:text-indigo-300">
+                            Skor Komposit
+                          </h3>
+                        </div>
                       </div>
                       <span className="text-sm font-black text-indigo-600 dark:text-indigo-400">
                         {compScore}/100
                       </span>
                     </div>
 
-                    <div className="space-y-2 text-xs">
+                    <div className="space-y-1.5 text-xs">
                       <div>
-                        <div className="flex justify-between text-[11px] mb-1">
-                          <span className="text-slate-600 dark:text-slate-400">Fundamental:</span>
-                          <span className="font-bold text-slate-900 dark:text-slate-100">{scores.fundamental ?? 50}</span>
+                        <div className="flex justify-between text-[11px] mb-0.5">
+                          <span className="text-slate-600 dark:text-slate-400">Fundamental <span className="text-[10px] text-slate-400">(40%)</span>:</span>
+                          <span className="font-bold text-slate-900 dark:text-slate-100">{fScore}</span>
                         </div>
                         <div className="w-full bg-slate-200 dark:bg-slate-700/60 rounded-full h-1.5 overflow-hidden">
-                          <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${scores.fundamental ?? 50}%` }}></div>
+                          <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${fScore}%` }}></div>
                         </div>
                       </div>
 
                       <div>
-                        <div className="flex justify-between text-[11px] mb-1">
-                          <span className="text-slate-600 dark:text-slate-400">Teknikal & Volume:</span>
-                          <span className="font-bold text-slate-900 dark:text-slate-100">{scores.technical ?? 50}</span>
+                        <div className="flex justify-between text-[11px] mb-0.5">
+                          <span className="text-slate-600 dark:text-slate-400">Teknikal & Volume <span className="text-[10px] text-slate-400">(35%)</span>:</span>
+                          <span className="font-bold text-slate-900 dark:text-slate-100">{tScore}</span>
                         </div>
                         <div className="w-full bg-slate-200 dark:bg-slate-700/60 rounded-full h-1.5 overflow-hidden">
-                          <div className="bg-indigo-500 h-1.5 rounded-full" style={{ width: `${scores.technical ?? 50}%` }}></div>
+                          <div className="bg-indigo-500 h-1.5 rounded-full" style={{ width: `${tScore}%` }}></div>
                         </div>
                       </div>
 
                       <div>
-                        <div className="flex justify-between text-[11px] mb-1">
-                          <span className="text-slate-600 dark:text-slate-400">Momentum / Flow:</span>
-                          <span className="font-bold text-slate-900 dark:text-slate-100">{scores.trending ?? 50}</span>
+                        <div className="flex justify-between text-[11px] mb-0.5">
+                          <span className="text-slate-600 dark:text-slate-400">Momentum / Tren <span className="text-[10px] text-slate-400">(15%)</span>:</span>
+                          <span className="font-bold text-slate-900 dark:text-slate-100">{trendScore}</span>
                         </div>
                         <div className="w-full bg-slate-200 dark:bg-slate-700/60 rounded-full h-1.5 overflow-hidden">
-                          <div className="bg-amber-500 h-1.5 rounded-full" style={{ width: `${scores.trending ?? 50}%` }}></div>
+                          <div className="bg-amber-500 h-1.5 rounded-full" style={{ width: `${trendScore}%` }}></div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between text-[11px] mb-0.5">
+                          <span className="text-slate-600 dark:text-slate-400">Bandarmologi / KSEI <span className="text-[10px] text-indigo-500 font-semibold">(10%)</span>:</span>
+                          <span className="font-bold text-slate-900 dark:text-slate-100">{smartMoneyScore}</span>
+                        </div>
+                        <div className="w-full bg-slate-200 dark:bg-slate-700/60 rounded-full h-1.5 overflow-hidden">
+                          <div className="bg-purple-500 h-1.5 rounded-full" style={{ width: `${smartMoneyScore}%` }}></div>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="mt-3 pt-2.5 border-t border-indigo-200/80 dark:border-slate-800 space-y-1.5">
+                  <div className="mt-2.5 pt-2 border-t border-indigo-200/80 dark:border-slate-800 space-y-1">
                     <div className="flex items-center justify-between text-[11px]">
                       <span className="text-slate-600 dark:text-slate-400 font-medium">Rekomendasi Algoritma:</span>
                       <span className={`font-bold px-2 py-0.5 rounded-md text-[11px] ${rec.bgClass}`}>
