@@ -90,7 +90,7 @@ export default function StockScreener() {
  return (
  <th 
  onClick={() => handleSort(sortKey)}
- className={`px-4 py-3 text-${align} text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors select-none ${extraClass}`}
+ className={`px-4 py-3 text-${align} text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors select-none bg-slate-100 dark:bg-slate-900 ${extraClass}`}
  >
  <div className={`flex items-center gap-1 ${align === 'right' ? 'justify-end' : align === 'center' ? 'justify-center' : 'justify-start'}`}>
  <span>{label}</span>
@@ -382,12 +382,12 @@ export default function StockScreener() {
 
  {/* Main Content Area */}
  <div className="glass-panel overflow-hidden border border-slate-300 dark:border-white/10 rounded-2xl shadow-xl">
- <div className="overflow-x-auto">
+ <div className="overflow-x-auto overflow-y-auto max-h-[75vh]">
  <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800/30">
- <thead className="bg-slate-100 dark:bg-white/5">
+ <thead className="bg-slate-100 dark:bg-slate-900 sticky top-0 z-20 shadow-xs border-b border-slate-200 dark:border-slate-800">
  <tr>
- <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider w-10">No</th>
- <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Saham</th>
+ <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider w-10 bg-slate-100 dark:bg-slate-900">No</th>
+ <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider bg-slate-100 dark:bg-slate-900">Saham</th>
  {renderTableHeaders()}
  </tr>
  </thead>

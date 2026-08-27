@@ -287,18 +287,18 @@ export default function GrowthStoryTab({ stocks = [] }) {
       <div className="p-6 rounded-3xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
         <h3 className="text-base font-black text-slate-900 dark:text-white">🚀 Hasil Screener Saham Growth Story</h3>
 
-        <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800">
+        <div className="overflow-x-auto overflow-y-auto max-h-[70vh] rounded-2xl border border-slate-200 dark:border-slate-800">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+            <thead className="bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-bold uppercase tracking-wider text-[10px] sticky top-0 z-20 shadow-xs border-b border-slate-200 dark:border-slate-800">
               <tr>
-                <th className="p-3">Saham</th>
-                <th className="p-3">Harga</th>
-                <th className="p-3">Rev Growth</th>
-                <th className="p-3">CAGR Laba</th>
-                <th className="p-3">ROE</th>
-                <th className="p-3">Altman Z-Score</th>
-                <th className="p-3">Piotroski F-Score</th>
-                <th className="p-3 text-right">Rekomendasi Alur</th>
+                <th className="p-3 bg-slate-100 dark:bg-slate-900">Saham</th>
+                <th className="p-3 bg-slate-100 dark:bg-slate-900">Harga</th>
+                <th className="p-3 bg-slate-100 dark:bg-slate-900">Rev Growth</th>
+                <th className="p-3 bg-slate-100 dark:bg-slate-900">CAGR Laba</th>
+                <th className="p-3 bg-slate-100 dark:bg-slate-900">ROE</th>
+                <th className="p-3 bg-slate-100 dark:bg-slate-900">Altman Z-Score</th>
+                <th className="p-3 bg-slate-100 dark:bg-slate-900">Piotroski F-Score</th>
+                <th className="p-3 text-right bg-slate-100 dark:bg-slate-900">Rekomendasi Alur</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 font-medium">

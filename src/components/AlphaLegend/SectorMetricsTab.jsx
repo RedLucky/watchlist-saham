@@ -142,20 +142,20 @@ export default function SectorMetricsTab({ stocks = [] }) {
               </h4>
             </div>
 
-            <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800">
+            <div className="overflow-x-auto overflow-y-auto max-h-[70vh] rounded-2xl border border-slate-200 dark:border-slate-800">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                <thead className="bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-bold uppercase tracking-wider text-[10px] sticky top-0 z-20 shadow-xs border-b border-slate-200 dark:border-slate-800">
                   <tr>
-                    <th className="p-3">Kode / Saham</th>
-                    <th className="p-3">Harga</th>
-                    <th className="p-3">PER</th>
-                    <th className="p-3">PBV</th>
-                    <th className="p-3">ROE</th>
-                    <th className="p-3">CAGR Laba</th>
-                    <th className="p-3">DER</th>
-                    <th className="p-3">Div Yield</th>
-                    <th className="p-3">Smart Money</th>
-                    <th className="p-3 text-right">Status Evaluasi</th>
+                    <th className="p-3 bg-slate-100 dark:bg-slate-900">Kode / Saham</th>
+                    <th className="p-3 bg-slate-100 dark:bg-slate-900">Harga</th>
+                    <th className="p-3 bg-slate-100 dark:bg-slate-900">PER</th>
+                    <th className="p-3 bg-slate-100 dark:bg-slate-900">PBV</th>
+                    <th className="p-3 bg-slate-100 dark:bg-slate-900">ROE</th>
+                    <th className="p-3 bg-slate-100 dark:bg-slate-900">CAGR Laba</th>
+                    <th className="p-3 bg-slate-100 dark:bg-slate-900">DER</th>
+                    <th className="p-3 bg-slate-100 dark:bg-slate-900">Div Yield</th>
+                    <th className="p-3 bg-slate-100 dark:bg-slate-900">Smart Money</th>
+                    <th className="p-3 text-right bg-slate-100 dark:bg-slate-900">Status Evaluasi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 font-medium">
