@@ -686,7 +686,7 @@ export default function StockExplorer({ user }) {
                 >
                   <div className="flex items-start justify-between">
                     <span className="text-2xl">{col.emoji || '📁'}</span>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-1">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -697,8 +697,8 @@ export default function StockExplorer({ user }) {
                           setIsCollectionPublic(col.isPublic || false);
                           setShowEditModal(true);
                         }}
-                        className="p-1 text-slate-500 hover:text-indigo-600 rounded"
-                        title="Edit Koleksi"
+                        className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors"
+                        title="Edit Nama, Deskripsi & Emoji Koleksi"
                       >
                         ✏️
                       </button>
@@ -707,7 +707,7 @@ export default function StockExplorer({ user }) {
                           e.stopPropagation();
                           handleDeleteCollection(col.id, col.name);
                         }}
-                        className="p-1 text-slate-500 hover:text-rose-600 rounded"
+                        className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-100 dark:hover:bg-rose-950/60 rounded transition-colors"
                         title="Hapus Koleksi"
                       >
                         🗑️
@@ -731,27 +731,59 @@ export default function StockExplorer({ user }) {
         {/* Selected Collection Stocks Grid (4 Columns) with Instant Click View & Target Alerts */}
         {selectedCollection && (
           <div className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">{selectedCollection.emoji}</span>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 dark:bg-slate-800/40 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700/60">
+              <div className="flex items-center gap-2.5">
+                <span className="text-2xl">{selectedCollection.emoji}</span>
                 <div>
-                  <h3 className="font-bold text-sm md:text-base text-slate-900 dark:text-white">
-                    Isi Koleksi: {selectedCollection.name}
+                  <h3 className="font-bold text-sm md:text-base text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>{selectedCollection.name}</span>
+                    {selectedCollection.isPublic && (
+                      <span className="text-[10px] bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 px-2 py-0.5 rounded-full font-bold">
+                        🌐 Publik
+                      </span>
+                    )}
                   </h3>
-                  {selectedCollection.description && (
-                    <p className="text-xs text-slate-600 dark:text-slate-400">{selectedCollection.description}</p>
+                  {selectedCollection.description ? (
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">{selectedCollection.description}</p>
+                  ) : (
+                    <p className="text-[11px] text-slate-400 italic mt-0.5">Belum ada deskripsi koleksi</p>
                   )}
                 </div>
               </div>
 
-              {selectedCollection.shareCode && (
+              <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
                 <button
-                  onClick={() => handleCopyShareLink(selectedCollection.shareCode)}
-                  className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 self-start sm:self-auto"
+                  onClick={() => {
+                    setEditingCollection(selectedCollection);
+                    setNewCollectionName(selectedCollection.name);
+                    setNewCollectionEmoji(selectedCollection.emoji || '📁');
+                    setNewCollectionDesc(selectedCollection.description || '');
+                    setIsCollectionPublic(selectedCollection.isPublic || false);
+                    setShowEditModal(true);
+                  }}
+                  className="px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 hover:text-indigo-600 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-1.5 transition-colors"
+                  title="Edit Nama, Deskripsi & Emoji Koleksi Ini"
                 >
-                  🔗 {copiedShareCode === selectedCollection.shareCode ? 'Link Tersalin! ✅' : 'Bagikan Koleksi'}
+                  <span>✏️</span> Edit Koleksi
                 </button>
-              )}
+
+                {selectedCollection.shareCode && (
+                  <button
+                    onClick={() => handleCopyShareLink(selectedCollection.shareCode)}
+                    className="px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-1.5 transition-colors"
+                  >
+                    🔗 {copiedShareCode === selectedCollection.shareCode ? 'Link Tersalin! ✅' : 'Bagikan'}
+                  </button>
+                )}
+
+                <button
+                  onClick={() => handleDeleteCollection(selectedCollection.id, selectedCollection.name)}
+                  className="p-1.5 bg-white dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-400 hover:text-rose-600 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm transition-colors"
+                  title="Hapus Koleksi Ini"
+                >
+                  🗑️
+                </button>
+              </div>
             </div>
 
             {loadingItems ? (
@@ -2281,32 +2313,43 @@ export default function StockExplorer({ user }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-black text-slate-900 dark:text-white">✏️ Edit Koleksi</h3>
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">{newCollectionEmoji || '📁'}</span>
+                <div>
+                  <h3 className="text-base font-black text-slate-900 dark:text-white">✏️ Edit Koleksi</h3>
+                  <p className="text-xs text-slate-500">Ubah nama, deskripsi, atau ikon koleksi</p>
+                </div>
+              </div>
               <button onClick={() => setShowEditModal(false)} className="text-slate-400 hover:text-slate-600">✕</button>
             </div>
 
             <form onSubmit={handleUpdateCollection} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Nama Koleksi</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Nama Koleksi <span className="text-rose-500">*</span>
+                </label>
                 <input
                   type="text"
                   required
+                  placeholder="Misal: Dividen Blue Chip, Growth Saham, dsb."
                   value={newCollectionName}
                   onChange={(e) => setNewCollectionName(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Emoji / Ikon</label>
-                <div className="flex items-center gap-2">
-                  {['📁', '💎', '🚀', '🏛️', '🛡️', '⚡', '📊', '🔥'].map((em) => (
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Pilih Ikon / Emoji</label>
+                <div className="grid grid-cols-8 gap-1.5 p-2 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700">
+                  {['📁', '💎', '🚀', '📈', '🏛️', '🛡️', '⚡', '📊', '🔥', '💰', '🏆', '⭐', '🎯', '🐂', '🏦', '🌾'].map((em) => (
                     <button
                       key={em}
                       type="button"
                       onClick={() => setNewCollectionEmoji(em)}
-                      className={`text-xl p-2 rounded-xl border transition-all ${
-                        newCollectionEmoji === em ? 'bg-indigo-50 dark:bg-indigo-950 border-indigo-500 scale-110' : 'border-slate-200 dark:border-slate-700'
+                      className={`text-lg p-1.5 rounded-lg border transition-all flex items-center justify-center ${
+                        newCollectionEmoji === em
+                          ? 'bg-indigo-100 dark:bg-indigo-950 border-indigo-500 scale-110 shadow-sm'
+                          : 'border-transparent hover:bg-white dark:hover:bg-slate-700'
                       }`}
                     >
                       {em}
@@ -2316,39 +2359,40 @@ export default function StockExplorer({ user }) {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Deskripsi</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Deskripsi Koleksi (Opsional)</label>
                 <textarea
                   rows={2}
+                  placeholder="Tulis tujuan koleksi atau strategi investasi di sini..."
                   value={newCollectionDesc}
                   onChange={(e) => setNewCollectionDesc(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                 />
               </div>
 
               <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
                 <div>
                   <span className="text-xs font-bold text-slate-900 dark:text-white block">Koleksi Publik</span>
-                  <span className="text-[10px] text-slate-500">Dapat dibagikan via tautan web</span>
+                  <span className="text-[10px] text-slate-500">Dapat dibagikan kepada orang lain via link</span>
                 </div>
                 <input
                   type="checkbox"
                   checked={isCollectionPublic}
                   onChange={(e) => setIsCollectionPublic(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                  className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
-                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-xl"
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-xl transition-colors"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl"
+                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-md transition-all"
                 >
                   Simpan Perubahan
                 </button>
