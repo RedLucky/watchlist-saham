@@ -20,6 +20,16 @@ initBackgroundSync();
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const requestedTicker = searchParams.get('ticker');
+  const allList = searchParams.get('all') === 'true';
+
+  if (allList) {
+    const list = await prisma.stockData.findMany({
+      select: { ticker: true, name: true, price: true },
+      orderBy: { ticker: 'asc' }
+    });
+    return NextResponse.json(list);
+  }
+
   let modeName = searchParams.get('mode') || 'auto';
   let styleName = searchParams.get('style') || 'swing';
 

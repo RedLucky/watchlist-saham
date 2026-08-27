@@ -27,7 +27,7 @@ function serializeData(data) {
 
 export async function GET(request, { params }) {
   try {
-    let { ticker } = params;
+    let { ticker } = await params;
     if (!ticker) {
       return NextResponse.json({ error: 'Ticker is required' }, { status: 400 });
     }

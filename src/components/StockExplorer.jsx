@@ -40,7 +40,7 @@ export default function StockExplorer({ user }) {
   useEffect(() => {
     async function loadTickers() {
       try {
-        const res = await fetch('/api/stocks');
+        const res = await fetch('/api/stocks?all=true');
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data)) {
