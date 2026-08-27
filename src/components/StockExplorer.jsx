@@ -105,6 +105,55 @@ function getAlgorithmicRecommendation({ stockDetail, scores }) {
   };
 }
 
+// Helper: Hitung Rekomendasi Target Beli & Target Jual
+export function getRecommendedTargets(stockData) {
+  if (!stockData) return { targetBuy: null, targetSell: null, buyLabel: '', sellLabel: '' };
+
+  const price = Number(stockData.price || 0);
+  const t = stockData.technicals || {};
+  const proj = stockData.projections || {};
+
+  if (!price || price <= 0) return { targetBuy: null, targetSell: null, buyLabel: '', sellLabel: '' };
+
+  // 1. Target Buy (Area Beli Ideal / Support / Margin of Safety)
+  let targetBuy = null;
+  let buyLabel = 'Support Teknikal';
+  if (t.support && Number(t.support) > 0 && Number(t.support) <= price * 0.99) {
+    targetBuy = Math.round(Number(t.support));
+    const discount = Math.round(((price - targetBuy) / price) * 100);
+    buyLabel = `Support (-${discount}%)`;
+  } else if (proj.grahamNumber && Number(proj.grahamNumber) < price && Number(proj.grahamNumber) > 0) {
+    targetBuy = Math.round(Number(proj.grahamNumber));
+    const discount = Math.round(((price - targetBuy) / price) * 100);
+    buyLabel = `Graham Fair Value (-${discount}%)`;
+  } else {
+    targetBuy = Math.round(price * 0.95);
+    buyLabel = 'Diskon 5% (Area Sehat)';
+  }
+
+  // 2. Target Sell (Target Take Profit / Resistance / Fair Value)
+  let targetSell = null;
+  let sellLabel = 'Target 12 Bulan';
+  if (proj.projectedPrice12m && Number(proj.projectedPrice12m) > price * 1.03) {
+    targetSell = Math.round(Number(proj.projectedPrice12m));
+    const upside = Math.round(((targetSell - price) / price) * 100);
+    sellLabel = `Target 12B (+${upside}%)`;
+  } else if (t.resistance && Number(t.resistance) > price * 1.02) {
+    targetSell = Math.round(Number(t.resistance));
+    const upside = Math.round(((targetSell - price) / price) * 100);
+    sellLabel = `Resistance (+${upside}%)`;
+  } else if (proj.fairValue && Number(proj.fairValue) > price * 1.05) {
+    targetSell = Math.round(Number(proj.fairValue));
+    const upside = Math.round(((targetSell - price) / price) * 100);
+    sellLabel = `Nilai Wajar DCF (+${upside}%)`;
+  } else {
+    targetSell = Math.round(price * 1.15);
+    sellLabel = 'Target Standar (+15%)';
+  }
+
+  return { targetBuy, targetSell, buyLabel, sellLabel };
+}
+
 export default function StockExplorer({ user }) {
   // Navigation View State
   const [activeTab, setActiveTab] = useState('explorer'); // 'explorer' | 'compare'
@@ -2344,6 +2393,55 @@ export default function StockExplorer({ user }) {
                 </select>
               </div>
 
+              {/* Quick Auto-Fill Recommendation Banner */}
+              {(() => {
+                const rec = getRecommendedTargets(stockDetail);
+                if (!rec.targetBuy && !rec.targetSell) return null;
+                return (
+                  <div className="bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 rounded-xl p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-indigo-900 dark:text-indigo-300 flex items-center gap-1">
+                        <span>⚡</span> Rekomendasi Target Algoritma
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (rec.targetBuy) setSaveTargetBuy(rec.targetBuy.toString());
+                          if (rec.targetSell) setSaveTargetSell(rec.targetSell.toString());
+                        }}
+                        className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-black rounded-lg shadow-sm transition-all flex items-center gap-1 hover:scale-105 active:scale-95"
+                      >
+                        <span>⚡ Auto-Fill</span>
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-[11px]">
+                      <button
+                        type="button"
+                        onClick={() => rec.targetBuy && setSaveTargetBuy(rec.targetBuy.toString())}
+                        className="text-left p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-emerald-500 transition-all group"
+                      >
+                        <span className="text-slate-500 dark:text-slate-400 text-[10px] block truncate">Target Beli ({rec.buyLabel}):</span>
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400 group-hover:underline">
+                          Rp {rec.targetBuy?.toLocaleString('id-ID')}
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => rec.targetSell && setSaveTargetSell(rec.targetSell.toString())}
+                        className="text-left p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-rose-500 transition-all group"
+                      >
+                        <span className="text-slate-500 dark:text-slate-400 text-[10px] block truncate">Target Jual ({rec.sellLabel}):</span>
+                        <span className="font-bold text-rose-600 dark:text-rose-400 group-hover:underline">
+                          Rp {rec.targetSell?.toLocaleString('id-ID')}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* Target Buy & Target Sell Inputs */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -2420,6 +2518,56 @@ export default function StockExplorer({ user }) {
             </div>
 
             <form onSubmit={handleSaveEditItem} className="space-y-4">
+              {/* Quick Auto-Fill Recommendation Banner */}
+              {(() => {
+                const activeStockData = stockDetail?.ticker === editingItem.ticker ? stockDetail : editingItem.stock;
+                const rec = getRecommendedTargets(activeStockData);
+                if (!rec.targetBuy && !rec.targetSell) return null;
+                return (
+                  <div className="bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 rounded-xl p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-indigo-900 dark:text-indigo-300 flex items-center gap-1">
+                        <span>⚡</span> Rekomendasi Target Algoritma
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (rec.targetBuy) setEditItemTargetBuy(rec.targetBuy.toString());
+                          if (rec.targetSell) setEditItemTargetSell(rec.targetSell.toString());
+                        }}
+                        className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-black rounded-lg shadow-sm transition-all flex items-center gap-1 hover:scale-105 active:scale-95"
+                      >
+                        <span>⚡ Auto-Fill</span>
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-[11px]">
+                      <button
+                        type="button"
+                        onClick={() => rec.targetBuy && setEditItemTargetBuy(rec.targetBuy.toString())}
+                        className="text-left p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-emerald-500 transition-all group"
+                      >
+                        <span className="text-slate-500 dark:text-slate-400 text-[10px] block truncate">Target Beli ({rec.buyLabel}):</span>
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400 group-hover:underline">
+                          Rp {rec.targetBuy?.toLocaleString('id-ID')}
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => rec.targetSell && setEditItemTargetSell(rec.targetSell.toString())}
+                        className="text-left p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-rose-500 transition-all group"
+                      >
+                        <span className="text-slate-500 dark:text-slate-400 text-[10px] block truncate">Target Jual ({rec.sellLabel}):</span>
+                        <span className="font-bold text-rose-600 dark:text-rose-400 group-hover:underline">
+                          Rp {rec.targetSell?.toLocaleString('id-ID')}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
