@@ -48,6 +48,12 @@ export default function StockChart({ ticker }) {
         const detectedPatterns = analyzeCandlestickPatterns(data);
         setPatternAnalysis(detectedPatterns);
 
+        // Theme aware styling
+        const isDark = typeof window !== 'undefined' && document.documentElement.classList.contains('dark');
+        const textColor = isDark ? '#94a3b8' : '#475569';
+        const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
+        const borderColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)';
+
         // Initialize chart component
         chart = createChart(chartContainerRef.current, {
           width: chartContainerRef.current.clientWidth,
@@ -55,19 +61,24 @@ export default function StockChart({ ticker }) {
           layout: {
             background: { type: 'solid', color: 'transparent' },
             textColor: textColor,
+          },
           grid: {
             vertLines: { color: gridColor },
             horzLines: { color: gridColor },
           },
+          crosshair: {
+            mode: CrosshairMode.Normal,
           },
           rightPriceScale: {
             borderColor: borderColor,
           },
           timeScale: {
             borderColor: borderColor,
+            timeVisible: true,
           },
           handleScroll: isMobile
             ? {
+                mouseWheel: false,
                 pressedMouseMove: true,
                 horzTouchDrag: false,
                 vertTouchDrag: false,
