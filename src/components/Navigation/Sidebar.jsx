@@ -6,6 +6,7 @@ export const NAVIGATION_MENU = [
     category: 'Pasar & Analisis',
     items: [
       { id: 'watchlist', label: 'Analisis Saham', icon: '📊' },
+      { id: 'explorer', label: 'Stock Explorer', icon: '🧭' },
       { id: 'movers', label: 'Market Movers', icon: '🔥' },
       { id: 'screener', label: 'Stock Screener', icon: '🔍' },
       { id: 'alpha-legend', label: 'Alpha Legends Screener', icon: '👑' },

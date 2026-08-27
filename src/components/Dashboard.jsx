@@ -17,6 +17,7 @@ import StockScreener from './StockScreener';
 import AlphaLegendScreeners from './AlphaLegend/AlphaLegendScreeners';
 import PensionCalculator from './PensionCalculator';
 import KseiUploadPanel from './KseiUploadPanel';
+import StockExplorer from './StockExplorer';
 import AuthModal from './AuthModal';
 import { ThemeToggle } from './ThemeToggle';
 
@@ -244,6 +245,13 @@ export default function Dashboard() {
 
  </div>
  )}
+
+  {/* TAB 1.5: STOCK EXPLORER */}
+  {activeTab === 'explorer' && (
+    <div className="animate-in fade-in duration-300">
+      <StockExplorer user={user} />
+    </div>
+  )}
 
  {/* TAB 2: MARKET MOVERS */}
  {activeTab === 'movers' && (

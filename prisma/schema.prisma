@@ -132,4 +132,36 @@ model User {
   pensionRecords   PensionRecord[]
   portfolios       Portfolio[]
   recommendations  Recommendation[]
+  collections      Collection[]
+}
+
+model Collection {
+  id          Int              @id @default(autoincrement())
+  userId      Int
+  name        String
+  emoji       String           @default("📁")
+  description String?
+  shareCode   String?          @unique  // UUID untuk sharing publik
+  isPublic    Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items       CollectionItem[]
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@index([shareCode])
+}
+
+model CollectionItem {
+  id           Int        @id @default(autoincrement())
+  collectionId Int
+  ticker       String
+  notes        String?    @db.Text
+  addedAt      DateTime   @default(now())
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@unique([collectionId, ticker])
+  @@index([collectionId])
+  @@index([ticker])
 }
