@@ -22,8 +22,8 @@ function getAlgorithmicRecommendation({ stockDetail, scores }) {
   const tScore = scores?.technical ?? 50;
   const trendScore = scores?.trending ?? 50;
   const smartMoneyScore = scores?.smartMoney ?? 50;
-  // Bobot: Fundamental 40%, Teknikal 35%, Tren/Momentum 15%, Bandarmologi (KSEI bulanan) 10%
-  const composite = Math.round((fScore * 0.40) + (tScore * 0.35) + (trendScore * 0.15) + (smartMoneyScore * 0.10));
+  // Bobot Terkalibrasi: Fundamental 45% (Utama), Teknikal 35% (Kedua), Tren 10%, Bandarmologi (KSEI bulanan) 10%
+  const composite = Math.round((fScore * 0.45) + (tScore * 0.35) + (trendScore * 0.10) + (smartMoneyScore * 0.10));
 
   // 1. Strong Accumulate
   if (composite >= 75 || (composite >= 70 && ((b.bfiScore || 0) >= 2 || b.smartMoneyStatus?.includes('Inflow')))) {
@@ -1020,8 +1020,8 @@ export default function StockExplorer({ user }) {
               const tScore = scores.technical ?? 50;
               const trendScore = scores.trending ?? 50;
               const smartMoneyScore = scores.smartMoney ?? 50;
-              // Bobot Terkalibrasi: Fundamental 40%, Teknikal 35%, Tren/Momentum 15%, Bandarmologi (KSEI bulanan) 10%
-              const compScore = Math.round((fScore * 0.40) + (tScore * 0.35) + (trendScore * 0.15) + (smartMoneyScore * 0.10));
+              // Bobot Terkalibrasi: Fundamental 45% (Utama), Teknikal 35% (Kedua), Tren 10%, Bandarmologi (KSEI bulanan) 10%
+              const compScore = Math.round((fScore * 0.45) + (tScore * 0.35) + (trendScore * 0.10) + (smartMoneyScore * 0.10));
               return (
                 <div className="bg-gradient-to-br from-indigo-50/90 via-purple-50/50 to-slate-50 dark:from-slate-900 dark:via-indigo-950/40 dark:to-slate-900 border border-indigo-200 dark:border-indigo-500/30 rounded-2xl p-4 shadow-sm flex flex-col justify-between">
                   <div>
@@ -1042,7 +1042,7 @@ export default function StockExplorer({ user }) {
                     <div className="space-y-1.5 text-xs">
                       <div>
                         <div className="flex justify-between text-[11px] mb-0.5">
-                          <span className="text-slate-600 dark:text-slate-400">Fundamental <span className="text-[10px] text-slate-400">(40%)</span>:</span>
+                          <span className="text-slate-600 dark:text-slate-400">Fundamental <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">(45% — Utama)</span>:</span>
                           <span className="font-bold text-slate-900 dark:text-slate-100">{fScore}</span>
                         </div>
                         <div className="w-full bg-slate-200 dark:bg-slate-700/60 rounded-full h-1.5 overflow-hidden">
@@ -1052,7 +1052,7 @@ export default function StockExplorer({ user }) {
 
                       <div>
                         <div className="flex justify-between text-[11px] mb-0.5">
-                          <span className="text-slate-600 dark:text-slate-400">Teknikal & Volume <span className="text-[10px] text-slate-400">(35%)</span>:</span>
+                          <span className="text-slate-600 dark:text-slate-400">Teknikal & Volume <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold">(35% — Kedua)</span>:</span>
                           <span className="font-bold text-slate-900 dark:text-slate-100">{tScore}</span>
                         </div>
                         <div className="w-full bg-slate-200 dark:bg-slate-700/60 rounded-full h-1.5 overflow-hidden">
@@ -1062,7 +1062,7 @@ export default function StockExplorer({ user }) {
 
                       <div>
                         <div className="flex justify-between text-[11px] mb-0.5">
-                          <span className="text-slate-600 dark:text-slate-400">Momentum / Tren <span className="text-[10px] text-slate-400">(15%)</span>:</span>
+                          <span className="text-slate-600 dark:text-slate-400">Momentum / Tren <span className="text-[10px] text-slate-400">(10%)</span>:</span>
                           <span className="font-bold text-slate-900 dark:text-slate-100">{trendScore}</span>
                         </div>
                         <div className="w-full bg-slate-200 dark:bg-slate-700/60 rounded-full h-1.5 overflow-hidden">
@@ -1072,7 +1072,7 @@ export default function StockExplorer({ user }) {
 
                       <div>
                         <div className="flex justify-between text-[11px] mb-0.5">
-                          <span className="text-slate-600 dark:text-slate-400">Bandarmologi / KSEI <span className="text-[10px] text-indigo-500 font-semibold">(10%)</span>:</span>
+                          <span className="text-slate-600 dark:text-slate-400">Bandarmologi / KSEI <span className="text-[10px] text-purple-600 dark:text-purple-400 font-semibold">(10%)</span>:</span>
                           <span className="font-bold text-slate-900 dark:text-slate-100">{smartMoneyScore}</span>
                         </div>
                         <div className="w-full bg-slate-200 dark:bg-slate-700/60 rounded-full h-1.5 overflow-hidden">
