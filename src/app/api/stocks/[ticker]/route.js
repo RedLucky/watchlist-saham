@@ -274,6 +274,18 @@ export async function GET(request, { params }) {
       });
     } catch(e) {}
 
+    // Calculate Controller (PSP) & Management (Direksi/Komisaris) Holdings
+    const rawShareholders = Array.isArray(ownership?.shareholders) ? ownership.shareholders : (parseJsonField(stock.shareholders) || []);
+    const controllerHolders = rawShareholders.filter(s => s.Pengendali === true || s.Kategori === 'Lebih dari 5%');
+    const topController = controllerHolders[0] || null;
+    const controllerTotalPct = controllerHolders.reduce((acc, s) => acc + Number(s.Persentase || 0), 0) || Number(kseiLatest?.controllerPercent || 0);
+
+    const directorHolders = rawShareholders.filter(s => s.Kategori === 'Direksi');
+    const commissionerHolders = rawShareholders.filter(s => s.Kategori === 'Komisaris');
+    const directorsTotalPct = directorHolders.reduce((acc, s) => acc + Number(s.Persentase || 0), 0);
+    const commissionersTotalPct = commissionerHolders.reduce((acc, s) => acc + Number(s.Persentase || 0), 0);
+    const managementTotalPct = Number((directorsTotalPct + commissionersTotalPct).toFixed(3));
+
     const bandarmologi = {
       score: smartMoneyScoreObj?.score || 50,
       bfiScore: Number(kseiLatest?.bfi || 0),
@@ -284,7 +296,12 @@ export async function GET(request, { params }) {
       foreignPercent: Number(kseiLatest?.foreignPercent || 0),
       retailPercent: Number(kseiLatest?.retailPercent || 0),
       pensionPercent: Number(kseiLatest?.pensionPercent || 0),
-      controllerPercent: Number(kseiLatest?.controllerPercent || 0),
+      controllerPercent: Number((controllerTotalPct || kseiLatest?.controllerPercent || 0).toFixed(2)),
+      controllerName: topController?.Nama || null,
+      directorsPercent: Number(directorsTotalPct.toFixed(3)),
+      commissionersPercent: Number(commissionersTotalPct.toFixed(3)),
+      managementTotalPercent: managementTotalPct,
+      topShareholders: rawShareholders.slice(0, 5),
       mutualFundPercent: Number(kseiLatest?.mutualFundPercent || 0),
       deltaForeign: Number(kseiLatest?.deltaForeign || 0),
       deltaRetail: Number(kseiLatest?.deltaRetail || 0),

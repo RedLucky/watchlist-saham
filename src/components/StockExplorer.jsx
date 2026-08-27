@@ -1571,15 +1571,22 @@ export default function StockExplorer({ user }) {
 
                       <div className="space-y-2 text-xs">
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">Wyckoff Phase:</span>
-                          <span className="font-bold text-indigo-600 dark:text-indigo-400">
-                            {b.wyckoffPhaseName || `Fase ${b.wyckoffPhase || 1}`}
-                          </span>
+                          <span className="text-slate-600 dark:text-slate-400">Pengendali (PSP):</span>
+                          <div className="text-right">
+                            <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                              {b.controllerPercent != null && b.controllerPercent > 0 ? `${Number(b.controllerPercent).toFixed(1)}%` : '-'}
+                            </span>
+                            {b.controllerName && (
+                              <span className="text-[10px] text-slate-500 block truncate max-w-[130px]" title={b.controllerName}>
+                                {b.controllerName}
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">Smart Money:</span>
-                          <span className={`font-bold ${b.smartMoneyStatus?.includes('Inflow') ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                            {b.smartMoneyStatus || 'Netral'}
+                          <span className="text-slate-600 dark:text-slate-400">Direksi & Manajemen:</span>
+                          <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                            {b.managementTotalPercent != null ? `${Number(b.managementTotalPercent).toFixed(2)}%` : (b.directorsPercent != null ? `${Number(b.directorsPercent).toFixed(2)}%` : '0.00%')}
                           </span>
                         </div>
                         <div className="flex justify-between">
@@ -1594,10 +1601,17 @@ export default function StockExplorer({ user }) {
                             {b.retailPercent != null ? `${Number(b.retailPercent).toFixed(1)}%` : '-'}
                           </span>
                         </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-600 dark:text-slate-400">Smart Money Flow:</span>
+                          <span className={`font-bold ${b.smartMoneyStatus?.includes('Inflow') ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                            {b.smartMoneyStatus || 'Netral'}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400">
-                      Dominasi: <span className="font-semibold text-slate-900 dark:text-slate-100">{(b.foreignPercent || 0) > 50 ? 'Asing (Foreign Heavy)' : 'Domestik'}</span>
+                    <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400 flex items-center justify-between">
+                      <span>Wyckoff Phase:</span>
+                      <span className="font-semibold text-slate-900 dark:text-slate-100">{b.wyckoffPhaseName || `Fase ${b.wyckoffPhase || 1}`}</span>
                     </div>
                   </div>
 
@@ -2153,6 +2167,32 @@ export default function StockExplorer({ user }) {
                         })}
                       </tr>
                       <tr>
+                        <td className="p-3 font-semibold sticky left-0 bg-white dark:bg-slate-900 z-10">Saham Pengendali (PSP)</td>
+                        {compareList.map(ticker => {
+                          const s = compareData[ticker] || {};
+                          const cp = s.bandarmologi?.controllerPercent;
+                          const name = s.bandarmologi?.controllerName;
+                          return (
+                            <td key={ticker} className="p-3 text-center border-l border-slate-100 dark:border-slate-800 font-bold text-indigo-600 dark:text-indigo-400">
+                              <div>{cp != null && cp > 0 ? `${Number(cp).toFixed(1)}%` : '-'}</div>
+                              {name && <div className="text-[10px] text-slate-500 font-normal truncate max-w-[110px] mx-auto" title={name}>{name}</div>}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                      <tr>
+                        <td className="p-3 font-semibold sticky left-0 bg-white dark:bg-slate-900 z-10">Kepemilikan Direksi</td>
+                        {compareList.map(ticker => {
+                          const s = compareData[ticker] || {};
+                          const dp = s.bandarmologi?.managementTotalPercent ?? s.bandarmologi?.directorsPercent;
+                          return (
+                            <td key={ticker} className="p-3 text-center border-l border-slate-100 dark:border-slate-800 font-medium text-emerald-600 dark:text-emerald-400">
+                              {dp != null ? `${Number(dp).toFixed(2)}%` : '0.00%'}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                      <tr>
                         <td className="p-3 font-semibold sticky left-0 bg-white dark:bg-slate-900 z-10">Kepemilikan Asing</td>
                         {compareList.map(ticker => {
                           const s = compareData[ticker] || {};
@@ -2160,6 +2200,18 @@ export default function StockExplorer({ user }) {
                           return (
                             <td key={ticker} className="p-3 text-center border-l border-slate-100 dark:border-slate-800 font-medium">
                               {fp != null ? `${Number(fp).toFixed(1)}%` : '-'}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                      <tr>
+                        <td className="p-3 font-semibold sticky left-0 bg-white dark:bg-slate-900 z-10">Kepemilikan Ritel</td>
+                        {compareList.map(ticker => {
+                          const s = compareData[ticker] || {};
+                          const rp = s.bandarmologi?.retailPercent;
+                          return (
+                            <td key={ticker} className="p-3 text-center border-l border-slate-100 dark:border-slate-800 font-medium">
+                              {rp != null ? `${Number(rp).toFixed(1)}%` : '-'}
                             </td>
                           );
                         })}
