@@ -19,10 +19,12 @@ export default function StockChart({ ticker }) {
   const [patternAnalysis, setPatternAnalysis] = useState(null);
   const [showPatternModal, setShowPatternModal] = useState(false);
   const [showMarkersOnChart, setShowMarkersOnChart] = useState(true);
+  const [selectedRange, setSelectedRange] = useState('5Y');
 
   // References to dynamic chart series and lines
   const chartInstanceRef = useRef(null);
   const candlestickSeriesRef = useRef(null);
+  const rawChartDataRef = useRef([]);
   const dynamicPriceLinesRef = useRef([]);
 
   useEffect(() => {
@@ -34,11 +36,13 @@ export default function StockChart({ ticker }) {
         const isMobile = window.matchMedia('(max-width: 768px)').matches;
         setLoading(true);
         setError(null);
-        const res = await fetch(`/api/chart?ticker=${ticker}`);
+        const res = await fetch(`/api/chart?ticker=${ticker}&years=5`);
         if (!res.ok) throw new Error('Failed to load chart data');
         const { data, ma20, ma50, analytics: chartAnalytics } = await res.json();
         
         if (data.length === 0) throw new Error('No data available');
+
+        rawChartDataRef.current = data;
 
         // Analyze Candlestick Patterns from data
         const detectedPatterns = analyzeCandlestickPatterns(data);
@@ -297,16 +301,49 @@ export default function StockChart({ ticker }) {
     setShowPatternModal(false);
   };
 
+  const handleRangeChange = (range) => {
+    setSelectedRange(range);
+    if (!chartInstanceRef.current || !rawChartDataRef.current?.length) return;
+    
+    const chartData = rawChartDataRef.current;
+    if (range === '5Y' || range === 'ALL') {
+      chartInstanceRef.current.timeScale().fitContent();
+      return;
+    }
+
+    const lastItem = chartData[chartData.length - 1];
+    const lastDate = new Date(lastItem.time);
+    const fromDate = new Date(lastDate);
+
+    if (range === '1M') fromDate.setMonth(fromDate.getMonth() - 1);
+    else if (range === '3M') fromDate.setMonth(fromDate.getMonth() - 3);
+    else if (range === '6M') fromDate.setMonth(fromDate.getMonth() - 6);
+    else if (range === '1Y') fromDate.setFullYear(fromDate.getFullYear() - 1);
+    else if (range === '3Y') fromDate.setFullYear(fromDate.getFullYear() - 3);
+
+    const fromStr = fromDate.toISOString().split('T')[0];
+    const toStr = lastDate.toISOString().split('T')[0];
+
+    try {
+      chartInstanceRef.current.timeScale().setVisibleRange({
+        from: fromStr,
+        to: toStr,
+      });
+    } catch (e) {
+      chartInstanceRef.current.timeScale().fitContent();
+    }
+  };
+
   const currentPattern = patternAnalysis?.currentPattern;
 
   return (
     <div className="w-full relative rounded-xl overflow-hidden glass border border-slate-200 dark:border-white/5 bg-[#0d1321]">
-      {/* ── TOP TOOLBAR & PATTERN DETECTION BUTTON ────────────────────── */}
-      <div className="px-4 py-3 border-b border-slate-200 dark:border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {/* ── TOP TOOLBAR, TIMEFRAME SELECTOR & PATTERN BUTTON ───────────── */}
+      <div className="px-4 py-3 border-b border-slate-200 dark:border-white/5 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
         <div className="space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-1.5">
-              <span>📊</span> Grafik TradingView — {ticker} (1 Tahun)
+              <span>📊</span> Grafik TradingView — {ticker} (5 Tahun)
             </h3>
             {currentPattern && (
               <span
@@ -335,13 +372,37 @@ export default function StockChart({ ticker }) {
           </div>
         </div>
 
-        {/* CANDLESTICK PATTERN BUTTON */}
-        <div className="flex items-center gap-2 self-start sm:self-auto flex-shrink-0">
+        {/* TIMEFRAME BUTTONS & CANDLESTICK PATTERN BUTTON */}
+        <div className="flex items-center gap-2 self-start lg:self-auto flex-wrap flex-shrink-0">
+          {/* Timeframe Range Selector (1M, 3M, 6M, 1Y, 3Y, 5Y) */}
+          <div className="flex items-center bg-slate-800/80 rounded-xl p-1 border border-slate-700/60 shadow-inner">
+            {[
+              { id: '1M', label: '1B' },
+              { id: '3M', label: '3B' },
+              { id: '6M', label: '6B' },
+              { id: '1Y', label: '1T' },
+              { id: '3Y', label: '3T' },
+              { id: '5Y', label: '5T' },
+            ].map(r => (
+              <button
+                key={r.id}
+                onClick={() => handleRangeChange(r.id)}
+                className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                  selectedRange === r.id
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                }`}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
+
           <button
             onClick={() => setShowPatternModal(true)}
-            className="px-3.5 py-1.5 bg-gradient-to-r from-amber-500 via-indigo-600 to-indigo-700 hover:from-amber-400 hover:to-indigo-600 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5"
+            className="px-3 py-1.5 bg-gradient-to-r from-amber-500 via-indigo-600 to-indigo-700 hover:from-amber-400 hover:to-indigo-600 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5"
           >
-            <span>🕯️</span> Analisis Pola Candlestick
+            <span>🕯️</span> Pola Candle
           </button>
         </div>
       </div>

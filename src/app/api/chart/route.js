@@ -13,13 +13,14 @@ export async function GET(request) {
   }
 
   try {
+    const yearsParam = parseInt(searchParams.get('years') || '5', 10);
+    const yearsBack = yearsParam > 0 ? yearsParam : 5;
     const period1 = new Date();
-    period1.setFullYear(period1.getFullYear() - 1); // 1 year back for chart
+    period1.setFullYear(period1.getFullYear() - yearsBack); // 5 years back for comprehensive historical chart
     const period2 = new Date();
     period2.setDate(period2.getDate() + 1); // include current trading day when provider uses exclusive period2
     
-    // Attempt to fetch fresh data specifically for the chart using yahooFinance directly
-    // since the DataProvider's getStocks() returns compiled/aggregated data
+    // Fetch fresh 5-year data specifically for the chart using yahooFinance
     const strPeriod1 = period1.toISOString().split('T')[0];
     const strPeriod2 = period2.toISOString().split('T')[0];
 
