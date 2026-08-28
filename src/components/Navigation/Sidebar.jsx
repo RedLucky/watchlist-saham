@@ -93,7 +93,7 @@ export default function Sidebar({
             <div className="flex flex-col min-w-0">
               <span className="text-[9px] font-bold uppercase text-slate-500 dark:text-slate-400 leading-none">Yahoo Finance</span>
               <span className="text-[10px] text-slate-700 dark:text-slate-300 font-semibold leading-tight truncate">
-                {syncInfo?.isSyncing ? 'Syncing...' : (syncInfo?.stats?.lastSyncTime ? `Aktif (${new Date(syncInfo.stats.lastSyncTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})})` : 'Aktif')}
+                {syncInfo?.isSyncing ? 'Syncing...' : (syncInfo?.stats?.lastSyncTime ? `Aktif (${new Date(syncInfo.stats.lastSyncTime).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})} WIB)` : 'Aktif')}
               </span>
             </div>
           </div>
