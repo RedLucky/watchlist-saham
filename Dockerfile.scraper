@@ -1,6 +1,17 @@
-FROM node:20-alpine
+# ── Stage 1: Install ONLY scraper dependencies ──────────────────────────────
+FROM node:20-alpine AS deps
+WORKDIR /app
 
-# Install Chromium and required native runtime libraries for Alpine
+# Create a minimal package.json with only the packages the scraper needs
+# (no Next.js, no React, no yahoo-finance2, no lightweight-charts)
+RUN echo '{"private":true,"dependencies":{"@prisma/client":"^6.12.0","puppeteer":"^25.8.0","node-cron":"^4.6.0","prisma":"^6.12.0"}}' > package.json
+RUN npm install --prefer-offline --no-audit && \
+    npm cache clean --force
+
+# ── Stage 2: Production runner ──────────────────────────────────────────────
+FROM node:20-alpine AS runner
+
+# Install Chromium and required native libraries for Puppeteer on Alpine
 RUN apk add --no-cache \
       chromium \
       nss \
@@ -18,15 +29,14 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
 
 WORKDIR /app
 
-# Install production dependencies only & clean npm cache
-COPY package.json package-lock.json* ./
-RUN npm ci --omit=dev --prefer-offline --no-audit && \
-    npm cache clean --force
+# Copy only the minimal node_modules from deps stage
+COPY --from=deps /app/node_modules ./node_modules
 
-# Copy source code and Prisma schema
-COPY . .
+# Copy Prisma schema and scraper scripts (the ONLY files the scraper uses)
+COPY prisma ./prisma
+COPY src/scripts ./src/scripts
 
-# Generate Prisma Client
+# Generate Prisma Client for Alpine (musl)
 RUN npx prisma generate
 
 # Start the node-cron scheduler
