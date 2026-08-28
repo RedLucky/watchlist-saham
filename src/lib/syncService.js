@@ -236,6 +236,24 @@ export async function deepSyncStock(ticker) {
 
       const isLastAttempt = attempt >= DEEP_SYNC_RETRIES + 1;
       if (isLastAttempt) {
+        // ALWAYS update lastDeepSync so we don't get stuck retrying the same failing ticker in an infinite loop!
+        const isDelisted = message.toLowerCase().includes('delisted') ||
+                           message.toLowerCase().includes('no data found') ||
+                           message.toLowerCase().includes('not found') ||
+                           message.includes('404');
+        try {
+          await prisma.stockData.update({
+            where: { ticker: tickerClean },
+            data: {
+              lastDeepSync: new Date(),
+              ...(isDelisted ? { isDelisted: true } : {})
+            }
+          });
+          if (isDelisted) {
+            console.log(`[DeepSync] ⊘ Marked ${tickerClean} as delisted in database.`);
+          }
+        } catch (_dbErr) {}
+
         return { success: false, ticker: fullTicker, attempt, timedOut, error: message };
       }
 
