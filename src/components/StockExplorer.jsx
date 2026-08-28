@@ -210,6 +210,8 @@ export default function StockExplorer({ user }) {
   const [dragOverIndex, setDragOverIndex] = useState(null);
 
   const [copiedShareCode, setCopiedShareCode] = useState(null);
+  const [isSilentRefreshing, setIsSilentRefreshing] = useState(false);
+  const [lastRefreshedAt, setLastRefreshedAt] = useState(null);
 
   const searchInputRef = useRef(null);
   const searchDropdownRef = useRef(null);
@@ -265,14 +267,16 @@ export default function StockExplorer({ user }) {
     fetchCollections();
   }, [fetchCollections]);
 
-  // Fetch Collection Items with instant in-memory cache
-  const fetchCollectionItems = useCallback(async (collectionId, forceReload = false) => {
+  // Fetch Collection Items with instant in-memory cache & silent background refresh support
+  const fetchCollectionItems = useCallback(async (collectionId, forceReload = false, isSilent = false) => {
     if (!collectionId) return;
 
-    if (itemsCacheRef.current[collectionId] && !forceReload) {
+    if (itemsCacheRef.current[collectionId] && !forceReload && !isSilent) {
       setCollectionItems(itemsCacheRef.current[collectionId]);
-    } else {
+    } else if (!isSilent) {
       setLoadingItems(true);
+    } else {
+      setIsSilentRefreshing(true);
     }
 
     try {
@@ -282,11 +286,16 @@ export default function StockExplorer({ user }) {
         const items = Array.isArray(data) ? data : [];
         itemsCacheRef.current[collectionId] = items;
         setCollectionItems(items);
+        setLastRefreshedAt(new Date());
       }
     } catch (err) {
       console.error('Failed to fetch collection items:', err);
     } finally {
-      setLoadingItems(false);
+      if (!isSilent) {
+        setLoadingItems(false);
+      } else {
+        setIsSilentRefreshing(false);
+      }
     }
   }, []);
 
@@ -296,6 +305,20 @@ export default function StockExplorer({ user }) {
     } else {
       setCollectionItems([]);
     }
+  }, [selectedCollection?.id, fetchCollectionItems]);
+
+  // ── PERIODIC AUTO-REFRESH (POLLING EVERY 30 SECONDS) ───────────────────
+  useEffect(() => {
+    if (!selectedCollection?.id) return;
+
+    const intervalId = setInterval(() => {
+      // Only poll when page tab is actively visible to save network & battery
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        fetchCollectionItems(selectedCollection.id, true, true);
+      }
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(intervalId);
   }, [selectedCollection?.id, fetchCollectionItems]);
 
   // Main Autocomplete Filter
@@ -873,6 +896,23 @@ export default function StockExplorer({ user }) {
               </div>
 
               <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+                {/* Live Auto-Refresh Indicator */}
+                <div
+                  className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold rounded-xl border border-emerald-200/80 dark:border-emerald-800/60 shadow-sm"
+                  title="Harga & Skor di kartu koleksi otomatis diperbarui setiap 30 detik"
+                >
+                  <span className={`w-2 h-2 rounded-full bg-emerald-500 ${isSilentRefreshing ? 'animate-ping' : 'animate-pulse'}`}></span>
+                  <span>{isSilentRefreshing ? 'Memperbarui...' : 'Auto-Sync 30s'}</span>
+                </div>
+
+                <button
+                  onClick={() => fetchCollectionItems(selectedCollection.id, true, false)}
+                  className="p-1.5 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-indigo-600 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm transition-colors"
+                  title="Refresh data & harga saham koleksi sekarang"
+                >
+                  🔄
+                </button>
+
                 <button
                   onClick={() => {
                     setEditingCollection(selectedCollection);
