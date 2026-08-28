@@ -1366,6 +1366,10 @@ export default function StockExplorer({ user }) {
 
                       <div className="space-y-2 text-xs">
                         <div className="flex justify-between">
+                          <span className="text-slate-600 dark:text-slate-400">EPS (Laba / Lembar):</span>
+                          <span className="font-bold text-emerald-600 dark:text-emerald-400">{f.eps != null ? `Rp ${Number(f.eps).toLocaleString('id-ID')}` : '-'}</span>
+                        </div>
+                        <div className="flex justify-between">
                           <span className="text-slate-600 dark:text-slate-400">PER (TTM):</span>
                           <span className="font-bold text-slate-900 dark:text-slate-100">{f.per != null ? `${Number(f.per).toFixed(2)}x` : '-'}</span>
                         </div>
@@ -1953,8 +1957,10 @@ export default function StockExplorer({ user }) {
             <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
               {(() => {
                 // Calculate Best in Class Values
-                const stockDetailsList = compareList.map(t => compareData[t]).filter(Boolean);
-                
+                // Best EPS: highest EPS
+                const epsList = stockDetailsList.map(s => s.fundamentals?.eps).filter(e => e != null && e > 0);
+                const bestEps = epsList.length > 0 ? Math.max(...epsList) : null;
+
                 // Best PER: lowest positive PER
                 const positivePers = stockDetailsList.map(s => s.fundamentals?.per).filter(p => p != null && p > 0);
                 const bestPer = positivePers.length > 0 ? Math.min(...positivePers) : null;
@@ -2098,6 +2104,19 @@ export default function StockExplorer({ user }) {
                         <td colSpan={compareList.length + 1} className="p-2 text-indigo-900 dark:text-indigo-300 text-[11px] uppercase tracking-wider">
                           📊 Valuasi Harga
                         </td>
+                      </tr>
+                      <tr>
+                        <td className="p-3 font-semibold sticky left-0 bg-white dark:bg-slate-900 z-10">EPS (Laba Bersih / Lembar)</td>
+                        {compareList.map(ticker => {
+                          const s = compareData[ticker] || {};
+                          const val = s.fundamentals?.eps;
+                          const isWinner = val === bestEps && bestEps != null;
+                          return (
+                            <td key={ticker} className={`p-3 text-center border-l border-slate-100 dark:border-slate-800 font-bold ${isWinner ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                              {val != null ? `Rp ${Number(val).toLocaleString('id-ID')}` : '-'} {isWinner && '👑'}
+                            </td>
+                          );
+                        })}
                       </tr>
                       <tr>
                         <td className="p-3 font-semibold sticky left-0 bg-white dark:bg-slate-900 z-10">PER (Price to Earning)</td>

@@ -420,6 +420,11 @@ async function deepSyncStockOnce(fullTicker) {
   const calculatedMarketCap = (currentPrice > 0 && sharesOutstanding > 0) ? (currentPrice * sharesOutstanding) : null;
   const resolvedMarketCap = safeNumber(summary?.summaryDetail?.marketCap ?? summary?.price?.marketCap ?? quote?.marketCap, calculatedMarketCap);
 
+  const perResolved = safeNumber(summary?.summaryDetail?.trailingPE ?? quote?.trailingPE, null);
+  const trailingEpsRaw = summary?.defaultKeyStatistics?.trailingEps ?? quote?.epsTrailingTwelveMonths;
+  const forwardEpsRaw = summary?.defaultKeyStatistics?.forwardEps ?? quote?.epsForward;
+  const resolvedEps = safeNumber(trailingEpsRaw, (currentPrice > 0 && perResolved > 0) ? Number((currentPrice / perResolved).toFixed(2)) : null);
+
   const fundamentals = {
     roe: normalizePercent(roeRaw, null),
     der: normalizeRatio(derRaw, null),
@@ -428,7 +433,9 @@ async function deepSyncStockOnce(fullTicker) {
     npm: normalizePercent(npmRaw, null),
     ebitdaMargin: normalizePercent(ebitdaMarginRaw, null),
     netProfit,
-    per: safeNumber(summary?.summaryDetail?.trailingPE ?? quote?.trailingPE, null),
+    eps: resolvedEps,
+    forwardEps: safeNumber(forwardEpsRaw, null),
+    per: perResolved,
     pbv: (() => {
       const raw = safeNumber(summary?.defaultKeyStatistics?.priceToBook ?? quote?.priceToBook, null);
       if (raw !== null && raw > 500) return Number((raw / 16200).toFixed(2));

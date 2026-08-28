@@ -120,8 +120,10 @@ export async function GET(request, { params }) {
     let bvps = 0;
     let cagr = 0;
 
-    // 1a. EPS in Local Currency (Price / PER is immune to USD vs IDR financial statement currency mismatch)
-    if (fundamentals.per && fundamentals.per > 0 && price > 0) {
+    // 1a. EPS in Local Currency
+    if (fundamentals.eps && fundamentals.eps > 0) {
+      eps = Number(fundamentals.eps);
+    } else if (fundamentals.per && fundamentals.per > 0 && price > 0) {
       eps = price / fundamentals.per;
     } else if (fundamentals.netProfit && stock.sharesOutstanding) {
       const netProfitList = Array.isArray(fundamentals.netProfit) ? fundamentals.netProfit : [];
@@ -133,6 +135,7 @@ export async function GET(request, { params }) {
         }
       }
     }
+    fundamentals.eps = eps > 0 ? Number(eps.toFixed(2)) : (fundamentals.eps || null);
 
     // 1b. Profit CAGR
     if (fundamentals.netProfit) {
