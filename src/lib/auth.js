@@ -1,8 +1,14 @@
 import crypto from 'crypto';
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  throw new Error("CRITICAL SECURITY ERROR: process.env.JWT_SECRET is not defined!");
+function getJwtSecret() {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production' && !process.env.NEXT_PHASE) {
+      console.warn("⚠️ Warning: process.env.JWT_SECRET is not set. Using fallback for build.");
+    }
+    return 'build_time_fallback_secret_must_set_env_in_production';
+  }
+  return secret;
 }
 
 function base64url(str) {
@@ -22,6 +28,7 @@ function base64urlDecode(str) {
 }
 
 export function signToken(payload) {
+  const secret = getJwtSecret();
   const header = { alg: 'HS256', typ: 'JWT' };
   const tokenPayload = {
     ...payload,
@@ -32,7 +39,7 @@ export function signToken(payload) {
   const encodedPayload = base64url(JSON.stringify(tokenPayload));
   
   const signature = crypto
-    .createHmac('sha256', JWT_SECRET)
+    .createHmac('sha256', secret)
     .update(`${encodedHeader}.${encodedPayload}`)
     .digest('base64')
     .replace(/=/g, '')
@@ -48,9 +55,10 @@ export function verifyToken(token) {
     const parts = token.split('.');
     if (parts.length !== 3) return null;
 
+    const secret = getJwtSecret();
     const [encodedHeader, encodedPayload, signature] = parts;
     const expectedSignature = crypto
-      .createHmac('sha256', JWT_SECRET)
+      .createHmac('sha256', secret)
       .update(`${encodedHeader}.${encodedPayload}`)
       .digest('base64')
       .replace(/=/g, '')

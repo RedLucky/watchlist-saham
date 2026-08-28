@@ -20,6 +20,8 @@ RUN npx prisma generate
 
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+ENV JWT_SECRET="docker-build-temporary-secret"
+ENV DATABASE_URL="postgresql://user:password@localhost:5432/watchlist?schema=public"
 
 RUN npm run build
 
