@@ -112,6 +112,7 @@ export async function GET(request, { params }) {
     };
 
     // 1. Projections (EPS, BVPS, CAGR, Graham, Fair Value)
+    // 1. Projections (EPS, BVPS, CAGR, Graham, Fair Value)
     const projections = {};
     const price = stock.price || 0;
     
@@ -119,7 +120,10 @@ export async function GET(request, { params }) {
     let bvps = 0;
     let cagr = 0;
 
-    if (fundamentals.netProfit && stock.sharesOutstanding) {
+    // 1a. EPS in Local Currency (Price / PER is immune to USD vs IDR financial statement currency mismatch)
+    if (fundamentals.per && fundamentals.per > 0 && price > 0) {
+      eps = price / fundamentals.per;
+    } else if (fundamentals.netProfit && stock.sharesOutstanding) {
       const netProfitList = Array.isArray(fundamentals.netProfit) ? fundamentals.netProfit : [];
       if (netProfitList.length > 0) {
         const latestProfit = netProfitList[netProfitList.length - 1];
@@ -128,7 +132,11 @@ export async function GET(request, { params }) {
           eps = latestProfit / shares;
         }
       }
-      
+    }
+
+    // 1b. Profit CAGR
+    if (fundamentals.netProfit) {
+      const netProfitList = Array.isArray(fundamentals.netProfit) ? fundamentals.netProfit : [];
       if (netProfitList.length >= 2) {
         const first = netProfitList[0];
         const last = netProfitList[netProfitList.length - 1];
@@ -139,17 +147,13 @@ export async function GET(request, { params }) {
       }
     }
 
-    // EPS Fallback: Price / PER if direct netProfit is unavailable
-    if (eps === 0 && fundamentals.per && fundamentals.per > 0 && price > 0) {
-      eps = price / fundamentals.per;
-    }
-
     // CAGR Fallback: use revenueGrowth if profit CAGR is unavailable
     if (cagr === 0 && fundamentals.revenueGrowth && Number.isFinite(fundamentals.revenueGrowth)) {
       cagr = fundamentals.revenueGrowth / 100;
     }
 
-    if (fundamentals.pbv && fundamentals.pbv > 0) {
+    // 1c. BVPS in Local Currency (Price / PBV)
+    if (fundamentals.pbv && fundamentals.pbv > 0 && price > 0) {
       bvps = price / fundamentals.pbv;
     }
 
@@ -167,11 +171,11 @@ export async function GET(request, { params }) {
       const fairVal = eps * (8.5 + 2 * cappedCAGR) * (4.4 / 6.5);
       projections.fairValue = Math.round(fairVal);
       
-      if (projections.fairValue > 0) {
+      if (projections.fairValue > 0 && price > 0) {
         projections.marginOfSafety = Number((((projections.fairValue - price) / projections.fairValue) * 100).toFixed(1));
       }
 
-      projections.projectedPrice12m = Math.round(price * (1 + cagr));
+      projections.projectedPrice12m = Math.round(price * (1 + (cagr > -0.5 ? cagr : 0)));
       if (price > 0) {
         projections.projectedUpside = Number((((projections.projectedPrice12m - price) / price) * 100).toFixed(1));
       }

@@ -1378,7 +1378,7 @@ export default function StockExplorer({ user }) {
                           <span className="font-bold text-slate-900 dark:text-slate-100">
                             {f.per && proj.cagrPercent && proj.cagrPercent > 0 
                               ? (f.per / proj.cagrPercent).toFixed(2) 
-                              : '-'}
+                              : (proj.cagrPercent != null && proj.cagrPercent <= 0 ? 'N/A (CAGR ≤ 0)' : '-')}
                           </span>
                         </div>
                         <div className="flex justify-between pt-1 border-t border-slate-200 dark:border-slate-800">
