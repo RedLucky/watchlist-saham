@@ -191,6 +191,8 @@ export async function GET(request, { params }) {
     if (fundamentals) {
       let score = 0;
       const roe = fundamentals.roe || 0;
+      const opm = fundamentals.opm || 0;
+      const eps = fundamentals.eps || 0;
       const fcf = fundamentals.freeCashflow || 0;
       const der = fundamentals.der || 0;
       const currentRatio = fundamentals.currentRatio || 0;
@@ -206,9 +208,11 @@ export async function GET(request, { params }) {
         const latestProfit = netProfitList[netProfitList.length - 1];
         if (fcf > latestProfit) score++;
       }
-      // 4. Net Profit growth (latest > previous)
+      // 4. Net Profit growth or EPS > 0
       if (netProfitList.length >= 2) {
         if (netProfitList[netProfitList.length - 1] > netProfitList[netProfitList.length - 2]) score++;
+      } else if (eps > 0) {
+        score++;
       }
       // 5. Debt leverage (DER <= 1.0)
       if (der > 0 && der <= 1.0) score++;
@@ -216,8 +220,8 @@ export async function GET(request, { params }) {
       if (currentRatio >= 1.5) score++;
       // 7. Sales growth (Revenue growth > 0)
       if (revenueGrowth > 0) score++;
-      // 8. ROE > 12% (Efficiency)
-      if (roe > 12) score++;
+      // 8. OPM & Margin Quality (OPM >= 12% or ROE > 12%)
+      if (opm >= 12 || roe > 12) score++;
       // 9. Profit CAGR > 0 (Long term growth)
       if (cagr > 0) score++;
       
@@ -233,6 +237,7 @@ export async function GET(request, { params }) {
       const cr = fundamentals.currentRatio || 1.2;
       const der = fundamentals.der || 1.0;
       const roe = fundamentals.roe || 8;
+      const opm = fundamentals.opm || 0;
       
       // Liquidity contribution (proxy for working capital / assets)
       z += Math.min(1.5, cr * 0.5);
@@ -244,12 +249,15 @@ export async function GET(request, { params }) {
         z += 1.5;
       }
       
-      // Profitability contribution
+      // Profitability & Operating Margin contribution (EBIT proxy)
       if (roe > 0) {
-        z += Math.min(1.0, (roe / 100) * 4);
+        z += Math.min(0.8, (roe / 100) * 3);
+      }
+      if (opm > 0) {
+        z += Math.min(0.8, (opm / 100) * 2.5);
       }
       
-      computedZScore = Number(Math.max(0.5, Math.min(4.5, z + 1.0)).toFixed(2));
+      computedZScore = Number(Math.max(0.5, Math.min(4.5, z + 0.8)).toFixed(2));
     }
 
     // Assign to fundamentals object
