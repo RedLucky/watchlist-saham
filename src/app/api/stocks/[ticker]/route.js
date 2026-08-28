@@ -44,11 +44,40 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: 'Saham tidak ditemukan' }, { status: 404 });
     }
 
-    // Check lastDeepSync
+    // Parse cached fields
+    let fundamentals = parseJsonField(stock.fundamentals) || {};
+    let technicals = parseJsonField(stock.technicals) || {};
+    let kseiLatest = parseJsonField(stock.kseiLatest) || {};
+    let kseiHistory = parseJsonField(stock.kseiHistory) || [];
+    let ownership = parseJsonField(stock.ownership) || {};
+    let dividendHistory = parseJsonField(stock.dividendHistory) || [];
+    let insiderTrades = parseJsonField(stock.insiderTrades) || [];
+
+    // Check if deep sync is needed (e.g. older snapshot missing OPM/NPM, > 24 hours ago, or refresh requested)
     const now = new Date();
     const twentyFourHours = 24 * 60 * 60 * 1000;
-    if (now - new Date(stock.lastDeepSync) > twentyFourHours) {
-      // Trigger background sync
+    const isMissingOpm = fundamentals.opm === undefined || fundamentals.npm === undefined;
+    const isOldSync = (now - new Date(stock.lastDeepSync)) > twentyFourHours;
+    const url = new URL(request.url);
+    const forceRefresh = url.searchParams.get('refresh') === 'true';
+
+    if ((isMissingOpm || forceRefresh) && !stock.isDelisted) {
+      try {
+        const syncResult = await deepSyncStock(ticker);
+        if (syncResult?.success) {
+          const freshStock = await prisma.stockData.findUnique({ where: { ticker } });
+          if (freshStock) {
+            Object.assign(stock, freshStock);
+            fundamentals = parseJsonField(freshStock.fundamentals) || {};
+            technicals = parseJsonField(freshStock.technicals) || {};
+            dividendHistory = parseJsonField(freshStock.dividendHistory) || [];
+          }
+        }
+      } catch (err) {
+        console.error(`[StockDetail] Auto deep-sync failed for ${ticker}:`, err.message);
+      }
+    } else if (isOldSync && !stock.isDelisted) {
+      // Trigger background sync for stale data
       deepSyncStock(ticker).catch(console.error);
     }
 
@@ -75,14 +104,6 @@ export async function GET(request, { params }) {
     } catch (e) {
       // Ignore yahoo finance errors
     }
-
-    const fundamentals = parseJsonField(stock.fundamentals) || {};
-    const technicals = parseJsonField(stock.technicals) || {};
-    const kseiLatest = parseJsonField(stock.kseiLatest) || {};
-    const kseiHistory = parseJsonField(stock.kseiHistory) || [];
-    const ownership = parseJsonField(stock.ownership) || {};
-    const dividendHistory = parseJsonField(stock.dividendHistory) || [];
-    const insiderTrades = parseJsonField(stock.insiderTrades) || [];
 
     // Technical Volume Analysis
     const todayVol = Number(stock.volume || 0);
