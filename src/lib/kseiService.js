@@ -232,10 +232,19 @@ export async function ingestKseiText(rawText) {
     throw new Error('Gagal mem-parsing data. Pastikan format sesuai pemisah pipa (Date|Code|Type|Sec. Num|...).');
   }
 
-  console.log(`[KseiService] Parsed ${parsedRows.length} valid rows for date: ${snapshotDate}`);
+  // Deduplicate parsedRows by ticker (prioritize EQUITY)
+  const uniqueTickerMap = new Map();
+  for (const row of parsedRows) {
+    if (!uniqueTickerMap.has(row.ticker) || (row.type === 'EQUITY' && uniqueTickerMap.get(row.ticker)?.type !== 'EQUITY')) {
+      uniqueTickerMap.set(row.ticker, row);
+    }
+  }
+  const uniqueRows = Array.from(uniqueTickerMap.values());
+
+  console.log(`[KseiService] Parsed ${uniqueRows.length} unique valid stocks for date: ${snapshotDate}`);
 
   // Fetch all existing stocks in DB matching these tickers
-  const tickers = parsedRows.map(r => r.ticker);
+  const tickers = uniqueRows.map(r => r.ticker);
   const existingStocks = await prisma.stockData.findMany({
     where: { ticker: { in: tickers } },
     select: { ticker: true, kseiHistory: true, price: true }
@@ -247,8 +256,8 @@ export async function ingestKseiText(rawText) {
   let updatedCount = 0;
   const BATCH_SIZE = 50;
 
-  for (let i = 0; i < parsedRows.length; i += BATCH_SIZE) {
-    const chunk = parsedRows.slice(i, i + BATCH_SIZE);
+  for (let i = 0; i < uniqueRows.length; i += BATCH_SIZE) {
+    const chunk = uniqueRows.slice(i, i + BATCH_SIZE);
 
     await Promise.all(
       chunk.map(async (row) => {

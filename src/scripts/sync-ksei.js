@@ -191,6 +191,15 @@ async function ingestRawKseiText(text) {
     throw new Error('Tidak ada baris data KSEI valid yang dapat diuraikan.');
   }
 
+  // Deduplicate parsedRows by ticker (prioritize EQUITY) to avoid redundant DB upserts
+  const uniqueTickerMap = new Map();
+  for (const row of parsedRows) {
+    if (!uniqueTickerMap.has(row.ticker) || (row.type === 'EQUITY' && uniqueTickerMap.get(row.ticker)?.type !== 'EQUITY')) {
+      uniqueTickerMap.set(row.ticker, row);
+    }
+  }
+  const uniqueRows = Array.from(uniqueTickerMap.values());
+
   const existingStocks = await prisma.stockData.findMany({
     select: { ticker: true, kseiHistory: true }
   });
@@ -201,8 +210,8 @@ async function ingestRawKseiText(text) {
   let updatedCount = 0;
   const BATCH_SIZE = 50;
 
-  for (let i = 0; i < parsedRows.length; i += BATCH_SIZE) {
-    const chunk = parsedRows.slice(i, i + BATCH_SIZE);
+  for (let i = 0; i < uniqueRows.length; i += BATCH_SIZE) {
+    const chunk = uniqueRows.slice(i, i + BATCH_SIZE);
 
     await Promise.all(
       chunk.map(async (row) => {
@@ -258,10 +267,10 @@ async function ingestRawKseiText(text) {
 async function syncKseiPublications() {
   console.log('=== [KSEI-SCRAPER] STARTING AUTOMATIC KSEI ZIP SYNC ===');
 
-  // 1. Get stored periods from DB
+  // 1. Get ALL stored periods across DB (airtight deduplication check)
   const sampleStocks = await prisma.stockData.findMany({
     where: { kseiHistory: { not: null } },
-    take: 50,
+    take: 250,
     select: { kseiHistory: true }
   });
 
@@ -270,14 +279,16 @@ async function syncKseiPublications() {
     if (s.kseiHistory) {
       try {
         const history = JSON.parse(s.kseiHistory);
-        history.forEach(h => {
-          if (h.date) periodSet.add(h.date);
-        });
+        if (Array.isArray(history)) {
+          history.forEach(h => {
+            if (h.date) periodSet.add(h.date);
+          });
+        }
       } catch (e) {}
     }
   });
 
-  const storedPeriods = Array.from(periodSet);
+  const storedPeriods = Array.from(periodSet).sort();
   console.log(`[KSEI-SCRAPER] Current Stored Periods in DB (${storedPeriods.length}):`, storedPeriods);
 
   // 2. Launch Puppeteer browser
