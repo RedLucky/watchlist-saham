@@ -105,48 +105,48 @@ export default function StockScreener() {
  };
 
  const renderTableHeaders = () => {
- switch (activeTab) {
- case 'pick':
- return (
- <>
- {renderSortHeader('Harga', 'price', 'right')}
- {renderSortHeader('Div Yield', 'dividendYield', 'right')}
- {renderSortHeader('CAGR Laba', 'cagr', 'right')}
- {renderSortHeader('PER / PBV', 'per', 'right')}
- {renderSortHeader('Kriteria Lolos', 'matchCount', 'center')}
- {renderSortHeader('Skor Pick', 'score', 'center')}
- </>
- );
- case 'passive':
- return (
- <>
- {renderSortHeader('Harga', 'price', 'right')}
- {renderSortHeader('Div Yield', 'dividendYield', 'right')}
- {renderSortHeader('CAGR Laba', 'cagr', 'right')}
- {renderSortHeader('ROE', 'roe', 'right', 'hidden sm:table-cell')}
- {renderSortHeader('Skor (Div | Fund | Passive)', 'score', 'center')}
- </>
- );
- case 'dividend':
- return (
- <>
- {renderSortHeader('Harga', 'price', 'right')}
- {renderSortHeader('Yield', 'dividendYield', 'right')}
- {renderSortHeader('CAGR Laba', 'cagr', 'right')}
- {renderSortHeader('Payout Ratio', 'payoutRatio', 'right', 'hidden sm:table-cell')}
- {renderSortHeader('Skor Dividen', 'score', 'center')}
- </>
- );
- case 'cheap':
- return (
- <>
- {renderSortHeader('Harga', 'price', 'right')}
- {renderSortHeader('PER (vs Sektor)', 'per', 'right')}
- {renderSortHeader('PBV (vs Sektor)', 'pbv', 'right', 'hidden sm:table-cell')}
- {renderSortHeader('CAGR Laba', 'cagr', 'right')}
- {renderSortHeader('Skor Valuasi', 'score', 'center')}
- </>
- );
+  switch (activeTab) {
+  case 'pick':
+  return (
+  <>
+  {renderSortHeader('Harga', 'price', 'right')}
+  {renderSortHeader('Div Yield', 'dividendYield', 'right')}
+  {renderSortHeader('CAGR Laba', 'cagr', 'right')}
+  {renderSortHeader('PER / PBV / EPS', 'per', 'right')}
+  {renderSortHeader('Kriteria Lolos', 'matchCount', 'center')}
+  {renderSortHeader('Skor Pick', 'score', 'center')}
+  </>
+  );
+  case 'passive':
+  return (
+  <>
+  {renderSortHeader('Harga', 'price', 'right')}
+  {renderSortHeader('Div Yield', 'dividendYield', 'right')}
+  {renderSortHeader('CAGR Laba', 'cagr', 'right')}
+  {renderSortHeader('ROE / OPM', 'roe', 'right', 'hidden sm:table-cell')}
+  {renderSortHeader('Skor (Div | Fund | Passive)', 'score', 'center')}
+  </>
+  );
+  case 'dividend':
+  return (
+  <>
+  {renderSortHeader('Harga', 'price', 'right')}
+  {renderSortHeader('Yield', 'dividendYield', 'right')}
+  {renderSortHeader('CAGR Laba', 'cagr', 'right')}
+  {renderSortHeader('Payout Ratio', 'payoutRatio', 'right', 'hidden sm:table-cell')}
+  {renderSortHeader('Skor Dividen', 'score', 'center')}
+  </>
+  );
+  case 'cheap':
+  return (
+  <>
+  {renderSortHeader('Harga', 'price', 'right')}
+  {renderSortHeader('PER / EPS', 'per', 'right')}
+  {renderSortHeader('PBV / OPM', 'pbv', 'right', 'hidden sm:table-cell')}
+  {renderSortHeader('CAGR Laba', 'cagr', 'right')}
+  {renderSortHeader('Skor Valuasi', 'score', 'center')}
+  </>
+  );
  case 'quality':
  return (
  <>
@@ -192,6 +192,9 @@ export default function StockScreener() {
               <div className="flex flex-col items-end">
                 <span className="text-xs font-extrabold text-emerald-700 dark:text-emerald-400">PER: {item.metrics?.per != null ? `${Number(item.metrics.per).toFixed(1)}x` : '-'}</span>
                 <span className="text-[10px] font-bold text-blue-700 dark:text-blue-400">PBV: {item.metrics?.pbv != null ? `${Number(item.metrics.pbv).toFixed(1)}x` : '-'}</span>
+                {item.metrics?.eps != null && (
+                  <span className="text-[10px] font-semibold text-slate-600 dark:text-slate-400">EPS: Rp {Number(item.metrics.eps).toLocaleString('id-ID')}</span>
+                )}
               </div>
             </td>
             <td className="px-4 py-4 whitespace-nowrap text-center">
@@ -225,8 +228,13 @@ export default function StockScreener() {
             <td className={`px-4 py-4 whitespace-nowrap text-right font-extrabold ${cagrVal != null && cagrVal >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>
               {cagrVal != null ? `${cagrVal >= 0 ? '+' : ''}${Number(cagrVal).toFixed(1)}%` : '-'}
             </td>
-            <td className="px-4 py-4 whitespace-nowrap text-right text-purple-700 dark:text-purple-400 font-extrabold hidden sm:table-cell">
-              {item.metrics?.roe != null ? `${Number(item.metrics.roe).toFixed(1)}%` : '-'}
+            <td className="px-4 py-4 whitespace-nowrap text-right text-slate-700 dark:text-slate-300 hidden sm:table-cell">
+              <div className="flex flex-col items-end">
+                <span className="font-extrabold text-purple-700 dark:text-purple-400">ROE: {item.metrics?.roe != null ? `${Number(item.metrics.roe).toFixed(1)}%` : '-'}</span>
+                {item.metrics?.opm != null && (
+                  <span className="text-[10px] font-bold text-indigo-700 dark:text-indigo-400">OPM: {Number(item.metrics.opm).toFixed(1)}%</span>
+                )}
+              </div>
             </td>
             <td className="px-4 py-4 whitespace-nowrap">
               <div className="flex flex-col items-center">
@@ -270,14 +278,19 @@ export default function StockScreener() {
             </td>
             <td className="px-4 py-4 whitespace-nowrap text-right text-slate-700 dark:text-slate-300">
               <div className="flex flex-col items-end">
-                <span className="font-extrabold text-emerald-700 dark:text-emerald-400">{item.metrics?.per != null ? `${Number(item.metrics.per).toFixed(2)}x` : '-'}</span>
-                <span className="text-[10px] text-slate-600 dark:text-slate-400 font-bold">Sektor: {item.metrics?.sectorAvgPER != null ? `${Number(item.metrics.sectorAvgPER).toFixed(1)}x` : '-'}</span>
+                <span className="font-extrabold text-emerald-700 dark:text-emerald-400">PER: {item.metrics?.per != null ? `${Number(item.metrics.per).toFixed(1)}x` : '-'}</span>
+                {item.metrics?.eps != null && (
+                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">EPS: Rp {Number(item.metrics.eps).toLocaleString('id-ID')}</span>
+                )}
+                <span className="text-[10px] text-slate-500 dark:text-slate-400">Sektor: {item.metrics?.sectorAvgPER != null ? `${Number(item.metrics.sectorAvgPER).toFixed(1)}x` : '-'}</span>
               </div>
             </td>
             <td className="px-4 py-4 whitespace-nowrap text-right text-slate-700 dark:text-slate-300 hidden sm:table-cell">
               <div className="flex flex-col items-end">
-                <span className="font-extrabold text-blue-700 dark:text-blue-400">{item.metrics?.pbv != null ? `${Number(item.metrics.pbv).toFixed(2)}x` : '-'}</span>
-                <span className="text-[10px] text-slate-600 dark:text-slate-400 font-bold">Sektor: {item.metrics?.sectorAvgPBV != null ? `${Number(item.metrics.sectorAvgPBV).toFixed(1)}x` : '-'}</span>
+                <span className="font-extrabold text-blue-700 dark:text-blue-400">PBV: {item.metrics?.pbv != null ? `${Number(item.metrics.pbv).toFixed(2)}x` : '-'}</span>
+                {item.metrics?.opm != null && (
+                  <span className="text-[10px] font-bold text-indigo-700 dark:text-indigo-400">OPM: {Number(item.metrics.opm).toFixed(1)}%</span>
+                )}
               </div>
             </td>
             <td className={`px-4 py-4 whitespace-nowrap text-right font-extrabold ${cagrVal != null && cagrVal >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>

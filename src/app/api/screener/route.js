@@ -25,11 +25,17 @@ function getPassiveResults(validStocks) {
     const divScore = calculateDividendScore(s);
     const fundScore = calculateFundamentalScore(s);
     const streak = divScore.metrics?.streakYears || s.fundamentals?.dividendStreakYears || 0;
+    const opm = Number.isFinite(s.fundamentals?.opm) ? s.fundamentals.opm : null;
+    const eps = Number.isFinite(s.fundamentals?.eps) ? s.fundamentals.eps : null;
 
     // Passive Income Engine: High Dividend Yield Quality (70%) + Fundamental Stability (30%) + Moat/Veteran Bonus
     let compositeScore = Math.round(((divScore.score || 0) * 0.70) + ((fundScore.score || 0) * 0.30));
     if (compounders.includes(s.ticker)) compositeScore += 6;
     if (streak >= 10) compositeScore += 4;
+    // OPM & EPS Safety Bonus: Arus kas operasional tebal & laba positif menjamin dividen berkelanjutan
+    if (opm !== null && opm >= 15) compositeScore += 5;
+    if (eps !== null && eps > 0) compositeScore += 3;
+
     compositeScore = applyGlobalPenalties(s, Math.min(100, compositeScore));
 
     return {
@@ -46,7 +52,12 @@ function getPassiveResults(validStocks) {
       sharesOutstanding: s.sharesOutstanding || null,
       fundamentals: s.fundamentals || null,
       insiderTrades: s.insiderTrades || [],
-      metrics: { ...(divScore.metrics || {}), ...(fundScore.metrics || {}) },
+      metrics: { 
+        ...(divScore.metrics || {}), 
+        ...(fundScore.metrics || {}),
+        opm,
+        eps,
+      },
       divScore: divScore.score || 0,
       fundScore: fundScore.score || 0,
       score: compositeScore,
@@ -78,6 +89,9 @@ function getDividendResults(validStocks) {
     .map(s => {
       const divScore = calculateDividendScore(s);
       const fundScore = calculateFundamentalScore(s);
+      const opm = Number.isFinite(s.fundamentals?.opm) ? s.fundamentals.opm : null;
+      const eps = Number.isFinite(s.fundamentals?.eps) ? s.fundamentals.eps : null;
+
       return {
         ticker: s.ticker,
         name: s.name,
@@ -92,7 +106,12 @@ function getDividendResults(validStocks) {
         sharesOutstanding: s.sharesOutstanding || null,
         fundamentals: s.fundamentals || null,
         insiderTrades: s.insiderTrades || [],
-        metrics: { ...(fundScore.metrics || {}), ...(divScore.metrics || {}) },
+        metrics: { 
+          ...(fundScore.metrics || {}), 
+          ...(divScore.metrics || {}),
+          opm,
+          eps,
+        },
         score: applyGlobalPenalties(s, divScore.score || 0),
         details: divScore.details || [],
         shareholders: s.shareholders || [],
@@ -108,6 +127,20 @@ function getCheapResults(validStocks) {
   const cheapCandidates = validStocks.map(s => {
     const valScore = calculateValuationScore(s);
     const fundScore = calculateFundamentalScore(s);
+    const opm = Number.isFinite(s.fundamentals?.opm) ? s.fundamentals.opm : null;
+    const eps = Number.isFinite(s.fundamentals?.eps) ? s.fundamentals.eps : null;
+    const price = s.price || 1;
+    const earningsYield = (eps && eps > 0 && price > 0) ? (eps / price * 100) : (s.fundamentals?.per > 0 ? 100 / s.fundamentals.per : 0);
+
+    // Murah & Wajar: Valuasi Bagus (70%) + Fundamental & Earning Safety (30%)
+    let compositeScore = Math.round(((valScore.score || 0) * 0.70) + ((fundScore.score || 0) * 0.30));
+
+    // Value Trap Protection & Earnings Yield Booster:
+    if (earningsYield >= 10.0) compositeScore += 8; // High Earnings Yield
+    if (opm !== null && opm >= 12.0) compositeScore += 6; // Solid Operating Margin
+    if (opm !== null && opm < 0) compositeScore -= 25; // Penalty: Value Trap (Rugi Operasi)
+    if (eps !== null && eps < 0) compositeScore -= 30; // Penalty: Earning Negatif
+
     return {
       ticker: s.ticker,
       name: s.name,
@@ -122,16 +155,27 @@ function getCheapResults(validStocks) {
       sharesOutstanding: s.sharesOutstanding || null,
       fundamentals: s.fundamentals || null,
       insiderTrades: s.insiderTrades || [],
-      metrics: { ...(fundScore.metrics || {}), ...(valScore.metrics || {}) },
-      score: applyGlobalPenalties(s, valScore.score || 0),
-      details: valScore.details || [],
+      metrics: { 
+        ...(fundScore.metrics || {}), 
+        ...(valScore.metrics || {}),
+        opm,
+        eps,
+        earningsYield: Number(earningsYield.toFixed(1)),
+      },
+      score: applyGlobalPenalties(s, Math.min(100, compositeScore)),
+      details: [
+        ...(valScore.details || []),
+        ...(earningsYield >= 8 ? [`Earnings Yield menarik: ${earningsYield.toFixed(1)}%`] : []),
+        ...(opm !== null && opm >= 10 ? [`Margin Operasional (OPM) sehat: ${opm.toFixed(1)}%`] : []),
+      ],
       shareholders: s.shareholders || [],
       smartMoney: s.smartMoney || null,
     };
   });
 
+  // Filter out negative earnings and extremely low margins
   let filteredCheap = cheapCandidates.filter(
-    s => s.metrics.per > 0 && s.metrics.pbv > 0 && s.metrics.per <= (s.metrics.sectorAvgPER * 1.15)
+    s => s.metrics.per > 0 && s.metrics.pbv > 0 && s.metrics.per <= (s.metrics.sectorAvgPER * 1.15) && (s.metrics.eps === null || s.metrics.eps > 0)
   );
 
   if (filteredCheap.length === 0) {
@@ -147,7 +191,15 @@ function getQualityResults(validStocks) {
   const qualityCandidates = validStocks.map(s => {
     const valScore = calculateValuationScore(s);
     const fundScore = calculateFundamentalScore(s);
-    const compositeScore = Math.round(((valScore.score || 0) * 0.5) + ((fundScore.score || 0) * 0.5));
+    const opm = Number.isFinite(s.fundamentals?.opm) ? s.fundamentals.opm : null;
+    const eps = Number.isFinite(s.fundamentals?.eps) ? s.fundamentals.eps : null;
+    const forwardEps = Number.isFinite(s.fundamentals?.forwardEps) ? s.fundamentals.forwardEps : null;
+
+    let compositeScore = Math.round(((valScore.score || 0) * 0.45) + ((fundScore.score || 0) * 0.55));
+    
+    // Quality Moat & Forward EPS Boost
+    if (opm !== null && opm >= 18.0) compositeScore += 6; // High Operating Moat
+    if (eps !== null && forwardEps !== null && forwardEps > eps) compositeScore += 4; // EPS Momentum
 
     return {
       ticker: s.ticker,
@@ -163,11 +215,21 @@ function getQualityResults(validStocks) {
       sharesOutstanding: s.sharesOutstanding || null,
       fundamentals: s.fundamentals || null,
       insiderTrades: s.insiderTrades || [],
-      metrics: { ...(valScore.metrics || {}), ...(fundScore.metrics || {}) },
+      metrics: { 
+        ...(valScore.metrics || {}), 
+        ...(fundScore.metrics || {}),
+        opm,
+        eps,
+        forwardEps,
+      },
       valScore: valScore.score || 0,
       fundScore: fundScore.score || 0,
-      score: compositeScore,
-      details: [...(valScore.details || []), ...(fundScore.details || [])],
+      score: applyGlobalPenalties(s, Math.min(100, compositeScore)),
+      details: [
+        ...(valScore.details || []), 
+        ...(fundScore.details || []),
+        ...(opm !== null && opm >= 15 ? [`Wide Moat: OPM ${opm.toFixed(1)}% di atas standar industri`] : []),
+      ],
       shareholders: s.shareholders || [],
       smartMoney: s.smartMoney || null,
     };
@@ -286,6 +348,8 @@ export async function GET(request) {
           const pbvVal = valScore.metrics?.pbv;
           const roeVal = fundScore.metrics?.roe;
           const derVal = fundScore.metrics?.der;
+          const opmVal = Number.isFinite(s.fundamentals?.opm) ? s.fundamentals.opm : null;
+          const epsVal = Number.isFinite(s.fundamentals?.eps) ? s.fundamentals.eps : null;
 
           const baseScore = Math.round(
             ((divScore.score || 0) * 0.3) + 
@@ -293,6 +357,9 @@ export async function GET(request) {
             ((fundScore.score || 0) * 0.35)
           );
           let finalPickScore = Math.min(100, baseScore + (matchCount * 5));
+          if (opmVal !== null && opmVal >= 15.0 && epsVal !== null && epsVal > 0) {
+            finalPickScore = Math.min(100, finalPickScore + 4); // Super Pick bonus
+          }
           finalPickScore = applyGlobalPenalties(s, finalPickScore);
 
           stockMap[s.ticker] = {
@@ -318,6 +385,8 @@ export async function GET(request) {
               pbv: pbvVal,
               roe: roeVal,
               der: derVal,
+              opm: opmVal,
+              eps: epsVal,
               cagr: fundScore.metrics?.cagr ?? null,
             },
             divScore: divScore.score || 0,
@@ -326,6 +395,8 @@ export async function GET(request) {
             score: finalPickScore,
             details: [
               `Muncul di ${matchCount} halaman screener utama: ${matchedScreeners.join(', ')}`,
+              ...(opmVal !== null && opmVal >= 15 ? [`Super Moat: OPM ${opmVal.toFixed(1)}%`] : []),
+              ...(epsVal !== null && epsVal > 0 ? [`Laba per Saham: EPS Rp ${epsVal.toLocaleString('id-ID')}`] : []),
               ...(divScore.details || []),
               ...(valScore.details || []),
               ...(fundScore.details || []),
