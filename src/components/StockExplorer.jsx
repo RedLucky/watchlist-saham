@@ -931,8 +931,6 @@ export default function StockExplorer({ user }) {
                 {collectionItems.map((item, index) => {
                   const s = item.stock || {};
                   const price = s.price || 0;
-                  const isItemUp = (s.changePercent || 0) >= 0;
-                  const itemNominal = getNominalChange(price, s.changePercent);
                   const score = s.score;
 
                   // Target Buy Hit: price <= targetBuy
@@ -965,19 +963,31 @@ export default function StockExplorer({ user }) {
                         isDragOver ? 'ring-2 ring-indigo-500 border-indigo-500 scale-[1.02] shadow-lg' : ''
                       }`}
                     >
-                      {/* ── BACKGROUND SCORE WATERMARK ── */}
+                      {/* ── BACKGROUND SCORE WATERMARK (DYNAMIC TIER COLOR) ── */}
                       {score != null && (
                         <div className="absolute right-6 bottom-3 pointer-events-none select-none z-0 overflow-hidden opacity-25 dark:opacity-30 group-hover:opacity-40 dark:group-hover:opacity-45 transition-opacity flex flex-col items-end">
-                          <span className="text-[10px] font-black uppercase tracking-widest leading-none mr-1 -mb-1 font-mono text-slate-900 dark:text-slate-100">
+                          <span
+                            className={`text-[10px] font-black uppercase tracking-widest leading-none mr-1 -mb-1 font-mono ${
+                              score >= 80
+                                ? 'text-emerald-700 dark:text-emerald-400'
+                                : score >= 65
+                                ? 'text-blue-700 dark:text-blue-400'
+                                : score >= 50
+                                ? 'text-amber-700 dark:text-amber-400'
+                                : 'text-rose-700 dark:text-rose-400'
+                            }`}
+                          >
                             SKOR
                           </span>
                           <span
                             className={`text-6xl font-black tracking-tighter leading-none font-mono ${
-                              score >= 70
-                                ? 'text-emerald-600 dark:text-emerald-400'
-                                : score <= 40
-                                ? 'text-rose-600 dark:text-rose-400'
-                                : 'text-indigo-600 dark:text-indigo-400'
+                              score >= 80
+                                ? 'text-emerald-700 dark:text-emerald-400'
+                                : score >= 65
+                                ? 'text-blue-700 dark:text-blue-400'
+                                : score >= 50
+                                ? 'text-amber-700 dark:text-amber-400'
+                                : 'text-rose-700 dark:text-rose-400'
                             }`}
                           >
                             {score}
