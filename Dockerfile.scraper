@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Create a minimal package.json with only the packages the scraper needs
 # (no Next.js, no React, no yahoo-finance2, no lightweight-charts)
-RUN echo '{"private":true,"dependencies":{"@prisma/client":"^6.12.0","puppeteer":"^25.8.0","node-cron":"^4.6.0","prisma":"^6.12.0","adm-zip":"^0.5.16"}}' > package.json
+RUN echo '{"private":true,"dependencies":{"@prisma/client":"^6.12.0","puppeteer":"^25.8.0","node-cron":"^4.6.0","prisma":"^6.12.0","adm-zip":"^0.5.16","yahoo-finance2":"^3.14.0"}}' > package.json
 RUN npm install --prefer-offline --no-audit && \
     npm cache clean --force
 
