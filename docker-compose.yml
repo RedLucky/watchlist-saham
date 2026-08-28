@@ -11,14 +11,12 @@ services:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://user:password@db:5432/watchlist?schema=public
       - JWT_SECRET=ganti_dengan_kode_rahasia_anda_disini
+      - NODE_OPTIONS=--max-old-space-size=896
     depends_on:
       db:
         condition: service_healthy
     command: sh -c "node ./node_modules/prisma/build/index.js db push --skip-generate && node server.js"
-    deploy:
-      resources:
-        limits:
-          memory: 1G
+    mem_limit: 1g
     logging:
       driver: "json-file"
       options:
@@ -38,12 +36,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    # Chromium needs shared memory > default 64MB
     shm_size: "256m"
-    deploy:
-      resources:
-        limits:
-          memory: 1G
+    mem_limit: 1g
     logging:
       driver: "json-file"
       options:
@@ -69,10 +63,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    deploy:
-      resources:
-        limits:
-          memory: 256M
+    mem_limit: 256m
     logging:
       driver: "json-file"
       options:
