@@ -14,6 +14,9 @@ export function evaluateAlphaLegends(stocks = []) {
     const per = typeof stock.pe === 'number' ? stock.pe : (typeof stock.per === 'number' ? stock.per : Number(stock.pe || stock.per) || 0);
     const pbv = typeof stock.pbv === 'number' ? stock.pbv : Number(stock.pbv) || 0;
     const roe = typeof stock.roe === 'number' ? stock.roe : Number(stock.roe) || 0;
+    const opm = stock.opm != null && Number.isFinite(Number(stock.opm)) ? Number(stock.opm) : (stock.fundamentals?.opm != null ? Number(stock.fundamentals.opm) : null);
+    const eps = stock.eps != null && Number.isFinite(Number(stock.eps)) ? Number(stock.eps) : (stock.fundamentals?.eps != null ? Number(stock.fundamentals.eps) : null);
+    const forwardEps = stock.forwardEps != null && Number.isFinite(Number(stock.forwardEps)) ? Number(stock.forwardEps) : (stock.fundamentals?.forwardEps != null ? Number(stock.fundamentals.forwardEps) : null);
     const der = stock.der != null && Number.isFinite(Number(stock.der)) ? Number(stock.der) : null;
     const currentRatio = stock.currentRatio != null && Number.isFinite(Number(stock.currentRatio)) ? Number(stock.currentRatio) : null;
     const divYield = typeof stock.divYield === 'number' ? stock.divYield : (typeof stock.dividendYield === 'number' ? stock.dividendYield : Number(stock.divYield || stock.dividendYield) || 0);
@@ -27,16 +30,20 @@ export function evaluateAlphaLegends(stocks = []) {
     const isFinancial = stock.sector === 'Financials' || (der === null);
 
     // 1. Warren Buffett Screening (Wide Moat & Predictable Compounders)
-    // ROE >= 15%, DER <= 1.0, Revenue Growth >= 8%, PER <= 20, PBV <= 3.5
-    const buffettPass = roe >= 15 && (isFinancial || (der !== null && der <= 1.0)) && (profitGrowth >= 8 || revenueGrowth >= 8) && per > 0 && per <= 20 && pbv <= 3.5;
+    // ROE >= 15%, OPM >= 15% (or financial), DER <= 1.0, Profit/Revenue Growth >= 8%, PER <= 20, PBV <= 3.5, EPS > 0
+    const buffettPass = roe >= 15 && 
+                        (opm === null || opm >= 15 || isFinancial) && 
+                        (isFinancial || (der !== null && der <= 1.0)) && 
+                        (profitGrowth >= 8 || revenueGrowth >= 8 || (forwardEps !== null && eps !== null && forwardEps >= eps)) && 
+                        per > 0 && per <= 20 && pbv <= 3.5 && (eps === null || eps > 0);
     if (buffettPass) passedFormulaKeys.push('buffett');
-    evaluationDetails['buffett'] = { pass: buffettPass, label: 'Warren Buffett', reason: 'ROE ≥ 15%, Utang Rendah, Pertumbuhan Konsisten, Valuasi Masuk Akal' };
+    evaluationDetails['buffett'] = { pass: buffettPass, label: 'Warren Buffett', reason: 'Wide Moat (OPM ≥ 15% / ROE ≥ 15%), Utang Rendah, Laba Konsisten' };
 
     // 2. Ben Graham - Enterprising Investors (Deep Value / Asset Bargains)
-    // PER <= 10, PBV <= 1.0, DER <= 1.0, ROE >= 8%
-    const grahamEnterprisingPass = per > 0 && per <= 10 && pbv > 0 && pbv <= 1.0 && (isFinancial || (der !== null && der <= 1.0)) && roe >= 8;
+    // PER <= 10, PBV <= 1.0, DER <= 1.0, ROE >= 8%, Positive EPS
+    const grahamEnterprisingPass = per > 0 && per <= 10 && pbv > 0 && pbv <= 1.0 && (isFinancial || (der !== null && der <= 1.0)) && roe >= 8 && (eps === null || eps > 0);
     if (grahamEnterprisingPass) passedFormulaKeys.push('graham_enterprising');
-    evaluationDetails['graham_enterprising'] = { pass: grahamEnterprisingPass, label: 'Ben Graham (Enterprising)', reason: 'Deep Value (PER ≤ 10, PBV ≤ 1.0), Utang Rendah, ROE Positif' };
+    evaluationDetails['graham_enterprising'] = { pass: grahamEnterprisingPass, label: 'Ben Graham (Enterprising)', reason: 'Deep Value (PER ≤ 10, PBV ≤ 1.0), Utang Rendah, ROE & EPS Positif' };
 
     // 3. Ben Graham - Defensive Investors (High Margin of Safety)
     // Graham Number (PER x PBV <= 22.5), PER <= 15, PBV <= 1.5, DER <= 0.8, Div Yield >= 3.0%, Streak >= 5 Thn
@@ -46,7 +53,7 @@ export function evaluateAlphaLegends(stocks = []) {
 
     // 4. Peter Lynch - Fast Growers (High Growth & Reasonable Valuation)
     // Growth >= 15%, ROE >= 15%, PER <= 28, DER <= 1.0
-    const lynchFastPass = (profitGrowth >= 15 || revenueGrowth >= 15) && roe >= 15 && per > 0 && per <= 28 && (isFinancial || (der !== null && der <= 1.0));
+    const lynchFastPass = (profitGrowth >= 15 || revenueGrowth >= 15 || (forwardEps !== null && eps !== null && forwardEps > eps * 1.15)) && roe >= 15 && per > 0 && per <= 28 && (isFinancial || (der !== null && der <= 1.0));
     if (lynchFastPass) passedFormulaKeys.push('lynch_fast');
     evaluationDetails['lynch_fast'] = { pass: lynchFastPass, label: 'Peter Lynch (Fast Growers)', reason: 'Growth ≥ 15%, ROE ≥ 15%, Valuasi Wajar (PER ≤ 28)' };
 
@@ -62,18 +69,18 @@ export function evaluateAlphaLegends(stocks = []) {
     if (lynchSlowPass) passedFormulaKeys.push('lynch_slow');
     evaluationDetails['lynch_slow'] = { pass: lynchSlowPass, label: 'Peter Lynch (Slow Growers)', reason: 'Yield Dividen Tinggi ≥ 6.0%, Rekam Jejak Dividen ≥ 5 Thn' };
 
-    // 7. Joel Greenblatt - Magic Formula (High ROE + High Earnings Yield)
+    // 7. Joel Greenblatt - Magic Formula (High ROE + High Earnings Yield / OPM)
     // ROE >= 16%, Earnings Yield (100/PER) >= 9.0% (PER <= 11.1), DER <= 1.0
     const earningsYield = per > 0 ? (100 / per) : 0;
-    const greenblattPass = roe >= 16 && earningsYield >= 9.0 && (isFinancial || (der !== null && der <= 1.0));
+    const greenblattPass = roe >= 16 && (earningsYield >= 9.0 || (opm !== null && opm >= 18)) && (isFinancial || (der !== null && der <= 1.0));
     if (greenblattPass) passedFormulaKeys.push('greenblatt');
-    evaluationDetails['greenblatt'] = { pass: greenblattPass, label: 'Joel Greenblatt (Magic Formula)', reason: 'ROE Tinggi ≥ 16% & Earnings Yield Tinggi ≥ 9.0%' };
+    evaluationDetails['greenblatt'] = { pass: greenblattPass, label: 'Joel Greenblatt (Magic Formula)', reason: 'ROE Tinggi ≥ 16% & Earnings Yield Tinggi / OPM Tebal' };
 
     // 8. Terry Smith (Quality Compounders)
-    // ROE >= 20%, Revenue/Profit Growth >= 10%, DER <= 0.8
-    const terrySmithPass = roe >= 20 && (profitGrowth >= 10 || revenueGrowth >= 10) && (isFinancial || (der !== null && der <= 0.8));
+    // ROE >= 20%, OPM >= 15%, Revenue/Profit Growth >= 10%, DER <= 0.8
+    const terrySmithPass = roe >= 20 && (opm === null || opm >= 15 || isFinancial) && (profitGrowth >= 10 || revenueGrowth >= 10) && (isFinancial || (der !== null && der <= 0.8));
     if (terrySmithPass) passedFormulaKeys.push('terry_smith');
-    evaluationDetails['terry_smith'] = { pass: terrySmithPass, label: 'Terry Smith', reason: 'High Quality: ROE ≥ 20%, Pertumbuhan Kuat, Utang Minimal' };
+    evaluationDetails['terry_smith'] = { pass: terrySmithPass, label: 'Terry Smith', reason: 'High Quality Moat: ROE ≥ 20%, OPM ≥ 15%, Utang Minimal' };
 
     // 9. Ken Fisher (Low PBV/PER + Steady Growth)
     // PBV <= 1.2, PER <= 12, Revenue Growth >= 10%, DER <= 0.8, ROE >= 12%
@@ -82,10 +89,10 @@ export function evaluateAlphaLegends(stocks = []) {
     evaluationDetails['ken_fisher'] = { pass: kenFisherPass, label: 'Ken Fisher (Superstocks)', reason: 'Valuasi PBV ≤ 1.2 & PER ≤ 12, Pertumbuhan Penjualan Bagus' };
 
     // 10. Nick Sleep (Scale Economies Shared & Efficiency)
-    // ROE >= 16%, Revenue Growth >= 12%, DER <= 1.0
-    const nickSleepPass = roe >= 16 && (revenueGrowth >= 12 || profitGrowth >= 12) && (isFinancial || (der !== null && der <= 1.0));
+    // ROE >= 16%, OPM >= 12%, Revenue Growth >= 12%, DER <= 1.0
+    const nickSleepPass = roe >= 16 && (opm === null || opm >= 12 || isFinancial) && (revenueGrowth >= 12 || profitGrowth >= 12) && (isFinancial || (der !== null && der <= 1.0));
     if (nickSleepPass) passedFormulaKeys.push('nick_sleep');
-    evaluationDetails['nick_sleep'] = { pass: nickSleepPass, label: 'Nick Sleep (SES)', reason: 'Scale Economies Shared, Efisiensi Modal Tinggi, ROE ≥ 16%' };
+    evaluationDetails['nick_sleep'] = { pass: nickSleepPass, label: 'Nick Sleep (SES)', reason: 'Scale Economies Shared, Efisiensi Modal & OPM Tinggi' };
 
     // Comprehensive Growth Story & Business Profile Categorization
     let growthStoryCategory = 'Watchlist / Konsolidasi 🟡';

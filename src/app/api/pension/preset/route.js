@@ -146,6 +146,10 @@ export async function GET(request) {
       let stabilityBonus = 0;
       if (der > 0 && der <= 1.2) stabilityBonus += 10; // Neraca sehat
       
+      // Operational Moat Bonus (OPM)
+      const opm = fundRes.metrics?.opm;
+      if (opm !== null && opm >= 18) stabilityBonus += 15; // Tebal margin operasional = perlindungan arus kas dividen
+      
       // Valuation Relief: If ROE is outstanding, reward heavily to offset bad PBV score
       if (roe >= 18) stabilityBonus += 25; 
       else if (roe >= 12) stabilityBonus += 15; 

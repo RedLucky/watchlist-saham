@@ -57,21 +57,23 @@ export default function StockScreener() {
 
  const getValue = (item, key) => {
  if (!key) return 0;
- switch (key) {
- case 'price': return Number(item.price ?? 0);
- case 'dividendYield': return Number(item.metrics?.dividendYield ?? 0);
- case 'payoutRatio': return Number(item.metrics?.payoutRatio ?? 0);
- case 'roe': return Number(item.metrics?.roe ?? 0);
- case 'der': return Number(item.metrics?.der ?? 0);
- case 'cagr': return Number(item.metrics?.cagr ?? 0);
- case 'per': return Number(item.metrics?.per ?? 0);
- case 'pbv': return Number(item.metrics?.pbv ?? 0);
- case 'score': return Number(item.score ?? 0);
- case 'changePercent': return Number(item.changePercent ?? 0);
- case 'volume': return Number(item.volume ?? 0);
- case 'matchCount': return Number(item.matchCount ?? 0);
- default: return 0;
- }
+  switch (key) {
+  case 'price': return Number(item.price ?? 0);
+  case 'dividendYield': return Number(item.metrics?.dividendYield ?? 0);
+  case 'payoutRatio': return Number(item.metrics?.payoutRatio ?? 0);
+  case 'roe': return Number(item.metrics?.roe ?? item.fundamentals?.roe ?? 0);
+  case 'opm': return Number(item.metrics?.opm ?? item.fundamentals?.opm ?? 0);
+  case 'eps': return Number(item.metrics?.eps ?? item.fundamentals?.eps ?? 0);
+  case 'der': return Number(item.metrics?.der ?? item.fundamentals?.der ?? 0);
+  case 'cagr': return Number(item.metrics?.cagr ?? 0);
+  case 'per': return Number(item.metrics?.per ?? item.fundamentals?.per ?? 0);
+  case 'pbv': return Number(item.metrics?.pbv ?? item.fundamentals?.pbv ?? 0);
+  case 'score': return Number(item.score ?? 0);
+  case 'changePercent': return Number(item.changePercent ?? 0);
+  case 'volume': return Number(item.volume ?? 0);
+  case 'matchCount': return Number(item.matchCount ?? 0);
+  default: return 0;
+  }
  };
 
  const sortedData = useMemo(() => {
@@ -149,8 +151,8 @@ export default function StockScreener() {
  return (
  <>
  {renderSortHeader('Harga', 'price', 'right')}
- {renderSortHeader('PER / PBV', 'per', 'right')}
- {renderSortHeader('ROE / DER', 'roe', 'right', 'hidden sm:table-cell')}
+ {renderSortHeader('PER / PBV / EPS', 'per', 'right')}
+ {renderSortHeader('ROE / OPM / DER', 'roe', 'right', 'hidden sm:table-cell')}
  {renderSortHeader('CAGR Laba', 'cagr', 'right')}
  {renderSortHeader('Skor (Val | Fund | Gabungan)', 'score', 'center')}
  </>
@@ -298,11 +300,17 @@ export default function StockScreener() {
               <div className="flex flex-col items-end">
                 <span className="font-extrabold text-emerald-700 dark:text-emerald-400">PER: {item.metrics?.per != null ? `${Number(item.metrics.per).toFixed(1)}x` : '-'}</span>
                 <span className="text-[10px] font-bold text-blue-700 dark:text-blue-400">PBV: {item.metrics?.pbv != null ? `${Number(item.metrics.pbv).toFixed(1)}x` : '-'}</span>
+                {item.metrics?.eps != null && (
+                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">EPS: Rp {Number(item.metrics.eps).toLocaleString('id-ID')}</span>
+                )}
               </div>
             </td>
             <td className="px-4 py-4 whitespace-nowrap text-right text-slate-700 dark:text-slate-300 hidden sm:table-cell">
               <div className="flex flex-col items-end">
                 <span className="font-extrabold text-purple-700 dark:text-purple-400">ROE: {item.metrics?.roe != null ? `${Number(item.metrics.roe).toFixed(1)}%` : '-'}</span>
+                {item.metrics?.opm != null && (
+                  <span className="text-[10px] font-bold text-indigo-700 dark:text-indigo-400">OPM: {Number(item.metrics.opm).toFixed(1)}%</span>
+                )}
                 <span className="text-[10px] font-bold text-amber-800 dark:text-amber-400">DER: {item.metrics?.der != null ? `${Number(item.metrics.der).toFixed(2)}x` : '-'}</span>
               </div>
             </td>

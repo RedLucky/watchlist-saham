@@ -7,14 +7,14 @@
  */
 
 export function calculateFundamentalScore(stock) {
-  const { roe, der, netProfit, revenueGrowth } = stock?.fundamentals || {};
+  const { roe, der, netProfit, revenueGrowth, opm, eps, forwardEps, per } = stock?.fundamentals || {};
   const sector = stock?.sector;
 
   let score = 0;
   const details = [];
 
-  // ── ROE Quality (35%) ──────────────────────────────────────────────
-  // 8% = baseline, 25%+ = excellent
+  // ── 1. ROE Quality (25%) ──────────────────────────────────────────────
+  // 8% = baseline, 20%+ = excellent
   const safeROE = Number.isFinite(roe) ? roe : null;
   let roeScore = 50; // default if no data
   if (safeROE !== null) {
@@ -31,9 +31,37 @@ export function calculateFundamentalScore(stock) {
   } else {
     details.push('Data ROE belum tersedia');
   }
-  score += roeScore * 0.35;
+  score += roeScore * 0.25;
 
-  // ── Profit Consistency & Growth (30%) ──────────────────────────────
+  // ── 2. OPM & Operating Moat (20%) ───────────────────────────────────
+  // Operating Profit Margin indicates pricing power and business durability
+  const safeOPM = Number.isFinite(opm) ? opm : null;
+  let opmScore = 50;
+  if (safeOPM !== null) {
+    if (safeOPM >= 25) {
+      opmScore = 100;
+      details.push(`Super Moat: OPM ${safeOPM.toFixed(1)}% — margin laba usaha sangat tebal & tangguh`);
+    } else if (safeOPM >= 15) {
+      opmScore = 85;
+      details.push(`Strong Moat: OPM ${safeOPM.toFixed(1)}% — efisiensi operasional sangat kuat`);
+    } else if (safeOPM >= 8) {
+      opmScore = 65;
+      details.push(`Standard OPM ${safeOPM.toFixed(1)}% — margin operasional stabil`);
+    } else if (safeOPM > 0) {
+      opmScore = 40;
+      details.push(`Thin Margin: OPM ${safeOPM.toFixed(1)}% — rentan terhadap kenaikan biaya`);
+    } else {
+      opmScore = 10;
+      details.push(`Rugi Operasional: OPM negatif ${safeOPM.toFixed(1)}%`);
+    }
+  } else {
+    // Fallback: estimate from ROE/sector if OPM not available
+    opmScore = safeROE !== null && safeROE >= 15 ? 70 : 50;
+    details.push('Data OPM diestimasi dari profil operasional');
+  }
+  score += opmScore * 0.20;
+
+  // ── 3. EPS Momentum & Profit Consistency (25%) ─────────────────────
   const profits = Array.isArray(netProfit) ? netProfit.filter(Number.isFinite) : [];
   let profitScore = 40; // default if insufficient data
   let cagr = null;
@@ -63,7 +91,6 @@ export function calculateFundamentalScore(stock) {
       const growth2 = (profits[2] - profits[1]) / base2;
       avgProfitGrowth = (growth1 + growth2) / 2;
     } else {
-      // Only 2 data points
       const base = Math.max(Math.abs(profits[0]), 1);
       avgProfitGrowth = (profits[1] - profits[0]) / base;
     }
@@ -71,7 +98,7 @@ export function calculateFundamentalScore(stock) {
     const isGrowing = avgProfitGrowth > 0;
 
     if (allPositive && isGrowing) {
-      profitScore = clamp(50 + avgProfitGrowth * 200, 50, 100);
+      profitScore = clamp(50 + avgProfitGrowth * 200, 50, 95);
       details.push(`Profit tumbuh konsisten — rata-rata pertumbuhan ${(avgProfitGrowth * 100).toFixed(1)}%`);
     } else if (allPositive) {
       profitScore = 60;
@@ -86,9 +113,20 @@ export function calculateFundamentalScore(stock) {
   } else {
     details.push('Data historis laba belum mencukupi');
   }
-  score += profitScore * 0.30;
 
-  // ── Financial Health / DER (20%) ────────────────────────────────────
+  // Bonus/Adjustment for Forward EPS Momentum
+  const safeEps = Number.isFinite(eps) ? eps : null;
+  const safeFwdEps = Number.isFinite(forwardEps) ? forwardEps : null;
+  if (safeEps !== null && safeFwdEps !== null && safeEps > 0) {
+    if (safeFwdEps > safeEps) {
+      profitScore = Math.min(100, profitScore + 10);
+      details.push(`Forward EPS positif (Rp ${safeFwdEps.toFixed(0)} vs Rp ${safeEps.toFixed(0)}) — proyeksi laba naik`);
+    }
+  }
+
+  score += profitScore * 0.25;
+
+  // ── 4. Financial Health / DER (15%) ────────────────────────────────────
   const safeDER = Number.isFinite(der) ? der : null;
   let derScore = 50;
   const isFinance = sector === 'Financials' || sector === 'Finance';
@@ -115,9 +153,9 @@ export function calculateFundamentalScore(stock) {
   } else {
     details.push('Data DER belum tersedia');
   }
-  score += derScore * 0.20;
+  score += derScore * 0.15;
 
-  // ── Revenue Growth (15%) ───────────────────────────────────────────
+  // ── 5. Revenue Growth (15%) ───────────────────────────────────────────
   const safeRevGrowth = Number.isFinite(revenueGrowth) ? revenueGrowth : null;
   let revScore = 50;
   if (safeRevGrowth !== null) {
@@ -144,6 +182,9 @@ export function calculateFundamentalScore(stock) {
     details,
     metrics: {
       roe: safeROE,
+      opm: safeOPM,
+      eps: safeEps,
+      forwardEps: safeFwdEps,
       der: safeDER,
       revenueGrowth: safeRevGrowth,
       cagr: cagr !== null ? Number(cagr.toFixed(1)) : null,
