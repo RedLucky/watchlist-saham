@@ -933,7 +933,13 @@ export default function StockExplorer({ user }) {
                   const price = s.price || 0;
                   const isItemUp = (s.changePercent || 0) >= 0;
                   const itemNominal = getNominalChange(price, s.changePercent);
-                  const score = s.score;
+                  
+                  // Keep score 100% in sync with live detail composite score if this stock is currently selected
+                  const isCurrentSelected = stockDetail?.ticker === item.ticker;
+                  const liveCompScore = (isCurrentSelected && scores?.fundamental != null)
+                    ? Math.round(((scores.fundamental ?? 50) * 0.45) + ((scores.technical ?? 50) * 0.35) + ((scores.trending ?? 50) * 0.10) + ((scores.smartMoney ?? 50) * 0.10))
+                    : null;
+                  const score = liveCompScore ?? s.score;
 
                   // Target Buy Hit: price <= targetBuy
                   const isTargetBuyHit = item.targetBuy != null && price > 0 && price <= item.targetBuy;

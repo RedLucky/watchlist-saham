@@ -50,24 +50,9 @@ export async function GET(request) {
     
     const stocks = await prisma.stockData.findMany({
       where: { ticker: { in: tickers } },
-      select: {
-        ticker: true,
-        name: true,
-        price: true,
-        changePercent: true,
-        sector: true,
-        fundamentals: true,
-        technicals: true,
-        kseiLatest: true,
-      }
     });
 
     const stockMap = stocks.reduce((acc, rawStock) => {
-      let fScore = 50;
-      let tScore = 50;
-      let trendScore = 50;
-      let smartMoneyScore = 50;
-
       let parsedFundamentals = {};
       let parsedTechnicals = {};
       let parsedKseiLatest = {};
@@ -76,12 +61,54 @@ export async function GET(request) {
       try { parsedTechnicals = JSON.parse(rawStock.technicals || '{}'); } catch(e) {}
       try { parsedKseiLatest = JSON.parse(rawStock.kseiLatest || '{}'); } catch(e) {}
 
+      // Pre-calculate Piotroski F-Score & Altman Z-Score for scoring consistency
+      let computedFScore = 5;
+      let computedZScore = 2.5;
+      if (parsedFundamentals) {
+        let score = 0;
+        const roe = parsedFundamentals.roe || 0;
+        const fcf = parsedFundamentals.freeCashflow || 0;
+        const der = parsedFundamentals.der || 0;
+        const currentRatio = parsedFundamentals.currentRatio || 0;
+        const revenueGrowth = parsedFundamentals.revenueGrowth || 0;
+        const netProfitList = Array.isArray(parsedFundamentals.netProfit) ? parsedFundamentals.netProfit : [];
+        if (roe > 0) score++;
+        if (fcf > 0) score++;
+        if (netProfitList.length > 0 && fcf > netProfitList[netProfitList.length - 1]) score++;
+        if (netProfitList.length >= 2 && netProfitList[netProfitList.length - 1] > netProfitList[netProfitList.length - 2]) score++;
+        if (der > 0 && der <= 1.0) score++;
+        if (currentRatio >= 1.5) score++;
+        if (revenueGrowth > 0) score++;
+        if (roe > 12) score++;
+        computedFScore = Math.max(1, Math.min(9, score));
+
+        const sectorUpper = (rawStock.sector || '').toUpperCase();
+        if (sectorUpper === 'FINANCIALS' || sectorUpper === 'FINANCE') {
+          computedZScore = 3.0;
+        } else {
+          let z = 0.5;
+          const cr = parsedFundamentals.currentRatio || 1.2;
+          const d = parsedFundamentals.der || 1.0;
+          z += Math.min(1.5, cr * 0.5);
+          if (d > 0) z += Math.min(1.5, 1.0 / d); else z += 1.5;
+          if (roe > 0) z += Math.min(1.0, (roe / 100) * 4);
+          computedZScore = Number(Math.max(0.5, Math.min(4.5, z + 1.0)).toFixed(2));
+        }
+      }
+      parsedFundamentals.piotroskiFScore = computedFScore;
+      parsedFundamentals.altmanZScore = computedZScore;
+
       const parsedStock = {
         ...rawStock,
         fundamentals: parsedFundamentals,
         technicals: parsedTechnicals,
         kseiLatest: parsedKseiLatest,
       };
+
+      let fScore = 50;
+      let tScore = 50;
+      let trendScore = 50;
+      let smartMoneyScore = 50;
 
       try {
         const fs = calculateFundamentalScore(parsedStock);
