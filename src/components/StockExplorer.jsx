@@ -931,6 +931,8 @@ export default function StockExplorer({ user }) {
                 {collectionItems.map((item, index) => {
                   const s = item.stock || {};
                   const price = s.price || 0;
+                  const isItemUp = (s.changePercent || 0) >= 0;
+                  const itemNominal = getNominalChange(price, s.changePercent);
                   const score = s.score;
 
                   // Target Buy Hit: price <= targetBuy
