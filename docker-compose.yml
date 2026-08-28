@@ -16,7 +16,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    command: sh -c "npx prisma db push --skip-generate && node server.js"
+    command: sh -c "node ./node_modules/prisma/build/index.js db push --skip-generate && node server.js"
     logging:
       driver: "json-file"
       options:
