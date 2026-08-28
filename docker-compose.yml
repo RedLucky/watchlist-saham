@@ -17,6 +17,13 @@ services:
       db:
         condition: service_healthy
     command: sh -c "npx prisma db push --skip-generate && node server.js"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - watchlist_net
 
   scraper:
     build:
@@ -29,6 +36,13 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - watchlist_net
 
   db:
     image: postgres:15-alpine
@@ -47,6 +61,17 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - watchlist_net
 
 volumes:
   pgdata:
+
+networks:
+  watchlist_net:
+    driver: bridge

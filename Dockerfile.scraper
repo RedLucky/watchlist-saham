@@ -1,6 +1,6 @@
 FROM node:20-alpine
 
-# Install Chromium and dependencies for Alpine
+# Install Chromium and required native runtime libraries for Alpine
 RUN apk add --no-cache \
       chromium \
       nss \
@@ -8,18 +8,22 @@ RUN apk add --no-cache \
       harfbuzz \
       ca-certificates \
       ttf-freefont \
-      nodejs \
-      npm
+      openssl && \
+    rm -rf /var/cache/apk/*
 
-# Tell Puppeteer to skip downloading Chrome and use the native Alpine one
+# Configure Puppeteer to use Alpine's installed Chromium binary
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser \
+    NODE_ENV=production
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm install
+# Install production dependencies only & clean npm cache
+COPY package.json package-lock.json* ./
+RUN npm ci --omit=dev --prefer-offline --no-audit && \
+    npm cache clean --force
 
+# Copy source code and Prisma schema
 COPY . .
 
 # Generate Prisma Client
