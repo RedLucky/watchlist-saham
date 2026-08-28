@@ -792,7 +792,7 @@ export default function StockExplorer({ user }) {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
             {collections.map((col) => {
               const isSelected = selectedCollection?.id === col.id;
               return (
@@ -908,8 +908,8 @@ export default function StockExplorer({ user }) {
             </div>
 
             {loadingItems && collectionItems.length === 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
-                {[1, 2, 3, 4].map(idx => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5">
+                {[1, 2, 3, 4, 5].map(idx => (
                   <div key={idx} className="animate-pulse rounded-2xl p-4 bg-slate-100 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 space-y-3 h-[175px]">
                     <div className="flex justify-between items-center">
                       <div className="h-5 w-16 bg-slate-200 dark:bg-slate-700 rounded-md"></div>
@@ -926,8 +926,8 @@ export default function StockExplorer({ user }) {
                 Koleksi ini masih kosong. Cari saham di bawah lalu klik &quot;Simpan ke Koleksi&quot;.
               </div>
             ) : (
-              /* 4-COLUMN CARDS GRID FOR SAVED STOCKS (DRAGGABLE & REORDERABLE) */
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
+              /* 5-COLUMN CARDS GRID FOR SAVED STOCKS (DRAGGABLE & REORDERABLE) */
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5">
                 {collectionItems.map((item, index) => {
                   const s = item.stock || {};
                   const price = s.price || 0;
