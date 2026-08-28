@@ -11,6 +11,13 @@ let isDeepSyncing = false;
 
 export function initBackgroundSync() {
   if (intervalInitialized || typeof window !== 'undefined') return;
+  intervalInitialized = true;
+
+  // If background worker is delegated to dedicated scraper container, skip in-app loops
+  if (process.env.DISABLE_APP_WORKER === 'true') {
+    console.log('[Worker] In-app background sync disabled (delegated to scraper daemon).');
+    return;
+  }
 
   const intervalMins = parseInt(process.env.SYNC_INTERVAL_MINS || '5');
   const intervalMs = intervalMins * 60 * 1000;

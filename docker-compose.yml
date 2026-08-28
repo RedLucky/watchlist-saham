@@ -12,6 +12,7 @@ services:
       - DATABASE_URL=postgresql://user:password@db:5432/watchlist?schema=public
       - JWT_SECRET=ganti_dengan_kode_rahasia_anda_disini
       - NODE_OPTIONS=--max-old-space-size=896
+      - DISABLE_APP_WORKER=true
     depends_on:
       db:
         condition: service_healthy
