@@ -6,6 +6,7 @@ FROM base AS deps
 WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci --prefer-offline --no-audit && \
+    npm install --no-save lightningcss-linux-x64-musl && \
     npm cache clean --force
 
 # Stage 2: Build the source code
