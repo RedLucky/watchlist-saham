@@ -361,6 +361,10 @@ async function deepSyncStockOnce(fullTicker) {
 
   const roeRaw = summary?.financialData?.returnOnEquity ?? quote?.returnOnEquity;
   const derRaw = summary?.financialData?.debtToEquity ?? quote?.debtToEquity;
+  const opmRaw = summary?.financialData?.operatingMargins;
+  const gpmRaw = summary?.financialData?.grossMargins;
+  const npmRaw = summary?.financialData?.profitMargins;
+  const ebitdaMarginRaw = summary?.financialData?.ebitdaMargins;
   const dividendYieldRaw = summary?.summaryDetail?.dividendYield ?? quote?.trailingAnnualDividendYield;
   const payoutRaw = summary?.summaryDetail?.payoutRatio;
   const revenueGrowthRaw = summary?.financialData?.revenueGrowth;
@@ -419,6 +423,10 @@ async function deepSyncStockOnce(fullTicker) {
   const fundamentals = {
     roe: normalizePercent(roeRaw, null),
     der: normalizeRatio(derRaw, null),
+    opm: normalizePercent(opmRaw, null),
+    gpm: normalizePercent(gpmRaw, null),
+    npm: normalizePercent(npmRaw, null),
+    ebitdaMargin: normalizePercent(ebitdaMarginRaw, null),
     netProfit,
     per: safeNumber(summary?.summaryDetail?.trailingPE ?? quote?.trailingPE, null),
     pbv: (() => {

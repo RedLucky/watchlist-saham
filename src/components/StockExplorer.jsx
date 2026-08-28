@@ -1579,6 +1579,14 @@ export default function StockExplorer({ user }) {
                           <span className="font-bold text-emerald-600 dark:text-emerald-400">{f.roe != null ? `${Number(f.roe).toFixed(1)}%` : '-'}</span>
                         </div>
                         <div className="flex justify-between">
+                          <span className="text-slate-600 dark:text-slate-400">OPM (Operating Margin):</span>
+                          <span className="font-bold text-indigo-600 dark:text-indigo-400">{f.opm != null ? `${Number(f.opm).toFixed(1)}%` : '-'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-600 dark:text-slate-400">NPM (Net Margin):</span>
+                          <span className="font-bold text-slate-900 dark:text-slate-100">{f.npm != null ? `${Number(f.npm).toFixed(1)}%` : '-'}</span>
+                        </div>
+                        <div className="flex justify-between">
                           <span className="text-slate-600 dark:text-slate-400">DER (Hutang):</span>
                           <span className={`font-bold ${f.der != null && f.der > 2 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-900 dark:text-slate-100'}`}>
                             {f.der != null ? `${Number(f.der).toFixed(2)}x` : '-'}
@@ -1959,6 +1967,10 @@ export default function StockExplorer({ user }) {
                 const roes = stockDetailsList.map(s => s.fundamentals?.roe).filter(r => r != null);
                 const bestRoe = roes.length > 0 ? Math.max(...roes) : null;
 
+                // Best OPM: highest OPM
+                const opms = stockDetailsList.map(s => s.fundamentals?.opm).filter(o => o != null);
+                const bestOpm = opms.length > 0 ? Math.max(...opms) : null;
+
                 // Best MoS: highest Margin of Safety
                 const moses = stockDetailsList.map(s => s.projections?.marginOfSafety).filter(m => m != null);
                 const bestMos = moses.length > 0 ? Math.max(...moses) : null;
@@ -2153,6 +2165,19 @@ export default function StockExplorer({ user }) {
                           const isWinner = val === bestRoe && bestRoe != null;
                           return (
                             <td key={ticker} className={`p-3 text-center border-l border-slate-100 dark:border-slate-800 font-bold ${isWinner ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                              {val != null ? `${Number(val).toFixed(1)}%` : '-'} {isWinner && '👑'}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                      <tr>
+                        <td className="p-3 font-semibold sticky left-0 bg-white dark:bg-slate-900 z-10">OPM (Operating Margin)</td>
+                        {compareList.map(ticker => {
+                          const s = compareData[ticker] || {};
+                          const val = s.fundamentals?.opm;
+                          const isWinner = val === bestOpm && bestOpm != null;
+                          return (
+                            <td key={ticker} className={`p-3 text-center border-l border-slate-100 dark:border-slate-800 font-bold ${isWinner ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300' : 'text-indigo-600 dark:text-indigo-400'}`}>
                               {val != null ? `${Number(val).toFixed(1)}%` : '-'} {isWinner && '👑'}
                             </td>
                           );
