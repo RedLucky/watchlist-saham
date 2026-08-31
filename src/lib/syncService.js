@@ -141,7 +141,8 @@ export async function fastSyncPrices(limit = 250) {
       }
     }
 
-    // TAHAP 2: Upsert Quotes ke Database
+    // TAHAP 2: Batch Upsert Quotes ke Database (menggunakan $transaction untuk efisiensi)
+    const upsertOps = [];
     for (const quote of quotesList) {
       if (!quote?.symbol) continue;
 
@@ -162,7 +163,7 @@ export async function fastSyncPrices(limit = 250) {
         const turnover = BigInt(Math.round(currentPrice * Number(quote.regularMarketVolume || 0)));
         const frequency = Math.round(Number(quote.regularMarketVolume || 0) / 100);
 
-        await prisma.stockData.upsert({
+        upsertOps.push(prisma.stockData.upsert({
           where: { ticker },
           update: {
             price: currentPrice,
@@ -186,10 +187,23 @@ export async function fastSyncPrices(limit = 250) {
             sector,
             lastPriceSync: new Date()
           }
-        });
-        updatedCount++;
+        }));
       } catch (dbErr) {
         console.error(`[FastSync] DB Error for ${quote.symbol}:`, dbErr.message);
+      }
+    }
+
+    // Execute batch transaction
+    if (upsertOps.length > 0) {
+      try {
+        await prisma.$transaction(upsertOps);
+        updatedCount += upsertOps.length;
+      } catch (txErr) {
+        console.error(`[FastSync] Batch transaction error, falling back to individual:`, txErr.message);
+        // Fallback ke individual upsert jika batch gagal
+        for (const op of upsertOps) {
+          try { await op; updatedCount++; } catch (e) {}
+        }
       }
     }
 
@@ -300,8 +314,8 @@ async function deepSyncStockOnce(fullTicker) {
       withTimeout(yahooFinance.quote(fullTicker, {}, { validateResult: false }), 15000, `Quote timeout for ${fullTicker}`),
       withTimeout(
         yahooFinance.historical(fullTicker, {
-          period1: period1.toISOString().split('T')[0],
-          period2: period2.toISOString().split('T')[0],
+          period1: formatDateWIB(period1),
+          period2: formatDateWIB(period2),
           interval: '1d'
         }, { validateResult: false }),
         20000,
@@ -316,8 +330,8 @@ async function deepSyncStockOnce(fullTicker) {
       ).catch(() => ({})),
       withTimeout(
         yahooFinance.historical(fullTicker, {
-          period1: periodDiv.toISOString().split('T')[0],
-          period2: period2.toISOString().split('T')[0],
+          period1: formatDateWIB(periodDiv),
+          period2: formatDateWIB(period2),
           events: 'dividends'
         }, { validateResult: false }),
         20000,
@@ -360,6 +374,7 @@ async function deepSyncStockOnce(fullTicker) {
     : null; // null = data not available, let scoring handle it
 
   const roeRaw = summary?.financialData?.returnOnEquity ?? quote?.returnOnEquity;
+  const roaRaw = summary?.financialData?.returnOnAssets;
   const derRaw = summary?.financialData?.debtToEquity ?? quote?.debtToEquity;
   const opmRaw = summary?.financialData?.operatingMargins;
   const gpmRaw = summary?.financialData?.grossMargins;
@@ -371,6 +386,21 @@ async function deepSyncStockOnce(fullTicker) {
   const cashRaw = summary?.financialData?.totalCash;
   const currentRatioRaw = summary?.financialData?.currentRatio;
   const freeCashflowRaw = summary?.financialData?.freeCashflow;
+
+  // ── Data baru: Revenue, Net Income, Balance Sheet proxies ──
+  const totalRevenueRaw = summary?.financialData?.totalRevenue;
+  const netIncomeRaw = summary?.financialData?.netIncomeToCommon;
+  const bookValueRaw = summary?.defaultKeyStatistics?.bookValue;
+  const forwardPERaw = summary?.summaryDetail?.forwardPE ?? quote?.forwardPE;
+  const pegRatioRaw = summary?.defaultKeyStatistics?.pegRatio;
+  const enterpriseValueRaw = summary?.defaultKeyStatistics?.enterpriseValue;
+  const dividendRateRaw = summary?.summaryDetail?.dividendRate ?? quote?.trailingAnnualDividendRate;
+  const betaRaw = summary?.defaultKeyStatistics?.beta ?? summary?.summaryDetail?.beta;
+  const fiftyTwoWeekHighRaw = summary?.summaryDetail?.fiftyTwoWeekHigh ?? quote?.fiftyTwoWeekHigh;
+  const fiftyTwoWeekLowRaw = summary?.summaryDetail?.fiftyTwoWeekLow ?? quote?.fiftyTwoWeekLow;
+  const earningsGrowthRaw = summary?.financialData?.earningsGrowth;
+  const operatingCashflowRaw = summary?.financialData?.operatingCashflow;
+  const totalDebtRaw = summary?.financialData?.totalDebt;
 
   // Merge newly fetched dividends with cached 10-year dividends (Append + Idempotent Dedup)
   const mergedDivHistory = [...existingDivHistory];
@@ -423,10 +453,12 @@ async function deepSyncStockOnce(fullTicker) {
   const perResolved = safeNumber(summary?.summaryDetail?.trailingPE ?? quote?.trailingPE, null);
   const trailingEpsRaw = summary?.defaultKeyStatistics?.trailingEps ?? quote?.epsTrailingTwelveMonths;
   const forwardEpsRaw = summary?.defaultKeyStatistics?.forwardEps ?? quote?.epsForward;
-  const resolvedEps = safeNumber(trailingEpsRaw, (currentPrice > 0 && perResolved > 0) ? Number((currentPrice / perResolved).toFixed(2)) : null);
+  // EPS: Prioritaskan sumber langsung, fallback hanya jika sumber terpercaya
+  const resolvedEps = safeNumber(trailingEpsRaw, null);
 
   const fundamentals = {
     roe: normalizePercent(roeRaw, null),
+    roa: normalizePercent(roaRaw, null),
     der: normalizeRatio(derRaw, null),
     opm: normalizePercent(opmRaw, null),
     gpm: normalizePercent(gpmRaw, null),
@@ -436,21 +468,30 @@ async function deepSyncStockOnce(fullTicker) {
     eps: resolvedEps,
     forwardEps: safeNumber(forwardEpsRaw, null),
     per: perResolved,
-    pbv: (() => {
-      const raw = safeNumber(summary?.defaultKeyStatistics?.priceToBook ?? quote?.priceToBook, null);
-      if (raw !== null && raw > 500) return Number((raw / 16200).toFixed(2));
-      return raw !== null ? Number(raw.toFixed(2)) : null;
-    })(),
+    pbv: safeNumber(summary?.defaultKeyStatistics?.priceToBook ?? quote?.priceToBook, null),
+    bookValue: safeNumber(bookValueRaw, null),
+    forwardPE: safeNumber(forwardPERaw, null),
+    pegRatio: safeNumber(pegRatioRaw, null),
     dividendYield: normalizePercent(dividendYieldRaw, 0),
+    dividendRate: safeNumber(dividendRateRaw, null),
     payoutRatio: normalizePercent(payoutRaw, 0),
     dividendStreakYears: streakYears,
     yahooDividendHistory: mergedDivHistory,
     revenueGrowth: normalizePercent(revenueGrowthRaw, null),
+    earningsGrowth: normalizePercent(earningsGrowthRaw, null),
+    totalRevenue: safeNumber(totalRevenueRaw, null),
+    netIncome: safeNumber(netIncomeRaw, null),
+    enterpriseValue: safeNumber(enterpriseValueRaw, null),
     cash: Number.isFinite(cashRaw) ? Number(cashRaw) : 0,
+    totalDebt: safeNumber(totalDebtRaw, null),
+    operatingCashflow: safeNumber(operatingCashflowRaw, null),
     currentRatio: safeNumber(currentRatioRaw, null),
     freeCashflow: safeNumber(freeCashflowRaw, null),
     sharesOutstanding: sharesOutstanding > 0 ? sharesOutstanding : null,
     marketCap: resolvedMarketCap,
+    beta: safeNumber(betaRaw, null),
+    fiftyTwoWeekHigh: safeNumber(fiftyTwoWeekHighRaw, null),
+    fiftyTwoWeekLow: safeNumber(fiftyTwoWeekLowRaw, null),
   };
 
   // ── Calculate Technicals ──────────────────────────────────────────────
@@ -579,6 +620,12 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+// Format tanggal dalam timezone WIB (UTC+7) agar historical candle tidak terlewat
+function formatDateWIB(date) {
+  const d = new Date(date.getTime() + 7 * 3600 * 1000); // offset WIB
+  return d.toISOString().split('T')[0];
+}
+
 // ── Value Normalization ───────────────────────────────────────────────────
 
 function normalizePercent(value, fallback) {
@@ -593,13 +640,11 @@ function normalizePercent(value, fallback) {
 function normalizeRatio(value, fallback) {
   if (value == null || !Number.isFinite(Number(value))) return fallback;
   const num = Number(value);
-  // Yahoo Finance mengembalikan Debt-to-Equity dalam format tidak konsisten:
-  // Kadang sebagai persentase (e.g. 85 = 0.85x, 350 = 3.5x),
-  // kadang sudah dalam format rasio (e.g. 0.85, 3.5).
-  // Guard: jika nilai < 10, asumsikan sudah dalam format rasio (DER nyata jarang > 10x);
-  // jika >= 10, bagi 100 untuk konversi dari persentase ke rasio.
-  if (Math.abs(num) < 10) return num;
-  return num / 100;
+  // Yahoo Finance financialData.debtToEquity SELALU mengembalikan format persentase
+  // (e.g. 85.5 = 0.855x, 350 = 3.5x). Selalu bagi 100.
+  // Jika nilainya sudah < 1 (sangat kecil), kemungkinan sudah dalam format rasio (edge case).
+  if (Math.abs(num) < 1) return num; // sudah rasio (e.g. 0.85)
+  return Number((num / 100).toFixed(4));
 }
 
 function safeNumber(value, fallback) {

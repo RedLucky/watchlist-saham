@@ -15,6 +15,27 @@ export const fetchCache = 'force-no-store';
 
 function applyGlobalPenalties(s, baseScore) {
   let score = baseScore;
+  
+  // Penalti saham delisted
+  if (s.isDelisted) return 0;
+  
+  // Penalti volume nol atau tidak ada data perdagangan
+  const vol = Number(s.volume || s.technicals?.volumes?.[s.technicals?.volumes?.length - 1] || 0);
+  if (vol === 0) score -= 30;
+  
+  // Penalti fundamental null (tidak ada data ROE/DER/OPM)
+  const f = s.fundamentals || {};
+  const hasFundamentals = f.roe != null || f.der != null || f.opm != null;
+  if (!hasFundamentals) score -= 20;
+  
+  // Penalti DER sangat tinggi (kecuali sektor Finance)
+  const sectorUpper = (s.sector || '').toUpperCase();
+  const isFinancial = sectorUpper.includes('FINANC') || sectorUpper.includes('BANK');
+  if (!isFinancial && f.der != null && f.der > 3.0) score -= 15;
+  
+  // Penalti double losers (EPS negatif + OPM negatif)
+  if (f.eps != null && f.eps < 0 && f.opm != null && f.opm < 0) score -= 25;
+  
   return Math.max(0, score);
 }
 
@@ -119,7 +140,10 @@ function getDividendResults(validStocks) {
       };
     })
     .filter(s => (s.metrics.dividendYield ?? 0) > 0)
-    .sort((a, b) => (b.metrics.dividendYield || 0) - (a.metrics.dividendYield || 0))
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return (b.metrics.dividendYield || 0) - (a.metrics.dividendYield || 0);
+    })
     .slice(0, 30);
 }
 

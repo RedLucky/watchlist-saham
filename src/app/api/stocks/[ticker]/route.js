@@ -6,6 +6,7 @@ import { calculateFundamentalScore } from '@/lib/scoring/fundamental';
 import { calculateTechnicalScore } from '@/lib/scoring/technical';
 import { calculateTrendingScore } from '@/lib/scoring/trending';
 import { calculateSmartMoneyScore, getBandarmologiVerdict } from '@/lib/scoring/smartMoney';
+import { calculateDividendScore } from '@/lib/scoring/dividend';
 
 export const dynamic = 'force-dynamic';
 
@@ -206,79 +207,96 @@ export async function GET(request, { params }) {
       projections.cagrPercent = Number((cagr * 100).toFixed(1));
     }
 
-    // 2. Estimate Piotroski F-Score (out of 9)
-    let computedFScore = 5; // default moderate score
-    let computedZScore = 2.5; // default neutral
+    // 2. Improved Piotroski F-Score (9 criteria → 1-9)
+    let computedFScore = 5;
     if (fundamentals) {
       let score = 0;
       const roe = fundamentals.roe || 0;
+      const roa = fundamentals.roa || 0;
       const opm = fundamentals.opm || 0;
       const eps = fundamentals.eps || 0;
       const fcf = fundamentals.freeCashflow || 0;
+      const ocf = fundamentals.operatingCashflow || fcf;
       const der = fundamentals.der || 0;
       const currentRatio = fundamentals.currentRatio || 0;
       const revenueGrowth = fundamentals.revenueGrowth || 0;
       const netProfitList = Array.isArray(fundamentals.netProfit) ? fundamentals.netProfit : [];
+      const netIncome = fundamentals.netIncome || (netProfitList.length > 0 ? netProfitList[netProfitList.length - 1] : 0);
       
-      // 1. ROA/ROE > 0 (Profitability)
-      if (roe > 0) score++;
-      // 2. FCF > 0 (Cash Flow)
-      if (fcf > 0) score++;
-      // 3. FCF > Net Profit (Cash Flow quality)
-      if (netProfitList.length > 0) {
-        const latestProfit = netProfitList[netProfitList.length - 1];
-        if (fcf > latestProfit) score++;
-      }
-      // 4. Net Profit growth or EPS > 0
+      // 1. ROA > 0 (Profitability) — asli: Net Income > 0
+      if (roa > 0 || (roa === 0 && roe > 0)) score++;
+      // 2. Operating Cash Flow > 0
+      if (ocf > 0) score++;
+      // 3. Cash Flow > Net Income (Accruals quality)
+      if (ocf > netIncome && netIncome > 0) score++;
+      // 4. Net Profit growth (latest > previous) — proxy for ROA improvement
       if (netProfitList.length >= 2) {
         if (netProfitList[netProfitList.length - 1] > netProfitList[netProfitList.length - 2]) score++;
-      } else if (eps > 0) {
-        score++;
+      } else if (eps > 0 && revenueGrowth > 0) {
+        score++; // proxy: positive EPS with growing revenue
       }
-      // 5. Debt leverage (DER <= 1.0)
+      // 5. Leverage: DER menurun atau rendah (< 1.0)
       if (der > 0 && der <= 1.0) score++;
-      // 6. Liquidity (Current Ratio >= 1.5)
+      // 6. Liquidity: Current Ratio >= 1.5
       if (currentRatio >= 1.5) score++;
-      // 7. Sales growth (Revenue growth > 0)
+      // 7. No dilution: proxy — shares outstanding stable (not checked, give point if OPM healthy)
+      if (opm >= 10) score++;
+      // 8. Gross/Operating Margin positive & healthy
+      if (opm > 0 || (fundamentals.gpm && fundamentals.gpm > 0)) score++;
+      // 9. Asset Turnover proxy: Revenue growth > 0
       if (revenueGrowth > 0) score++;
-      // 8. OPM & Margin Quality (OPM >= 12% or ROE > 12%)
-      if (opm >= 12 || roe > 12) score++;
-      // 9. Profit CAGR > 0 (Long term growth)
-      if (cagr > 0) score++;
       
       computedFScore = Math.max(1, Math.min(9, score));
     }
 
-    // 3. Estimate Altman Z-Score
+    // 3. Improved Altman Z-Score estimation
+    let computedZScore = 2.5; // default neutral
     const sectorUpper = (stock.sector || '').toUpperCase();
-    if (sectorUpper === 'FINANCIALS' || sectorUpper === 'FINANCE') {
-      computedZScore = 3.0; // Banks typically safe zones by default due to deposit backing
+    if (sectorUpper === 'FINANCIALS' || sectorUpper === 'FINANCE' || sectorUpper.includes('BANK')) {
+      computedZScore = 3.0; // Banks — deposit-backed, Z-Score not applicable
     } else if (fundamentals) {
-      let z = 0.5; // base
       const cr = fundamentals.currentRatio || 1.2;
       const der = fundamentals.der || 1.0;
-      const roe = fundamentals.roe || 8;
+      const roe = fundamentals.roe || 0;
+      const roa = fundamentals.roa || 0;
       const opm = fundamentals.opm || 0;
+      const marketCap = fundamentals.marketCap || 0;
+      const totalDebt = fundamentals.totalDebt || 0;
+      const totalRevenue = fundamentals.totalRevenue || 0;
+      const price = stock.price || 0;
       
-      // Liquidity contribution (proxy for working capital / assets)
-      z += Math.min(1.5, cr * 0.5);
+      let z = 0.5; // base
       
-      // Debt contribution (proxy for equity / debt leverage)
+      // Working Capital proxy (Current Ratio contribution)
+      z += Math.min(1.2, (cr - 1.0) * 1.5);
+      
+      // Retained Earnings / Leverage proxy
       if (der > 0) {
-        z += Math.min(1.5, 1.0 / der);
+        z += Math.min(1.2, 1.0 / der);
       } else {
-        z += 1.5;
+        z += 1.2;
       }
       
-      // Profitability & Operating Margin contribution (EBIT proxy)
-      if (roe > 0) {
-        z += Math.min(0.8, (roe / 100) * 3);
-      }
-      if (opm > 0) {
-        z += Math.min(0.8, (opm / 100) * 2.5);
+      // EBIT/Total Assets proxy (ROA + OPM combined)
+      const profitProxy = Math.max(roa, opm * 0.3);
+      z += Math.min(0.8, (profitProxy / 100) * 3);
+      
+      // Market Cap / Total Liabilities proxy
+      if (totalDebt > 0 && marketCap > 0) {
+        const equityToDebt = marketCap / totalDebt;
+        z += Math.min(1.0, equityToDebt * 0.3);
+      } else if (der > 0 && der < 2.0) {
+        z += 0.5;
       }
       
-      computedZScore = Number(Math.max(0.5, Math.min(4.5, z + 0.8)).toFixed(2));
+      // Sales / Total Assets proxy (revenue efficiency)
+      if (totalRevenue > 0 && marketCap > 0) {
+        // Use revenue/marketCap as loose proxy for asset turnover
+        const revenueRatio = totalRevenue / marketCap;
+        z += Math.min(0.5, revenueRatio * 0.3);
+      }
+      
+      computedZScore = Number(Math.max(0.5, Math.min(4.5, z)).toFixed(2));
     }
 
     // Assign to fundamentals object
@@ -349,6 +367,7 @@ export async function GET(request, { params }) {
     let fundamentalScoreObj = null;
     let technicalScoreObj = null;
     let trendingScoreObj = null;
+    let dividendScoreObj = null;
 
     try {
       fundamentalScoreObj = calculateFundamentalScore(enrichedStock);
@@ -359,11 +378,15 @@ export async function GET(request, { params }) {
     try {
       trendingScoreObj = calculateTrendingScore(enrichedStock);
     } catch(e) {}
+    try {
+      dividendScoreObj = calculateDividendScore(enrichedStock);
+    } catch(e) {}
 
     const fundamentalScore = typeof fundamentalScoreObj === 'object' ? (fundamentalScoreObj?.score ?? 50) : Number(fundamentalScoreObj) || 50;
     const technicalScore = typeof technicalScoreObj === 'object' ? (technicalScoreObj?.score ?? 50) : Number(technicalScoreObj) || 50;
     const trendingScore = typeof trendingScoreObj === 'object' ? (trendingScoreObj?.score ?? 50) : Number(trendingScoreObj) || 50;
     const smartMoneyScore = typeof smartMoneyScoreObj === 'object' ? (smartMoneyScoreObj?.score ?? 50) : Number(smartMoneyScoreObj) || 50;
+    const dividendScore = typeof dividendScoreObj === 'object' ? (dividendScoreObj?.score ?? 0) : Number(dividendScoreObj) || 0;
 
     const responseData = {
       ...enrichedStock,
@@ -381,6 +404,7 @@ export async function GET(request, { params }) {
         technical: technicalScore,
         trending: trendingScore,
         smartMoney: smartMoneyScore,
+        dividend: dividendScore,
         details: {
           fundamental: fundamentalScoreObj?.details || [],
           technical: technicalScoreObj?.details || [],

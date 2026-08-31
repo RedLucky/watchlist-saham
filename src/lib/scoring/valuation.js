@@ -68,7 +68,7 @@ export function calculateValuationScore(stock) {
   } else {
     details.push('Data PER belum tersedia');
   }
-  score += perScore * 0.50;
+  score += perScore * 0.35;
 
   // ── PBV vs Sector Average (50%) ────────────────────────────────────
   let pbvScore = 40; // default if no data
@@ -98,11 +98,53 @@ export function calculateValuationScore(stock) {
   } else {
     details.push('Data PBV belum tersedia');
   }
-  score += pbvScore * 0.50;
+  score += pbvScore * 0.30;
+
+  // ── Earnings Yield Component (20%) ─────────────────────────────────
+  let eyScore = 0;
+  const earningsYield = (stock.fundamentals?.eps && stock.price > 0) ? (stock.fundamentals.eps / stock.price * 100) : null;
+  
+  if (earningsYield >= 12) {
+    eyScore = 100;
+  } else if (earningsYield >= 8) {
+    eyScore = 80;
+  } else if (earningsYield >= 5) {
+    eyScore = 60;
+  } else if (earningsYield >= 3) {
+    eyScore = 40;
+  } else if (earningsYield > 0) {
+    eyScore = 20;
+  } else {
+    eyScore = 0;
+  }
+  if (earningsYield !== null) {
+    details.push(`Earnings Yield: ${earningsYield.toFixed(1)}%`);
+  }
+  score += eyScore * 0.20;
+
+  // ── PEG Ratio Component (15%) ──────────────────────────────────────
+  let pegScore = 40;
+  const pegRatio = stock.fundamentals?.pegRatio ?? null;
+  
+  if (pegRatio !== null) {
+    if (pegRatio > 0 && pegRatio <= 1.0) {
+      pegScore = 100;
+    } else if (pegRatio > 1.0 && pegRatio <= 1.5) {
+      pegScore = 75;
+    } else if (pegRatio > 1.5 && pegRatio <= 2.0) {
+      pegScore = 50;
+    } else if (pegRatio > 2.0 && pegRatio <= 3.0) {
+      pegScore = 25;
+    } else {
+      pegScore = 0;
+    }
+    details.push(`PEG Ratio: ${pegRatio.toFixed(2)}`);
+  }
+  score += pegScore * 0.15;
 
   return {
     score: Math.round(Math.min(100, Math.max(0, score))),
     details,
-    metrics: { per: safePER, pbv: safePBV, sectorAvgPER: avg.per, sectorAvgPBV: avg.pbv },
+    metrics: { per: safePER, pbv: safePBV, sectorAvgPER: avg.per, sectorAvgPBV: avg.pbv, earningsYield, pegRatio },
   };
 }

@@ -46,6 +46,8 @@ export function evaluateAlphaLegends(stocks = []) {
     evaluationDetails['graham_enterprising'] = { pass: grahamEnterprisingPass, label: 'Ben Graham (Enterprising)', reason: 'Deep Value (PER ≤ 10, PBV ≤ 1.0), Utang Rendah, ROE & EPS Positif' };
 
     // 3. Ben Graham - Defensive Investors (High Margin of Safety)
+    // CATATAN: Graham asli mensyaratkan 20 tahun pembayaran dividen berkelanjutan.
+    // Di sini direlaksasi ke 5 tahun karena keterbatasan data historis IDX.
     // Graham Number (PER x PBV <= 22.5), PER <= 15, PBV <= 1.5, DER <= 0.8, Div Yield >= 3.0%, Streak >= 5 Thn
     const grahamDefensivePass = per > 0 && pbv > 0 && (per * pbv <= 22.5) && per <= 15 && pbv <= 1.5 && (isFinancial || (der !== null && der <= 0.8)) && divYield >= 3.0 && streakYears >= 5;
     if (grahamDefensivePass) passedFormulaKeys.push('graham_defensive');
@@ -53,7 +55,9 @@ export function evaluateAlphaLegends(stocks = []) {
 
     // 4. Peter Lynch - Fast Growers (High Growth & Reasonable Valuation)
     // Growth >= 15%, ROE >= 15%, PER <= 28, DER <= 1.0
-    const lynchFastPass = (profitGrowth >= 15 || revenueGrowth >= 15 || (forwardEps !== null && eps !== null && forwardEps > eps * 1.15)) && roe >= 15 && per > 0 && per <= 28 && (isFinancial || (der !== null && der <= 1.0));
+    // Lynch's famous PEG Ratio filter
+    const pegRatioOk = (stock.fundamentals?.pegRatio && stock.fundamentals.pegRatio > 0) ? stock.fundamentals.pegRatio <= 1.5 : true;
+    const lynchFastPass = (profitGrowth >= 15 || revenueGrowth >= 15 || (forwardEps !== null && eps !== null && forwardEps > eps * 1.15)) && roe >= 15 && per > 0 && per <= 28 && (isFinancial || (der !== null && der <= 1.0)) && pegRatioOk;
     if (lynchFastPass) passedFormulaKeys.push('lynch_fast');
     evaluationDetails['lynch_fast'] = { pass: lynchFastPass, label: 'Peter Lynch (Fast Growers)', reason: 'Growth ≥ 15%, ROE ≥ 15%, Valuasi Wajar (PER ≤ 28)' };
 
@@ -69,12 +73,12 @@ export function evaluateAlphaLegends(stocks = []) {
     if (lynchSlowPass) passedFormulaKeys.push('lynch_slow');
     evaluationDetails['lynch_slow'] = { pass: lynchSlowPass, label: 'Peter Lynch (Slow Growers)', reason: 'Yield Dividen Tinggi ≥ 6.0%, Rekam Jejak Dividen ≥ 5 Thn' };
 
-    // 7. Joel Greenblatt - Magic Formula (High ROE + High Earnings Yield / OPM)
+    // 7. Joel Greenblatt - Magic Formula (High ROE + High Earnings Yield)
     // ROE >= 16%, Earnings Yield (100/PER) >= 9.0% (PER <= 11.1), DER <= 1.0
     const earningsYield = per > 0 ? (100 / per) : 0;
-    const greenblattPass = roe >= 16 && (earningsYield >= 9.0 || (opm !== null && opm >= 18)) && (isFinancial || (der !== null && der <= 1.0));
+    const greenblattPass = roe >= 16 && earningsYield >= 9.0 && (isFinancial || (der !== null && der <= 1.0));
     if (greenblattPass) passedFormulaKeys.push('greenblatt');
-    evaluationDetails['greenblatt'] = { pass: greenblattPass, label: 'Joel Greenblatt (Magic Formula)', reason: 'ROE Tinggi ≥ 16% & Earnings Yield Tinggi / OPM Tebal' };
+    evaluationDetails['greenblatt'] = { pass: greenblattPass, label: 'Joel Greenblatt (Magic Formula)', reason: 'ROE Tinggi ≥ 16% & Earnings Yield Tinggi' };
 
     // 8. Terry Smith (Quality Compounders)
     // ROE >= 20%, OPM >= 15%, Revenue/Profit Growth >= 10%, DER <= 0.8

@@ -92,20 +92,30 @@ async function syncAllPrices(limit = null) {
       );
       quotesList = Array.isArray(rawBatch) ? rawBatch : (rawBatch ? [rawBatch] : []);
     } catch (batchErr) {
-      console.warn(`[PRICE-SYNC] Batch warning: ${batchErr.message || batchErr}. Falling back to individual quotes...`);
+      console.warn(`[PRICE-SYNC] Batch warning: ${batchErr.message || batchErr}. Falling back to sequential micro-batches...`);
       try {
-        const settled = await Promise.allSettled(
-          chunk.map(t => withTimeout(yahooFinance.quote(t, {}, { validateResult: false }), 6000, `Quote timeout ${t}`))
-        );
-        quotesList = settled
-          .filter(r => r.status === 'fulfilled' && r.value?.symbol)
-          .map(r => r.value);
+        // Fallback terkendali: proses 5 per 5 dengan delay agar tidak kena rate-limit Yahoo
+        const subChunkSize = 5;
+        for (let s = 0; s < chunk.length; s += subChunkSize) {
+          const subChunk = chunk.slice(s, s + subChunkSize);
+          const settled = await Promise.allSettled(
+            subChunk.map(t => withTimeout(yahooFinance.quote(t, {}, { validateResult: false }), 6000, `Quote timeout ${t}`))
+          );
+          const validSub = settled
+            .filter(r => r.status === 'fulfilled' && r.value?.symbol)
+            .map(r => r.value);
+          quotesList.push(...validSub);
+          if (s + subChunkSize < chunk.length) {
+            await new Promise(r => setTimeout(r, 100));
+          }
+        }
       } catch (fallbackErr) {
         console.error(`[PRICE-SYNC] Fallback settled error:`, fallbackErr.message);
       }
     }
 
-    // TAHAP 2: Upsert Quotes ke Database
+    // TAHAP 2: Batch Upsert Quotes ke Database via prisma.$transaction
+    const upsertOps = [];
     for (const quote of quotesList) {
       if (!quote?.symbol) continue;
 
@@ -117,7 +127,7 @@ async function syncAllPrices(limit = null) {
         const turnover = BigInt(Math.round(currentPrice * Number(quote.regularMarketVolume || 0)));
         const frequency = Math.round(Number(quote.regularMarketVolume || 0) / 100);
 
-        await prisma.stockData.upsert({
+        upsertOps.push(prisma.stockData.upsert({
           where: { ticker },
           update: {
             price: currentPrice,
@@ -139,10 +149,21 @@ async function syncAllPrices(limit = null) {
             avgVolume3mo: BigInt(Math.round(Number(quote.averageDailyVolume3Month || 0))),
             lastPriceSync: new Date()
           }
-        });
-        updatedCount++;
+        }));
       } catch (dbErr) {
         console.error(`[PRICE-SYNC] DB Error for ${quote.symbol}:`, dbErr.message);
+      }
+    }
+
+    if (upsertOps.length > 0) {
+      try {
+        await prisma.$transaction(upsertOps);
+        updatedCount += upsertOps.length;
+      } catch (txErr) {
+        console.error(`[PRICE-SYNC] Batch transaction error, executing individual:`, txErr.message);
+        for (const op of upsertOps) {
+          try { await op; updatedCount++; } catch (e) {}
+        }
       }
     }
 

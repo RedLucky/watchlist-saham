@@ -111,9 +111,24 @@ export async function GET(request) {
       const fcf = typeof fundamentals.freeCashflow === 'number' ? fundamentals.freeCashflow : null;
       const currentRatio = typeof fundamentals.currentRatio === 'number' ? fundamentals.currentRatio : 1.5;
       
-      // Calculate Piotroski F-Score & Altman Z-Score equivalents internally or use defaults
-      const fScore = 6; // simplified for now, as we'd need full historicals to calc it perfectly, but we will use it as a concept
-      const zScore = 2.0;
+      // Calculate Piotroski F-Score from fundamentals
+      let fScore = 5; // default
+      const f = fundamentals || {};
+      if (f.roe > 0 || f.roa > 0) fScore++;
+      if (f.freeCashflow > 0 || f.operatingCashflow > 0) fScore++;
+      if (f.revenueGrowth > 0) fScore++;
+      if (f.der != null && f.der <= 1.0) fScore++;
+      if (f.currentRatio >= 1.5) fScore++;
+      if (f.opm >= 10) fScore++;
+      fScore = Math.max(1, Math.min(9, fScore - 2)); // offset base
+
+      // Calculate Altman Z-Score estimation
+      let zScore = 2.0; // default
+      if (f.currentRatio >= 1.5) zScore += 0.5;
+      if (f.der != null && f.der < 1.0) zScore += 0.5;
+      if (f.roe > 10) zScore += 0.3;
+      if (f.opm > 10) zScore += 0.3;
+      zScore = Math.min(4.5, zScore);
 
       // 1. Economic Moat & Mega-Cap Bonus (The "Compounders")
       let moatBonus = 0;

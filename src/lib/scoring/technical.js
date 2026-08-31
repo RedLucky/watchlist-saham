@@ -41,7 +41,7 @@ export function calculateTechnicalScore(stock, styleConfig = { name: 'swing', la
   // 2. Entry Setup Detection & Smart Money Confirmation (35%)
   const safeVolumes = Array.isArray(volumes) && volumes.length > 0 ? volumes : [1];
   const lastVolume = Number(safeVolumes[safeVolumes.length - 1] || 0);
-  const recentVolumes = safeVolumes.slice(-5);
+  const recentVolumes = safeVolumes.slice(-6, -1);
   const recentAvgVol = recentVolumes.length > 0
     ? recentVolumes.reduce((a, b) => a + Number(b || 0), 0) / recentVolumes.length
     : 1;

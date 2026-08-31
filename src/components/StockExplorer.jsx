@@ -1370,19 +1370,25 @@ export default function StockExplorer({ user }) {
                           <span className="font-bold text-emerald-600 dark:text-emerald-400">{f.eps != null ? `Rp ${Number(f.eps).toLocaleString('id-ID')}` : '-'}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">PER (TTM):</span>
-                          <span className="font-bold text-slate-900 dark:text-slate-100">{f.per != null ? `${Number(f.per).toFixed(2)}x` : '-'}</span>
+                          <span className="text-slate-600 dark:text-slate-400">PER (TTM) / Fwd PE:</span>
+                          <span className="font-bold text-slate-900 dark:text-slate-100">
+                            {f.per != null ? `${Number(f.per).toFixed(1)}x` : '-'} {f.forwardPE != null ? ` / ${Number(f.forwardPE).toFixed(1)}x` : ''}
+                          </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">PBV:</span>
-                          <span className="font-bold text-slate-900 dark:text-slate-100">{f.pbv != null ? `${Number(f.pbv).toFixed(2)}x` : '-'}</span>
+                          <span className="text-slate-600 dark:text-slate-400">PBV / Book Value:</span>
+                          <span className="font-bold text-slate-900 dark:text-slate-100">
+                            {f.pbv != null ? `${Number(f.pbv).toFixed(2)}x` : '-'} {f.bookValue != null ? ` (Rp ${Math.round(f.bookValue).toLocaleString('id-ID')})` : ''}
+                          </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-slate-600 dark:text-slate-400">PEG Ratio:</span>
-                          <span className="font-bold text-slate-900 dark:text-slate-100">
-                            {f.per && proj.cagrPercent && proj.cagrPercent > 0 
-                              ? (f.per / proj.cagrPercent).toFixed(2) 
-                              : (proj.cagrPercent != null && proj.cagrPercent <= 0 ? 'N/A (CAGR ≤ 0)' : '-')}
+                          <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                            {f.pegRatio != null 
+                              ? Number(f.pegRatio).toFixed(2)
+                              : (f.per && proj.cagrPercent && proj.cagrPercent > 0 
+                                  ? (f.per / proj.cagrPercent).toFixed(2) 
+                                  : (proj.cagrPercent != null && proj.cagrPercent <= 0 ? 'N/A (CAGR ≤ 0)' : '-'))}
                           </span>
                         </div>
                         <div className="flex justify-between pt-1 border-t border-slate-200 dark:border-slate-800">
@@ -1579,26 +1585,28 @@ export default function StockExplorer({ user }) {
 
                       <div className="space-y-2 text-xs">
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">ROE:</span>
-                          <span className="font-bold text-emerald-600 dark:text-emerald-400">{f.roe != null ? `${Number(f.roe).toFixed(1)}%` : '-'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">OPM (Operating Margin):</span>
-                          <span className="font-bold text-indigo-600 dark:text-indigo-400">{f.opm != null ? `${Number(f.opm).toFixed(1)}%` : '-'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">NPM (Net Margin):</span>
-                          <span className="font-bold text-slate-900 dark:text-slate-100">{f.npm != null ? `${Number(f.npm).toFixed(1)}%` : '-'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">DER (Hutang):</span>
-                          <span className={`font-bold ${f.der != null && f.der > 2 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-900 dark:text-slate-100'}`}>
-                            {f.der != null ? `${Number(f.der).toFixed(2)}x` : '-'}
+                          <span className="text-slate-600 dark:text-slate-400">ROE / ROA:</span>
+                          <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                            {f.roe != null ? `${Number(f.roe).toFixed(1)}%` : '-'} {f.roa != null ? ` / ${Number(f.roa).toFixed(1)}%` : ''}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">Current Ratio:</span>
-                          <span className="font-bold text-slate-900 dark:text-slate-100">{f.currentRatio != null ? `${Number(f.currentRatio).toFixed(2)}x` : '-'}</span>
+                          <span className="text-slate-600 dark:text-slate-400">OPM / NPM:</span>
+                          <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                            {f.opm != null ? `${Number(f.opm).toFixed(1)}%` : '-'} {f.npm != null ? ` / ${Number(f.npm).toFixed(1)}%` : ''}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-600 dark:text-slate-400">Total Revenue:</span>
+                          <span className="font-bold text-slate-900 dark:text-slate-100">
+                            {f.totalRevenue != null ? `Rp ${(Number(f.totalRevenue) / 1e12).toFixed(2)} T` : '-'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-600 dark:text-slate-400">DER / Current Ratio:</span>
+                          <span className="font-bold text-slate-900 dark:text-slate-100">
+                            {f.der != null ? `${Number(f.der).toFixed(2)}x` : '-'} {f.currentRatio != null ? ` / ${Number(f.currentRatio).toFixed(2)}x` : ''}
+                          </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-slate-600 dark:text-slate-400">Free Cash Flow:</span>
@@ -1639,7 +1647,7 @@ export default function StockExplorer({ user }) {
                         <div className="flex items-center gap-2">
                           <span className="text-lg">⚡</span>
                           <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200">
-                            Teknikal & Volume
+                            Teknikal & Market
                           </h3>
                         </div>
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
@@ -1653,9 +1661,17 @@ export default function StockExplorer({ user }) {
 
                       <div className="space-y-2 text-xs">
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">Volume Spike Ratio:</span>
+                          <span className="text-slate-600 dark:text-slate-400">52-Week Range:</span>
+                          <span className="font-bold text-slate-900 dark:text-slate-100">
+                            {(f.fiftyTwoWeekLow != null && f.fiftyTwoWeekHigh != null) 
+                              ? `Rp ${Math.round(f.fiftyTwoWeekLow).toLocaleString('id-ID')} - ${Math.round(f.fiftyTwoWeekHigh).toLocaleString('id-ID')}` 
+                              : '-'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-600 dark:text-slate-400">Beta (Volatilitas):</span>
                           <span className="font-bold text-indigo-600 dark:text-indigo-400">
-                            {vol.volumeSpikeRatio != null ? `${vol.volumeSpikeRatio}x rata-rata` : '-'}
+                            {f.beta != null ? `${Number(f.beta).toFixed(2)}x IHSG` : '-'}
                           </span>
                         </div>
                         <div className="flex justify-between">

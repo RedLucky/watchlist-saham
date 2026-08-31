@@ -12,7 +12,7 @@ export function calculateRawDividendYield(stock) {
   const oneYearAgo = new Date();
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
   
-  const USD_IDR = 16300;
+  const USD_IDR = 16500; // TODO: Ambil kurs dinamis dari Yahoo Finance USDIDR=X saat deep sync
 
   // 1. Ambil dari riwayat dividen BEI (IDX) dengan konversi mata uang
   if (stock.price > 0 && Array.isArray(stock.dividendHistory) && stock.dividendHistory.length > 0) {
