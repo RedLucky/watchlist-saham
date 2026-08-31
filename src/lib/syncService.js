@@ -456,6 +456,50 @@ async function deepSyncStockOnce(fullTicker) {
   // EPS: Prioritaskan sumber langsung, fallback hanya jika sumber terpercaya
   const resolvedEps = safeNumber(trailingEpsRaw, null);
 
+  // ── Currency Normalization for USD-reporting IDX stocks (e.g. AADI, ADRO, MEDC, ITMG, HRUM) ──
+  const financialCurrency = summary?.financialData?.financialCurrency || summary?.defaultKeyStatistics?.financialCurrency;
+  const isUSDReporting = financialCurrency === 'USD' || (bookValueRaw != null && bookValueRaw > 0 && bookValueRaw < 50 && (summary?.defaultKeyStatistics?.priceToBook > 500 || currentPrice > 100));
+  const USD_IDR_RATE = 16500;
+
+  let resolvedBookValue = safeNumber(bookValueRaw, null);
+  let resolvedPBV = safeNumber(summary?.defaultKeyStatistics?.priceToBook ?? quote?.priceToBook, null);
+  let resolvedTotalRevenue = safeNumber(totalRevenueRaw, null);
+  let resolvedNetIncome = safeNumber(netIncomeRaw, null);
+  let resolvedCash = Number.isFinite(cashRaw) ? Number(cashRaw) : 0;
+  let resolvedTotalDebt = safeNumber(totalDebtRaw, null);
+  let resolvedOperatingCashflow = safeNumber(operatingCashflowRaw, null);
+  let resolvedFreeCashflow = safeNumber(freeCashflowRaw, null);
+
+  if (isUSDReporting) {
+    if (resolvedBookValue != null && resolvedBookValue > 0 && resolvedBookValue < 100) {
+      resolvedBookValue = Number((resolvedBookValue * USD_IDR_RATE).toFixed(2));
+    }
+    if (resolvedPBV != null && resolvedPBV > 500) {
+      resolvedPBV = Number((resolvedPBV / USD_IDR_RATE).toFixed(2));
+    } else if (currentPrice > 0 && resolvedBookValue > 0) {
+      resolvedPBV = Number((currentPrice / resolvedBookValue).toFixed(2));
+    }
+    // Scale balance sheet & income statement USD values to IDR
+    if (resolvedTotalRevenue != null && resolvedTotalRevenue > 0 && resolvedTotalRevenue < 500_000_000_000) {
+      resolvedTotalRevenue = Math.round(resolvedTotalRevenue * USD_IDR_RATE);
+    }
+    if (resolvedNetIncome != null && Math.abs(resolvedNetIncome) < 100_000_000_000) {
+      resolvedNetIncome = Math.round(resolvedNetIncome * USD_IDR_RATE);
+    }
+    if (resolvedCash > 0 && resolvedCash < 100_000_000_000) {
+      resolvedCash = Math.round(resolvedCash * USD_IDR_RATE);
+    }
+    if (resolvedTotalDebt != null && resolvedTotalDebt > 0 && resolvedTotalDebt < 100_000_000_000) {
+      resolvedTotalDebt = Math.round(resolvedTotalDebt * USD_IDR_RATE);
+    }
+    if (resolvedOperatingCashflow != null && Math.abs(resolvedOperatingCashflow) < 100_000_000_000) {
+      resolvedOperatingCashflow = Math.round(resolvedOperatingCashflow * USD_IDR_RATE);
+    }
+    if (resolvedFreeCashflow != null && Math.abs(resolvedFreeCashflow) < 100_000_000_000) {
+      resolvedFreeCashflow = Math.round(resolvedFreeCashflow * USD_IDR_RATE);
+    }
+  }
+
   const fundamentals = {
     roe: normalizePercent(roeRaw, null),
     roa: normalizePercent(roaRaw, null),
@@ -468,8 +512,8 @@ async function deepSyncStockOnce(fullTicker) {
     eps: resolvedEps,
     forwardEps: safeNumber(forwardEpsRaw, null),
     per: perResolved,
-    pbv: safeNumber(summary?.defaultKeyStatistics?.priceToBook ?? quote?.priceToBook, null),
-    bookValue: safeNumber(bookValueRaw, null),
+    pbv: resolvedPBV,
+    bookValue: resolvedBookValue,
     forwardPE: safeNumber(forwardPERaw, null),
     pegRatio: safeNumber(pegRatioRaw, null),
     dividendYield: normalizePercent(dividendYieldRaw, 0),
@@ -479,14 +523,14 @@ async function deepSyncStockOnce(fullTicker) {
     yahooDividendHistory: mergedDivHistory,
     revenueGrowth: normalizePercent(revenueGrowthRaw, null),
     earningsGrowth: normalizePercent(earningsGrowthRaw, null),
-    totalRevenue: safeNumber(totalRevenueRaw, null),
-    netIncome: safeNumber(netIncomeRaw, null),
+    totalRevenue: resolvedTotalRevenue,
+    netIncome: resolvedNetIncome,
     enterpriseValue: safeNumber(enterpriseValueRaw, null),
-    cash: Number.isFinite(cashRaw) ? Number(cashRaw) : 0,
-    totalDebt: safeNumber(totalDebtRaw, null),
-    operatingCashflow: safeNumber(operatingCashflowRaw, null),
+    cash: resolvedCash,
+    totalDebt: resolvedTotalDebt,
+    operatingCashflow: resolvedOperatingCashflow,
     currentRatio: safeNumber(currentRatioRaw, null),
-    freeCashflow: safeNumber(freeCashflowRaw, null),
+    freeCashflow: resolvedFreeCashflow,
     sharesOutstanding: sharesOutstanding > 0 ? sharesOutstanding : null,
     marketCap: resolvedMarketCap,
     beta: safeNumber(betaRaw, null),
