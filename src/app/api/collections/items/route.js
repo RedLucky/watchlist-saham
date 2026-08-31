@@ -172,18 +172,18 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { collectionId, ticker, notes, targetBuy, targetSell } = body;
+    const { collectionId, ticker, notes, targetBuy, targetSell, forceOverwrite = false } = body;
 
     if (!collectionId || !ticker) {
       return NextResponse.json({ error: 'collectionId dan ticker diperlukan' }, { status: 400 });
     }
 
-    const collection = await prisma.collection.findUnique({ where: { id: collectionId } });
+    const collection = await prisma.collection.findUnique({ where: { id: parseInt(collectionId, 10) } });
     if (!collection || collection.userId !== userId) {
       return NextResponse.json({ error: 'Koleksi tidak valid' }, { status: 403 });
     }
 
-    const count = await prisma.collectionItem.count({ where: { collectionId } });
+    const count = await prisma.collectionItem.count({ where: { collectionId: parseInt(collectionId, 10) } });
     if (count >= 100) {
       return NextResponse.json({ error: 'Maksimal 100 saham per koleksi' }, { status: 400 });
     }
@@ -193,9 +193,45 @@ export async function POST(request) {
     const parsedTargetBuy = targetBuy != null && targetBuy !== '' ? parseFloat(targetBuy) : null;
     const parsedTargetSell = targetSell != null && targetSell !== '' ? parseFloat(targetSell) : null;
 
+    // Check if item already exists in this collection
+    const existing = await prisma.collectionItem.findUnique({
+      where: {
+        collectionId_ticker: {
+          collectionId: parseInt(collectionId, 10),
+          ticker: normalizedTicker
+        }
+      }
+    });
+
+    if (existing && !forceOverwrite) {
+      return NextResponse.json({
+        duplicate: true,
+        collectionName: collection.name,
+        ticker: normalizedTicker,
+        error: `Saham ${normalizedTicker} sudah ada di koleksi "${collection.name}".`
+      }, { status: 409 });
+    }
+
+    if (existing && forceOverwrite) {
+      const updated = await prisma.collectionItem.update({
+        where: {
+          collectionId_ticker: {
+            collectionId: parseInt(collectionId, 10),
+            ticker: normalizedTicker
+          }
+        },
+        data: {
+          notes: notes !== undefined ? (notes || null) : existing.notes,
+          targetBuy: Number.isFinite(parsedTargetBuy) ? parsedTargetBuy : existing.targetBuy,
+          targetSell: Number.isFinite(parsedTargetSell) ? parsedTargetSell : existing.targetSell,
+        }
+      });
+      return NextResponse.json({ ...updated, updated: true }, { status: 200 });
+    }
+
     const item = await prisma.collectionItem.create({
       data: {
-        collectionId,
+        collectionId: parseInt(collectionId, 10),
         ticker: normalizedTicker,
         notes: notes || null,
         targetBuy: Number.isFinite(parsedTargetBuy) ? parsedTargetBuy : null,
@@ -207,7 +243,7 @@ export async function POST(request) {
     return NextResponse.json(item, { status: 201 });
   } catch (error) {
     if (error.code === 'P2002') {
-      return NextResponse.json({ error: 'Saham sudah ada di koleksi ini' }, { status: 400 });
+      return NextResponse.json({ duplicate: true, error: 'Saham sudah ada di koleksi ini' }, { status: 409 });
     }
     console.error('Error adding item:', error);
     return NextResponse.json({ error: 'Terjadi kesalahan server' }, { status: 500 });

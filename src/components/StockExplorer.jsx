@@ -205,6 +205,22 @@ export default function StockExplorer({ user }) {
   const [editItemTargetSell, setEditItemTargetSell] = useState('');
   const [savingEditItem, setSavingEditItem] = useState(false);
 
+  // Move Stock Between Collections State
+  const [showMoveModal, setShowMoveModal] = useState(false);
+  const [movingItem, setMovingItem] = useState(null);
+  const [moveTargetCollectionId, setMoveTargetCollectionId] = useState('');
+  const [movingStockLoading, setMovingStockLoading] = useState(false);
+
+  // Custom Duplicate / Confirmation Modal State (No browser alert)
+  const [duplicateModal, setDuplicateModal] = useState(null);
+  // Toast Notification State
+  const [toast, setToast] = useState(null);
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
+
   // Drag and Drop reordering state for Collection Cards
   const [draggedItemIndex, setDraggedItemIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
@@ -549,8 +565,8 @@ export default function StockExplorer({ user }) {
     }
   };
 
-  const handleSaveStockToCollection = async (e) => {
-    e.preventDefault();
+  const handleSaveStockToCollection = async (e, forceOverwrite = false) => {
+    if (e && e.preventDefault) e.preventDefault();
     if (!targetCollectionId || !selectedStock) return;
 
     try {
@@ -563,12 +579,35 @@ export default function StockExplorer({ user }) {
           notes: stockNote.trim() || null,
           targetBuy: saveTargetBuy ? parseFloat(saveTargetBuy) : null,
           targetSell: saveTargetSell ? parseFloat(saveTargetSell) : null,
+          forceOverwrite,
         }),
       });
 
+      const data = await res.json();
+
+      if (res.status === 409 && data.duplicate) {
+        const targetCol = collections.find(c => c.id.toString() === targetCollectionId.toString());
+        setDuplicateModal({
+          isOpen: true,
+          title: '⚠️ Saham Sudah Terdaftar di Koleksi',
+          ticker: selectedStock,
+          targetName: targetCol?.name || 'Koleksi Terpilih',
+          message: `Saham ${selectedStock} sudah terdaftar di koleksi "${targetCol?.name || 'Koleksi'}". Apakah Anda ingin tetap memperbarui catatan dan target harga untuk saham ini?`,
+          confirmLabel: 'Ya, Perbarui Data',
+          cancelLabel: 'Batalkan',
+          onConfirm: () => {
+            setDuplicateModal(null);
+            handleSaveStockToCollection(null, true);
+          },
+          onCancel: () => {
+            setDuplicateModal(null);
+          }
+        });
+        return;
+      }
+
       if (!res.ok) {
-        const err = await res.json();
-        alert(err.error || 'Gagal menyimpan saham');
+        showToast(data.error || 'Gagal menyimpan saham', 'error');
         return;
       }
 
@@ -576,13 +615,80 @@ export default function StockExplorer({ user }) {
       setStockNote('');
       setSaveTargetBuy('');
       setSaveTargetSell('');
-      alert(`✅ Saham ${selectedStock} berhasil disimpan ke koleksi!`);
+      showToast(data.updated ? `✅ Catatan saham ${selectedStock} berhasil diperbarui!` : `✅ Saham ${selectedStock} berhasil disimpan ke koleksi!`, 'success');
       await fetchCollections();
       if (selectedCollection?.id === parseInt(targetCollectionId, 10)) {
         fetchCollectionItems(selectedCollection.id, true);
       }
     } catch (err) {
-      alert('Terjadi kesalahan saat menyimpan saham');
+      showToast('Terjadi kesalahan saat menyimpan saham', 'error');
+    }
+  };
+
+  const handleOpenMoveModal = (item, e) => {
+    if (e) e.stopPropagation();
+    setMovingItem(item);
+    const otherCols = collections.filter(c => c.id !== selectedCollection?.id);
+    setMoveTargetCollectionId(otherCols[0]?.id?.toString() || '');
+    setShowMoveModal(true);
+  };
+
+  const handleExecuteMove = async (e, forceOverwrite = false) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!movingItem || !moveTargetCollectionId || !selectedCollection) return;
+
+    setMovingStockLoading(true);
+    try {
+      const res = await fetch('/api/collections/items/move', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sourceCollectionId: selectedCollection.id,
+          targetCollectionId: parseInt(moveTargetCollectionId, 10),
+          ticker: movingItem.ticker,
+          forceOverwrite,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.status === 409 && data.duplicate) {
+        // Stock already exists in target collection -> Show custom confirmation modal!
+        setDuplicateModal({
+          isOpen: true,
+          title: '⚠️ Saham Sudah Ada di Koleksi Tujuan',
+          ticker: movingItem.ticker,
+          targetName: data.targetCollectionName || 'Koleksi Tujuan',
+          message: `Saham ${movingItem.ticker} sudah terdaftar di koleksi "${data.targetCollectionName}". Jika Anda memindahkan, data di koleksi asal akan dihapus dan catatan di koleksi tujuan akan disinkronkan. Apakah Anda ingin tetap melanjutkan?`,
+          confirmLabel: 'Ya, Tetap Pindahkan',
+          cancelLabel: 'Batalkan',
+          onConfirm: () => {
+            setDuplicateModal(null);
+            handleExecuteMove(null, true);
+          },
+          onCancel: () => {
+            setDuplicateModal(null);
+          }
+        });
+        setMovingStockLoading(false);
+        return;
+      }
+
+      if (!res.ok) {
+        showToast(data.error || 'Gagal memindahkan saham', 'error');
+        setMovingStockLoading(false);
+        return;
+      }
+
+      setShowMoveModal(false);
+      setMovingItem(null);
+      showToast(data.message || `✅ Saham ${movingItem.ticker} berhasil dipindahkan!`, 'success');
+      await fetchCollections();
+      fetchCollectionItems(selectedCollection.id, true);
+    } catch (err) {
+      showToast('Terjadi kesalahan saat memindahkan saham', 'error');
+    } finally {
+      setMovingStockLoading(false);
     }
   };
 
@@ -1085,6 +1191,13 @@ export default function StockExplorer({ user }) {
                               title="Tambah ke Komparasi"
                             >
                               ⚖️
+                            </button>
+                            <button
+                              onClick={(e) => handleOpenMoveModal(item, e)}
+                              className="text-xs p-1 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400"
+                              title="Pindahkan ke Koleksi Lain"
+                            >
+                              📦
                             </button>
                             <button
                               onClick={(e) => handleOpenEditItemModal(item, e)}
@@ -2867,6 +2980,148 @@ export default function StockExplorer({ user }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {showMoveModal && movingItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">📦</span>
+                <div>
+                  <h3 className="text-base font-black text-slate-900 dark:text-white">Pindahkan Saham</h3>
+                  <p className="text-xs text-slate-500">Pindahkan {movingItem.ticker} dari koleksi saat ini ke koleksi lain</p>
+                </div>
+              </div>
+              <button onClick={() => setShowMoveModal(false)} className="text-slate-400 hover:text-slate-600">✕</button>
+            </div>
+
+            <form onSubmit={handleExecuteMove} className="space-y-4">
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-slate-500 block">Koleksi Asal:</span>
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                    {selectedCollection?.emoji || '📁'} {selectedCollection?.name}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] uppercase font-bold text-slate-500 block">Saham:</span>
+                  <span className="text-sm font-black text-indigo-600 dark:text-indigo-400">
+                    {movingItem.ticker}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Pilih Koleksi Tujuan <span className="text-rose-500">*</span>
+                </label>
+                {collections.filter(c => c.id !== selectedCollection?.id).length === 0 ? (
+                  <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl text-xs text-amber-800 dark:text-amber-300">
+                    ⚠️ Anda belum memiliki koleksi lain untuk memindahkan saham. Silakan buat koleksi baru terlebih dahulu.
+                  </div>
+                ) : (
+                  <select
+                    required
+                    value={moveTargetCollectionId}
+                    onChange={(e) => setMoveTargetCollectionId(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                  >
+                    {collections
+                      .filter(c => c.id !== selectedCollection?.id)
+                      .map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.emoji || '📁'} {c.name} ({c._count?.items ?? 0} saham)
+                        </option>
+                      ))}
+                  </select>
+                )}
+              </div>
+
+              {movingItem.notes && (
+                <div className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/40 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <span className="font-semibold block text-[10px] uppercase text-slate-400 mb-0.5">Catatan Bawaan:</span>
+                  📝 {movingItem.notes}
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowMoveModal(false)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-xl transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={movingStockLoading || collections.filter(c => c.id !== selectedCollection?.id).length === 0}
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-md transition-all disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {movingStockLoading ? 'Memindahkan...' : '📦 Pindahkan Sekarang'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: CUSTOM POPUP DUPLICATE CONFIRMATION (NO BROWSER ALERT) ── */}
+      {duplicateModal && duplicateModal.isOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/65 backdrop-blur-sm p-4 animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700/80 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xl shrink-0">
+                ⚠️
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-black text-slate-900 dark:text-white">
+                  {duplicateModal.title || 'Saham Sudah Ada di Koleksi'}
+                </h3>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                  {duplicateModal.message}
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3 bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 rounded-xl text-[11px] text-amber-900 dark:text-amber-200 font-medium">
+              💡 <span className="font-bold">Konfirmasi Tindakan:</span> Memilih lanjut akan menyinkronkan catatan dan target beli/jual ke koleksi tujuan.
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={duplicateModal.onCancel}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition-colors"
+              >
+                {duplicateModal.cancelLabel || 'Batalkan'}
+              </button>
+              <button
+                type="button"
+                onClick={duplicateModal.onConfirm}
+                className="px-5 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center gap-1"
+              >
+                {duplicateModal.confirmLabel || 'Ya, Lanjutkan'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── TOAST NOTIFICATION BANNER ───────────────────────────────────── */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5 duration-200">
+          <div className={`px-4 py-3 rounded-2xl shadow-2xl border text-xs font-bold flex items-center gap-2.5 backdrop-blur-md ${
+            toast.type === 'error'
+              ? 'bg-rose-50/95 dark:bg-rose-950/95 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200'
+              : toast.type === 'warning'
+              ? 'bg-amber-50/95 dark:bg-amber-950/95 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200'
+              : 'bg-emerald-50/95 dark:bg-emerald-950/95 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200'
+          }`}>
+            <span>{toast.type === 'error' ? '❌' : toast.type === 'warning' ? '⚠️' : '✅'}</span>
+            <span>{toast.message}</span>
+            <button onClick={() => setToast(null)} className="ml-2 text-slate-400 hover:text-slate-600 text-xs">✕</button>
           </div>
         </div>
       )}
