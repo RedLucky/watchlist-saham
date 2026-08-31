@@ -100,7 +100,9 @@ export async function GET(request, { params }) {
         spread,
         spreadPercent,
         regularMarketPrice: quote.regularMarketPrice,
-        regularMarketChangePercent: quote.regularMarketChangePercent
+        regularMarketChangePercent: quote.regularMarketChangePercent,
+        fiftyTwoWeekHigh: quote.fiftyTwoWeekHigh || null,
+        fiftyTwoWeekLow: quote.fiftyTwoWeekLow || null,
       };
     } catch (e) {
       // Ignore yahoo finance errors

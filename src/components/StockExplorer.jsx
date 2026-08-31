@@ -1663,21 +1663,41 @@ export default function StockExplorer({ user }) {
                         </span>
                       </div>
 
-                      <div className="space-y-2 text-xs">
-                        <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">52-Week Range:</span>
-                          <span className="font-bold text-slate-900 dark:text-slate-100">
-                            {(f.fiftyTwoWeekLow != null && f.fiftyTwoWeekHigh != null) 
-                              ? `Rp ${Math.round(f.fiftyTwoWeekLow).toLocaleString('id-ID')} - ${Math.round(f.fiftyTwoWeekHigh).toLocaleString('id-ID')}` 
-                              : '-'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">Beta (Volatilitas):</span>
-                          <span className="font-bold text-indigo-600 dark:text-indigo-400">
-                            {f.beta != null ? `${Number(f.beta).toFixed(2)}x IHSG` : '-'}
-                          </span>
-                        </div>
+                      {(() => {
+                        const low52 = f.fiftyTwoWeekLow ?? r?.fiftyTwoWeekLow ?? t.support ?? (t.prices?.length ? Math.min(...t.prices.filter(p => p > 0)) : null);
+                        const high52 = f.fiftyTwoWeekHigh ?? r?.fiftyTwoWeekHigh ?? t.resistance ?? (t.prices?.length ? Math.max(...t.prices) : null);
+                        const curPrice = stockDetail.price || 0;
+                        const pct52 = (low52 && high52 && high52 > low52 && curPrice >= low52) 
+                          ? Math.min(100, Math.max(0, ((curPrice - low52) / (high52 - low52)) * 100))
+                          : null;
+
+                        return (
+                          <div className="space-y-2 text-xs">
+                            <div className="flex flex-col gap-1">
+                              <div className="flex justify-between items-center">
+                                <span className="text-slate-600 dark:text-slate-400">52-Week Range:</span>
+                                <span className="font-bold text-slate-900 dark:text-slate-100">
+                                  {(low52 != null && high52 != null) 
+                                    ? `Rp ${Math.round(low52).toLocaleString('id-ID')} - ${Math.round(high52).toLocaleString('id-ID')}` 
+                                    : '-'}
+                                </span>
+                              </div>
+                              {pct52 != null && (
+                                <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden flex items-center">
+                                  <div 
+                                    className="bg-indigo-500 h-full rounded-full transition-all" 
+                                    style={{ width: `${pct52}%` }} 
+                                    title={`Posisi harga: ${pct52.toFixed(0)}% dari 52W range`}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-600 dark:text-slate-400">Beta (Volatilitas):</span>
+                              <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                                {f.beta != null ? `${Number(f.beta).toFixed(2)}x IHSG` : '-'}
+                              </span>
+                            </div>
                         <div className="flex justify-between">
                           <span className="text-slate-600 dark:text-slate-400">RSI 14 (Momentum):</span>
                           <span className={`font-bold ${
@@ -1699,7 +1719,9 @@ export default function StockExplorer({ user }) {
                           </span>
                         </div>
                       </div>
-                    </div>
+                    );
+                  })()}
+                </div>
                     <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400 flex items-center justify-between">
                       <span>Konfirmasi Volume:</span>
                       <span className="font-bold text-slate-900 dark:text-slate-100">
