@@ -213,6 +213,8 @@ export default function StockExplorer({ user }) {
 
   // Custom Duplicate / Confirmation Modal State (No browser alert)
   const [duplicateModal, setDuplicateModal] = useState(null);
+  // Custom Confirmation Dialog (for delete actions)
+  const [confirmDialog, setConfirmDialog] = useState(null);
   // Toast Notification State
   const [toast, setToast] = useState(null);
 
@@ -449,11 +451,11 @@ export default function StockExplorer({ user }) {
     if (!ticker) return;
     const cleanTicker = ticker.toUpperCase().replace(/\.JK$/, '');
     if (compareList.includes(cleanTicker)) {
-      alert(`Saham ${cleanTicker} sudah ada dalam daftar komparasi.`);
+      showToast(`Saham ${cleanTicker} sudah ada dalam daftar komparasi.`, 'warning');
       return;
     }
     if (compareList.length >= 6) {
-      alert('Maksimal 6 saham untuk dikomparasi secara bersamaan.');
+      showToast('Maksimal 6 saham untuk dikomparasi secara bersamaan.', 'warning');
       return;
     }
 
@@ -493,7 +495,7 @@ export default function StockExplorer({ user }) {
 
       if (!res.ok) {
         const err = await res.json();
-        alert(err.error || 'Gagal membuat koleksi');
+        showToast(err.error || 'Gagal membuat koleksi', 'error');
         return;
       }
 
@@ -504,8 +506,9 @@ export default function StockExplorer({ user }) {
       setNewCollectionEmoji('📁');
       await fetchCollections();
       setSelectedCollection(created);
+      showToast(`✅ Koleksi "${created.name}" berhasil dibuat!`, 'success');
     } catch (err) {
-      alert('Terjadi kesalahan saat membuat koleksi');
+      showToast('Terjadi kesalahan saat membuat koleksi', 'error');
     }
   };
 
@@ -528,7 +531,7 @@ export default function StockExplorer({ user }) {
 
       if (!res.ok) {
         const err = await res.json();
-        alert(err.error || 'Gagal memperbarui koleksi');
+        showToast(err.error || 'Gagal memperbarui koleksi', 'error');
         return;
       }
 
@@ -537,32 +540,44 @@ export default function StockExplorer({ user }) {
       setEditingCollection(null);
       await fetchCollections();
       setSelectedCollection(updated);
+      showToast(`✅ Koleksi "${updated.name}" berhasil diperbarui!`, 'success');
     } catch (err) {
-      alert('Terjadi kesalahan saat memperbarui koleksi');
+      showToast('Terjadi kesalahan saat memperbarui koleksi', 'error');
     }
   };
 
-  const handleDeleteCollection = async (collectionId, name) => {
-    if (!confirm(`Hapus koleksi "${name}"? Semua saham di dalamnya akan ikut terhapus.`)) return;
+  const handleDeleteCollection = (collectionId, name) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: '🗑️ Hapus Koleksi?',
+      message: `Apakah Anda yakin ingin menghapus koleksi "${name}"? Semua saham dan catatan di dalamnya akan ikut terhapus.`,
+      confirmLabel: 'Ya, Hapus Koleksi',
+      cancelLabel: 'Batal',
+      confirmStyle: 'danger',
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        try {
+          const res = await fetch('/api/collections', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: collectionId }),
+          });
 
-    try {
-      const res = await fetch('/api/collections', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: collectionId }),
-      });
+          if (!res.ok) {
+            const err = await res.json();
+            showToast(err.error || 'Gagal menghapus koleksi', 'error');
+            return;
+          }
 
-      if (!res.ok) {
-        const err = await res.json();
-        alert(err.error || 'Gagal menghapus koleksi');
-        return;
-      }
-
-      setSelectedCollection(null);
-      await fetchCollections();
-    } catch (err) {
-      alert('Terjadi kesalahan saat menghapus koleksi');
-    }
+          setSelectedCollection(null);
+          await fetchCollections();
+          showToast(`Koleksi "${name}" berhasil dihapus`, 'success');
+        } catch (err) {
+          showToast('Terjadi kesalahan saat menghapus koleksi', 'error');
+        }
+      },
+      onCancel: () => setConfirmDialog(null)
+    });
   };
 
   const handleSaveStockToCollection = async (e, forceOverwrite = false) => {
@@ -720,44 +735,56 @@ export default function StockExplorer({ user }) {
 
       if (!res.ok) {
         const err = await res.json();
-        alert(err.error || 'Gagal memperbarui item koleksi');
+        showToast(err.error || 'Gagal memperbarui item koleksi', 'error');
         return;
       }
 
       setShowEditItemModal(false);
       setEditingItem(null);
+      showToast('Catatan & target harga berhasil diperbarui', 'success');
       if (selectedCollection?.id) {
         fetchCollectionItems(selectedCollection.id, true);
       }
     } catch (err) {
-      alert('Terjadi kesalahan saat menyimpan perubahan');
+      showToast('Terjadi kesalahan saat menyimpan perubahan', 'error');
     } finally {
       setSavingEditItem(false);
     }
   };
 
-  const handleRemoveStockFromCollection = async (collectionId, ticker, e) => {
+  const handleRemoveStockFromCollection = (collectionId, ticker, e) => {
     if (e) e.stopPropagation();
-    if (!confirm(`Hapus ${ticker} dari koleksi?`)) return;
+    setConfirmDialog({
+      isOpen: true,
+      title: '🗑️ Hapus Saham dari Koleksi?',
+      message: `Hapus saham ${ticker} dari koleksi ini?`,
+      confirmLabel: 'Ya, Hapus Saham',
+      cancelLabel: 'Batal',
+      confirmStyle: 'danger',
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        try {
+          const res = await fetch('/api/collections/items', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ collectionId, ticker }),
+          });
 
-    try {
-      const res = await fetch('/api/collections/items', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ collectionId, ticker }),
-      });
+          if (!res.ok) {
+            const err = await res.json();
+            showToast(err.error || 'Gagal menghapus saham dari koleksi', 'error');
+            return;
+          }
 
-      if (!res.ok) {
-        const err = await res.json();
-        alert(err.error || 'Gagal menghapus saham dari koleksi');
-        return;
-      }
-
-      fetchCollectionItems(collectionId, true);
-      fetchCollections();
-    } catch (err) {
-      alert('Terjadi kesalahan');
-    }
+          fetchCollectionItems(collectionId, true);
+          fetchCollections();
+          showToast(`Saham ${ticker} dihapus dari koleksi`, 'success');
+        } catch (err) {
+          showToast('Terjadi kesalahan saat menghapus saham', 'error');
+        }
+      },
+      onCancel: () => setConfirmDialog(null)
+    });
   };
 
   // ── DRAG & DROP REORDER HANDLERS ───────────────────────────────────────
@@ -3103,6 +3130,52 @@ export default function StockExplorer({ user }) {
                 className="px-5 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center gap-1"
               >
                 {duplicateModal.confirmLabel || 'Ya, Lanjutkan'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: CONFIRMATION DIALOG (DELETE ACTIONS) ───────────────── */}
+      {confirmDialog && confirmDialog.isOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/65 backdrop-blur-sm p-4 animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95">
+            <div className="flex items-start gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 ${
+                confirmDialog.confirmStyle === 'danger'
+                  ? 'bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400'
+                  : 'bg-indigo-100 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400'
+              }`}>
+                {confirmDialog.confirmStyle === 'danger' ? '🗑️' : '❓'}
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-black text-slate-900 dark:text-white">
+                  {confirmDialog.title}
+                </h3>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                  {confirmDialog.message}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={confirmDialog.onCancel}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition-colors"
+              >
+                {confirmDialog.cancelLabel || 'Batalkan'}
+              </button>
+              <button
+                type="button"
+                onClick={confirmDialog.onConfirm}
+                className={`px-5 py-2 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center gap-1 ${
+                  confirmDialog.confirmStyle === 'danger'
+                    ? 'bg-rose-600 hover:bg-rose-500'
+                    : 'bg-indigo-600 hover:bg-indigo-500'
+                }`}
+              >
+                {confirmDialog.confirmLabel || 'Ya, Lanjutkan'}
               </button>
             </div>
           </div>

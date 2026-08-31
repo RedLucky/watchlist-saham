@@ -49,7 +49,14 @@ export default function PensionCalculator() {
  const [manualLots, setManualLots] = useState({});
  const [isOptimizing, setIsOptimizing] = useState(false);
 
- // Tracker records state
+  // Toast Notification State
+  const [toast, setToast] = useState(null);
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
+
+  // Tracker records state
   const [trackerRecords, setTrackerRecords] = useState([]);
   const [paramsSavedMsg, setParamsSavedMsg] = useState(false);
 
@@ -260,12 +267,13 @@ export default function PensionCalculator() {
  await syncCustomPresetToDB(updated);
  await fetchDynamicPreset(riskProfile);
  setCustomTickerInput('');
+ showToast(`✅ Saham ${ticker} berhasil ditambahkan!`, 'success');
  } else {
- alert(`Saham ${ticker} tidak ditemukan di database.`);
+ showToast(`Saham ${ticker} tidak ditemukan di database.`, 'error');
  }
  }
  } catch (e) {
- alert('Gagal mengambil data saham.');
+ showToast('Gagal mengambil data saham.', 'error');
  } finally {
  setAddingCustomTicker(false);
  }
@@ -366,13 +374,14 @@ export default function PensionCalculator() {
         const data = await res.json();
         if (data.success && data.optimalLots) {
           setManualLots(data.optimalLots);
+          showToast('✅ Alokasi portofolio berhasil dioptimalkan!', 'success');
         }
       } else {
-        alert('Gagal mengambil hasil optimasi dari server.');
+        showToast('Gagal mengambil hasil optimasi dari server.', 'error');
       }
     } catch (err) {
       console.error(err);
-      alert('Terjadi kesalahan saat memanggil AI Optimizer.');
+      showToast('Terjadi kesalahan saat memanggil AI Optimizer.', 'error');
     } finally {
       setIsOptimizing(false);
     }
@@ -1287,6 +1296,23 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
  if (user.riskProfile) setRiskProfile(user.riskProfile);
  }}
  />
+
+ {/* ── TOAST NOTIFICATION ──────────────────────────────────────────── */}
+ {toast && (
+   <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5 duration-200">
+     <div className={`px-4 py-3 rounded-2xl shadow-2xl border text-xs font-bold flex items-center gap-2.5 backdrop-blur-md ${
+       toast.type === 'error'
+         ? 'bg-rose-50/95 dark:bg-rose-950/95 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200'
+         : toast.type === 'warning'
+         ? 'bg-amber-50/95 dark:bg-amber-950/95 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200'
+         : 'bg-emerald-50/95 dark:bg-emerald-950/95 border-emerald-200 dark:emerald-800 text-emerald-800 dark:text-emerald-200'
+     }`}>
+       <span>{toast.type === 'error' ? '❌' : toast.type === 'warning' ? '⚠️' : '✅'}</span>
+       <span>{toast.message}</span>
+       <button onClick={() => setToast(null)} className="ml-2 text-slate-400 hover:text-slate-600 text-xs">✕</button>
+     </div>
+   </div>
+ )}
  </div>
  );
 }

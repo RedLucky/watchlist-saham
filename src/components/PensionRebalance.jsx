@@ -10,6 +10,13 @@ export default function PensionRebalance({ records, onRefresh, stockPrices }) {
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
 
+  // Toast Notification State
+  const [toast, setToast] = useState(null);
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
+
   // Form states
   const [recordDate, setRecordDate] = useState(new Date().toISOString().slice(0, 10));
   const [dividendCash, setDividendCash] = useState(0);
@@ -148,7 +155,7 @@ export default function PensionRebalance({ records, onRefresh, stockPrices }) {
     });
     
     if (recordsToSave.length === 0) {
-      alert("Tidak ada transaksi untuk disimpan.");
+      showToast("Tidak ada transaksi untuk disimpan.", "warning");
       return;
     }
 
@@ -164,7 +171,7 @@ export default function PensionRebalance({ records, onRefresh, stockPrices }) {
       });
 
       if (res.ok) {
-        alert("Berhasil mengeksekusi rebalancing!");
+        showToast("✅ Berhasil mengeksekusi rebalancing!", "success");
         setShowForm(false);
         setSellForm([{ ticker: '', lots: 0, price: 0 }]);
         setBuyForm([{ ticker: '', lots: 0, price: 0 }]);
@@ -172,10 +179,10 @@ export default function PensionRebalance({ records, onRefresh, stockPrices }) {
         if (onRefresh) onRefresh();
       } else {
         const errData = await res.json().catch(() => ({}));
-        alert(`Gagal menyimpan rebalancing: ${errData.error || 'Error server'}`);
+        showToast(`Gagal menyimpan rebalancing: ${errData.error || 'Error server'}`, "error");
       }
     } catch (err) {
-      alert(`Terjadi kesalahan: ${err.message}`);
+      showToast(`Terjadi kesalahan: ${err.message}`, "error");
     }
   };
 
@@ -404,6 +411,23 @@ export default function PensionRebalance({ records, onRefresh, stockPrices }) {
           </div>
         )}
       </div>
+
+      {/* ── TOAST NOTIFICATION ──────────────────────────────────────────── */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5 duration-200">
+          <div className={`px-4 py-3 rounded-2xl shadow-2xl border text-xs font-bold flex items-center gap-2.5 backdrop-blur-md ${
+            toast.type === 'error'
+              ? 'bg-rose-50/95 dark:bg-rose-950/95 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200'
+              : toast.type === 'warning'
+              ? 'bg-amber-50/95 dark:bg-amber-950/95 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200'
+              : 'bg-emerald-50/95 dark:bg-emerald-950/95 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200'
+          }`}>
+            <span>{toast.type === 'error' ? '❌' : toast.type === 'warning' ? '⚠️' : '✅'}</span>
+            <span>{toast.message}</span>
+            <button onClick={() => setToast(null)} className="ml-2 text-slate-400 hover:text-slate-600 text-xs">✕</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

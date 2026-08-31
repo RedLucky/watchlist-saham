@@ -1,40 +1,121 @@
 'use client';
 
+import { useState } from 'react';
 import ScoreBar from './ScoreBar';
 import Tooltip from './Tooltip';
 import StockChart from './StockChart';
 
 export default function DetailPanel({ stock, mode, styleName }) {
- if (!stock) return null;
+  const [promptModal, setPromptModal] = useState(null);
+  const [promptValue, setPromptValue] = useState('');
+  const [toast, setToast] = useState(null);
 
- const subScoreEntries = Object.entries(stock.subScores);
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
 
+  if (!stock) return null;
 
- const formatPrice = (price) => {
- const value = Number(price);
- if (!Number.isFinite(value)) return '-';
- return new Intl.NumberFormat('id-ID').format(value);
- };
+  const subScoreEntries = Object.entries(stock.subScores);
 
- const formatPercentFromPrice = (value) => {
- const base = Number(stock?.price);
- const target = Number(value);
- if (!Number.isFinite(base) || base <= 0 || !Number.isFinite(target)) return null;
- return Number((((target - base) / base) * 100).toFixed(1));
- };
+  const formatPrice = (price) => {
+    const value = Number(price);
+    if (!Number.isFinite(value)) return '-';
+    return new Intl.NumberFormat('id-ID').format(value);
+  };
 
- const getRiskColor = (level) => {
- switch (level) {
- case 'Rendah': return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
- case 'Sedang': return 'text-blue-400 bg-blue-500/10 border-blue-500/20';
- case 'Menengah': return 'text-amber-400 bg-amber-500/10 border-amber-500/20';
- case 'Tinggi': return 'text-red-400 bg-red-500/10 border-red-500/20';
- default: return 'text-slate-400 bg-slate-500/10 border-slate-500/20';
- }
- };
+  const formatPercentFromPrice = (value) => {
+    const base = Number(stock?.price);
+    const target = Number(value);
+    if (!Number.isFinite(base) || base <= 0 || !Number.isFinite(target)) return null;
+    return Number((((target - base) / base) * 100).toFixed(1));
+  };
 
- const targetPct = formatPercentFromPrice(stock.target);
- const stopLossPct = formatPercentFromPrice(stock.stopLoss);
+  const getRiskColor = (level) => {
+    switch (level) {
+      case 'Rendah': return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
+      case 'Sedang': return 'text-blue-400 bg-blue-500/10 border-blue-500/20';
+      case 'Menengah': return 'text-amber-400 bg-amber-500/10 border-amber-500/20';
+      case 'Tinggi': return 'text-red-400 bg-red-500/10 border-red-500/20';
+      default: return 'text-slate-400 bg-slate-500/10 border-slate-500/20';
+    }
+  };
+
+  const targetPct = formatPercentFromPrice(stock.target);
+  const stopLossPct = formatPercentFromPrice(stock.stopLoss);
+
+  const handleOpenBuyPrompt = () => {
+    setPromptValue('100');
+    setPromptModal({
+      title: `Beli Saham ${stock.ticker}`,
+      message: `Berapa lembar saham ${stock.ticker} yang ingin dibeli? (1 lot = 100 lembar)`,
+      placeholder: 'Contoh: 100',
+      confirmLabel: '+ Tambah ke Portofolio',
+      onSubmit: (val) => {
+        const shares = parseInt(val, 10);
+        if (shares > 0) {
+          fetch('/api/portfolio/buy', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ticker: stock.ticker,
+              name: stock.name,
+              sector: stock.sector,
+              price: stock.price,
+              shares: shares
+            })
+          }).then(() => showToast(`${shares} lembar ${stock.ticker} berhasil ditambahkan ke portofolio!`, 'success'));
+        }
+        setPromptModal(null);
+      }
+    });
+  };
+
+  const handleOpenMonitorPrompt = () => {
+    setPromptValue(stock.price ? stock.price.toString() : '');
+    setPromptModal({
+      title: `Pantau Saham ${stock.ticker}`,
+      message: `Masukkan harga entry untuk ${stock.ticker} (default: harga saat ini Rp ${formatPrice(stock.price)}):`,
+      placeholder: 'Harga Entry...',
+      confirmLabel: 'Mulai Pantau',
+      onSubmit: (val) => {
+        const inputPrice = parseFloat((val || '').replace(/[^\d.-]/g, ''));
+        if (isNaN(inputPrice) || inputPrice <= 0) {
+          showToast('Harga entry tidak valid!', 'error');
+          return;
+        }
+
+        const modifiedStock = {
+          ...stock,
+          price: inputPrice,
+          entry: {
+            low: inputPrice,
+            high: inputPrice
+          }
+        };
+
+        fetch('/api/history', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            stock: modifiedStock,
+            mode,
+            style: styleName
+          })
+        })
+          .then(r => r.json())
+          .then(res => {
+            if (res.error) showToast(res.error, 'error');
+            else if (res.message) showToast(res.message, 'success');
+            else showToast(`${stock.ticker} mulai dipantau di Win Rate Dashboard dengan harga entry Rp ${formatPrice(inputPrice)}!`, 'success');
+          })
+          .catch(() => showToast('Gagal menyimpan ke dashboard', 'error'));
+
+        setPromptModal(null);
+      }
+    });
+  };
 
  return (
  <div className="animate-slide-down overflow-hidden">
@@ -78,63 +159,14 @@ export default function DetailPanel({ stock, mode, styleName }) {
  </h4>
  <div className="grid grid-cols-2 gap-2 sm:flex">
  <button 
- onClick={() => {
- const shares = parseInt(prompt(`Berapa lembar saham ${stock.ticker} yang ingin dibeli? (1 lot = 100 lembar)`,"100"));
- if(shares > 0) {
- fetch('/api/portfolio/buy', {
- method: 'POST',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({
- ticker: stock.ticker,
- name: stock.name,
- sector: stock.sector,
- price: stock.price,
- shares: shares
- })
- }).then(() => alert(`${shares} lembar ${stock.ticker} berhasil ditambahkan ke portofolio!`));
- }
- }}
+ onClick={handleOpenBuyPrompt}
  className="text-[11px] uppercase font-bold px-2.5 py-1.5 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border border-amber-500/30 rounded-md transition-colors whitespace-nowrap"
  title="Simulasi beli ke portofolio"
  >
  + Portofolio
  </button>
  <button 
- onClick={() => {
- const inputPriceStr = prompt(`Masukkan harga entry untuk ${stock.ticker} (default: harga saat ini):`, stock.price);
- if (inputPriceStr === null) return; // User cancelled
- 
- const inputPrice = parseFloat(inputPriceStr.replace(/[^\d.-]/g, ''));
- if (isNaN(inputPrice) || inputPrice <= 0) {
- alert('Harga tidak valid!');
- return;
- }
-
- const modifiedStock = {
- ...stock,
- price: inputPrice,
- entry: {
- low: inputPrice,
- high: inputPrice
- }
- };
-
- fetch('/api/history', {
- method: 'POST',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({
- stock: modifiedStock,
- mode,
- style: styleName
- })
- })
- .then(r => r.json())
- .then(res => {
- if (res.error) alert(res.error);
- else if (res.message) alert(res.message);
- else alert(`${stock.ticker} mulai dipantau di Win Rate Dashboard dengan harga entry ${inputPrice}!`);
- });
- }}
+ onClick={handleOpenMonitorPrompt}
  className="text-[11px] uppercase font-bold px-2.5 py-1.5 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-md transition-colors whitespace-nowrap"
  title="Catat dan pantau sistem trading ini di Win Rate Dashboard"
  >
@@ -338,9 +370,73 @@ export default function DetailPanel({ stock, mode, styleName }) {
       </div>
     </div>
   </div>
+  </div>
+  </div>
 
+      {/* ── MODAL: CUSTOM PROMPT DIALOG ─────────────────────────────────── */}
+      {promptModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-4">
+            <div>
+              <h3 className="text-base font-black text-slate-900 dark:text-white">
+                {promptModal.title}
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                {promptModal.message}
+              </p>
+            </div>
+
+            <input
+              type="text"
+              autoFocus
+              placeholder={promptModal.placeholder || 'Ketik di sini...'}
+              value={promptValue}
+              onChange={(e) => setPromptValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  promptModal.onSubmit(promptValue);
+                }
+              }}
+              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setPromptModal(null)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => promptModal.onSubmit(promptValue)}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-md transition-all"
+              >
+                {promptModal.confirmLabel || 'Simpan'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── TOAST NOTIFICATION ──────────────────────────────────────────── */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5 duration-200">
+          <div className={`px-4 py-3 rounded-2xl shadow-2xl border text-xs font-bold flex items-center gap-2.5 backdrop-blur-md ${
+            toast.type === 'error'
+              ? 'bg-rose-50/95 dark:bg-rose-950/95 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200'
+              : toast.type === 'warning'
+              ? 'bg-amber-50/95 dark:bg-amber-950/95 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200'
+              : 'bg-emerald-50/95 dark:bg-emerald-950/95 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200'
+          }`}>
+            <span>{toast.type === 'error' ? '❌' : toast.type === 'warning' ? '⚠️' : '✅'}</span>
+            <span>{toast.message}</span>
+            <button onClick={() => setToast(null)} className="ml-2 text-slate-400 hover:text-slate-600 text-xs">✕</button>
+          </div>
+        </div>
+      )}
   </div>
-  </div>
- </div>
- );
+  );
 }

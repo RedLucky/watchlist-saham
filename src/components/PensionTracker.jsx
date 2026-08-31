@@ -3,8 +3,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 export default function PensionTracker({ records, onRefresh, currentCalculations, stockPrices, sbnAvailable }) {
- const growthCanvasRef = useRef(null);
- const streakCanvasRef = useRef(null);
+  const growthCanvasRef = useRef(null);
+  const streakCanvasRef = useRef(null);
+
+  // Modal & Toast States
+  const [toast, setToast] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
 
  // Form Modal State
  const [showForm, setShowForm] = useState(false);
@@ -126,32 +135,44 @@ export default function PensionTracker({ records, onRefresh, currentCalculations
  })
  });
 
- if (res.ok) {
- alert(`Berhasil menyimpan catatan eksekusi tanggal ${recordDate}!`);
- setShowForm(false);
- if (onRefresh) onRefresh();
- } else {
- const errData = await res.json().catch(() => ({}));
- alert(`Gagal menyimpan catatan eksekusi: ${errData.error || res.statusText || 'Error server'}`);
- }
- } catch (err) {
- console.error(err);
- alert(`Terjadi kesalahan saat menyimpan data: ${err.message}`);
- }
- };
+      if (res.ok) {
+        showToast(`✅ Berhasil menyimpan catatan eksekusi tanggal ${recordDate}!`, 'success');
+        setShowForm(false);
+        if (onRefresh) onRefresh();
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        showToast(`Gagal menyimpan catatan eksekusi: ${errData.error || res.statusText || 'Error server'}`, 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast(`Terjadi kesalahan saat menyimpan data: ${err.message}`, 'error');
+    }
+  };
 
- const handleDeleteMonth = async (month) => {
- if (!confirm(`Hapus catatan eksekusi bulan ${month}?`)) return;
-
- try {
- const res = await fetch(`/api/pension?month=${month}`, { method: 'DELETE' });
- if (res.ok) {
- if (onRefresh) onRefresh();
- }
- } catch (e) {
- console.error(e);
- }
- };
+  const handleDeleteMonth = (month) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: '🗑️ Hapus Catatan Bulanan?',
+      message: `Apakah Anda yakin ingin menghapus seluruh catatan eksekusi bulan ${month}?`,
+      confirmLabel: 'Ya, Hapus',
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        try {
+          const res = await fetch(`/api/pension?month=${month}`, { method: 'DELETE' });
+          if (res.ok) {
+            showToast(`Catatan bulan ${month} berhasil dihapus`, 'success');
+            if (onRefresh) onRefresh();
+          } else {
+            showToast('Gagal menghapus catatan', 'error');
+          }
+        } catch (e) {
+          console.error(e);
+          showToast('Terjadi kesalahan saat menghapus', 'error');
+        }
+      },
+      onCancel: () => setConfirmDialog(null)
+    });
+  };
 
  // Draw Asset Growth Chart (Canvas API)
  useEffect(() => {
@@ -542,6 +563,61 @@ export default function PensionTracker({ records, onRefresh, currentCalculations
  </div>
  )}
  </div>
+
+ {/* ── MODAL: CUSTOM CONFIRMATION DIALOG ──────────────────────────── */}
+ {confirmDialog && confirmDialog.isOpen && (
+   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
+     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+       <div className="flex items-start gap-3">
+         <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center text-xl shrink-0">
+           🗑️
+         </div>
+         <div>
+           <h3 className="text-base font-black text-slate-900 dark:text-white">
+             {confirmDialog.title}
+           </h3>
+           <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+             {confirmDialog.message}
+           </p>
+         </div>
+       </div>
+
+       <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+         <button
+           type="button"
+           onClick={confirmDialog.onCancel}
+           className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition-colors"
+         >
+           Batal
+         </button>
+         <button
+           type="button"
+           onClick={confirmDialog.onConfirm}
+           className="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl shadow-md transition-all"
+         >
+           {confirmDialog.confirmLabel || 'Ya, Lanjutkan'}
+         </button>
+       </div>
+     </div>
+   </div>
+ )}
+
+ {/* ── TOAST NOTIFICATION ──────────────────────────────────────────── */}
+ {toast && (
+   <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5 duration-200">
+     <div className={`px-4 py-3 rounded-2xl shadow-2xl border text-xs font-bold flex items-center gap-2.5 backdrop-blur-md ${
+       toast.type === 'error'
+         ? 'bg-rose-50/95 dark:bg-rose-950/95 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200'
+         : toast.type === 'warning'
+         ? 'bg-amber-50/95 dark:bg-amber-950/95 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200'
+         : 'bg-emerald-50/95 dark:bg-emerald-950/95 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200'
+     }`}>
+       <span>{toast.type === 'error' ? '❌' : toast.type === 'warning' ? '⚠️' : '✅'}</span>
+       <span>{toast.message}</span>
+       <button onClick={() => setToast(null)} className="ml-2 text-slate-400 hover:text-slate-600 text-xs">✕</button>
+     </div>
+   </div>
+ )}
  </div>
  );
 }
