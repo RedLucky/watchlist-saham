@@ -323,7 +323,7 @@ async function deepSyncStockOnce(fullTicker) {
       ),
       withTimeout(
         yahooFinance.quoteSummary(fullTicker, {
-          modules: ['price', 'financialData', 'earnings', 'defaultKeyStatistics', 'summaryDetail']
+          modules: ['price', 'financialData', 'earnings', 'defaultKeyStatistics', 'summaryDetail', 'incomeStatementHistory']
         }, { validateResult: false }),
         20000,
         `QuoteSummary timeout for ${fullTicker}`
@@ -388,8 +388,8 @@ async function deepSyncStockOnce(fullTicker) {
   const freeCashflowRaw = summary?.financialData?.freeCashflow;
 
   // ── Data baru: Revenue, Net Income, Balance Sheet proxies ──
-  const totalRevenueRaw = summary?.financialData?.totalRevenue;
-  const netIncomeRaw = summary?.financialData?.netIncomeToCommon;
+  const totalRevenueRaw = summary?.financialData?.totalRevenue ?? summary?.incomeStatementHistory?.incomeStatementHistory?.[0]?.totalRevenue;
+  const netIncomeRaw = summary?.financialData?.netIncomeToCommon ?? summary?.incomeStatementHistory?.incomeStatementHistory?.[0]?.netIncome;
   const bookValueRaw = summary?.defaultKeyStatistics?.bookValue;
   const forwardPERaw = summary?.summaryDetail?.forwardPE ?? quote?.forwardPE;
   const pegRatioRaw = summary?.defaultKeyStatistics?.pegRatio;

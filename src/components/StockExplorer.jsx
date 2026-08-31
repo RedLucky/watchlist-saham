@@ -1599,7 +1599,11 @@ export default function StockExplorer({ user }) {
                         <div className="flex justify-between">
                           <span className="text-slate-600 dark:text-slate-400">Total Revenue:</span>
                           <span className="font-bold text-slate-900 dark:text-slate-100">
-                            {f.totalRevenue != null ? `Rp ${(Number(f.totalRevenue) / 1e12).toFixed(2)} T` : '-'}
+                            {f.totalRevenue != null 
+                              ? (Math.abs(Number(f.totalRevenue)) >= 1e12 
+                                  ? `Rp ${(Number(f.totalRevenue) / 1e12).toFixed(2)} T` 
+                                  : `Rp ${(Number(f.totalRevenue) / 1e9).toFixed(1)} M`) 
+                              : '-'}
                           </span>
                         </div>
                         <div className="flex justify-between">

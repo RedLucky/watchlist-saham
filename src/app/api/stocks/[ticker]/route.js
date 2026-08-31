@@ -54,15 +54,15 @@ export async function GET(request, { params }) {
     let dividendHistory = parseJsonField(stock.dividendHistory) || [];
     let insiderTrades = parseJsonField(stock.insiderTrades) || [];
 
-    // Check if deep sync is needed (e.g. older snapshot missing OPM/NPM, > 24 hours ago, or refresh requested)
+    // Check if deep sync is needed (e.g. older snapshot missing totalRevenue/OPM/NPM/ROA/bookValue, > 24 hours ago, or refresh requested)
     const now = new Date();
     const twentyFourHours = 24 * 60 * 60 * 1000;
-    const isMissingOpm = fundamentals.opm === undefined || fundamentals.npm === undefined;
+    const isMissingNewFields = fundamentals.opm === undefined || fundamentals.npm === undefined || fundamentals.totalRevenue === undefined || fundamentals.bookValue === undefined || fundamentals.roa === undefined;
     const isOldSync = (now - new Date(stock.lastDeepSync)) > twentyFourHours;
     const url = new URL(request.url);
     const forceRefresh = url.searchParams.get('refresh') === 'true';
 
-    if ((isMissingOpm || forceRefresh) && !stock.isDelisted) {
+    if ((isMissingNewFields || forceRefresh) && !stock.isDelisted) {
       try {
         const syncResult = await deepSyncStock(ticker);
         if (syncResult?.success) {
