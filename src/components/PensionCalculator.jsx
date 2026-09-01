@@ -208,49 +208,107 @@ export default function PensionCalculator() {
  }));
  };
 
- const handleLotChange = (ticker, val) => {
- const num = parseInt(val, 10);
- setManualLots((prev) => ({
- ...prev,
- [ticker]: isNaN(num) || num < 0 ? 0 : num,
- }));
- };
+  const handleIncrementLot = (ticker) => {
+    const stockAllocation = totalBudget * assetRatios.stock;
+    const currentStock = calculatedStocks.find(st => st.ticker === ticker);
+    if (!currentStock || currentStock.lotCost <= 0) return;
 
- const handleRefreshPrices = async () => {
- if (presetStocks.length === 0) return;
- const tickers = presetStocks.map(s => s.ticker).join(',');
- try {
- const res = await fetch(`/api/pension/prices?tickers=${tickers}`);
- if (res.ok) {
- const data = await res.json();
- const newPrices = { ...stockPrices };
- for (const [t, d] of Object.entries(data.prices)) {
- newPrices[t] = d.price;
- }
- setStockPrices(newPrices);
- }
- } catch (e) {
- console.error('Failed to refresh prices:', e);
- }
- };
+    const totalStockSpent = calculatedStocks.reduce((sum, st) => sum + st.cost, 0);
+    const availableCash = stockAllocation - totalStockSpent;
 
- const syncCustomPresetToDB = async (newStocksArray) => {
- try {
- await fetch('/api/user/preset', {
- method: 'POST',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({ customPreset: newStocksArray.map(st => st.ticker) })
- });
- } catch (e) {
- console.error('Failed to sync custom preset:', e);
- }
- };
+    if (availableCash < currentStock.lotCost) {
+      showToast(`⚠️ Sisa anggaran saham (Rp ${Math.max(0, availableCash).toLocaleString('id-ID')}) tidak mencukupi untuk menambah 1 lot ${ticker} (Rp ${currentStock.lotCost.toLocaleString('id-ID')})`, 'warning');
+      return;
+    }
 
- const handleRemoveStock = (ticker) => {
- const updated = presetStocks.filter(st => st.ticker !== ticker);
- setPresetStocks(updated);
- syncCustomPresetToDB(updated);
- };
+    const nextLots = currentStock.lots + 1;
+    setManualLots((prev) => ({
+      ...prev,
+      [ticker]: nextLots,
+    }));
+  };
+
+  const handleDecrementLot = (ticker) => {
+    const currentStock = calculatedStocks.find(st => st.ticker === ticker);
+    if (!currentStock || currentStock.lots <= 0) return;
+
+    const nextLots = Math.max(0, currentStock.lots - 1);
+    setManualLots((prev) => ({
+      ...prev,
+      [ticker]: nextLots,
+    }));
+  };
+
+  const handleLotChange = (ticker, val) => {
+    const stockAllocation = totalBudget * assetRatios.stock;
+    const currentStock = calculatedStocks.find(st => st.ticker === ticker);
+    if (!currentStock || currentStock.lotCost <= 0) return;
+
+    if (val === '' || isNaN(parseInt(val, 10))) {
+      setManualLots((prev) => ({ ...prev, [ticker]: 0 }));
+      return;
+    }
+
+    const num = Math.max(0, parseInt(val, 10));
+    const otherStocksCost = calculatedStocks
+      .filter(st => st.ticker !== ticker)
+      .reduce((sum, st) => sum + st.cost, 0);
+    
+    const maxAffordable = Math.floor(Math.max(0, stockAllocation - otherStocksCost) / currentStock.lotCost);
+
+    if (num > maxAffordable) {
+      setManualLots((prev) => ({ ...prev, [ticker]: maxAffordable }));
+      showToast(`⚠️ Pembelian ${ticker} dibatasi maksimal ${maxAffordable} lot agar total belanja tidak melebihi anggaran (Rp ${stockAllocation.toLocaleString('id-ID')})`, 'warning');
+    } else {
+      setManualLots((prev) => ({ ...prev, [ticker]: num }));
+    }
+  };
+
+  const handleResetAutoLots = () => {
+    setManualLots({});
+    showToast('✅ Semua alokasi lot dihitung ulang otomatis secara proporsional', 'success');
+  };
+
+  const handleRefreshPrices = async () => {
+    if (presetStocks.length === 0) return;
+    const tickers = presetStocks.map(s => s.ticker).join(',');
+    try {
+      const res = await fetch(`/api/pension/prices?tickers=${tickers}`);
+      if (res.ok) {
+        const data = await res.json();
+        const newPrices = { ...stockPrices };
+        for (const [t, d] of Object.entries(data.prices)) {
+          newPrices[t] = d.price;
+        }
+        setStockPrices(newPrices);
+      }
+    } catch (e) {
+      console.error('Failed to refresh prices:', e);
+    }
+  };
+
+  const syncCustomPresetToDB = async (newStocksArray) => {
+    try {
+      await fetch('/api/user/preset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customPreset: newStocksArray.map(st => st.ticker) })
+      });
+    } catch (e) {
+      console.error('Failed to sync custom preset:', e);
+    }
+  };
+
+  const handleRemoveStock = (ticker) => {
+    const updated = presetStocks.filter(st => st.ticker !== ticker);
+    setPresetStocks(updated);
+    setManualLots((prev) => {
+      const next = { ...prev };
+      delete next[ticker];
+      return next;
+    });
+    syncCustomPresetToDB(updated);
+  };
 
  const handleAddCustomStockByTicker = async (tickerToAdd) => {
  const ticker = tickerToAdd.toUpperCase();
@@ -296,7 +354,7 @@ export default function PensionCalculator() {
  return { sbn: 0.50, stock: 0.35, rdpu: 0.15, label: '🟡 Moderat (50% SBN / 35% Saham / 15% RDPU)' };
  }, [riskProfile]);
 
-  // 1. First, calculate the array of allocated stocks and their costs
+  // 1. Dynamic Stock Lot & Cost Calculation (Smart Auto-Balancing with Budget Guard)
   const calculatedStocks = useMemo(() => {
     if (!presetStocks || presetStocks.length === 0) return [];
     
@@ -304,51 +362,88 @@ export default function PensionCalculator() {
     const isCustomModified = presetStocks.length !== 4;
     const defaultWeights = [0.35, 0.30, 0.25, 0.10];
     
-    let totalStockSpent = 0;
-    const mapped = presetStocks.map((st, idx) => {
+    // 1. Initial mapping of stock items
+    const rawItems = presetStocks.map((st, idx) => {
       const price = Number(stockPrices[st.ticker]) || st.price || 0;
-      const weight = isCustomModified ? (1 / presetStocks.length) : (defaultWeights[idx] || (1 / presetStocks.length));
-      const targetBudget = stockAllocation * weight;
+      const defaultWeight = isCustomModified ? (1 / presetStocks.length) : (defaultWeights[idx] || (1 / presetStocks.length));
       const lotCost = price * 100;
+      const isManual = manualLots[st.ticker] !== undefined;
+      const manualLotCount = isManual ? Math.max(0, parseInt(manualLots[st.ticker], 10) || 0) : null;
       
-      let isManual = false;
-      let lots = lotCost > 0 ? Math.floor(targetBudget / lotCost) : 0;
-      if (manualLots[st.ticker] !== undefined) {
-        lots = manualLots[st.ticker];
-        isManual = true;
-      }
-      
-      const cost = lots * lotCost;
-      totalStockSpent += cost;
-
       return {
         ...st,
         price,
         lotCost,
-        lots,
-        cost,
-        weightPct: `${(weight * 100).toFixed(0)}%`,
-        isManual
+        defaultWeight,
+        isManual,
+        manualLotCount,
+        lots: isManual ? manualLotCount : 0,
+        cost: isManual ? (manualLotCount * lotCost) : 0,
       };
     });
 
+    // 2. Compute cost of manual stocks and remaining budget for auto stocks
+    let manualSpent = 0;
+    rawItems.forEach(st => {
+      if (st.isManual) {
+        manualSpent += st.cost;
+      }
+    });
+
+    const remainingBudgetForAuto = Math.max(0, stockAllocation - manualSpent);
+    const autoStocks = rawItems.filter(st => !st.isManual);
+    const totalAutoWeight = autoStocks.reduce((sum, st) => sum + st.defaultWeight, 0) || 1;
+
+    // 3. First pass for auto stocks
+    autoStocks.forEach(st => {
+      if (st.lotCost > 0) {
+        const normalizedWeight = st.defaultWeight / totalAutoWeight;
+        const targetBudget = remainingBudgetForAuto * normalizedWeight;
+        st.lots = Math.floor(targetBudget / st.lotCost);
+        st.cost = st.lots * st.lotCost;
+      } else {
+        st.lots = 0;
+        st.cost = 0;
+      }
+    });
+
+    // 4. Calculate total spent so far & leftover cash
+    let totalStockSpent = rawItems.reduce((sum, st) => sum + st.cost, 0);
     let stockCashChange = stockAllocation - totalStockSpent;
 
-    // Second pass: Exhaust leftover cash by buying 1 extra lot round-robin for non-manual stocks
-    let madePurchase = true;
-    while (madePurchase && stockCashChange > 0) {
-      madePurchase = false;
-      for (let st of mapped) {
-        if (!st.isManual && st.lotCost > 0 && stockCashChange >= st.lotCost) {
-          st.lots += 1;
-          st.cost += st.lotCost;
-          totalStockSpent += st.lotCost;
-          stockCashChange -= st.lotCost;
-          madePurchase = true;
+    // 5. Greedy second pass: Exhaust leftover cash round-robin across auto stocks
+    if (stockCashChange > 0 && autoStocks.length > 0) {
+      let madePurchase = true;
+      while (madePurchase && stockCashChange > 0) {
+        madePurchase = false;
+        for (let st of autoStocks) {
+          if (st.lotCost > 0 && stockCashChange >= st.lotCost) {
+            st.lots += 1;
+            st.cost += st.lotCost;
+            totalStockSpent += st.lotCost;
+            stockCashChange -= st.lotCost;
+            madePurchase = true;
+          }
         }
       }
     }
-    return mapped;
+
+    // 6. Enrich with maxAffordable lots and canIncrement/canDecrement flags
+    return rawItems.map(st => {
+      const otherSpent = totalStockSpent - st.cost;
+      const maxAffordableLots = st.lotCost > 0 ? Math.floor((stockAllocation - otherSpent) / st.lotCost) : 0;
+      const canIncrement = st.lotCost > 0 && stockCashChange >= st.lotCost;
+      const canDecrement = st.lots > 0;
+      const actualWeightPct = stockAllocation > 0 ? ((st.cost / stockAllocation) * 100).toFixed(0) : '0';
+
+      return {
+        ...st,
+        weightPct: `${actualWeightPct}%`,
+        maxLots: Math.max(st.lots, maxAffordableLots),
+        canIncrement,
+        canDecrement,
+      };
+    });
   }, [presetStocks, stockPrices, manualLots, totalBudget, assetRatios.stock]);
 
   const handleOptimizeLots = async () => {
@@ -1036,165 +1131,240 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
  </button>
  </div>
 
- {/* TAB CONTENTS */}
- {activeSubTab === 'calculator' && (
- <div className="space-y-6 animate-in fade-in duration-300">
- 
- {/* Langkah 1: Tabel Belanja Saham Preset Dinamis */}
- <div className="glass-panel p-5 rounded-2xl border border-indigo-500/20 bg-indigo-50/60 dark:bg-indigo-950/20">
- <div className="flex items-center justify-between pb-4 border-b border-slate-300 dark:border-white/10 mb-4">
- <div className="flex items-center gap-3">
- <div className="w-8 h-8 rounded-xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center font-extrabold text-indigo-700 dark:text-indigo-400 text-sm">1</div>
- <div>
- <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">Langkah 1: Belanja Saham ({(assetRatios.stock * 100).toFixed(0)}%)</h3>
- <p className="text-[11px] text-slate-700 dark:text-slate-300 font-medium">Alokasi otomatis ke saham fundamental kuat</p>
- </div>
- </div>
- {lastSyncTime && (
- <span className="text-[9px] text-emerald-700 dark:text-emerald-400 font-bold px-2 py-1 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
- Data Update: {lastSyncTime}
- </span>
- )}
- </div>
+  {/* TAB CONTENTS */}
+  {activeSubTab === 'calculator' && (
+  <div className="space-y-6 animate-in fade-in duration-300">
+  
+  {/* Langkah 1: Tabel Belanja Saham Preset Dinamis */}
+  <div className="glass-panel p-5 rounded-2xl border border-indigo-500/20 bg-indigo-50/60 dark:bg-indigo-950/20">
+    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 border-b border-slate-300 dark:border-white/10 mb-4 gap-2">
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 rounded-xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center font-extrabold text-indigo-700 dark:text-indigo-400 text-sm">1</div>
+        <div>
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">Langkah 1: Belanja Saham ({(assetRatios.stock * 100).toFixed(0)}%)</h3>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700">
+              Budget: Rp {(totalBudget * assetRatios.stock).toLocaleString('id-ID')}
+            </span>
+          </div>
+          <p className="text-[11px] text-slate-700 dark:text-slate-300 font-medium">Alokasi otomatis & dinamis tanpa melebihi batas belanja</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
+        {Object.keys(manualLots).length > 0 && (
+          <button
+            onClick={handleResetAutoLots}
+            className="px-2.5 py-1 text-[10.5px] font-extrabold text-indigo-700 dark:text-indigo-300 bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900/50 dark:hover:bg-indigo-800/60 rounded-lg border border-indigo-300 dark:border-indigo-700 transition-all flex items-center gap-1 shadow-sm"
+            title="Reset semua perubahan manual dan hitung ulang lot proporsional"
+          >
+            🔄 Auto-Hitung Ulang ({Object.keys(manualLots).length} kustom)
+          </button>
+        )}
+        {lastSyncTime && (
+          <span className="text-[9px] text-emerald-700 dark:text-emerald-400 font-bold px-2 py-1 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+            Data Update: {lastSyncTime}
+          </span>
+        )}
+      </div>
+    </div>
 
- <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-white/5">
- <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800/30">
- <thead className="bg-slate-100 dark:bg-white/[0.02]">
- <tr className="text-left text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
- <th className="py-2.5 px-3">Saham</th>
- <th className="py-2.5 px-3 text-right">Harga Beli</th>
- <th className="py-2.5 px-3 text-center">Skor & Yield</th>
- <th className="py-2.5 px-3 text-center">Jml Lot</th>
- <th className="py-2.5 px-3 text-right">Total Biaya</th>
- <th className="py-2.5 px-3 text-center">Aksi</th>
- </tr>
- </thead>
- <tbody className="divide-y divide-slate-200 dark:divide-slate-800/30 bg-white dark:bg-[#0a0f1a]/20">
- {calculations.calculatedStocks.map((st) => (
- <tr key={st.ticker} className="hover:bg-slate-100/50 dark:hover:bg-white/[0.04] transition-colors">
- <td className="py-3 px-3">
- <div className="flex items-center gap-2">
- <div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center font-bold text-indigo-700 dark:text-indigo-300 text-[11px]">
- {st.ticker}
- </div>
- <div className="flex flex-col">
- <span className="font-extrabold text-slate-900 dark:text-white text-xs">{st.ticker}</span>
- <div className="flex items-center gap-1.5 mt-0.5">
- <span className="text-[9px] text-slate-600 dark:text-slate-400 font-medium truncate max-w-[120px]">{st.name}</span>
- {isSyariahStock(st.ticker, st.sector) && (
- <span className="text-[8px] px-1 py-0.5 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-500/30 whitespace-nowrap leading-none"title="Saham Syariah (DES / ISSI)">
- 🌙 Syariah
- </span>
- )}
- {st.isDividendTrap && (
- <span className="text-[8px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold border border-amber-500/30 whitespace-nowrap leading-none" title="Peringatan: Ritel masuk jelang/pasca Dividen (Potensi Trap)">
- ⚠️ Div. Trap
- </span>
- )}
- </div>
- </div>
- </div>
- </td>
- <td className="py-3 px-3 text-right">
- <div className="flex flex-col items-end gap-1">
- <div className="flex items-center justify-end gap-1">
- <span className="text-[10px] text-slate-600 dark:text-slate-400 font-bold">Rp</span>
- <input
- type="number"
- value={st.price || ''}
- onChange={(e) => handlePriceChange(st.ticker, e.target.value)}
- className="w-16 px-1.5 py-1 text-right bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded font-bold text-[11px] text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
- />
- </div>
- </div>
- </td>
- <td className="py-3 px-3 text-center">
- <div className="text-[10px] font-extrabold text-emerald-700 dark:text-emerald-400">{st.dividendYield ? st.dividendYield.toFixed(1) + '%' : '-'}</div>
- <div className="text-[9px] text-slate-600 dark:text-slate-400 font-bold">Skor: {st.finalPensionScore}</div>
- </td>
- <td className="py-3 px-3 text-center">
- <div className="flex items-center justify-center gap-1">
- <input
- type="number"
- value={st.lots || ''}
- onChange={(e) => handleLotChange(st.ticker, e.target.value)}
- className={`w-14 px-1.5 py-1 text-center border rounded font-bold text-[11px] focus:outline-none focus:border-indigo-500 ${st.isManual ? 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300' : 'bg-slate-100 dark:bg-white/5 border-slate-300 dark:border-white/10 text-slate-900 dark:text-white'}`}
- />
- </div>
- </td>
- <td className="py-3 px-3 text-right">
- <div className="text-[11px] font-extrabold text-slate-900 dark:text-white">Rp {st.cost.toLocaleString('id-ID')}</div>
- </td>
- <td className="py-3 px-3 text-center">
- <button onClick={() => handleRemoveStock(st.ticker)} className="text-[10px] text-rose-600 dark:text-rose-400 hover:text-rose-700 font-bold px-2 py-1 rounded bg-rose-500/10 hover:bg-rose-500/20 transition-colors">
- Hapus
- </button>
- </td>
- </tr>
- ))}
- </tbody>
- </table>
- </div>
+    <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-white/5">
+      <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800/30">
+        <thead className="bg-slate-100 dark:bg-white/[0.02]">
+          <tr className="text-left text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+            <th className="py-2.5 px-3">Saham</th>
+            <th className="py-2.5 px-3 text-right">Harga Beli</th>
+            <th className="py-2.5 px-3 text-center">Skor & Yield</th>
+            <th className="py-2.5 px-3 text-center" title="Gunakan tombol - / + untuk mengatur jumlah lot tanpa melebihi batas belanja">
+              Jml Lot (Atur)
+            </th>
+            <th className="py-2.5 px-3 text-right">Total Biaya</th>
+            <th className="py-2.5 px-3 text-center">Aksi</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-200 dark:divide-slate-800/30 bg-white dark:bg-[#0a0f1a]/20">
+          {calculations.calculatedStocks.map((st) => (
+            <tr key={st.ticker} className="hover:bg-slate-100/50 dark:hover:bg-white/[0.04] transition-colors">
+              <td className="py-3 px-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center font-bold text-indigo-700 dark:text-indigo-300 text-[11px]">
+                    {st.ticker}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-extrabold text-slate-900 dark:text-white text-xs">{st.ticker}</span>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="text-[9px] text-slate-600 dark:text-slate-400 font-medium truncate max-w-[120px]">{st.name}</span>
+                      {isSyariahStock(st.ticker, st.sector) && (
+                        <span className="text-[8px] px-1 py-0.5 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-500/30 whitespace-nowrap leading-none" title="Saham Syariah (DES / ISSI)">
+                          🌙 Syariah
+                        </span>
+                      )}
+                      {st.isDividendTrap && (
+                        <span className="text-[8px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold border border-amber-500/30 whitespace-nowrap leading-none" title="Peringatan: Ritel masuk jelang/pasca Dividen (Potensi Trap)">
+                          ⚠️ Div. Trap
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td className="py-3 px-3 text-right">
+                <div className="flex flex-col items-end gap-1">
+                  <div className="flex items-center justify-end gap-1">
+                    <span className="text-[10px] text-slate-600 dark:text-slate-400 font-bold">Rp</span>
+                    <input
+                      type="number"
+                      value={st.price || ''}
+                      onChange={(e) => handlePriceChange(st.ticker, e.target.value)}
+                      className="w-16 px-1.5 py-1 text-right bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded font-bold text-[11px] text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                </div>
+              </td>
+              <td className="py-3 px-3 text-center">
+                <div className="text-[10px] font-extrabold text-emerald-700 dark:text-emerald-400">{st.dividendYield ? st.dividendYield.toFixed(1) + '%' : '-'}</div>
+                <div className="text-[9px] text-slate-600 dark:text-slate-400 font-bold">Skor: {st.finalPensionScore}</div>
+              </td>
+              <td className="py-3 px-3 text-center">
+                <div className="flex flex-col items-center justify-center gap-1">
+                  <div className="flex items-center justify-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => handleDecrementLot(st.ticker)}
+                      disabled={!st.canDecrement}
+                      className="w-6 h-6 rounded-md bg-slate-200 hover:bg-rose-500 hover:text-white dark:bg-white/10 dark:hover:bg-rose-500 text-slate-800 dark:text-slate-200 font-black text-xs flex items-center justify-center transition-colors disabled:opacity-30 disabled:hover:bg-slate-200 dark:disabled:hover:bg-white/10 disabled:hover:text-inherit"
+                      title="Kurangi 1 Lot (-)"
+                    >
+                      -
+                    </button>
+                    <input
+                      type="number"
+                      min="0"
+                      max={st.maxLots}
+                      value={st.lots === 0 && st.isManual ? 0 : (st.lots || '')}
+                      onChange={(e) => handleLotChange(st.ticker, e.target.value)}
+                      className={`w-12 px-1 py-1 text-center border rounded-md font-extrabold text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 ${
+                        st.isManual
+                          ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-400 text-amber-900 dark:text-amber-200'
+                          : 'bg-slate-50 dark:bg-white/5 border-slate-300 dark:border-white/10 text-slate-900 dark:text-white'
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleIncrementLot(st.ticker)}
+                      disabled={!st.canIncrement}
+                      className="w-6 h-6 rounded-md bg-slate-200 hover:bg-emerald-500 hover:text-white dark:bg-white/10 dark:hover:bg-emerald-500 text-slate-800 dark:text-slate-200 font-black text-xs flex items-center justify-center transition-colors disabled:opacity-30 disabled:hover:bg-slate-200 dark:disabled:hover:bg-white/10 disabled:hover:text-inherit"
+                      title={st.canIncrement ? "Tambah 1 Lot (+)" : "Sisa anggaran saham tidak mencukupi untuk menambah lot"}
+                    >
+                      +
+                    </button>
+                  </div>
+                  <span className={`text-[8.5px] font-bold px-1.5 py-0.2 rounded ${st.isManual ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' : 'bg-slate-100 text-slate-600 dark:bg-white/5 dark:text-slate-400'}`}>
+                    {st.isManual ? 'Kustom' : 'Auto'} ({st.weightPct})
+                  </span>
+                </div>
+              </td>
+              <td className="py-3 px-3 text-right">
+                <div className="text-[11px] font-extrabold text-slate-900 dark:text-white">Rp {st.cost.toLocaleString('id-ID')}</div>
+              </td>
+              <td className="py-3 px-3 text-center">
+                <button onClick={() => handleRemoveStock(st.ticker)} className="text-[10px] text-rose-600 dark:text-rose-400 hover:text-rose-700 font-bold px-2 py-1 rounded bg-rose-500/10 hover:bg-rose-500/20 transition-colors">
+                  Hapus
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
 
- <div className="mt-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
- <div className="flex flex-col gap-2">
- <div className="flex flex-wrap items-center gap-2">
- <input
- type="text"
- placeholder="Kode Saham..."
- value={customTickerInput}
- onChange={(e) => setCustomTickerInput(e.target.value)}
- className="px-3 py-2 bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-white/10 rounded-lg text-xs text-slate-900 dark:text-white font-bold w-32 focus:outline-none focus:border-indigo-400 uppercase"
- maxLength={4}
- onKeyDown={(e) => e.key === 'Enter' && handleAddCustomStock()}
- />
- <button
- onClick={handleAddCustomStock}
- disabled={addingCustomTicker || !customTickerInput.trim()}
- className="px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs transition-all disabled:opacity-50"
- >
- {addingCustomTicker ? 'Menambahkan...' : 'Tambah'}
- </button>
- <button
-    onClick={handleOptimizeLots}
-    disabled={isOptimizing || calculatedStocks.length === 0}
-    className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 disabled:opacity-50 text-white font-extrabold text-xs rounded-lg shadow-lg shadow-amber-500/20 transition-all flex items-center gap-1.5"
-  >
-    {isOptimizing ? '🔄 Optimizing...' : '✨ AI Optimize Lots'}
-  </button>
- </div>
+    {/* Real-Time Stock Shopping Budget Meter */}
+    <div className="mt-3 p-3 rounded-xl bg-slate-100/80 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 space-y-1.5">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center text-[11px] font-bold text-slate-700 dark:text-slate-300 gap-1">
+        <div className="flex items-center gap-2">
+          <span>🛒 Total Belanja Saham:</span>
+          <span className="font-extrabold text-slate-900 dark:text-white">
+            Rp {calculations.totalStockSpent.toLocaleString('id-ID')}
+          </span>
+          <span className="text-[10px] font-semibold text-slate-500">
+            / Rp {calculations.stockAllocation.toLocaleString('id-ID')} ({((calculations.totalStockSpent / (calculations.stockAllocation || 1)) * 100).toFixed(1)}%)
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5 text-[10.5px]">
+          <span className="text-slate-500 dark:text-slate-400">Sisa Kas Saham:</span>
+          <span className="font-extrabold text-purple-700 dark:text-purple-300">
+            Rp {Math.max(0, calculations.stockCashChange).toLocaleString('id-ID')}
+          </span>
+          <span className="text-[9px] text-slate-400 font-normal">(dialihkan otomatis ke RDPU)</span>
+        </div>
+      </div>
+      <div className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+        <div
+          className="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-full transition-all duration-300"
+          style={{ width: `${Math.min(100, (calculations.totalStockSpent / (calculations.stockAllocation || 1)) * 100)}%` }}
+        />
+      </div>
+    </div>
 
- {/* Quick-Add Favorite Bluechips */}
- <div className="flex items-center gap-1.5 flex-wrap">
- <span className="text-[10px] text-slate-600 dark:text-slate-400 font-extrabold">Bluechip Pensiun (Real-time BEI):</span>
- {(bluechipOptions || ['BBRI', 'BMRI', 'BBCA', 'TLKM', 'ADRO', 'PGAS', 'KLBF', 'ASII']).map((t) => {
- const isAdded = presetStocks.some(st => st.ticker === t);
- return (
- <button
- key={t}
- onClick={() => !isAdded && handleAddCustomStockByTicker(t)}
- disabled={isAdded || addingCustomTicker}
- className={`text-[9.5px] px-2 py-0.5 rounded-md font-bold transition-all border ${
- isAdded
- ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 cursor-default font-extrabold'
- : 'bg-slate-100 hover:bg-indigo-500/20 dark:bg-white/5 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-white/10 hover:border-indigo-400'
- }`}
- >
- {isAdded ? `✓ ${t}` : `+ ${t}`}
- </button>
- );
- })}
- </div>
- </div>
+    <div className="mt-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            type="text"
+            placeholder="Kode Saham..."
+            value={customTickerInput}
+            onChange={(e) => setCustomTickerInput(e.target.value)}
+            className="px-3 py-2 bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-white/10 rounded-lg text-xs text-slate-900 dark:text-white font-bold w-32 focus:outline-none focus:border-indigo-400 uppercase"
+            maxLength={4}
+            onKeyDown={(e) => e.key === 'Enter' && handleAddCustomStock()}
+          />
+          <button
+            onClick={handleAddCustomStock}
+            disabled={addingCustomTicker || !customTickerInput.trim()}
+            className="px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs transition-all disabled:opacity-50"
+          >
+            {addingCustomTicker ? 'Menambahkan...' : 'Tambah'}
+          </button>
+          <button
+            onClick={handleOptimizeLots}
+            disabled={isOptimizing || calculatedStocks.length === 0}
+            className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 disabled:opacity-50 text-white font-extrabold text-xs rounded-lg shadow-lg shadow-amber-500/20 transition-all flex items-center gap-1.5"
+          >
+            {isOptimizing ? '🔄 Optimizing...' : '✨ AI Optimize Lots'}
+          </button>
+        </div>
 
- <div className="text-right self-end md:self-auto">
- <div className="text-[10px] text-slate-600 dark:text-slate-400 font-bold">Subtotal Belanja Saham</div>
- <div className="text-lg font-black text-slate-900 dark:text-white">Rp {calculations.totalStockSpent.toLocaleString('id-ID')}</div>
- </div>
- </div>
- </div>
+        {/* Quick-Add Favorite Bluechips */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-[10px] text-slate-600 dark:text-slate-400 font-extrabold">Bluechip Pensiun (Real-time BEI):</span>
+          {(bluechipOptions || ['BBRI', 'BMRI', 'BBCA', 'TLKM', 'ADRO', 'PGAS', 'KLBF', 'ASII']).map((t) => {
+            const isAdded = presetStocks.some(st => st.ticker === t);
+            return (
+              <button
+                key={t}
+                onClick={() => !isAdded && handleAddCustomStockByTicker(t)}
+                disabled={isAdded || addingCustomTicker}
+                className={`text-[9.5px] px-2 py-0.5 rounded-md font-bold transition-all border ${
+                  isAdded
+                    ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 cursor-default font-extrabold'
+                    : 'bg-slate-100 hover:bg-indigo-500/20 dark:bg-white/5 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-white/10 hover:border-indigo-400'
+                }`}
+              >
+                {isAdded ? `✓ ${t}` : `+ ${t}`}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
- {/* Langkah 2: Alokasi Pendapatan Tetap & Kas */}
+      <div className="text-right self-end md:self-auto">
+        <div className="text-[10px] text-slate-600 dark:text-slate-400 font-bold">Subtotal Belanja Saham</div>
+        <div className="text-lg font-black text-slate-900 dark:text-white">Rp {calculations.totalStockSpent.toLocaleString('id-ID')}</div>
+      </div>
+    </div>
+  </div>
+
+  {/* Langkah 2: Alokasi Pendapatan Tetap & Kas */}
  <div className="glass-panel p-5 rounded-2xl border border-purple-500/20 bg-purple-50/60 dark:bg-purple-950/20">
  <div className="flex items-center gap-3 pb-4 border-b border-slate-300 dark:border-white/10 mb-4">
  <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center font-extrabold text-purple-700 dark:text-purple-400 text-sm">2</div>
