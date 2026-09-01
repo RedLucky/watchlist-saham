@@ -223,15 +223,23 @@ export default function PensionCalculator() {
     const currentStock = calculatedStocks.find(st => st.ticker === ticker);
     if (!currentStock || currentStock.lotCost <= 0) return;
 
-    const totalStockSpent = calculatedStocks.reduce((sum, st) => sum + st.cost, 0);
-    const availableCash = stockAllocation - totalStockSpent;
+    // Calculate minimum required cost for all OTHER stocks
+    // (manual stocks retain their manual cost; auto stocks keep at least 1 lot if affordable)
+    const otherMinCost = calculatedStocks
+      .filter(st => st.ticker !== ticker)
+      .reduce((sum, st) => {
+        if (st.isManual) return sum + (st.lots * st.lotCost);
+        return sum + Math.min(st.cost, st.lotCost); // at least 1 lot
+      }, 0);
 
-    if (availableCash < currentStock.lotCost) {
-      showToast(`⚠️ Sisa anggaran saham (Rp ${Math.max(0, availableCash).toLocaleString('id-ID')}) tidak mencukupi untuk menambah 1 lot ${ticker} (Rp ${currentStock.lotCost.toLocaleString('id-ID')})`, 'warning');
+    const maxAffordableForTicker = Math.floor(Math.max(0, stockAllocation - otherMinCost) / currentStock.lotCost);
+    const nextLots = currentStock.lots + 1;
+
+    if (nextLots > maxAffordableForTicker) {
+      showToast(`⚠️ Anggaran belanja saham tidak mencukupi untuk menambah 1 lot ${ticker} (Maksimal ${maxAffordableForTicker} lot dengan alokasi saham lainnya)`, 'warning');
       return;
     }
 
-    const nextLots = currentStock.lots + 1;
     setManualLots((prev) => ({
       ...prev,
       [ticker]: nextLots,
@@ -260,15 +268,18 @@ export default function PensionCalculator() {
     }
 
     const num = Math.max(0, parseInt(val, 10));
-    const otherStocksCost = calculatedStocks
+    const otherMinCost = calculatedStocks
       .filter(st => st.ticker !== ticker)
-      .reduce((sum, st) => sum + st.cost, 0);
+      .reduce((sum, st) => {
+        if (st.isManual) return sum + (st.lots * st.lotCost);
+        return sum + Math.min(st.cost, st.lotCost);
+      }, 0);
     
-    const maxAffordable = Math.floor(Math.max(0, stockAllocation - otherStocksCost) / currentStock.lotCost);
+    const maxAffordable = Math.floor(Math.max(0, stockAllocation - otherMinCost) / currentStock.lotCost);
 
     if (num > maxAffordable) {
       setManualLots((prev) => ({ ...prev, [ticker]: maxAffordable }));
-      showToast(`⚠️ Pembelian ${ticker} dibatasi maksimal ${maxAffordable} lot agar total belanja tidak melebihi anggaran (Rp ${stockAllocation.toLocaleString('id-ID')})`, 'warning');
+      showToast(`⚠️ Pembelian ${ticker} disesuaikan ke ${maxAffordable} lot agar belanja saham tetap dalam batas anggaran`, 'warning');
     } else {
       setManualLots((prev) => ({ ...prev, [ticker]: num }));
     }
@@ -276,7 +287,7 @@ export default function PensionCalculator() {
 
   const handleResetAutoLots = () => {
     setManualLots({});
-    showToast('✅ Semua alokasi lot dihitung ulang otomatis secara proporsional', 'success');
+    showToast('✅ Semua alokasi lot di-rebalance otomatis (Min. 1 Lot, Max Growth & Return)', 'success');
   };
 
   const handleRefreshPrices = async () => {
@@ -334,8 +345,13 @@ export default function PensionCalculator() {
       ];
       setPresetStocks(updated);
       setStockPrices((prev) => ({ ...prev, [ticker]: price }));
+      setManualLots((prev) => {
+        const next = { ...prev };
+        delete next[ticker];
+        return next;
+      });
       syncCustomPresetToDB(updated);
-      showToast(`✅ Saham ${ticker} (${candidateStock.name}) berhasil ditambahkan dan disimpan!`, 'success');
+      showToast(`✅ Saham ${ticker} (${candidateStock.name}) ditambahkan! Alokasi lot di-rebalance otomatis (Min. 1 Lot & Max Return).`, 'success');
     }
   };
 
@@ -350,32 +366,39 @@ export default function PensionCalculator() {
     syncCustomPresetToDB(updated);
   };
 
- const handleAddCustomStockByTicker = async (tickerToAdd) => {
- const ticker = tickerToAdd.toUpperCase();
- if (presetStocks.some(st => st.ticker === ticker)) return;
+  const handleAddCustomStockByTicker = async (tickerToAdd) => {
+    const ticker = tickerToAdd.toUpperCase();
+    if (presetStocks.some(st => st.ticker === ticker)) return;
 
- setAddingCustomTicker(true);
- try {
- const res = await fetch(`/api/pension/prices?tickers=${ticker}`);
- if (res.ok) {
- const data = await res.json();
- const stockData = data.prices?.[ticker];
- if (stockData) {
- const updated = [...presetStocks, { ticker }];
- await syncCustomPresetToDB(updated);
- await fetchDynamicPreset(riskProfile);
- setCustomTickerInput('');
- showToast(`✅ Saham ${ticker} berhasil ditambahkan!`, 'success');
- } else {
- showToast(`Saham ${ticker} tidak ditemukan di database.`, 'error');
- }
- }
- } catch (e) {
- showToast('Gagal mengambil data saham.', 'error');
- } finally {
- setAddingCustomTicker(false);
- }
- };
+    setAddingCustomTicker(true);
+    try {
+      const res = await fetch(`/api/pension/prices?tickers=${ticker}`);
+      if (res.ok) {
+        const data = await res.json();
+        const stockData = data.prices?.[ticker];
+        if (stockData) {
+          const updated = [...presetStocks, { ticker, price: stockData.price, name: stockData.name || ticker }];
+          setPresetStocks(updated);
+          setStockPrices((prev) => ({ ...prev, [ticker]: stockData.price }));
+          setManualLots((prev) => {
+            const next = { ...prev };
+            delete next[ticker];
+            return next;
+          });
+          await syncCustomPresetToDB(updated);
+          await fetchDynamicPreset(riskProfile);
+          setCustomTickerInput('');
+          showToast(`✅ Saham ${ticker} berhasil ditambahkan! Alokasi di-rebalance otomatis (Min. 1 Lot).`, 'success');
+        } else {
+          showToast(`Saham ${ticker} tidak ditemukan di database.`, 'error');
+        }
+      }
+    } catch (e) {
+      showToast('Gagal mengambil data saham.', 'error');
+    } finally {
+      setAddingCustomTicker(false);
+    }
+  };
 
  const handleAddCustomStock = async () => {
  if (!customTickerInput.trim()) return;
@@ -394,27 +417,34 @@ export default function PensionCalculator() {
  return { sbn: 0.50, stock: 0.35, rdpu: 0.15, label: '🟡 Moderat (50% SBN / 35% Saham / 15% RDPU)' };
  }, [riskProfile]);
 
-  // 1. Dynamic Stock Lot & Cost Calculation (Smart Auto-Balancing with Budget Guard)
+  // 1. Dynamic Stock Lot & Cost Calculation (Smart Growth & Return Maximizing Rebalance with Min 1 Lot)
   const calculatedStocks = useMemo(() => {
     if (!presetStocks || presetStocks.length === 0) return [];
     
     const stockAllocation = totalBudget * assetRatios.stock;
-    const isCustomModified = presetStocks.length !== 4;
-    const defaultWeights = [0.35, 0.30, 0.25, 0.10];
     
-    // 1. Initial mapping of stock items
-    const rawItems = presetStocks.map((st, idx) => {
+    // 1. Initial mapping of stock items with Return & Growth metrics
+    const rawItems = presetStocks.map((st) => {
       const price = Number(stockPrices[st.ticker]) || st.price || 0;
-      const defaultWeight = isCustomModified ? (1 / presetStocks.length) : (defaultWeights[idx] || (1 / presetStocks.length));
       const lotCost = price * 100;
       const isManual = manualLots[st.ticker] !== undefined;
       const manualLotCount = isManual ? Math.max(0, parseInt(manualLots[st.ticker], 10) || 0) : null;
       
+      const yieldVal = Number(st.dividendYield ?? st.metrics?.dividendYield ?? st.divYield ?? 0);
+      const growthVal = Number(st.estimatedGrowth ?? st.growth ?? 5);
+      const totalReturn = Number(st.totalEstimatedReturn ?? (yieldVal + growthVal));
+      
+      // Growth & Target Return scoring weight (Prioritize high total return & growth compounding)
+      const returnWeight = Math.max(1, totalReturn * (1 + growthVal / 100));
+
       return {
         ...st,
         price,
         lotCost,
-        defaultWeight,
+        dividendYield: yieldVal,
+        estimatedGrowth: growthVal,
+        totalEstimatedReturn: totalReturn,
+        returnWeight,
         isManual,
         manualLotCount,
         lots: isManual ? manualLotCount : 0,
@@ -430,45 +460,68 @@ export default function PensionCalculator() {
       }
     });
 
-    const remainingBudgetForAuto = Math.max(0, stockAllocation - manualSpent);
-    const autoStocks = rawItems.filter(st => !st.isManual);
-    const totalAutoWeight = autoStocks.reduce((sum, st) => sum + st.defaultWeight, 0) || 1;
+    let remainingBudgetForAuto = Math.max(0, stockAllocation - manualSpent);
+    const autoStocks = rawItems.filter(st => !st.isManual && st.lotCost > 0);
 
-    // 3. First pass for auto stocks
-    autoStocks.forEach(st => {
-      if (st.lotCost > 0) {
-        const normalizedWeight = st.defaultWeight / totalAutoWeight;
-        const targetBudget = remainingBudgetForAuto * normalizedWeight;
-        st.lots = Math.floor(targetBudget / st.lotCost);
-        st.cost = st.lots * st.lotCost;
+    // Step A: Minimum 1-lot guarantee for all auto stocks (Prioritize highest return if budget is tight)
+    const sortedAuto = [...autoStocks].sort((a, b) => b.returnWeight - a.returnWeight || b.estimatedGrowth - a.estimatedGrowth);
+    
+    for (const st of sortedAuto) {
+      if (remainingBudgetForAuto >= st.lotCost) {
+        st.lots = 1;
+        st.cost = st.lotCost;
+        remainingBudgetForAuto -= st.lotCost;
       } else {
         st.lots = 0;
         st.cost = 0;
       }
-    });
+    }
 
-    // 4. Calculate total spent so far & leftover cash
+    // Step B: Proportional distribution of remaining budget weighted by Growth & Target Return
+    if (remainingBudgetForAuto > 0 && autoStocks.length > 0) {
+      const totalAutoWeight = autoStocks.reduce((sum, st) => sum + st.returnWeight, 0) || 1;
+      
+      autoStocks.forEach(st => {
+        const weight = st.returnWeight / totalAutoWeight;
+        const targetAddBudget = remainingBudgetForAuto * weight;
+        const additionalLots = Math.floor(targetAddBudget / st.lotCost);
+        if (additionalLots > 0) {
+          st.lots += additionalLots;
+          st.cost += additionalLots * st.lotCost;
+        }
+      });
+    }
+
+    // Step C: Calculate total spent so far & leftover cash
     let totalStockSpent = rawItems.reduce((sum, st) => sum + st.cost, 0);
     let stockCashChange = stockAllocation - totalStockSpent;
 
-    // 5. Greedy second pass: Exhaust leftover cash round-robin across auto stocks
+    // Step D: Greedy Knapsack - exhaust remaining cash by giving extra lots to highest return stocks first
+    // This minimizes leftover cash to the absolute lowest possible without exceeding budget!
     if (stockCashChange > 0 && autoStocks.length > 0) {
-      let madePurchase = true;
-      while (madePurchase && stockCashChange > 0) {
-        madePurchase = false;
-        for (let st of autoStocks) {
+      const sortedForGreedy = [...autoStocks].sort((a, b) => 
+        (b.totalEstimatedReturn - a.totalEstimatedReturn) || 
+        (b.estimatedGrowth - a.estimatedGrowth) || 
+        (a.lotCost - b.lotCost)
+      );
+
+      let purchased = true;
+      while (purchased && stockCashChange > 0) {
+        purchased = false;
+        for (let st of sortedForGreedy) {
           if (st.lotCost > 0 && stockCashChange >= st.lotCost) {
             st.lots += 1;
             st.cost += st.lotCost;
             totalStockSpent += st.lotCost;
             stockCashChange -= st.lotCost;
-            madePurchase = true;
+            purchased = true;
+            break; // restart from highest return stock for greedy pass
           }
         }
       }
     }
 
-    // 6. Enrich with maxAffordable lots and canIncrement/canDecrement flags
+    // 3. Enrich with maxAffordable lots, weightPct, and canIncrement/canDecrement flags
     return rawItems.map(st => {
       const otherSpent = totalStockSpent - st.cost;
       const maxAffordableLots = st.lotCost > 0 ? Math.floor((stockAllocation - otherSpent) / st.lotCost) : 0;
@@ -1202,7 +1255,7 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
               Budget: Rp {(totalBudget * assetRatios.stock).toLocaleString('id-ID')}
             </span>
           </div>
-          <p className="text-[11px] text-slate-700 dark:text-slate-300 font-medium">Alokasi otomatis & dinamis tanpa melebihi batas belanja</p>
+          <p className="text-[11px] text-slate-700 dark:text-slate-300 font-medium">Rebalancing otomatis: Min. 1 Lot/saham, prioritas Growth & Return maksimal, minim sisa kas</p>
         </div>
       </div>
       <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
