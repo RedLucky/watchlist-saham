@@ -30,6 +30,54 @@ function getCombinations(array, size) {
   return result;
 }
 
+/**
+ * Vectorized Softmax Gradient Descent / Backpropagation for a 4-Asset Combination
+ * Finds optimal continuous weights that maximize Return + Compounding Growth + Entropy Regularization
+ */
+function optimize4AssetsBackprop(returns, growths, alpha = 0.6, gamma = 2.0, lr = 0.08, steps = 30) {
+  let theta0 = (returns[0] - 15) / 10;
+  let theta1 = (returns[1] - 15) / 10;
+  let theta2 = (returns[2] - 15) / 10;
+  let theta3 = (returns[3] - 15) / 10;
+
+  for (let s = 0; s < steps; s++) {
+    const maxT = Math.max(theta0, theta1, theta2, theta3);
+    const e0 = Math.exp(theta0 - maxT);
+    const e1 = Math.exp(theta1 - maxT);
+    const e2 = Math.exp(theta2 - maxT);
+    const e3 = Math.exp(theta3 - maxT);
+    const sumE = e0 + e1 + e2 + e3 || 1;
+
+    const w0 = e0 / sumE;
+    const w1 = e1 / sumE;
+    const w2 = e2 / sumE;
+    const w3 = e3 / sumE;
+
+    // Objective Gradient: Reward - Entropy Penalty
+    const r0 = returns[0] + alpha * growths[0] - gamma * (Math.log(w0 + 1e-8) + 1);
+    const r1 = returns[1] + alpha * growths[1] - gamma * (Math.log(w1 + 1e-8) + 1);
+    const r2 = returns[2] + alpha * growths[2] - gamma * (Math.log(w2 + 1e-8) + 1);
+    const r3 = returns[3] + alpha * growths[3] - gamma * (Math.log(w3 + 1e-8) + 1);
+
+    const meanR = w0 * r0 + w1 * r1 + w2 * r2 + w3 * r3;
+
+    // Backprop update to theta
+    theta0 += lr * w0 * (r0 - meanR);
+    theta1 += lr * w1 * (r1 - meanR);
+    theta2 += lr * w2 * (r2 - meanR);
+    theta3 += lr * w3 * (r3 - meanR);
+  }
+
+  const maxT = Math.max(theta0, theta1, theta2, theta3);
+  const e0 = Math.exp(theta0 - maxT);
+  const e1 = Math.exp(theta1 - maxT);
+  const e2 = Math.exp(theta2 - maxT);
+  const e3 = Math.exp(theta3 - maxT);
+  const sumE = e0 + e1 + e2 + e3 || 1;
+
+  return [e0 / sumE, e1 / sumE, e2 / sumE, e3 / sumE];
+}
+
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -317,21 +365,20 @@ export async function GET(request) {
         .map(t => scoredStocks.find(s => s.ticker === t))
         .filter(Boolean);
     } else {
-      // MINI PORTFOLIO OPTIMIZER
-      // 1. Get Top 20 Candidates by Pension Score (Safety First)
-      const topCandidates = scoredStocks.slice(0, 20);
-      
-      // 2. Generate all combinations of 4 stocks from Top 20 (max 4845 combinations)
+      // BACKPROPAGATION-DRIVEN COMBINATORIAL PORTFOLIO OPTIMIZER
+      // 1. Filter Top 22 Candidates (Highest Pension Safety & Compounding Return)
+      const topCandidates = scoredStocks
+        .filter(st => st.price > 0 && st.finalPensionScore >= 60)
+        .slice(0, 22);
+
+      // 2. Generate thousands of 4-stock combinations (up to 7,315 combinations)
       if (topCandidates.length >= 4) {
         const allCombos = getCombinations(topCandidates, 4);
-        
-        let bestCombo = topCandidates.slice(0, 4); // fallback
-        let maxReturn = -1;
+        const evaluatedCombos = [];
 
-        // 3. Evaluate each combination
-        const validCombos = [];
+        // 3. Run Backpropagation Gradient Descent on EVERY combination
         for (const combo of allCombos) {
-          // Diversification check: Max 2 stocks per sector
+          // Sector Diversification Constraint: Max 2 stocks per sector
           const sectorCounts = {};
           let isDiversified = true;
           for (const st of combo) {
@@ -342,31 +389,45 @@ export async function GET(request) {
               break;
             }
           }
+          if (!isDiversified) continue;
 
-          if (isDiversified) {
-            const avgReturn = combo.reduce((sum, st) => sum + st.totalEstimatedReturn, 0) / 4;
-            validCombos.push({ combo, avgReturn });
-          }
+          const returns = [combo[0].totalEstimatedReturn, combo[1].totalEstimatedReturn, combo[2].totalEstimatedReturn, combo[3].totalEstimatedReturn];
+          const growths = [combo[0].estimatedGrowth, combo[1].estimatedGrowth, combo[2].estimatedGrowth, combo[3].estimatedGrowth];
+
+          // Run Backpropagation optimization for this combination
+          const weights = optimize4AssetsBackprop(returns, growths);
+
+          const optReturn = weights[0] * returns[0] + weights[1] * returns[1] + weights[2] * returns[2] + weights[3] * returns[3];
+          const optGrowth = weights[0] * growths[0] + weights[1] * growths[1] + weights[2] * growths[2] + weights[3] * growths[3];
+          const optScore = weights[0] * combo[0].finalPensionScore + weights[1] * combo[1].finalPensionScore + weights[2] * combo[2].finalPensionScore + weights[3] * combo[3].finalPensionScore;
+
+          // Composite Backpropagation Fitness Score
+          const fitness = (optReturn * 0.45) + (optGrowth * 0.35) + (optScore * 0.20);
+          evaluatedCombos.push({ combo, weights, optReturn, optGrowth, optScore, fitness });
         }
-        
-        if (validCombos.length > 0) {
-          // Sort combos by highest return
-          validCombos.sort((a, b) => b.avgReturn - a.avgReturn);
-          
-          // Take the Top 5 best combinations
-          const topCombos = validCombos.slice(0, 5);
-          
-          // Pick the best or pseudo-randomize among top 5
-          const randomIndex = Math.floor(Math.random() * topCombos.length);
-          selectedPreset = topCombos[randomIndex].combo;
+
+        if (evaluatedCombos.length > 0) {
+          // Sort all thousands of combinations by Backpropagation Fitness (highest first)
+          evaluatedCombos.sort((a, b) => b.fitness - a.fitness);
+
+          // Select the top-performing combination
+          if (forceRefresh) {
+            // When user clicks 'Generate Ulang', pick among the top 3 elite combinations
+            const elitePool = evaluatedCombos.slice(0, 3);
+            const picked = elitePool[Math.floor(Math.random() * elitePool.length)];
+            selectedPreset = picked.combo;
+          } else {
+            // Default best combination
+            selectedPreset = evaluatedCombos[0].combo;
+          }
         } else {
           selectedPreset = topCandidates.slice(0, 4);
         }
-        
+
         // Sort the final selected preset by score
         selectedPreset.sort((a, b) => b.finalPensionScore - a.finalPensionScore);
       } else {
-        selectedPreset = topCandidates;
+        selectedPreset = topCandidates.slice(0, 4);
       }
     }
 
