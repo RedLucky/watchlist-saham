@@ -21,7 +21,12 @@ try {
 }
 
 try {
-  yahooFinance.suppressNotices(['node-version', 'yahooFinance=v3', 'yahooSurvey', 'ripHistorical', 'quoteSummary-mutilated']);
+  if (typeof yf?.suppressNotices === 'function') {
+    yf.suppressNotices(['node-version', 'yahooFinance=v3', 'yahooSurvey', 'ripHistorical', 'quoteSummary-mutilated']);
+  }
+  if (typeof yahooFinance?.suppressNotices === 'function') {
+    yahooFinance.suppressNotices(['node-version', 'yahooFinance=v3', 'yahooSurvey', 'ripHistorical', 'quoteSummary-mutilated']);
+  }
 } catch (_e) { /* noop */ }
 
 try {

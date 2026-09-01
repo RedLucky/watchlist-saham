@@ -193,9 +193,11 @@ export function calculateDividendScore(stock) {
   }
   score += streakScore * 0.20;
 
+  const safeDps = stock.price > 0 ? (stock.price * (safeYield / 100)) : 0;
+
   return {
     score: Math.round(Math.min(100, Math.max(0, score))),
     details,
-    metrics: { dividendYield: safeYield, payoutRatio: safePayout, streakYears, dps: ttmPerSaham || (stock.price > 0 ? (stock.price * (safeYield / 100)) : 0) },
+    metrics: { dividendYield: safeYield, payoutRatio: safePayout, streakYears, dps: Number(safeDps.toFixed(2)) },
   };
 }
