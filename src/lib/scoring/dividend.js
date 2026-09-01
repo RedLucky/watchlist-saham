@@ -12,7 +12,20 @@ export function calculateRawDividendYield(stock) {
   const oneYearAgo = new Date();
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
   
-  const USD_IDR = 16500; // TODO: Ambil kurs dinamis dari Yahoo Finance USDIDR=X saat deep sync
+  const USD_IDR = 16500; // Acuan kurs USD/IDR terkini
+  const SGD_IDR = 12500;
+  const EUR_IDR = 17800;
+  const AUD_IDR = 10800;
+
+  const getExchangeRate = (curStr) => {
+    if (!curStr) return 1;
+    const c = String(curStr).toUpperCase().trim();
+    if (c === 'USD' || c === 'US$' || c === 'DOLLAR' || c === 'VALAS') return USD_IDR;
+    if (c === 'SGD' || c === 'S$') return SGD_IDR;
+    if (c === 'EUR' || c === '€') return EUR_IDR;
+    if (c === 'AUD' || c === 'A$') return AUD_IDR;
+    return 1;
+  };
 
   // 1. Ambil dari riwayat dividen BEI (IDX) dengan konversi mata uang
   if (stock.price > 0 && Array.isArray(stock.dividendHistory) && stock.dividendHistory.length > 0) {
@@ -22,16 +35,29 @@ export function calculateRawDividendYield(stock) {
         const cumDate = new Date(dateVal);
         if (cumDate >= oneYearAgo) {
           hasRecentDividendEvent = true;
-          // Dukung variasi nama field dari BEI API
-          let dps = Number(div.CashDividenPerSaham ?? div.JumlahDividenKasPerSaham ?? div.DividenPerSaham ?? 0);
-          let totalDiv = Number(div.CashDividenTotal ?? div.JumlahDividenKasTotal ?? 0);
           
-          // Pisahkan konversi DPS dan Total Dividen secara independen
-          if (div.CashDividenPerSahamMU === 'USD' && dps > 0 && dps < 10) {
-            dps = dps * USD_IDR; // Konversi USD per share ke Rupiah
+          const currencyField = div.CashDividenPerSahamMU || div.JumlahDividenKasPerSahamMU || div.DividenPerSahamMU || div.MataUang || div.Currency || div.Valuta;
+          const totalCurrencyField = div.CashDividenTotalMU || div.JumlahDividenKasTotalMU || div.MataUang || div.Currency || div.Valuta;
+
+          const rate = getExchangeRate(currencyField);
+          const totalRate = getExchangeRate(totalCurrencyField);
+
+          let dps = Number(div.CashDividenPerSaham ?? div.JumlahDividenKasPerSaham ?? div.DividenPerSaham ?? div.amount ?? div.dividend ?? 0);
+          let totalDiv = Number(div.CashDividenTotal ?? div.JumlahDividenKasTotal ?? 0);
+
+          // Konversi mata uang asing (USD, SGD, EUR, AUD) ke Rupiah
+          if (rate > 1 && dps > 0) {
+            dps = dps * rate;
+          } else if (rate === 1 && dps > 0 && dps <= 20 && stock.price >= 500) {
+            // Implicit USD dividend detection (e.g. ITMG/ADRO/AADI announced $0.15/share without explicit MU tag)
+            dps = dps * USD_IDR;
           }
-          if (div.CashDividenTotalMU === 'USD' && totalDiv > 0 && totalDiv < 10000000000) {
-            totalDiv = totalDiv * USD_IDR; // Konversi total dividen USD ke Rupiah
+
+          if (totalRate > 1 && totalDiv > 0) {
+            totalDiv = totalDiv * totalRate;
+          } else if (totalRate === 1 && totalDiv > 0 && totalDiv < 5000000000 && stock.price >= 500) {
+            // Implicit USD total dividend detection
+            totalDiv = totalDiv * USD_IDR;
           }
 
           ttmPerSaham += Number.isFinite(dps) ? dps : 0;
