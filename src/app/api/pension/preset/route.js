@@ -52,13 +52,8 @@ export async function GET(request) {
     }
 
     // 1. Query stocks with fundamental data from Database
-    const whereClause = customTickers && customTickers.length > 0 
-      ? { ticker: { in: customTickers } } 
-      : {};
-
     const rawStocks = await prisma.stockData.findMany({
-      where: whereClause,
-      take: customTickers ? customTickers.length : 200,
+      take: 250,
       orderBy: { turnover: 'desc' }
     });
 
@@ -243,18 +238,29 @@ export async function GET(request) {
       };
     });
 
-    // Sort by dynamic pension score descending
-    scoredStocks.sort((a, b) => b.finalPensionScore - a.finalPensionScore);
+    // 2. Candidate pool: Top 30 stocks sorted by Pension Quality Score (primary) and Dividend Yield (secondary)
+    const validCandidates = scoredStocks.filter(st => st.price > 0 && st.finalPensionScore > 0);
+    const top30Candidates = [...validCandidates]
+      .sort((a, b) => {
+        if (b.finalPensionScore !== a.finalPensionScore) {
+          return b.finalPensionScore - a.finalPensionScore;
+        }
+        return (b.dividendYield || 0) - (a.dividendYield || 0);
+      })
+      .slice(0, 30);
 
-    // Pick top 4 stocks dynamically IF not custom
-    let selectedPreset = scoredStocks;
-    if (!customTickers || customTickers.length === 0) {
+    // Pick preset stocks: IF customTickers exist, match customTickers, otherwise pick top 4 combination
+    let selectedPreset = [];
+    if (customTickers && customTickers.length > 0) {
+      selectedPreset = customTickers
+        .map(t => scoredStocks.find(s => s.ticker === t))
+        .filter(Boolean);
+    } else {
       // MINI PORTFOLIO OPTIMIZER
       // 1. Get Top 20 Candidates by Pension Score (Safety First)
       const topCandidates = scoredStocks.slice(0, 20);
       
       // 2. Generate all combinations of 4 stocks from Top 20 (max 4845 combinations)
-      // If we have less than 4 stocks (which shouldn't happen unless DB is empty), handle it
       if (topCandidates.length >= 4) {
         const allCombos = getCombinations(topCandidates, 4);
         
@@ -289,23 +295,18 @@ export async function GET(request) {
           // Take the Top 5 best combinations
           const topCombos = validCombos.slice(0, 5);
           
-          // Randomly pick one of the top 5 to give a "Regenerate" feel while still being optimal
+          // Pick the best or pseudo-randomize among top 5
           const randomIndex = Math.floor(Math.random() * topCombos.length);
           selectedPreset = topCombos[randomIndex].combo;
         } else {
           selectedPreset = topCandidates.slice(0, 4);
         }
         
-        // Sort the final selected preset by score just to keep it orderly in the UI
+        // Sort the final selected preset by score
         selectedPreset.sort((a, b) => b.finalPensionScore - a.finalPensionScore);
       } else {
         selectedPreset = topCandidates;
       }
-    }
-
-    // If custom tickers are provided, make sure they follow the exact order
-    if (customTickers && customTickers.length > 0) {
-      selectedPreset.sort((a, b) => customTickers.indexOf(a.ticker) - customTickers.indexOf(b.ticker));
     }
 
     // Dynamic Bluechip Options (Top liquid Bluechips ranked dynamically by real-time market fundamental & dividend score)
@@ -321,6 +322,7 @@ export async function GET(request) {
       riskProfile,
       updatedAt: new Date().toISOString(),
       presetStocks: selectedPreset,
+      candidates: top30Candidates,
       bluechipOptions: finalBluechipOptions
     });
   } catch (err) {

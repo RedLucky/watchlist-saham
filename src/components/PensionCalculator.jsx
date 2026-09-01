@@ -45,9 +45,16 @@ export default function PensionCalculator() {
  const [lastSyncTime, setLastSyncTime] = useState(null);
  const [copied, setCopied] = useState(false);
  const [customTickerInput, setCustomTickerInput] = useState('');
- const [addingCustomTicker, setAddingCustomTicker] = useState(false);
- const [manualLots, setManualLots] = useState({});
- const [isOptimizing, setIsOptimizing] = useState(false);
+  const [addingCustomTicker, setAddingCustomTicker] = useState(false);
+  const [manualLots, setManualLots] = useState({});
+  const [isOptimizing, setIsOptimizing] = useState(false);
+
+  // 30 Candidates Modal State
+  const [pensionCandidates, setPensionCandidates] = useState([]);
+  const [showCandidatesModal, setShowCandidatesModal] = useState(false);
+  const [candidateSearch, setCandidateSearch] = useState('');
+  const [candidateSyariahOnly, setCandidateSyariahOnly] = useState(false);
+  const [candidateMinYield, setCandidateMinYield] = useState(0);
 
   // Toast Notification State
   const [toast, setToast] = useState(null);
@@ -144,6 +151,9 @@ export default function PensionCalculator() {
           setPresetStocks(data.presetStocks);
           if (data.bluechipOptions && data.bluechipOptions.length > 0) {
             setBluechipOptions(data.bluechipOptions);
+          }
+          if (data.candidates && data.candidates.length > 0) {
+            setPensionCandidates(data.candidates);
           }
           
           const newPrices = {};
@@ -299,8 +309,38 @@ export default function PensionCalculator() {
     }
   };
 
+  const handleToggleCandidate = (candidateStock) => {
+    const ticker = candidateStock.ticker;
+    const isAdded = presetStocks.some((st) => st.ticker === ticker);
+    if (isAdded) {
+      handleRemoveStock(ticker);
+      showToast(`Saham ${ticker} dihapus dari tabel belanja saham`, 'info');
+    } else {
+      const price = Number(candidateStock.price) || 1000;
+      const updated = [
+        ...presetStocks,
+        {
+          ticker: candidateStock.ticker,
+          name: candidateStock.name,
+          sector: candidateStock.sector,
+          price,
+          dividendYield: candidateStock.dividendYield,
+          estimatedGrowth: candidateStock.estimatedGrowth,
+          totalEstimatedReturn: candidateStock.totalEstimatedReturn,
+          finalPensionScore: candidateStock.finalPensionScore,
+          isDividendTrap: candidateStock.isDividendTrap,
+          metrics: candidateStock.metrics || {},
+        },
+      ];
+      setPresetStocks(updated);
+      setStockPrices((prev) => ({ ...prev, [ticker]: price }));
+      syncCustomPresetToDB(updated);
+      showToast(`✅ Saham ${ticker} (${candidateStock.name}) berhasil ditambahkan dan disimpan!`, 'success');
+    }
+  };
+
   const handleRemoveStock = (ticker) => {
-    const updated = presetStocks.filter(st => st.ticker !== ticker);
+    const updated = presetStocks.filter((st) => st.ticker !== ticker);
     setPresetStocks(updated);
     setManualLots((prev) => {
       const next = { ...prev };
@@ -663,17 +703,32 @@ export default function PensionCalculator() {
  currentAge,
  targetAge,
  expectedReturn,
- inflationRate,
+inflationRate,
  accumulatedExistingPortfolio,
  manualLots,
  ]);
 
- const handleCopySummary = () => {
- const stockLines = (calculations.calculatedStocks || [])
- .map((st) => `• ${st.ticker}: ${st.lots} Lot (Rp ${st.cost.toLocaleString('id-ID')})`)
- .join('\n');
+  const filteredCandidates = useMemo(() => {
+    return pensionCandidates.filter((st) => {
+      if (candidateSyariahOnly && !isSyariahStock(st.ticker, st.sector)) return false;
+      if (candidateMinYield > 0 && (st.dividendYield || 0) < candidateMinYield) return false;
+      if (candidateSearch.trim()) {
+        const q = candidateSearch.toLowerCase().trim();
+        const matchTicker = st.ticker?.toLowerCase().includes(q);
+        const matchName = st.name?.toLowerCase().includes(q);
+        const matchSector = st.sector?.toLowerCase().includes(q);
+        if (!matchTicker && !matchName && !matchSector) return false;
+      }
+      return true;
+    });
+  }, [pensionCandidates, candidateSearch, candidateSyariahOnly, candidateMinYield]);
 
- const text = `🛒 ORDER BELANJA SAHAM PENSIUN (${riskProfile}):
+  const handleCopySummary = () => {
+    const stockLines = (calculations.calculatedStocks || [])
+      .map((st) => `• ${st.ticker}: ${st.lots} Lot (Rp ${st.cost.toLocaleString('id-ID')})`)
+      .join('\n');
+
+    const text = `🛒 ORDER BELANJA SAHAM PENSIUN (${riskProfile}):
 ${stockLines}
 ---
 Total Belanja Saham: Rp ${calculations.totalStockSpent.toLocaleString('id-ID')}
@@ -681,10 +736,10 @@ SBN Ritel (${sbnAvailable ? (assetRatios.sbn * 100) + '%' : 'OFF'}): Rp ${calcul
 Top-Up RDPU: Rp ${calculations.finalRdpuTopup.toLocaleString('id-ID')}
 Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.toLocaleString('id-ID')}`;
 
- navigator.clipboard.writeText(text);
- setCopied(true);
- setTimeout(() => setCopied(false), 2500);
- };
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  };
 
  return (
  <div className="space-y-6 max-w-[1400px] mx-auto pb-12">
@@ -1151,18 +1206,28 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
         </div>
       </div>
       <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
+        <button
+          onClick={() => setShowCandidatesModal(true)}
+          className="px-3 py-1.5 text-[11px] font-extrabold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 rounded-lg shadow-sm hover:shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+          title="Buka daftar 30 saham kandidat pensiun terbaik berdasarkan skor fundamental & dividen"
+        >
+          <span>🏆</span>
+          <span>30 Kandidat Saham</span>
+          <span className="bg-white/20 text-[9px] px-1.5 py-0.2 rounded-full font-black">Top 30</span>
+        </button>
+
         {Object.keys(manualLots).length > 0 && (
           <button
             onClick={handleResetAutoLots}
-            className="px-2.5 py-1 text-[10.5px] font-extrabold text-indigo-700 dark:text-indigo-300 bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900/50 dark:hover:bg-indigo-800/60 rounded-lg border border-indigo-300 dark:border-indigo-700 transition-all flex items-center gap-1 shadow-sm"
+            className="px-2.5 py-1.5 text-[10.5px] font-extrabold text-indigo-700 dark:text-indigo-300 bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900/50 dark:hover:bg-indigo-800/60 rounded-lg border border-indigo-300 dark:border-indigo-700 transition-all flex items-center gap-1 shadow-sm"
             title="Reset semua perubahan manual dan hitung ulang lot proporsional"
           >
-            🔄 Auto-Hitung Ulang ({Object.keys(manualLots).length} kustom)
+            🔄 Auto-Hitung ({Object.keys(manualLots).length} kustom)
           </button>
         )}
         {lastSyncTime && (
-          <span className="text-[9px] text-emerald-700 dark:text-emerald-400 font-bold px-2 py-1 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
-            Data Update: {lastSyncTime}
+          <span className="text-[9px] text-emerald-700 dark:text-emerald-400 font-bold px-2 py-1.5 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+            Data: {lastSyncTime}
           </span>
         )}
       </div>
@@ -1326,6 +1391,12 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
             {addingCustomTicker ? 'Menambahkan...' : 'Tambah'}
           </button>
           <button
+            onClick={() => setShowCandidatesModal(true)}
+            className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs rounded-lg shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+          >
+            🏆 30 Kandidat Saham
+          </button>
+          <button
             onClick={handleOptimizeLots}
             disabled={isOptimizing || calculatedStocks.length === 0}
             className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 disabled:opacity-50 text-white font-extrabold text-xs rounded-lg shadow-lg shadow-amber-500/20 transition-all flex items-center gap-1.5"
@@ -1458,16 +1529,219 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
  </p>
  </div>
 
- <AuthModal
- isOpen={showAuthModal}
- onClose={() => setShowAuthModal(false)}
- onAuthSuccess={(user) => {
- setCurrentUser(user);
- if (user.riskProfile) setRiskProfile(user.riskProfile);
- }}
- />
+  <AuthModal
+    isOpen={showAuthModal}
+    onClose={() => setShowAuthModal(false)}
+    onAuthSuccess={(user) => {
+      setCurrentUser(user);
+      if (user.riskProfile) setRiskProfile(user.riskProfile);
+    }}
+  />
 
- {/* ── TOAST NOTIFICATION ──────────────────────────────────────────── */}
+  {/* ── MODAL 30 KANDIDAT SAHAM PENSIUN TERBAIK ────────────────────────── */}
+  {showCandidatesModal && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+        {/* Modal Header */}
+        <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800/80 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/50">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-xl shadow-lg shadow-emerald-500/20">
+              🏆
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-black text-slate-900 dark:text-white">
+                  30 Saham Pilihan Pensiun Terbaik
+                </h3>
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+                  Top 30 BEI
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                Diurutkan berdasarkan <strong>Skor Kualitas Fundamental Pensiun (1-100)</strong> lalu <strong>Dividend Yield</strong>
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowCandidatesModal(false)}
+            className="w-8 h-8 rounded-lg bg-slate-200/80 hover:bg-slate-300 dark:bg-white/10 dark:hover:bg-white/20 text-slate-700 dark:text-slate-200 flex items-center justify-center text-sm font-bold transition-colors cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Filter Toolbar */}
+        <div className="p-3 sm:px-5 sm:py-3 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0b1329] flex flex-wrap items-center justify-between gap-2.5 text-xs">
+          <div className="flex items-center gap-2 flex-1 min-w-[220px]">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                placeholder="Cari kode saham, nama, atau sektor..."
+                value={candidateSearch}
+                onChange={(e) => setCandidateSearch(e.target.value)}
+                className="w-full pl-8 pr-3 py-1.5 bg-slate-100 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/80 rounded-lg text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:border-emerald-500"
+              />
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🔍</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => setCandidateSyariahOnly(!candidateSyariahOnly)}
+              className={`px-2.5 py-1.5 rounded-lg font-extrabold text-[11px] border transition-all flex items-center gap-1 cursor-pointer ${
+                candidateSyariahOnly
+                  ? 'bg-emerald-500 text-white border-emerald-600 shadow-sm'
+                  : 'bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-emerald-500'
+              }`}
+            >
+              🌙 Syariah Saja
+            </button>
+
+            <select
+              value={candidateMinYield}
+              onChange={(e) => setCandidateMinYield(Number(e.target.value))}
+              className="px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-[11px] font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:border-emerald-500"
+            >
+              <option value={0}>Semua Yield</option>
+              <option value={4}>Min. Yield ≥ 4%</option>
+              <option value={6}>Min. Yield ≥ 6%</option>
+              <option value={8}>Min. Yield ≥ 8%</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Candidate List Grid */}
+        <div className="overflow-y-auto flex-1 p-3 sm:p-5">
+          {filteredCandidates.length === 0 ? (
+            <div className="text-center py-12 text-slate-400">
+              <p className="text-sm font-bold">Tidak ada saham yang sesuai dengan filter.</p>
+              <button
+                onClick={() => { setCandidateSearch(''); setCandidateSyariahOnly(false); setCandidateMinYield(0); }}
+                className="mt-2 text-xs text-emerald-600 font-bold hover:underline"
+              >
+                Reset Filter
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {filteredCandidates.map((st, idx) => {
+                const isAdded = presetStocks.some((p) => p.ticker === st.ticker);
+                const isSyariah = isSyariahStock(st.ticker, st.sector);
+                return (
+                  <div
+                    key={st.ticker}
+                    className={`p-3.5 rounded-xl border transition-all flex flex-col justify-between gap-3 ${
+                      isAdded
+                        ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-400/50 dark:border-emerald-700/40 shadow-sm'
+                        : 'bg-slate-50/70 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800/80 hover:border-indigo-400 dark:hover:border-indigo-600'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-xl bg-slate-200 dark:bg-slate-800 flex items-center justify-center font-black text-xs text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700">
+                          #{idx + 1}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-black text-sm text-slate-900 dark:text-white">{st.ticker}</span>
+                            {isSyariah && (
+                              <span className="text-[8.5px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-500/30 leading-none">
+                                🌙 Syariah
+                              </span>
+                            )}
+                            {st.isDividendTrap && (
+                              <span className="text-[8.5px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 font-bold border border-amber-500/30 leading-none">
+                                ⚠️ Div. Trap
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate max-w-[190px]">
+                            {st.name}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="text-right">
+                        <span className="text-xs font-black text-slate-900 dark:text-white">
+                          Rp {Number(st.price || 0).toLocaleString('id-ID')}
+                        </span>
+                        <div className="text-[9.5px] text-slate-400 font-medium">{st.sector || '-'}</div>
+                      </div>
+                    </div>
+
+                    {/* Metrics Badge Grid */}
+                    <div className="grid grid-cols-4 gap-1.5 py-2 px-2.5 rounded-lg bg-white/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 text-center">
+                      <div>
+                        <div className="text-[8.5px] text-slate-400 font-medium">Skor Pensiun</div>
+                        <div className="text-[11px] font-black text-indigo-600 dark:text-indigo-400">
+                          {st.finalPensionScore}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[8.5px] text-slate-400 font-medium">Div. Yield</div>
+                        <div className="text-[11px] font-black text-emerald-600 dark:text-emerald-400">
+                          {st.dividendYield ? `${Number(st.dividendYield).toFixed(1)}%` : '-'}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[8.5px] text-slate-400 font-medium">ROE</div>
+                        <div className="text-[11px] font-black text-slate-700 dark:text-slate-300">
+                          {st.metrics?.roe ? `${Number(st.metrics.roe).toFixed(1)}%` : '-'}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[8.5px] text-slate-400 font-medium">DER</div>
+                        <div className="text-[11px] font-black text-slate-700 dark:text-slate-300">
+                          {st.metrics?.der != null ? `${Number(st.metrics.der).toFixed(2)}x` : '-'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action Button */}
+                    <button
+                      type="button"
+                      onClick={() => handleToggleCandidate(st)}
+                      className={`w-full py-2 rounded-lg font-extrabold text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm cursor-pointer ${
+                        isAdded
+                          ? 'bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 dark:text-rose-300 dark:border-rose-800'
+                          : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20'
+                      }`}
+                    >
+                      {isAdded ? (
+                        <>
+                          <span>✓ Sudah Terpasang</span>
+                          <span className="text-[10px] font-medium opacity-80">(Klik untuk Hapus)</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>+ Tambahkan ke Belanja Saham</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Modal Footer */}
+        <div className="p-3 sm:px-5 border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/60 flex items-center justify-between text-xs">
+          <span className="text-slate-500 font-medium text-[11px]">
+            Menampilkan {filteredCandidates.length} dari {pensionCandidates.length} kandidat pensiun teratas.
+          </span>
+          <button
+            onClick={() => setShowCandidatesModal(false)}
+            className="px-4 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold transition-colors cursor-pointer"
+          >
+            Selesai / Tutup
+          </button>
+        </div>
+      </div>
+    </div>
+  )}
+
+  {/* ── TOAST NOTIFICATION ──────────────────────────────────────────── */}
  {toast && (
    <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5 duration-200">
      <div className={`px-4 py-3 rounded-2xl shadow-2xl border text-xs font-bold flex items-center gap-2.5 backdrop-blur-md ${
