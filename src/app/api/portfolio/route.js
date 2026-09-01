@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request) {
   try {
-    const userId = await getUserIdFromRequest(request);
+    const userId = getUserIdFromRequest(request);
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const portfolio = await prisma.portfolio.findMany({
@@ -54,13 +54,18 @@ export async function GET(request) {
     const totalReturnPercent = totalInvested > 0 ? (totalFloatingPnL / totalInvested) * 100 : 0;
 
     // Calculate Realized PnL from transactions where type === 'SELL'
-    const sellTransactions = await prisma.portfolioTransaction.findMany({
-      where: {
-        portfolio: { userId },
-        type: 'SELL'
-      }
-    });
-    const realizedPnL = sellTransactions.reduce((acc, t) => acc + (t.realizedPnL || 0), 0);
+    let realizedPnL = 0;
+    try {
+      const sellTransactions = await prisma.transaction.findMany({
+        where: {
+          portfolio: { userId },
+          type: 'SELL'
+        }
+      });
+      realizedPnL = sellTransactions.reduce((acc, t) => acc + (t.totalValue || 0), 0);
+    } catch (e) {
+      console.warn("Could not query sell transactions:", e.message);
+    }
 
     return NextResponse.json({
       summary: {
