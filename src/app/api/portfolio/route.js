@@ -3,9 +3,11 @@ import { prisma } from '@/lib/prisma';
 import { getActiveProvider } from '@/lib/dataService';
 import { getUserIdFromRequest } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request) {
   try {
-    const userId = getUserIdFromRequest(request);
+    const userId = await getUserIdFromRequest(request);
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const portfolio = await prisma.portfolio.findMany({
@@ -13,12 +15,12 @@ export async function GET(request) {
       include: {
         transactions: {
           orderBy: { date: 'desc' },
-          take: 5
+          take: 10
         }
       }
     });
 
-    // We only care about active positions (shares > 0) or simply all history
+    // We only care about active positions (shares > 0)
     const activePositions = portfolio.filter(p => p.totalShares > 0);
 
     // Fetch live prices for active positions
@@ -34,7 +36,7 @@ export async function GET(request) {
       
       const currentValue = pos.totalShares * currentPrice;
       const floatingPnL = currentValue - pos.investedValue;
-      const floatingPnLPercent = (floatingPnL / pos.investedValue) * 100;
+      const floatingPnLPercent = pos.investedValue > 0 ? (floatingPnL / pos.investedValue) * 100 : 0;
 
       totalInvested += pos.investedValue;
       totalCurrentValue += currentValue;
@@ -48,15 +50,27 @@ export async function GET(request) {
       };
     });
 
-    const totalPnL = totalCurrentValue - totalInvested;
-    const totalPnLPercent = totalInvested > 0 ? (totalPnL / totalInvested) * 100 : 0;
+    const totalFloatingPnL = totalCurrentValue - totalInvested;
+    const totalReturnPercent = totalInvested > 0 ? (totalFloatingPnL / totalInvested) * 100 : 0;
+
+    // Calculate Realized PnL from transactions where type === 'SELL'
+    const sellTransactions = await prisma.portfolioTransaction.findMany({
+      where: {
+        portfolio: { userId },
+        type: 'SELL'
+      }
+    });
+    const realizedPnL = sellTransactions.reduce((acc, t) => acc + (t.realizedPnL || 0), 0);
 
     return NextResponse.json({
       summary: {
         totalInvested,
         totalCurrentValue,
-        totalPnL,
-        totalPnLPercent
+        totalFloatingPnL,
+        totalPnL: totalFloatingPnL,
+        totalReturnPercent,
+        totalPnLPercent: totalReturnPercent,
+        realizedPnL
       },
       positions: enrichedPositions
     });

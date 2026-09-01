@@ -3,39 +3,33 @@
 import { useState, useEffect } from 'react';
 
 export default function PortfolioPanel() {
- const [portfolioData, setPortfolioData] = useState(null);
- const [loading, setLoading] = useState(true);
- const [error, setError] = useState(null);
-
- const fetchPortfolio = async () => {
- try {
- setLoading(true);
- const res = await fetch('/api/portfolio');
- if (!res.ok) throw new Error('Failed to fetch portfolio data');
- const data = await res.json();
- setPortfolioData(data);
- } catch (err) {
- setError(err.message);
- } finally {
- setLoading(false);
- }
- };
-
- useEffect(() => {
- const timer = setTimeout(() => {
- void fetchPortfolio();
- }, 0);
- return () => clearTimeout(timer);
- }, []);
-
- const formatCurrency = (val) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(val);
-
- if (loading) return <div className="p-10 text-center animate-pulse text-slate-500 dark:text-slate-400">Memuat Portfolio...</div>;
- if (error) return <div className="text-red-400 p-5">Terdapat error: {error}</div>;
-
- const { summary, positions } = portfolioData;
-
+  const [portfolioData, setPortfolioData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(null);
+
+  const fetchPortfolio = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/portfolio');
+      if (!res.ok) throw new Error('Failed to fetch portfolio data');
+      const data = await res.json();
+      setPortfolioData(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void fetchPortfolio();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const formatCurrency = (val) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(val || 0);
 
   const handleSellStock = (pos) => {
     setConfirmDialog({
@@ -57,6 +51,12 @@ export default function PortfolioPanel() {
     });
   };
 
+  if (loading) return <div className="p-10 text-center animate-pulse text-slate-500 dark:text-slate-400">Memuat Portfolio...</div>;
+  if (error) return <div className="text-red-400 p-5">Terdapat error: {error}</div>;
+
+  const summary = portfolioData?.summary || {};
+  const positions = portfolioData?.positions || [];
+
   return (
   <div className="space-y-6 animate-fade-in">
   {/* Summary Cards */}
@@ -77,8 +77,8 @@ export default function PortfolioPanel() {
   </div>
   <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.04]">
   <div className="text-xs text-slate-500 dark:text-slate-400">Total Return (%)</div>
-  <div className={`text-xl font-bold mt-1 ${summary.totalReturnPercent >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-  {summary.totalReturnPercent.toFixed(2)}%
+  <div className={`text-xl font-bold mt-1 ${(summary.totalReturnPercent ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+  {(summary.totalReturnPercent ?? 0).toFixed(2)}%
   </div>
   </div>
   </div>

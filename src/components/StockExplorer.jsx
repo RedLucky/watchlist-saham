@@ -215,6 +215,13 @@ export default function StockExplorer({ user }) {
   const [duplicateModal, setDuplicateModal] = useState(null);
   // Custom Confirmation Dialog (for delete actions)
   const [confirmDialog, setConfirmDialog] = useState(null);
+  // Win Rate Monitor Modal State
+  const [monitorModal, setMonitorModal] = useState(null);
+  const [monitorEntryPrice, setMonitorEntryPrice] = useState('');
+  const [monitorTargetPrice, setMonitorTargetPrice] = useState('');
+  const [monitorStopLoss, setMonitorStopLoss] = useState('');
+  const [monitorStyle, setMonitorStyle] = useState('swing');
+  const [savingMonitor, setSavingMonitor] = useState(false);
   // Toast Notification State
   const [toast, setToast] = useState(null);
 
@@ -704,6 +711,89 @@ export default function StockExplorer({ user }) {
       showToast('Terjadi kesalahan saat memindahkan saham', 'error');
     } finally {
       setMovingStockLoading(false);
+    }
+  };
+
+  const handleOpenMonitorModal = (stockData, tickerFallback, e) => {
+    if (e) e.stopPropagation();
+    const ticker = stockData?.ticker || tickerFallback || selectedStock;
+    if (!ticker) return;
+    const name = stockData?.name || stockDetail?.name || ticker;
+    const price = stockData?.price || stockDetail?.price || 0;
+    const target = stockData?.target || (price > 0 ? Math.round(price * 1.05) : '');
+    const stopLoss = stockData?.stopLoss || (price > 0 ? Math.round(price * 0.95) : '');
+    const score = stockData?.score || 70;
+
+    setMonitorModal({
+      ticker,
+      name,
+      price,
+      score,
+    });
+    setMonitorEntryPrice(price ? price.toString() : '');
+    setMonitorTargetPrice(target ? target.toString() : '');
+    setMonitorStopLoss(stopLoss ? stopLoss.toString() : '');
+    setMonitorStyle('swing');
+  };
+
+  const handleExecuteSaveMonitor = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!monitorModal) return;
+
+    const entryPrice = parseFloat((monitorEntryPrice || '').replace(/[^\d.-]/g, ''));
+    if (!entryPrice || isNaN(entryPrice) || entryPrice <= 0) {
+      showToast('Harga entry harus berupa angka lebih dari 0', 'error');
+      return;
+    }
+
+    const targetPrice = monitorTargetPrice ? parseFloat(monitorTargetPrice) : Math.round(entryPrice * 1.05);
+    const stopLossPrice = monitorStopLoss ? parseFloat(monitorStopLoss) : Math.round(entryPrice * 0.95);
+    const risk = entryPrice - stopLossPrice;
+    const reward = targetPrice - entryPrice;
+    const riskReward = (risk > 0 && reward > 0) ? Number((reward / risk).toFixed(2)) : 1.5;
+
+    setSavingMonitor(true);
+    try {
+      const res = await fetch('/api/history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          stock: {
+            ticker: monitorModal.ticker,
+            name: monitorModal.name,
+            price: entryPrice,
+            score: monitorModal.score || 70,
+            entry: {
+              low: entryPrice,
+              high: entryPrice,
+            },
+            target: targetPrice,
+            stopLoss: stopLossPrice,
+            riskReward,
+          },
+          style: monitorStyle,
+          mode: 'explorer',
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        showToast(data.error || 'Gagal menambahkan saham ke pemantauan', 'error');
+        return;
+      }
+
+      if (data.message === 'Already saved today') {
+        showToast(`⚠️ Saham ${monitorModal.ticker} (${monitorStyle}) sudah dipantau hari ini`, 'warning');
+      } else {
+        showToast(`🎯 Saham ${monitorModal.ticker} mulai dipantau di Win Rate Dashboard pada harga Rp ${entryPrice.toLocaleString('id-ID')}!`, 'success');
+      }
+
+      setMonitorModal(null);
+    } catch (err) {
+      showToast('Terjadi kesalahan saat menyimpan ke Win Rate Dashboard', 'error');
+    } finally {
+      setSavingMonitor(false);
     }
   };
 
@@ -1210,6 +1300,13 @@ export default function StockExplorer({ user }) {
                           </div>
                           <div className="flex items-center gap-1">
                             <button
+                              onClick={(e) => handleOpenMonitorModal(s, item.ticker, e)}
+                              className="text-xs p-1 text-slate-500 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400"
+                              title="Pantau Saham Ini di Win Rate Dashboard"
+                            >
+                              🎯
+                            </button>
+                            <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleAddToCompare(item.ticker);
@@ -1450,6 +1547,13 @@ export default function StockExplorer({ user }) {
                       </div>
 
                       <div className="flex flex-col sm:flex-row gap-2">
+                        <button
+                          onClick={() => handleOpenMonitorModal(stockDetail)}
+                          className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 whitespace-nowrap"
+                          title="Pantau pergerakan saham ini dan catat ke Win Rate Dashboard"
+                        >
+                          <span>🎯</span> Pantau Win Rate
+                        </button>
                         <button
                           onClick={() => handleAddToCompare(stockDetail.ticker)}
                           className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm transition-all flex items-center justify-center gap-1.5 whitespace-nowrap"
@@ -3178,6 +3282,116 @@ export default function StockExplorer({ user }) {
                 {confirmDialog.confirmLabel || 'Ya, Lanjutkan'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: PANTAU SAHAM & CATAT KE WIN RATE DASHBOARD ────────────── */}
+      {monitorModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/65 backdrop-blur-sm p-4 animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700/80 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl shrink-0">
+                  🎯
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-900 dark:text-white">
+                    Pantau {monitorModal.ticker}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">
+                    {monitorModal.name}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setMonitorModal(null)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleExecuteSaveMonitor} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Harga Entry / Beli (Rp) <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  required
+                  value={monitorEntryPrice}
+                  onChange={(e) => setMonitorEntryPrice(e.target.value)}
+                  placeholder="Misal: 10825"
+                  className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Target Harga / TP (Rp)
+                  </label>
+                  <input
+                    type="number"
+                    value={monitorTargetPrice}
+                    onChange={(e) => setMonitorTargetPrice(e.target.value)}
+                    placeholder="Auto: +5%"
+                    className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Stop Loss / SL (Rp)
+                  </label>
+                  <input
+                    type="number"
+                    value={monitorStopLoss}
+                    onChange={(e) => setMonitorStopLoss(e.target.value)}
+                    placeholder="Auto: -5%"
+                    className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Gaya Trading (Style)
+                </label>
+                <select
+                  value={monitorStyle}
+                  onChange={(e) => setMonitorStyle(e.target.value)}
+                  className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="swing">🌊 Swing Trading (Beberapa Hari - Minggu)</option>
+                  <option value="day">⚡ Day Trading (Harian)</option>
+                  <option value="invest">💎 Investing (Jangka Panjang)</option>
+                  <option value="scalp">🔥 Scalping (Menit - Jam)</option>
+                </select>
+              </div>
+
+              <div className="p-3 bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 rounded-xl text-[11px] text-emerald-900 dark:text-emerald-200 font-medium flex items-center justify-between">
+                <span>📈 <span className="font-bold">Status:</span> OPEN</span>
+                <span>🏆 Akan masuk ke kalkulasi Win Rate</span>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setMonitorModal(null)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingMonitor}
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  {savingMonitor ? 'Menyimpan...' : '🎯 Mulai Pantau'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
