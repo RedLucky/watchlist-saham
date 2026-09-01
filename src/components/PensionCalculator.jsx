@@ -483,10 +483,19 @@ export default function PensionCalculator() {
     const N = stocksToOptimize.length;
     if (N === 0) return { lotsMap: {}, weightsMap: {} };
 
-    const lotCosts = stocksToOptimize.map((st) => (Number(pricesMap[st.ticker]) || st.price || 1000) * 100);
-    const yields = stocksToOptimize.map((st) => Number(st.dividendYield ?? st.metrics?.dividendYield ?? st.divYield ?? 0));
+    const prices = stocksToOptimize.map((st) => Number(pricesMap[st.ticker]) || st.price || 1000);
+    const lotCosts = prices.map(p => p * 100);
+
+    // Dynamic Dividend Yield based on current live/custom price: DPS / CurrentPrice * 100
+    const yields = stocksToOptimize.map((st, i) => {
+      const basePrice = Number(st.price) || prices[i] || 1000;
+      const baseYield = Number(st.dividendYield ?? st.metrics?.dividendYield ?? st.divYield ?? 0);
+      const dps = Number(st.dps ?? st.metrics?.dps ?? (basePrice * (baseYield / 100)));
+      return prices[i] > 0 && dps > 0 ? (dps / prices[i]) * 100 : baseYield;
+    });
+
     const growths = stocksToOptimize.map((st) => Number(st.estimatedGrowth ?? st.growth ?? 5));
-    const returns = stocksToOptimize.map((st, i) => Number(st.totalEstimatedReturn ?? (yields[i] + growths[i])));
+    const returns = stocksToOptimize.map((st, i) => Number((yields[i] + growths[i]).toFixed(2)));
 
     // 1. Initial Softmax Logits (Warm start centered on mean return)
     const alpha = 0.6; // Growth priority weight
@@ -655,9 +664,12 @@ export default function PensionCalculator() {
       const cost = lots * lotCost;
       const isManual = manualLots[st.ticker] !== undefined;
 
-      const yieldVal = Number(st.dividendYield ?? st.metrics?.dividendYield ?? st.divYield ?? 0);
+      const basePrice = Number(st.price) || price || 1000;
+      const baseYield = Number(st.dividendYield ?? st.metrics?.dividendYield ?? st.divYield ?? 0);
+      const dps = Number(st.dps ?? st.metrics?.dps ?? (basePrice * (baseYield / 100)));
+      const yieldVal = price > 0 && dps > 0 ? Number(((dps / price) * 100).toFixed(2)) : baseYield;
       const growthVal = Number(st.estimatedGrowth ?? st.growth ?? 5);
-      const totalReturn = Number(st.totalEstimatedReturn ?? (yieldVal + growthVal));
+      const totalReturn = Number((yieldVal + growthVal).toFixed(2));
 
       const otherSpent = spent - cost;
       const maxAffordableLots = lotCost > 0 ? Math.floor((stockAllocation - otherSpent) / lotCost) : 0;
@@ -672,6 +684,7 @@ export default function PensionCalculator() {
         lotCost,
         lots,
         cost,
+        dps,
         dividendYield: yieldVal,
         estimatedGrowth: growthVal,
         totalEstimatedReturn: totalReturn,

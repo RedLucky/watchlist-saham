@@ -218,11 +218,14 @@ export async function GET(request) {
         isRetailEntering = kseiLatest.deltaRetail > 0;
       }
 
+      const dps = divRes.metrics.dps || (st.price > 0 ? (st.price * ((divRes.metrics.dividendYield || 0) / 100)) : 0);
+
       return {
         ticker: st.ticker,
         name: st.name,
         sector: st.sector,
         price: st.price,
+        dps: Number(dps.toFixed(2)),
         fundamentalScore: fundRes.score,
         valuationScore: valRes.score,
         dividendScore: divRes.score,
@@ -236,7 +239,8 @@ export async function GET(request) {
           der: fundRes.metrics.der,
           per: valRes.metrics.per,
           pbv: valRes.metrics.pbv,
-          streakYears: divRes.metrics.streakYears
+          streakYears: divRes.metrics.streakYears,
+          dps: Number(dps.toFixed(2))
         }
       };
     });
@@ -281,11 +285,14 @@ export async function GET(request) {
           const estimatedGrowth = Math.max(2.0, Math.min(15.0, roe * reinvestmentRate));
           const totalEstimatedReturn = dividendYield + estimatedGrowth;
 
+          const dps = divRes.metrics.dps || (st.price > 0 ? (st.price * (dividendYield / 100)) : 0);
+
           scoredStocks.push({
             ticker: st.ticker,
             name: st.name,
             sector: st.sector,
             price: st.price,
+            dps: Number(dps.toFixed(2)),
             fundamentalScore: fundRes.score,
             valuationScore: valRes.score,
             dividendScore: divRes.score,
@@ -299,7 +306,8 @@ export async function GET(request) {
               der: fundRes.metrics.der,
               per: valRes.metrics.per,
               pbv: valRes.metrics.pbv,
-              streakYears: divRes.metrics.streakYears
+              streakYears: divRes.metrics.streakYears,
+              dps: Number(dps.toFixed(2))
             }
           });
         });

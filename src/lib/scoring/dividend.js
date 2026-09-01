@@ -185,6 +185,6 @@ export function calculateDividendScore(stock) {
   return {
     score: Math.round(Math.min(100, Math.max(0, score))),
     details,
-    metrics: { dividendYield: safeYield, payoutRatio: safePayout, streakYears },
+    metrics: { dividendYield: safeYield, payoutRatio: safePayout, streakYears, dps: ttmPerSaham || (stock.price > 0 ? (stock.price * (safeYield / 100)) : 0) },
   };
 }
