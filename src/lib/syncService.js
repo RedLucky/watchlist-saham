@@ -11,6 +11,7 @@ import { yahooFinance } from './yahooClient';
 import { prisma } from './prisma';
 import { getSectorByTicker, getSubSectorByTicker, getAllTickersForYahoo } from './sectorUniverse';
 import { calculateMA, calculateRSI, calculateATR, calculateMACD, calculateBollingerBands } from './indicators';
+import { refreshForexRates } from './currencyService';
 
 const DEEP_SYNC_TIMEOUT_MS = parseInt(process.env.DEEP_SYNC_TIMEOUT_MS || '30000', 10);
 const DEEP_SYNC_RETRIES = parseInt(process.env.DEEP_SYNC_RETRIES || '1', 10);
@@ -87,6 +88,9 @@ export async function getTargetTickers() {
 export async function fastSyncPrices(limit = 250) {
   console.log(`[FastSync] Memulai sinkronisasi harga & volume (Round-Robin Queue, limit: ${limit || 'ALL'})...`);
   
+  // Refresh kurs valas real-time (USD, SGD, EUR, AUD, dll.)
+  await refreshForexRates().catch(() => {});
+
   // Pastikan semua ticker di sectorUniverse sudah terdaftar di DB
   await ensureAllUniverseTickersSeeded();
 
