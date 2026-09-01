@@ -47,7 +47,6 @@ export default function PensionCalculator() {
  const [customTickerInput, setCustomTickerInput] = useState('');
   const [addingCustomTicker, setAddingCustomTicker] = useState(false);
   const [manualLots, setManualLots] = useState({});
-  const [isOptimizing, setIsOptimizing] = useState(false);
 
   // 30 Candidates Modal State
   const [pensionCandidates, setPensionCandidates] = useState([]);
@@ -417,163 +416,212 @@ export default function PensionCalculator() {
  return { sbn: 0.50, stock: 0.35, rdpu: 0.15, label: '🟡 Moderat (50% SBN / 35% Saham / 15% RDPU)' };
  }, [riskProfile]);
 
-  // 1. Dynamic Stock Lot & Cost Calculation (Smart Growth & Return Maximizing Rebalance with Min 1 Lot)
-  const calculatedStocks = useMemo(() => {
-    if (!presetStocks || presetStocks.length === 0) return [];
-    
-    const stockAllocation = totalBudget * assetRatios.stock;
-    
-    // 1. Initial mapping of stock items with Return & Growth metrics
-    const rawItems = presetStocks.map((st) => {
-      const price = Number(stockPrices[st.ticker]) || st.price || 0;
-      const lotCost = price * 100;
-      const isManual = manualLots[st.ticker] !== undefined;
-      const manualLotCount = isManual ? Math.max(0, parseInt(manualLots[st.ticker], 10) || 0) : null;
-      
-      const yieldVal = Number(st.dividendYield ?? st.metrics?.dividendYield ?? st.divYield ?? 0);
-      const growthVal = Number(st.estimatedGrowth ?? st.growth ?? 5);
-      const totalReturn = Number(st.totalEstimatedReturn ?? (yieldVal + growthVal));
-      
-      // Growth & Target Return scoring weight (Prioritize high total return & growth compounding)
-      const returnWeight = Math.max(1, totalReturn * (1 + growthVal / 100));
+  // Backpropagation Gradient Descent Optimizer for Stock Lot Allocation & Weights
+  const runBackpropOptimization = useCallback((stocksToOptimize, pricesMap, budgetLimit, manualLotsMap) => {
+    const N = stocksToOptimize.length;
+    if (N === 0) return { lotsMap: {}, weightsMap: {} };
 
-      return {
-        ...st,
-        price,
-        lotCost,
-        dividendYield: yieldVal,
-        estimatedGrowth: growthVal,
-        totalEstimatedReturn: totalReturn,
-        returnWeight,
-        isManual,
-        manualLotCount,
-        lots: isManual ? manualLotCount : 0,
-        cost: isManual ? (manualLotCount * lotCost) : 0,
-      };
-    });
+    const lotCosts = stocksToOptimize.map((st) => (Number(pricesMap[st.ticker]) || st.price || 1000) * 100);
+    const yields = stocksToOptimize.map((st) => Number(st.dividendYield ?? st.metrics?.dividendYield ?? st.divYield ?? 0));
+    const growths = stocksToOptimize.map((st) => Number(st.estimatedGrowth ?? st.growth ?? 5));
+    const returns = stocksToOptimize.map((st, i) => Number(st.totalEstimatedReturn ?? (yields[i] + growths[i])));
 
-    // 2. Compute cost of manual stocks and remaining budget for auto stocks
-    let manualSpent = 0;
-    rawItems.forEach(st => {
-      if (st.isManual) {
-        manualSpent += st.cost;
+    // 1. Initial Softmax Logits (Warm start centered on mean return)
+    const alpha = 0.6; // Growth priority weight
+    const gamma = 2.0; // Entropy / diversification regularization
+    const iterations = 150;
+    const lr = 0.05;
+
+    let theta = new Float64Array(N);
+    const meanRet = returns.reduce((a, b) => a + b, 0) / (N || 1);
+    for (let i = 0; i < N; i++) {
+      theta[i] = (returns[i] - meanRet) / 10.0;
+    }
+
+    // Adam optimizer momentum variables
+    let m = new Float64Array(N);
+    let v = new Float64Array(N);
+    const beta1 = 0.9, beta2 = 0.999, eps = 1e-8;
+
+    // 2. Backpropagation Optimization Loop
+    for (let iter = 1; iter <= iterations; iter++) {
+      let maxTheta = -Infinity;
+      for (let i = 0; i < N; i++) if (theta[i] > maxTheta) maxTheta = theta[i];
+      let sumExp = 0;
+      const expTheta = new Float64Array(N);
+      for (let i = 0; i < N; i++) {
+        expTheta[i] = Math.exp(theta[i] - maxTheta);
+        sumExp += expTheta[i];
       }
-    });
+      const weights = new Float64Array(N);
+      for (let i = 0; i < N; i++) {
+        weights[i] = expTheta[i] / (sumExp || 1);
+      }
 
-    let remainingBudgetForAuto = Math.max(0, stockAllocation - manualSpent);
-    const autoStocks = rawItems.filter(st => !st.isManual && st.lotCost > 0);
+      // Objective Gradient: dL/dw = - (Reward) + Entropy Gradient
+      const dL_dw = new Float64Array(N);
+      for (let i = 0; i < N; i++) {
+        const reward = returns[i] + (alpha * growths[i]);
+        const entropyGrad = gamma * (Math.log(weights[i] + eps) + 1);
+        dL_dw[i] = -reward + entropyGrad;
+      }
 
-    // Step A: Minimum 1-lot guarantee for all auto stocks (Prioritize highest return if budget is tight)
-    const sortedAuto = [...autoStocks].sort((a, b) => b.returnWeight - a.returnWeight || b.estimatedGrowth - a.estimatedGrowth);
-    
-    for (const st of sortedAuto) {
-      if (remainingBudgetForAuto >= st.lotCost) {
-        st.lots = 1;
-        st.cost = st.lotCost;
-        remainingBudgetForAuto -= st.lotCost;
-      } else {
-        st.lots = 0;
-        st.cost = 0;
+      // Backpropagation through Softmax: dL/dtheta = w_k * (dL/dw_k - Sum_j(w_j * dL/dw_j))
+      let sum_w_dL = 0;
+      for (let j = 0; j < N; j++) {
+        sum_w_dL += weights[j] * dL_dw[j];
+      }
+      const gradTheta = new Float64Array(N);
+      for (let k = 0; k < N; k++) {
+        gradTheta[k] = weights[k] * (dL_dw[k] - sum_w_dL);
+      }
+
+      // Adam step
+      for (let i = 0; i < N; i++) {
+        m[i] = beta1 * m[i] + (1 - beta1) * gradTheta[i];
+        v[i] = beta2 * v[i] + (1 - beta2) * (gradTheta[i] * gradTheta[i]);
+        const mHat = m[i] / (1 - Math.pow(beta1, iter));
+        const vHat = v[i] / (1 - Math.pow(beta2, iter));
+        theta[i] -= lr * (mHat / (Math.sqrt(vHat) + eps));
       }
     }
 
-    // Step B: Proportional distribution of remaining budget weighted by Growth & Target Return
-    if (remainingBudgetForAuto > 0 && autoStocks.length > 0) {
-      const totalAutoWeight = autoStocks.reduce((sum, st) => sum + st.returnWeight, 0) || 1;
-      
-      autoStocks.forEach(st => {
-        const weight = st.returnWeight / totalAutoWeight;
-        const targetAddBudget = remainingBudgetForAuto * weight;
-        const additionalLots = Math.floor(targetAddBudget / st.lotCost);
-        if (additionalLots > 0) {
-          st.lots += additionalLots;
-          st.cost += additionalLots * st.lotCost;
+    // Converged Continuous Weights
+    let maxTheta = -Infinity;
+    for (let i = 0; i < N; i++) if (theta[i] > maxTheta) maxTheta = theta[i];
+    let sumExp = 0;
+    const expTheta = new Float64Array(N);
+    for (let i = 0; i < N; i++) {
+      expTheta[i] = Math.exp(theta[i] - maxTheta);
+      sumExp += expTheta[i];
+    }
+    const optimalWeights = Array.from(expTheta).map(x => x / (sumExp || 1));
+
+    // 3. Discrete Constrained Allocation
+    const lots = new Array(N).fill(0);
+    let spent = 0;
+
+    // Check manual locks
+    stocksToOptimize.forEach((st, idx) => {
+      if (manualLotsMap[st.ticker] !== undefined) {
+        lots[idx] = Math.max(0, parseInt(manualLotsMap[st.ticker], 10) || 0);
+        spent += lots[idx] * lotCosts[idx];
+      }
+    });
+
+    let remainingBudget = Math.max(0, budgetLimit - spent);
+    const autoIndices = stocksToOptimize
+      .map((st, idx) => ({ idx, ticker: st.ticker, cost: lotCosts[idx], isManual: manualLotsMap[st.ticker] !== undefined }))
+      .filter(item => !item.isManual && item.cost > 0);
+
+    // Step A: Guarantee Minimum 1 Lot for all auto stocks (Prioritize highest return if budget is tight)
+    const sortedAuto = [...autoIndices].sort((a, b) => 
+      (returns[b.idx] + alpha * growths[b.idx]) - (returns[a.idx] + alpha * growths[a.idx])
+    );
+
+    for (const item of sortedAuto) {
+      if (remainingBudget >= item.cost) {
+        lots[item.idx] = 1;
+        spent += item.cost;
+        remainingBudget -= item.cost;
+      }
+    }
+
+    // Step B: Proportional Allocation of remaining budget according to backpropagation weights
+    if (remainingBudget > 0 && autoIndices.length > 0) {
+      const totalAutoWeight = autoIndices.reduce((sum, item) => sum + optimalWeights[item.idx], 0) || 1;
+
+      for (const item of autoIndices) {
+        const normWeight = optimalWeights[item.idx] / totalAutoWeight;
+        const targetAddBudget = remainingBudget * normWeight;
+        const addLots = Math.floor(targetAddBudget / item.cost);
+        if (addLots > 0) {
+          lots[item.idx] += addLots;
+          spent += addLots * item.cost;
         }
-      });
+      }
+      remainingBudget = budgetLimit - spent;
     }
 
-    // Step C: Calculate total spent so far & leftover cash
-    let totalStockSpent = rawItems.reduce((sum, st) => sum + st.cost, 0);
-    let stockCashChange = stockAllocation - totalStockSpent;
-
-    // Step D: Greedy Knapsack - exhaust remaining cash by giving extra lots to highest return stocks first
-    // This minimizes leftover cash to the absolute lowest possible without exceeding budget!
-    if (stockCashChange > 0 && autoStocks.length > 0) {
-      const sortedForGreedy = [...autoStocks].sort((a, b) => 
-        (b.totalEstimatedReturn - a.totalEstimatedReturn) || 
-        (b.estimatedGrowth - a.estimatedGrowth) || 
-        (a.lotCost - b.lotCost)
+    // Step C: Greedy Knapsack pass to minimize leftover budget to absolute minimum
+    if (remainingBudget > 0 && autoIndices.length > 0) {
+      const greedyRank = [...autoIndices].sort((a, b) => 
+        (returns[b.idx] + alpha * growths[b.idx]) - (returns[a.idx] + alpha * growths[a.idx]) || (a.cost - b.cost)
       );
 
-      let purchased = true;
-      while (purchased && stockCashChange > 0) {
-        purchased = false;
-        for (let st of sortedForGreedy) {
-          if (st.lotCost > 0 && stockCashChange >= st.lotCost) {
-            st.lots += 1;
-            st.cost += st.lotCost;
-            totalStockSpent += st.lotCost;
-            stockCashChange -= st.lotCost;
-            purchased = true;
-            break; // restart from highest return stock for greedy pass
+      let keepBuying = true;
+      while (keepBuying && remainingBudget > 0) {
+        keepBuying = false;
+        for (const item of greedyRank) {
+          if (remainingBudget >= item.cost) {
+            lots[item.idx] += 1;
+            spent += item.cost;
+            remainingBudget -= item.cost;
+            keepBuying = true;
+            break;
           }
         }
       }
     }
 
-    // 3. Enrich with maxAffordable lots, weightPct, and canIncrement/canDecrement flags
-    return rawItems.map(st => {
-      const otherSpent = totalStockSpent - st.cost;
-      const maxAffordableLots = st.lotCost > 0 ? Math.floor((stockAllocation - otherSpent) / st.lotCost) : 0;
-      const canIncrement = st.lotCost > 0 && stockCashChange >= st.lotCost;
-      const canDecrement = st.lots > 0;
-      const actualWeightPct = stockAllocation > 0 ? ((st.cost / stockAllocation) * 100).toFixed(0) : '0';
+    const lotsMap = {};
+    const weightsMap = {};
+    stocksToOptimize.forEach((st, idx) => {
+      lotsMap[st.ticker] = lots[idx];
+      weightsMap[st.ticker] = optimalWeights[idx];
+    });
+
+    return { lotsMap, weightsMap, spent, remaining: remainingBudget };
+  }, []);
+
+  // 1. Dynamic Stock Lot & Cost Calculation (Integrated Backpropagation Optimization)
+  const calculatedStocks = useMemo(() => {
+    if (!presetStocks || presetStocks.length === 0) return [];
+    
+    const stockAllocation = totalBudget * assetRatios.stock;
+    const { lotsMap, weightsMap, spent, remaining } = runBackpropOptimization(
+      presetStocks,
+      stockPrices,
+      stockAllocation,
+      manualLots
+    );
+
+    return presetStocks.map((st) => {
+      const price = Number(stockPrices[st.ticker]) || st.price || 0;
+      const lotCost = price * 100;
+      const lots = lotsMap[st.ticker] ?? 0;
+      const cost = lots * lotCost;
+      const isManual = manualLots[st.ticker] !== undefined;
+
+      const yieldVal = Number(st.dividendYield ?? st.metrics?.dividendYield ?? st.divYield ?? 0);
+      const growthVal = Number(st.estimatedGrowth ?? st.growth ?? 5);
+      const totalReturn = Number(st.totalEstimatedReturn ?? (yieldVal + growthVal));
+
+      const otherSpent = spent - cost;
+      const maxAffordableLots = lotCost > 0 ? Math.floor((stockAllocation - otherSpent) / lotCost) : 0;
+      const canIncrement = lotCost > 0 && remaining >= lotCost;
+      const canDecrement = lots > 0;
+      const actualWeightPct = stockAllocation > 0 ? ((cost / stockAllocation) * 100).toFixed(0) : '0';
+      const optimalWeightPct = weightsMap[st.ticker] ? `${(weightsMap[st.ticker] * 100).toFixed(1)}%` : `${actualWeightPct}%`;
 
       return {
         ...st,
+        price,
+        lotCost,
+        lots,
+        cost,
+        dividendYield: yieldVal,
+        estimatedGrowth: growthVal,
+        totalEstimatedReturn: totalReturn,
         weightPct: `${actualWeightPct}%`,
-        maxLots: Math.max(st.lots, maxAffordableLots),
+        optimalWeightPct,
+        maxLots: Math.max(lots, maxAffordableLots),
         canIncrement,
         canDecrement,
+        isManual
       };
     });
-  }, [presetStocks, stockPrices, manualLots, totalBudget, assetRatios.stock]);
-
-  const handleOptimizeLots = async () => {
-    setIsOptimizing(true);
-    try {
-      const payload = {
-        budget: totalBudget * assetRatios.stock,
-        stocks: calculatedStocks.map(st => ({
-          ticker: st.ticker,
-          price: st.price,
-          yield: st.dividendYield || st.metrics?.dividendYield || st.divYield || 0,
-          growth: st.estimatedGrowth || st.growth || 5
-        }))
-      };
-
-      const res = await fetch('/api/pension/optimize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && data.optimalLots) {
-          setManualLots(data.optimalLots);
-          showToast('✅ Alokasi portofolio berhasil dioptimalkan!', 'success');
-        }
-      } else {
-        showToast('Gagal mengambil hasil optimasi dari server.', 'error');
-      }
-    } catch (err) {
-      console.error(err);
-      showToast('Terjadi kesalahan saat memanggil AI Optimizer.', 'error');
-    } finally {
-      setIsOptimizing(false);
-    }
-  };
+  }, [presetStocks, stockPrices, manualLots, totalBudget, assetRatios.stock, runBackpropOptimization]);
 
   // Automatic average Dividend Yield (Weighted by Capital Allocation / Lots)
   const autoStockDivYield = useMemo(() => {
@@ -1269,15 +1317,24 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
           <span className="bg-white/20 text-[9px] px-1.5 py-0.2 rounded-full font-black">Top 30</span>
         </button>
 
-        {Object.keys(manualLots).length > 0 && (
-          <button
-            onClick={handleResetAutoLots}
-            className="px-2.5 py-1.5 text-[10.5px] font-extrabold text-indigo-700 dark:text-indigo-300 bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900/50 dark:hover:bg-indigo-800/60 rounded-lg border border-indigo-300 dark:border-indigo-700 transition-all flex items-center gap-1 shadow-sm"
-            title="Reset semua perubahan manual dan hitung ulang lot proporsional"
-          >
-            🔄 Auto-Hitung ({Object.keys(manualLots).length} kustom)
-          </button>
-        )}
+        <button
+          onClick={handleResetAutoLots}
+          className={`px-3 py-1.5 text-[10.5px] font-extrabold rounded-lg border transition-all flex items-center gap-1.5 shadow-sm cursor-pointer ${
+            Object.keys(manualLots).length > 0
+              ? 'text-amber-800 dark:text-amber-200 bg-amber-100 dark:bg-amber-950/60 border-amber-300 dark:border-amber-700 hover:bg-amber-200'
+              : 'text-indigo-700 dark:text-indigo-300 bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900/50 dark:hover:bg-indigo-800/60 border-indigo-300 dark:border-indigo-700'
+          }`}
+          title="Rebalance Backpropagation otomatis: Maksimalkan Growth & Target Return, pastikan min. 1 lot per saham"
+        >
+          <span>🔄</span>
+          <span>Auto-Hitung (Rebalance)</span>
+          {Object.keys(manualLots).length > 0 && (
+            <span className="text-[9px] bg-amber-200 dark:bg-amber-800/80 px-1.5 py-0.2 rounded-full font-black">
+              {Object.keys(manualLots).length} Kustom
+            </span>
+          )}
+        </button>
+
         {lastSyncTime && (
           <span className="text-[9px] text-emerald-700 dark:text-emerald-400 font-bold px-2 py-1.5 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
             Data: {lastSyncTime}
@@ -1439,22 +1496,9 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
           <button
             onClick={handleAddCustomStock}
             disabled={addingCustomTicker || !customTickerInput.trim()}
-            className="px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs transition-all disabled:opacity-50"
+            className="px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs transition-all disabled:opacity-50 cursor-pointer"
           >
             {addingCustomTicker ? 'Menambahkan...' : 'Tambah'}
-          </button>
-          <button
-            onClick={() => setShowCandidatesModal(true)}
-            className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs rounded-lg shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
-          >
-            🏆 30 Kandidat Saham
-          </button>
-          <button
-            onClick={handleOptimizeLots}
-            disabled={isOptimizing || calculatedStocks.length === 0}
-            className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 disabled:opacity-50 text-white font-extrabold text-xs rounded-lg shadow-lg shadow-amber-500/20 transition-all flex items-center gap-1.5"
-          >
-            {isOptimizing ? '🔄 Optimizing...' : '✨ AI Optimize Lots'}
           </button>
         </div>
 
