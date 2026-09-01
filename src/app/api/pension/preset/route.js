@@ -35,9 +35,12 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const riskProfile = (searchParams.get('riskProfile') || 'MODERATE').toUpperCase();
     const forceRefresh = searchParams.get('forceRefresh') === 'true';
+    const customQuery = searchParams.get('customTickers');
 
     let customTickers = null;
-    if (!forceRefresh) {
+    if (customQuery) {
+      customTickers = customQuery.split(',').map((s) => s.trim().toUpperCase()).filter(Boolean);
+    } else if (!forceRefresh) {
       const userId = getUserIdFromRequest(request);
       if (userId) {
         const user = await prisma.user.findUnique({ where: { id: userId }, select: { customPreset: true } });
@@ -252,6 +255,56 @@ export async function GET(request) {
     // Pick preset stocks: IF customTickers exist, match customTickers, otherwise pick top 4 combination
     let selectedPreset = [];
     if (customTickers && customTickers.length > 0) {
+      const missingTickers = customTickers.filter(t => !scoredStocks.some(s => s.ticker === t));
+      if (missingTickers.length > 0) {
+        const extraStocks = await prisma.stockData.findMany({
+          where: { ticker: { in: missingTickers } }
+        });
+        extraStocks.forEach(st => {
+          let fundamentals = {};
+          try { fundamentals = typeof st.fundamentals === 'string' ? JSON.parse(st.fundamentals) : (st.fundamentals || {}); } catch (e) {}
+          const stockObj = {
+            ticker: st.ticker,
+            name: st.name,
+            sector: st.sector,
+            price: st.price,
+            fundamentals,
+            dividendHistory: (typeof st.dividendHistory === 'string' ? JSON.parse(st.dividendHistory) : st.dividendHistory) || []
+          };
+          const fundRes = calculateFundamentalScore(stockObj);
+          const valRes = calculateValuationScore(stockObj);
+          const divRes = calculateDividendScore(stockObj);
+          const dividendYield = divRes.metrics.dividendYield || 0;
+          const roe = fundRes.metrics.roe || 0;
+          const payoutRatio = divRes.metrics.payoutRatio || 50;
+          const reinvestmentRate = Math.max(0, (100 - payoutRatio) / 100);
+          const estimatedGrowth = Math.max(2.0, Math.min(15.0, roe * reinvestmentRate));
+          const totalEstimatedReturn = dividendYield + estimatedGrowth;
+
+          scoredStocks.push({
+            ticker: st.ticker,
+            name: st.name,
+            sector: st.sector,
+            price: st.price,
+            fundamentalScore: fundRes.score,
+            valuationScore: valRes.score,
+            dividendScore: divRes.score,
+            dividendYield,
+            estimatedGrowth: Number(estimatedGrowth.toFixed(1)),
+            totalEstimatedReturn: Number(totalEstimatedReturn.toFixed(1)),
+            finalPensionScore: 80,
+            isDividendTrap: false,
+            metrics: {
+              roe: fundRes.metrics.roe,
+              der: fundRes.metrics.der,
+              per: valRes.metrics.per,
+              pbv: valRes.metrics.pbv,
+              streakYears: divRes.metrics.streakYears
+            }
+          });
+        });
+      }
+
       selectedPreset = customTickers
         .map(t => scoredStocks.find(s => s.ticker === t))
         .filter(Boolean);

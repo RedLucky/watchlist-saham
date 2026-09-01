@@ -139,27 +139,39 @@ export default function PensionCalculator() {
  }
  }, []);
 
- // 2. Fetch Dynamic Preset Stocks based on Fundamental/Valuation/Dividend Scoring & Risk Profile
- const fetchDynamicPreset = useCallback(async (profile, forceRefresh = false) => {
+  // 2. Fetch Dynamic Preset Stocks based on Fundamental/Valuation/Dividend Scoring & Risk Profile
+  const fetchDynamicPreset = useCallback(async (profile, forceRefresh = false) => {
     setLoadingPreset(true);
     try {
-      const res = await fetch(`/api/pension/preset?riskProfile=${profile}&forceRefresh=${forceRefresh}`);
+      let customQuery = '';
+      if (!forceRefresh && typeof window !== 'undefined') {
+        try {
+          const saved = localStorage.getItem('idx_pension_custom_preset');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              customQuery = `&customTickers=${parsed.join(',')}`;
+            }
+          }
+        } catch (e) {}
+      }
+
+      const res = await fetch(`/api/pension/preset?riskProfile=${profile}&forceRefresh=${forceRefresh}${customQuery}`);
       if (res.ok) {
         const data = await res.json();
+        if (data.candidates && data.candidates.length > 0) {
+          setPensionCandidates(data.candidates);
+        }
+        if (data.bluechipOptions && data.bluechipOptions.length > 0) {
+          setBluechipOptions(data.bluechipOptions);
+        }
         if (data.presetStocks && data.presetStocks.length > 0) {
           setPresetStocks(data.presetStocks);
-          if (data.bluechipOptions && data.bluechipOptions.length > 0) {
-            setBluechipOptions(data.bluechipOptions);
-          }
-          if (data.candidates && data.candidates.length > 0) {
-            setPensionCandidates(data.candidates);
-          }
-          
           const newPrices = {};
           data.presetStocks.forEach((st) => {
             newPrices[st.ticker] = Math.round(st.price || 1000);
           });
-          setStockPrices(newPrices);
+          setStockPrices((prev) => ({ ...prev, ...newPrices }));
           setLastSyncTime(new Date(data.updatedAt).toLocaleTimeString('id-ID'));
         }
       }
@@ -308,11 +320,18 @@ export default function PensionCalculator() {
   };
 
   const syncCustomPresetToDB = async (newStocksArray) => {
+    const tickers = newStocksArray.map(st => st.ticker);
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('idx_pension_custom_preset', JSON.stringify(tickers));
+      }
+    } catch (e) {}
+
     try {
       await fetch('/api/user/preset', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ customPreset: newStocksArray.map(st => st.ticker) })
+        body: JSON.stringify({ customPreset: tickers })
       });
     } catch (e) {
       console.error('Failed to sync custom preset:', e);
@@ -366,33 +385,76 @@ export default function PensionCalculator() {
   };
 
   const handleAddCustomStockByTicker = async (tickerToAdd) => {
-    const ticker = tickerToAdd.toUpperCase();
-    if (presetStocks.some(st => st.ticker === ticker)) return;
+    const ticker = tickerToAdd.toUpperCase().trim();
+    if (!ticker) return;
+    if (presetStocks.some(st => st.ticker === ticker)) {
+      showToast(`Saham ${ticker} sudah ada di daftar belanja.`, 'info');
+      return;
+    }
 
     setAddingCustomTicker(true);
     try {
-      const res = await fetch(`/api/pension/prices?tickers=${ticker}`);
-      if (res.ok) {
-        const data = await res.json();
-        const stockData = data.prices?.[ticker];
-        if (stockData) {
-          const updated = [...presetStocks, { ticker, price: stockData.price, name: stockData.name || ticker }];
-          setPresetStocks(updated);
-          setStockPrices((prev) => ({ ...prev, [ticker]: stockData.price }));
-          setManualLots((prev) => {
-            const next = { ...prev };
-            delete next[ticker];
-            return next;
-          });
-          await syncCustomPresetToDB(updated);
-          await fetchDynamicPreset(riskProfile);
-          setCustomTickerInput('');
-          showToast(`✅ Saham ${ticker} berhasil ditambahkan! Alokasi di-rebalance otomatis (Min. 1 Lot).`, 'success');
-        } else {
-          showToast(`Saham ${ticker} tidak ditemukan di database.`, 'error');
+      // 1. Check if the stock already exists in candidates list
+      let foundCandidate = pensionCandidates.find(c => c.ticker === ticker);
+      
+      let price = foundCandidate?.price || 0;
+      let name = foundCandidate?.name || ticker;
+      let sector = foundCandidate?.sector || 'UNKNOWN';
+      let dividendYield = foundCandidate?.dividendYield || 0;
+      let estimatedGrowth = foundCandidate?.estimatedGrowth || 5.0;
+      let totalEstimatedReturn = foundCandidate?.totalEstimatedReturn || (dividendYield + estimatedGrowth);
+      let finalPensionScore = foundCandidate?.finalPensionScore || 80;
+      let isDividendTrap = foundCandidate?.isDividendTrap || false;
+      let metrics = foundCandidate?.metrics || {};
+
+      // 2. If not found in loaded candidates, fetch price & metadata from prices API
+      if (!foundCandidate) {
+        const res = await fetch(`/api/pension/prices?tickers=${ticker}`);
+        if (res.ok) {
+          const data = await res.json();
+          const stockData = data.prices?.[ticker];
+          if (stockData) {
+            price = stockData.price || 1000;
+            name = stockData.name || ticker;
+            sector = stockData.sector || 'UNKNOWN';
+            dividendYield = stockData.yield || 0;
+            estimatedGrowth = 5.0;
+            totalEstimatedReturn = dividendYield + estimatedGrowth;
+          }
         }
       }
+
+      if (price > 0 || foundCandidate) {
+        const updated = [
+          ...presetStocks,
+          {
+            ticker,
+            name,
+            sector,
+            price: price || 1000,
+            dividendYield,
+            estimatedGrowth,
+            totalEstimatedReturn,
+            finalPensionScore,
+            isDividendTrap,
+            metrics
+          }
+        ];
+        setPresetStocks(updated);
+        setStockPrices((prev) => ({ ...prev, [ticker]: price || 1000 }));
+        setManualLots((prev) => {
+          const next = { ...prev };
+          delete next[ticker];
+          return next;
+        });
+        syncCustomPresetToDB(updated);
+        setCustomTickerInput('');
+        showToast(`✅ Saham ${ticker} (${name}) berhasil ditambahkan! Alokasi lot di-rebalance otomatis.`, 'success');
+      } else {
+        showToast(`Saham ${ticker} tidak ditemukan di database.`, 'error');
+      }
     } catch (e) {
+      console.error(e);
       showToast('Gagal mengambil data saham.', 'error');
     } finally {
       setAddingCustomTicker(false);
