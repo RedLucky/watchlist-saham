@@ -104,15 +104,18 @@ export default function StockTable({ stocks, loading, mode, style }) {
  </div>
 
  {/* Table header */}
- <div className="hidden sm:grid grid-cols-14 gap-4 px-4 sm:px-6 py-3 bg-slate-50/50 dark:bg-white/[0.01] border-b border-slate-200 dark:border-slate-800/30 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
- <div className="col-span-3 cursor-pointer hover:text-slate-900 dark:text-white"onClick={() => handleSort('ticker')}>
+ <div className="hidden sm:grid grid-cols-16 gap-3 px-4 sm:px-6 py-3 bg-slate-50/50 dark:bg-white/[0.01] border-b border-slate-200 dark:border-slate-800/30 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+ <div className="col-span-3 cursor-pointer hover:text-slate-900 dark:text-white" onClick={() => handleSort('ticker')}>
  Saham <SortIcon active={sortBy === 'ticker'} asc={sortAsc} />
  </div>
  <div className="col-span-2 text-right">
  Harga Sekarang
  </div>
- <div className="col-span-1 text-center cursor-pointer hover:text-slate-900 dark:text-white"onClick={() => handleSort('score')}>
+ <div className="col-span-1 text-center cursor-pointer hover:text-slate-900 dark:text-white" onClick={() => handleSort('score')}>
  <Tooltip term="score">Skor</Tooltip> <SortIcon active={sortBy === 'score'} asc={sortAsc} />
+ </div>
+ <div className="col-span-2 text-center">
+ <Tooltip term="supertrendDema">Sinyal ST+DEMA</Tooltip>
  </div>
  <div className="col-span-2 text-right">
  <Tooltip term="entry">Area Beli</Tooltip>
@@ -123,7 +126,7 @@ export default function StockTable({ stocks, loading, mode, style }) {
  <div className="col-span-2 text-right">
  <Tooltip term="stopLoss">Stop Loss</Tooltip>
  </div>
- <div className="col-span-2 text-right cursor-pointer hover:text-slate-900 dark:text-white"onClick={() => handleSort('riskReward')}>
+ <div className="col-span-2 text-right cursor-pointer hover:text-slate-900 dark:text-white" onClick={() => handleSort('riskReward')}>
  <Tooltip term="riskLevel">Risiko</Tooltip> <SortIcon active={sortBy === 'riskReward'} asc={sortAsc} />
  </div>
  </div>
@@ -141,7 +144,7 @@ export default function StockTable({ stocks, loading, mode, style }) {
  >
  {/* Main row */}
  <div
- className={`stock-row grid grid-cols-2 sm:grid-cols-14 gap-3 sm:gap-4 px-4 sm:px-6 py-4 items-center ${
+ className={`stock-row grid grid-cols-2 sm:grid-cols-16 gap-3 sm:gap-3 px-4 sm:px-6 py-4 items-center ${
  isExpanded ? 'bg-slate-50 dark:bg-white/[0.02]' : ''
  }`}
  onClick={() => setExpandedTicker(isExpanded ? null : stock.ticker)}
@@ -171,9 +174,22 @@ export default function StockTable({ stocks, loading, mode, style }) {
    </button>
  </div>
  <div className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[140px]">{stock.name}</div>
- <div className="sm:hidden text-xs text-slate-500 dark:text-slate-400">{stock.sector}</div>
- <div className="sm:hidden text-xs text-slate-900 dark:text-white mt-0.5">
- Harga: {formatPrice(stock.price)}
+ <div className="sm:hidden flex items-center gap-1.5 mt-1">
+   {stock.supertrendDema && (
+     <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded border ${
+       stock.supertrendDema.signal === 'STRONG_BUY' || stock.supertrendDema.signal === 'BUY'
+         ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+         : stock.supertrendDema.signal === 'SELL'
+         ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30'
+         : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
+     }`}>
+       {stock.supertrendDema.badge}
+     </span>
+   )}
+   <span className="text-[11px] text-slate-500 dark:text-slate-400">{stock.sector}</span>
+ </div>
+ <div className="sm:hidden text-xs text-slate-900 dark:text-white mt-0.5 font-bold">
+   Harga: {formatPrice(stock.price)}
  </div>
  </div>
  </div>
@@ -194,6 +210,30 @@ export default function StockTable({ stocks, loading, mode, style }) {
  >
  <path fillRule="evenodd"d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"clipRule="evenodd"/>
  </svg>
+ </div>
+
+ {/* Sinyal Supertrend & DEMA */}
+ <div className="hidden sm:flex sm:col-span-2 flex-col items-center justify-center text-center">
+   {stock.supertrendDema ? (
+     <div className="flex flex-col items-center">
+       <span className={`text-[11px] font-extrabold px-2 py-0.5 rounded-md border shadow-sm ${
+         stock.supertrendDema.signal === 'STRONG_BUY' || stock.supertrendDema.signal === 'BUY'
+           ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+           : stock.supertrendDema.signal === 'SELL'
+           ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30'
+           : stock.supertrendDema.signal === 'PULLBACK'
+           ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
+           : 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30'
+       }`} title={stock.supertrendDema.label}>
+         {stock.supertrendDema.badge}
+       </span>
+       <span className="text-[9px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
+         DEMA: {formatPrice(stock.supertrendDema.dema20)}
+       </span>
+     </div>
+   ) : (
+     <span className="text-xs text-slate-400">-</span>
+   )}
  </div>
 
  {/* Entry - hidden on mobile */}

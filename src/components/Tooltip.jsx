@@ -23,6 +23,7 @@ const TOOLTIPS = {
  rsi: 'Mengukur apakah saham sudah terlalu banyak dibeli (overbought) atau dijual (oversold). Ideal di 40-60.',
  ma20: 'Rata-rata harga 20 hari terakhir. Berfungsi sebagai support atau resistance jangka pendek.',
  ma50: 'Rata-rata harga 50 hari terakhir. Berfungsi sebagai support atau resistance jangka menengah.',
+ supertrendDema: 'Sinyal kombinasi Supertrend (10, 3) & DEMA 20. Memberikan konfirmasi BUY saat harga di atas DEMA & Supertrend Bullish, atau SELL saat di bawah DEMA & Supertrend Bearish.',
 };
 
 export default function Tooltip({ term, children, className = '' }) {

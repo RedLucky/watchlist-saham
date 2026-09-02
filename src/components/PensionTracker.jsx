@@ -192,15 +192,31 @@ export default function PensionTracker({ records, onRefresh, currentCalculations
     setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
   };
 
-  // Update stock form row when lot or price changes
+  // Add a new empty stock row to the form
+  const handleAddStockRow = () => {
+    setFormStocks((prev) => [
+      ...prev,
+      { ticker: '', lots: 0, price: 0, amount: 0 }
+    ]);
+  };
+
+  // Remove a specific stock row from the form
+  const handleRemoveStockRow = (index) => {
+    setFormStocks((prev) => prev.filter((_, idx) => idx !== index));
+  };
+
+  // Update stock form row when ticker, lot or price changes
   const handleStockFormChange = (index, field, value) => {
     setFormStocks((prev) => {
       const updated = [...prev];
-      const row = { ...updated[index], [field]: Math.max(0, Number(value) || 0) };
-      if (field === 'lots' || field === 'price') {
+      if (field === 'ticker') {
+        const cleanTicker = String(value || '').toUpperCase().trim();
+        updated[index] = { ...updated[index], ticker: cleanTicker };
+      } else {
+        const row = { ...updated[index], [field]: Math.max(0, Number(value) || 0) };
         row.amount = (row.lots || 0) * (row.price || 0) * 100;
+        updated[index] = row;
       }
-      updated[index] = row;
       return updated;
     });
   };
@@ -220,19 +236,20 @@ export default function PensionTracker({ records, onRefresh, currentCalculations
       notes: formSbnAvailable ? 'SBN Ritel' : 'SBN Off'
     });
 
-    // 2. Stocks - allow saving 0 lots if user chooses not to buy any shares on this date
+    // 2. Stocks - save only rows with valid ticker, omit empty/deleted ones
     formStocks.forEach((st) => {
-      if (st.ticker) {
+      const cleanTicker = String(st.ticker || '').trim().toUpperCase();
+      if (cleanTicker) {
         const lots = Math.max(0, Number(st.lots) || 0);
         const price = Math.max(0, Number(st.price) || 0);
         const amount = lots * price * 100;
         recordsToSave.push({
           category: 'SAHAM',
-          ticker: st.ticker,
+          ticker: cleanTicker,
           lots,
           price,
           amount,
-          notes: lots > 0 ? `Pembelian ${lots} Lot ${st.ticker}` : `Alokasi 0 Lot ${st.ticker}`
+          notes: lots > 0 ? `Pembelian ${lots} Lot ${cleanTicker}` : `Alokasi 0 Lot ${cleanTicker}`
         });
       }
     });
@@ -588,50 +605,97 @@ export default function PensionTracker({ records, onRefresh, currentCalculations
 
           {/* Stock Purchases Form */}
           <div className="p-4 rounded-xl bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-xs font-extrabold text-indigo-700 dark:text-indigo-400 block">
-                3. Pembelian Lot Saham (Bisa isi 0 jika tidak beli saham pada tanggal ini)
-              </span>
-              <span className="text-[11px] text-slate-500 font-bold">
-                Subtotal Saham: Rp {formStocks.reduce((a, b) => a + (b.amount || 0), 0).toLocaleString('id-ID')}
-              </span>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+              <div>
+                <span className="text-xs font-extrabold text-indigo-700 dark:text-indigo-400 block">
+                  3. Pembelian Lot Saham
+                </span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                  Emiten bisa diganti, dihapus jika tidak diisi, atau ditambah emiten baru.
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-slate-600 dark:text-slate-300 font-bold">
+                  Subtotal: Rp {formStocks.reduce((a, b) => a + (b.amount || 0), 0).toLocaleString('id-ID')}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleAddStockRow}
+                  className="px-2.5 py-1 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30 text-[11px] font-extrabold transition-all flex items-center gap-1"
+                >
+                  <span>➕</span> Tambah Saham
+                </button>
+              </div>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {formStocks.map((st, idx) => (
-                <div key={st.ticker || idx} className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="font-extrabold text-slate-900 dark:text-white text-xs">{st.ticker}</span>
-                    <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-extrabold">
-                      Rp {(st.amount || 0).toLocaleString('id-ID')}
-                    </span>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div>
-                      <span className="text-[10px] text-slate-600 dark:text-slate-400 font-bold block">Jumlah Lot</span>
-                      <input
-                        type="number"
-                        min="0"
-                        value={st.lots}
-                        onChange={(e) => handleStockFormChange(idx, 'lots', e.target.value)}
-                        className="w-full bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded px-2 py-1 text-xs font-extrabold text-emerald-700 dark:text-emerald-300 focus:outline-none focus:border-emerald-400"
-                      />
+            {formStocks.length === 0 ? (
+              <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-900/30 border border-dashed border-slate-200 dark:border-white/10 text-center text-xs text-slate-500 space-y-1">
+                <p>Tidak ada saham dalam daftar eksekusi ini.</p>
+                <button
+                  type="button"
+                  onClick={handleAddStockRow}
+                  className="text-xs text-indigo-600 dark:text-indigo-400 font-bold underline"
+                >
+                  + Tambah Saham Sekarang
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {formStocks.map((st, idx) => (
+                  <div key={idx} className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 space-y-2">
+                    <div className="flex justify-between items-center gap-2">
+                      <div className="flex items-center gap-1.5 flex-1">
+                        <span className="text-[10px] font-extrabold text-slate-400">#{idx + 1}</span>
+                        <input
+                          type="text"
+                          value={st.ticker}
+                          onChange={(e) => handleStockFormChange(idx, 'ticker', e.target.value)}
+                          placeholder="Kode (BBCA)"
+                          className="w-24 uppercase font-black text-xs bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-400"
+                        />
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-extrabold">
+                          Rp {(st.amount || 0).toLocaleString('id-ID')}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveStockRow(idx)}
+                          title="Hapus saham ini dari daftar"
+                          className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                        >
+                          🗑️
+                        </button>
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-[10px] text-slate-600 dark:text-slate-400 font-bold block">Harga/Lembar (Rp)</span>
-                      <input
-                        type="number"
-                        min="0"
-                        value={st.price}
-                        onChange={(e) => handleStockFormChange(idx, 'price', e.target.value)}
-                        className="w-full bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded px-2 py-1 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-emerald-400"
-                      />
+                    
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span className="text-[10px] text-slate-600 dark:text-slate-400 font-bold block">Jumlah Lot</span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={st.lots}
+                          onChange={(e) => handleStockFormChange(idx, 'lots', e.target.value)}
+                          className="w-full bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded px-2 py-1 text-xs font-extrabold text-emerald-700 dark:text-emerald-300 focus:outline-none focus:border-emerald-400"
+                        />
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-600 dark:text-slate-400 font-bold block">Harga/Lembar (Rp)</span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={st.price}
+                          onChange={(e) => handleStockFormChange(idx, 'price', e.target.value)}
+                          className="w-full bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded px-2 py-1 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-emerald-400"
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Form Action Buttons */}

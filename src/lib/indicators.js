@@ -202,6 +202,208 @@ export function calculateVolumeMA(volumes, period = 20) {
   return slice.length > 0 ? slice.reduce((a, b) => a + b, 0) / slice.length : 0;
 }
 
+/**
+ * Double Exponential Moving Average (DEMA)
+ * Formula: DEMA = 2 * EMA(P, n) - EMA(EMA(P, n), n)
+ *
+ * Reduces lag significantly compared to traditional EMA/SMA.
+ * Returns the latest DEMA value.
+ */
+export function calculateDEMA(prices, period = 20) {
+  const series = calculateDEMASeries(prices, period);
+  return series.length > 0 ? series[series.length - 1] : 0;
+}
+
+/**
+ * Double Exponential Moving Average Series
+ * Returns the full array of DEMA values matching the price sequence.
+ */
+export function calculateDEMASeries(prices, period = 20) {
+  const clean = sanitizePrices(prices);
+  if (clean.length === 0 || period <= 0) return [];
+  if (clean.length < period) return clean.map(() => clean[clean.length - 1]);
+
+  const k = 2 / (period + 1);
+
+  // 1. First EMA series (EMA1)
+  const ema1 = new Array(clean.length);
+  let seed1 = clean.slice(0, period).reduce((a, b) => a + b, 0) / period;
+  for (let i = 0; i < period - 1; i++) {
+    ema1[i] = clean[i];
+  }
+  ema1[period - 1] = seed1;
+  for (let i = period; i < clean.length; i++) {
+    ema1[i] = clean[i] * k + ema1[i - 1] * (1 - k);
+  }
+
+  // 2. Second EMA series (EMA2 = EMA of EMA1)
+  const ema2 = new Array(clean.length);
+  const ema1Slice = ema1.slice(period - 1);
+  if (ema1Slice.length < period) {
+    // If not enough points for second smoothing, fallback to EMA1
+    return ema1;
+  }
+
+  let seed2 = ema1Slice.slice(0, period).reduce((a, b) => a + b, 0) / period;
+  const startIdx = (period - 1) + (period - 1);
+  for (let i = 0; i < Math.min(startIdx, clean.length); i++) {
+    ema2[i] = ema1[i];
+  }
+  if (startIdx < clean.length) {
+    ema2[startIdx] = seed2;
+    for (let i = startIdx + 1; i < clean.length; i++) {
+      ema2[i] = ema1[i] * k + ema2[i - 1] * (1 - k);
+    }
+  }
+
+  // 3. DEMA = 2 * EMA1 - EMA2
+  const dema = new Array(clean.length);
+  for (let i = 0; i < clean.length; i++) {
+    if (i < startIdx) {
+      dema[i] = ema1[i];
+    } else {
+      dema[i] = 2 * ema1[i] - ema2[i];
+    }
+  }
+
+  return dema;
+}
+
+/**
+ * Supertrend Indicator
+ *
+ * Combines Average True Range (ATR) with median price to detect trend direction
+ * and provide dynamic trailing stop loss levels.
+ *
+ * @param {Array<{high: number, low: number, close: number}>} historical - Candle history
+ * @param {number} period - ATR lookback period (default 10)
+ * @param {number} multiplier - ATR multiplier factor (default 3.0)
+ * @returns {{
+ *   value: number,
+ *   trend: 'bullish' | 'bearish',
+ *   direction: 1 | -1,
+ *   upperBand: number,
+ *   lowerBand: number,
+ *   isReversal: boolean,
+ *   history: Array<{ value: number, trend: 'bullish' | 'bearish', upperBand: number, lowerBand: number }>
+ * }}
+ */
+export function calculateSupertrend(historical, period = 10, multiplier = 3.0) {
+  if (!Array.isArray(historical) || historical.length < period + 1) {
+    const lastClose = historical && historical.length > 0 ? Number(historical[historical.length - 1]?.close || 0) : 0;
+    return {
+      value: lastClose,
+      trend: 'bullish',
+      direction: 1,
+      upperBand: lastClose,
+      lowerBand: lastClose,
+      isReversal: false,
+      history: []
+    };
+  }
+
+  // 1. Calculate True Ranges
+  const trueRanges = [0]; // index 0 has no prev close
+  for (let i = 1; i < historical.length; i++) {
+    const high = Number(historical[i].high);
+    const low = Number(historical[i].low);
+    const prevClose = Number(historical[i - 1].close);
+    const tr = Math.max(high - low, Math.abs(high - prevClose), Math.abs(low - prevClose));
+    trueRanges.push(tr);
+  }
+
+  // 2. Calculate ATR Series with Wilder's Smoothing
+  const atrSeries = new Array(historical.length).fill(0);
+  if (trueRanges.length > period) {
+    let initialATR = trueRanges.slice(1, period + 1).reduce((a, b) => a + b, 0) / period;
+    atrSeries[period] = initialATR;
+    for (let i = period + 1; i < historical.length; i++) {
+      atrSeries[i] = (atrSeries[i - 1] * (period - 1) + trueRanges[i]) / period;
+    }
+  }
+
+  // 3. Compute Basic Bands, Final Bands, and Trend
+  const results = [];
+  let prevFinalUpper = 0;
+  let prevFinalLower = 0;
+  let prevTrend = 1; // 1 = Bullish, -1 = Bearish
+
+  for (let i = period; i < historical.length; i++) {
+    const high = Number(historical[i].high);
+    const low = Number(historical[i].low);
+    const close = Number(historical[i].close);
+    const prevClose = Number(historical[i - 1].close);
+    const atr = atrSeries[i];
+
+    const medianPrice = (high + low) / 2;
+    const basicUpper = medianPrice + (multiplier * atr);
+    const basicLower = medianPrice - (multiplier * atr);
+
+    // Final Lower Band (Trailing upward only in uptrend)
+    let finalLower = basicLower;
+    if (i > period) {
+      if (basicLower > prevFinalLower || prevClose < prevFinalLower) {
+        finalLower = basicLower;
+      } else {
+        finalLower = prevFinalLower;
+      }
+    }
+
+    // Final Upper Band (Trailing downward only in downtrend)
+    let finalUpper = basicUpper;
+    if (i > period) {
+      if (basicUpper < prevFinalUpper || prevClose > prevFinalUpper) {
+        finalUpper = basicUpper;
+      } else {
+        finalUpper = prevFinalUpper;
+      }
+    }
+
+    // Determine Trend Direction
+    let trend = prevTrend;
+    if (prevTrend === 1 && close < finalLower) {
+      trend = -1; // Reversal to Bearish
+    } else if (prevTrend === -1 && close > finalUpper) {
+      trend = 1;  // Reversal to Bullish
+    }
+
+    const supertrendValue = trend === 1 ? finalLower : finalUpper;
+
+    results.push({
+      value: Math.round(supertrendValue * 100) / 100,
+      trend: trend === 1 ? 'bullish' : 'bearish',
+      direction: trend,
+      upperBand: Math.round(finalUpper * 100) / 100,
+      lowerBand: Math.round(finalLower * 100) / 100,
+    });
+
+    prevFinalUpper = finalUpper;
+    prevFinalLower = finalLower;
+    prevTrend = trend;
+  }
+
+  const latest = results.length > 0 ? results[results.length - 1] : {
+    value: Number(historical[historical.length - 1]?.close || 0),
+    trend: 'bullish',
+    direction: 1,
+    upperBand: 0,
+    lowerBand: 0,
+  };
+
+  const secondLatest = results.length > 1 ? results[results.length - 2] : null;
+  const isReversal = secondLatest ? secondLatest.trend !== latest.trend : false;
+
+  return {
+    value: latest.value,
+    trend: latest.trend,
+    direction: latest.direction,
+    upperBand: latest.upperBand,
+    lowerBand: latest.lowerBand,
+    isReversal,
+    history: results.slice(-30) // last 30 bars
+  };
+}
+
 // ── Utility helpers ──────────────────────────────────────────────────────
 
 function sanitizePrices(prices) {
@@ -213,3 +415,4 @@ function sanitizeVolumes(volumes) {
   if (!Array.isArray(volumes)) return [];
   return volumes.map(Number).filter(v => Number.isFinite(v) && v >= 0);
 }
+

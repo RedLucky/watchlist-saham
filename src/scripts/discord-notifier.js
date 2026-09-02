@@ -4,6 +4,7 @@ const { scoreAllStocks } = require('../lib/scoring/index.js');
 const { MODES, TRADING_STYLES, getModeConfig, getStyleConfig } = require('../lib/modes.js');
 const { calculateSectorStrengths } = require('../lib/sectorRotation.js');
 const { calculateTradeSetup } = require('../lib/tradeSetup.js');
+const { calculateDEMA, calculateSupertrend } = require('../lib/indicators.js');
 const { prisma } = require('../lib/prisma.js');
 
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
@@ -31,6 +32,36 @@ async function generateRecommendations() {
 
       const candidates = passedByScore.map(s => {
         const tradeSetup = calculateTradeSetup(s.rawData, s.subScores.technical, styleConfig);
+
+        // Supertrend & DEMA Calculation
+        const rawTech = s.rawData?.technicals || {};
+        const prices = Array.isArray(rawTech.prices) && rawTech.prices.length > 0 ? rawTech.prices : [s.price];
+        const highs = Array.isArray(rawTech.highs) && rawTech.highs.length > 0 ? rawTech.highs : prices;
+        const lows = Array.isArray(rawTech.lows) && rawTech.lows.length > 0 ? rawTech.lows : prices;
+        
+        const candleData = prices.map((p, idx) => ({
+          high: highs[idx] ?? p,
+          low: lows[idx] ?? p,
+          close: p
+        }));
+
+        const dema20 = calculateDEMA(prices, 20);
+        const supertrend = calculateSupertrend(candleData, 10, 3.0);
+
+        const isBullSuper = supertrend.trend === 'bullish';
+        const isAboveDema = s.price >= dema20;
+
+        let stBadge = '⚪ WAIT';
+        if (isBullSuper && isAboveDema) {
+          stBadge = supertrend.isReversal ? '🚀 S.BUY' : '🟢 BUY';
+        } else if (!isBullSuper && !isAboveDema) {
+          stBadge = '🔴 SELL';
+        } else if (isBullSuper && !isAboveDema) {
+          stBadge = '🟡 PULLBACK';
+        } else if (!isBullSuper && isAboveDema) {
+          stBadge = '🔵 TEST BO';
+        }
+
         return {
           ticker: s.ticker,
           name: s.name,
@@ -41,6 +72,9 @@ async function generateRecommendations() {
           stopLoss: tradeSetup.stopLoss,
           riskReward: tradeSetup.riskReward,
           setup: tradeSetup.setup,
+          stBadge,
+          dema20: Math.round(dema20),
+          supertrendValue: Math.round(supertrend.value),
           kseiLatest: s.rawData?.kseiLatest
         };
       });
@@ -109,12 +143,12 @@ function formatDiscordEmbeds(results, marketData) {
   // 1. Overview Header Embed
   embeds.push({
     title: `📋 WATCHLIST & REKOMENDASI SAHAM IDX (${dateStr})`,
-    description: `Daftar pantauan saham potensial (*watchlist*) untuk perdagangan esok hari, dikurasi otomatis dari berbagai mode strategi berdasarkan integrasi data Fundamental, Analisis Teknikal, dan Smart Money Flow (KSEI/IDX).`,
+    description: `Daftar pantauan saham potensial (*watchlist*) untuk perdagangan esok hari, dikurasi otomatis dari berbagai mode strategi berdasarkan integrasi data Fundamental, Analisis Teknikal, Supertrend + DEMA (20), dan Smart Money Flow (KSEI/IDX).`,
     color: 0x6366f1,
     fields: [
       {
         name: '📌 Petunjuk Pembacaan Watchlist',
-        value: '• **Area Beli (Buy)**: Area harga entry optimal.\n• **TP / SL**: Target Take Profit & Batas Stop Loss disiplin.\n• **Skor & Smart Money**: Kekuatan teknikal & indikasi pergerakan bandar (`🟢 Akumulasi` / `🔴 Distribusi`).',
+        value: '• **Sinyal ST+DEMA**: [🟢 BUY / 🚀 S.BUY / 🟡 PULLBACK / 🔴 SELL] Konfirmasi tren Supertrend & DEMA 20.\n• **Area Beli (Buy)**: Area harga entry optimal.\n• **TP / SL**: Target Take Profit & Batas Stop Loss disiplin.\n• **Skor & Smart Money**: Kekuatan komposit & indikasi pergerakan bandar (`🟢 Akumulasi` / `🔴 Distribusi`).',
         inline: false
       }
     ]
@@ -130,7 +164,7 @@ function formatDiscordEmbeds(results, marketData) {
         else if (s.kseiLatest.deltaSmartMoney < 0) smartMoneyBadge = ' 🔴 Distribusi';
       }
 
-      lines.push(`• **${s.ticker}**: Buy: **Rp ${s.entry.low.toLocaleString('id-ID')} - ${s.entry.high.toLocaleString('id-ID')}** | TP: **Rp ${s.target.toLocaleString('id-ID')}** | SL: **Rp ${s.stopLoss.toLocaleString('id-ID')}** | Skor: **${s.score}** (*${s.setup}*)${smartMoneyBadge}`);
+      lines.push(`• **${s.ticker}**: [**${s.stBadge}**] Buy: **Rp ${s.entry.low.toLocaleString('id-ID')} - ${s.entry.high.toLocaleString('id-ID')}** | TP: **Rp ${s.target.toLocaleString('id-ID')}** | SL: **Rp ${s.stopLoss.toLocaleString('id-ID')}** | Skor: **${s.score}** (*${s.setup}*)${smartMoneyBadge}`);
     }
 
     // Split into chunks if exceeds 1000 characters

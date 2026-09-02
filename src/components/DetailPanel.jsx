@@ -240,6 +240,41 @@ export default function DetailPanel({ stock, mode, styleName }) {
  <span className="text-xs text-slate-400 dark:text-slate-500">{stock.subScores.technical.metrics?.rsi}</span>
  </div>
  </div>
+
+ {/* Supertrend & DEMA 20 Insights */}
+ {stock.supertrendDema && (
+ <div className="p-3 rounded-xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-500/20 space-y-2">
+ <div className="flex justify-between items-center">
+ <span className="text-[10px] font-extrabold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+ <span>⚡</span> Supertrend + DEMA (20)
+ </span>
+ <span className={`text-[10px] font-black px-2 py-0.5 rounded border ${
+ stock.supertrendDema.signal === 'STRONG_BUY' || stock.supertrendDema.signal === 'BUY'
+ ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+ : stock.supertrendDema.signal === 'SELL'
+ ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30'
+ : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
+ }`}>
+ {stock.supertrendDema.badge}
+ </span>
+ </div>
+ <div className="grid grid-cols-2 gap-2 text-xs">
+ <div>
+ <span className="text-[10px] text-slate-500 dark:text-slate-400 block">DEMA (20)</span>
+ <span className="font-bold text-slate-900 dark:text-white">Rp {formatPrice(stock.supertrendDema.dema20)}</span>
+ </div>
+ <div className="text-right">
+ <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Supertrend (10, 3)</span>
+ <span className={`font-bold ${stock.supertrendDema.supertrendTrend === 'bullish' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+ Rp {formatPrice(stock.supertrendDema.supertrendValue)} {stock.supertrendDema.supertrendTrend === 'bullish' ? '🟢' : '🔴'}
+ </span>
+ </div>
+ </div>
+ <div className="text-[11px] text-slate-600 dark:text-slate-400 border-t border-indigo-200/60 dark:border-indigo-500/10 pt-1.5 font-medium">
+ {stock.supertrendDema.label}
+ </div>
+ </div>
+ )}
  </div>
  </div>
 

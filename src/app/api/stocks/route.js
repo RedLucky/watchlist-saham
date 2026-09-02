@@ -8,6 +8,7 @@ import { detectMarketMode, getModeConfig, getStyleConfig } from '@/lib/modes';
 import { calculateSectorStrengths } from '@/lib/sectorRotation';
 import { calculateTradeSetup } from '@/lib/tradeSetup';
 import { generateExplanations } from '@/lib/explanations';
+import { calculateDEMA, calculateSupertrend } from '@/lib/indicators';
 import { prisma } from '@/lib/prisma';
 import { initBackgroundSync } from '@/lib/worker';
 
@@ -116,6 +117,69 @@ export async function GET(request) {
       };
     });
 
+    // ── Supertrend & DEMA Signal Engine ──────────────────────────────────
+    const rawTech = s.rawData?.technicals || {};
+    const prices = Array.isArray(rawTech.prices) && rawTech.prices.length > 0 ? rawTech.prices : [s.price];
+    const highs = Array.isArray(rawTech.highs) && rawTech.highs.length > 0 ? rawTech.highs : prices;
+    const lows = Array.isArray(rawTech.lows) && rawTech.lows.length > 0 ? rawTech.lows : prices;
+    
+    const candleData = prices.map((p, idx) => ({
+      high: highs[idx] ?? p,
+      low: lows[idx] ?? p,
+      close: p
+    }));
+
+    const dema20 = calculateDEMA(prices, 20);
+    const supertrend = calculateSupertrend(candleData, 10, 3.0);
+
+    const isBullSuper = supertrend.trend === 'bullish';
+    const isAboveDema = s.price >= dema20;
+
+    let signalType = 'NEUTRAL';
+    let signalLabel = 'Wait / Netral';
+    let signalBadge = '⚪ WAIT';
+    let signalColor = 'slate';
+
+    if (isBullSuper && isAboveDema) {
+      if (supertrend.isReversal) {
+        signalType = 'STRONG_BUY';
+        signalLabel = 'Strong Buy (Supertrend Reversal + Di Atas DEMA20)';
+        signalBadge = '🚀 S. BUY';
+        signalColor = 'emerald';
+      } else {
+        signalType = 'BUY';
+        signalLabel = 'Buy (Supertrend Bullish + Di Atas DEMA20)';
+        signalBadge = '🟢 BUY';
+        signalColor = 'emerald';
+      }
+    } else if (!isBullSuper && !isAboveDema) {
+      signalType = 'SELL';
+      signalLabel = 'Sell / Avoid (Supertrend Bearish + Di Bawah DEMA20)';
+      signalBadge = '🔴 SELL';
+      signalColor = 'rose';
+    } else if (isBullSuper && !isAboveDema) {
+      signalType = 'PULLBACK';
+      signalLabel = 'Pullback Support (Supertrend Bullish, Retest DEMA20)';
+      signalBadge = '🟡 PULLBACK';
+      signalColor = 'amber';
+    } else if (!isBullSuper && isAboveDema) {
+      signalType = 'BREAKOUT';
+      signalLabel = 'Spekulatif Breakout (Di Atas DEMA20, Uji Supertrend)';
+      signalBadge = '🔵 TEST BO';
+      signalColor = 'blue';
+    }
+
+    const supertrendDema = {
+      signal: signalType,
+      label: signalLabel,
+      badge: signalBadge,
+      color: signalColor,
+      dema20: Math.round(dema20),
+      supertrendValue: Math.round(supertrend.value),
+      supertrendTrend: supertrend.trend,
+      isReversal: supertrend.isReversal,
+    };
+
     return {
       ticker: s.ticker,
       name: s.name,
@@ -130,6 +194,7 @@ export async function GET(request) {
       sharesOutstanding: s.rawData?.sharesOutstanding || null,
       score: s.score,
       subScores: subScoresClean,
+      supertrendDema,
       entry: tradeSetup.entry,
       target: tradeSetup.target,
       stopLoss: tradeSetup.stopLoss,
