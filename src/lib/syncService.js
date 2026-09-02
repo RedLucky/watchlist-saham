@@ -11,7 +11,7 @@ import { yahooFinance } from './yahooClient';
 import { prisma } from './prisma';
 import { getSectorByTicker, getSubSectorByTicker, getAllTickersForYahoo } from './sectorUniverse';
 import { calculateMA, calculateRSI, calculateATR, calculateMACD, calculateBollingerBands } from './indicators';
-import { refreshForexRates } from './currencyService';
+import { refreshForexRates, getExchangeRateSync } from './currencyService';
 
 const DEEP_SYNC_TIMEOUT_MS = parseInt(process.env.DEEP_SYNC_TIMEOUT_MS || '30000', 10);
 const DEEP_SYNC_RETRIES = parseInt(process.env.DEEP_SYNC_RETRIES || '1', 10);
@@ -462,8 +462,8 @@ async function deepSyncStockOnce(fullTicker) {
 
   // ── Currency Normalization for USD-reporting IDX stocks (e.g. AADI, ADRO, MEDC, ITMG, HRUM) ──
   const financialCurrency = summary?.financialData?.financialCurrency || summary?.defaultKeyStatistics?.financialCurrency;
-  const isUSDReporting = financialCurrency === 'USD' || (bookValueRaw != null && bookValueRaw > 0 && bookValueRaw < 50 && (summary?.defaultKeyStatistics?.priceToBook > 500 || currentPrice > 100));
-  const USD_IDR_RATE = 16500;
+  const isUSDReporting = financialCurrency === 'USD';
+  const usdRate = getExchangeRateSync('USD');
 
   let resolvedBookValue = safeNumber(bookValueRaw, null);
   let resolvedPBV = safeNumber(summary?.defaultKeyStatistics?.priceToBook ?? quote?.priceToBook, null);
@@ -475,32 +475,32 @@ async function deepSyncStockOnce(fullTicker) {
   let resolvedFreeCashflow = safeNumber(freeCashflowRaw, null);
 
   if (isUSDReporting) {
-    if (resolvedBookValue != null && resolvedBookValue > 0 && resolvedBookValue < 100) {
-      resolvedBookValue = Number((resolvedBookValue * USD_IDR_RATE).toFixed(2));
+    if (resolvedBookValue != null) {
+      resolvedBookValue = Number((resolvedBookValue * usdRate).toFixed(2));
     }
-    if (resolvedPBV != null && resolvedPBV > 500) {
-      resolvedPBV = Number((resolvedPBV / USD_IDR_RATE).toFixed(2));
+    if (resolvedPBV != null) {
+      resolvedPBV = Number((resolvedPBV / usdRate).toFixed(2));
     } else if (currentPrice > 0 && resolvedBookValue > 0) {
       resolvedPBV = Number((currentPrice / resolvedBookValue).toFixed(2));
     }
     // Scale balance sheet & income statement USD values to IDR
-    if (resolvedTotalRevenue != null && resolvedTotalRevenue > 0 && resolvedTotalRevenue < 500_000_000_000) {
-      resolvedTotalRevenue = Math.round(resolvedTotalRevenue * USD_IDR_RATE);
+    if (resolvedTotalRevenue != null) {
+      resolvedTotalRevenue = Math.round(resolvedTotalRevenue * usdRate);
     }
-    if (resolvedNetIncome != null && Math.abs(resolvedNetIncome) < 100_000_000_000) {
-      resolvedNetIncome = Math.round(resolvedNetIncome * USD_IDR_RATE);
+    if (resolvedNetIncome != null) {
+      resolvedNetIncome = Math.round(resolvedNetIncome * usdRate);
     }
-    if (resolvedCash > 0 && resolvedCash < 100_000_000_000) {
-      resolvedCash = Math.round(resolvedCash * USD_IDR_RATE);
+    if (resolvedCash > 0) {
+      resolvedCash = Math.round(resolvedCash * usdRate);
     }
-    if (resolvedTotalDebt != null && resolvedTotalDebt > 0 && resolvedTotalDebt < 100_000_000_000) {
-      resolvedTotalDebt = Math.round(resolvedTotalDebt * USD_IDR_RATE);
+    if (resolvedTotalDebt != null) {
+      resolvedTotalDebt = Math.round(resolvedTotalDebt * usdRate);
     }
-    if (resolvedOperatingCashflow != null && Math.abs(resolvedOperatingCashflow) < 100_000_000_000) {
-      resolvedOperatingCashflow = Math.round(resolvedOperatingCashflow * USD_IDR_RATE);
+    if (resolvedOperatingCashflow != null) {
+      resolvedOperatingCashflow = Math.round(resolvedOperatingCashflow * usdRate);
     }
-    if (resolvedFreeCashflow != null && Math.abs(resolvedFreeCashflow) < 100_000_000_000) {
-      resolvedFreeCashflow = Math.round(resolvedFreeCashflow * USD_IDR_RATE);
+    if (resolvedFreeCashflow != null) {
+      resolvedFreeCashflow = Math.round(resolvedFreeCashflow * usdRate);
     }
   }
 
@@ -689,9 +689,8 @@ function normalizeRatio(value, fallback) {
   if (value == null || !Number.isFinite(Number(value))) return fallback;
   const num = Number(value);
   // Yahoo Finance financialData.debtToEquity SELALU mengembalikan format persentase
-  // (e.g. 85.5 = 0.855x, 350 = 3.5x). Selalu bagi 100.
-  // Jika nilainya sudah < 1 (sangat kecil), kemungkinan sudah dalam format rasio (edge case).
-  if (Math.abs(num) < 1) return num; // sudah rasio (e.g. 0.85)
+  // (e.g. 85.5 = 85.5% = 0.855x, 350 = 3.5x). Selalu bagi 100.
+  // Jangan gunakan `Math.abs(num) < 1` karena perusahaan dengan DER 0.8% (0.008x) akan terhitung 0.8x.
   return Number((num / 100).toFixed(4));
 }
 

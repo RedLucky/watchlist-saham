@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserIdFromRequest, verifyToken } from '@/lib/auth';
+import { getUserIdFromRequest } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
-
-
 
 /**
  * GET /api/pension
@@ -20,6 +18,7 @@ export async function GET(request) {
     const records = await prisma.pensionRecord.findMany({
       where: { userId },
       orderBy: [
+        { date: 'desc' },
         { month: 'desc' },
         { category: 'asc' }
       ]
@@ -34,7 +33,7 @@ export async function GET(request) {
 
 /**
  * POST /api/pension
- * Save or update monthly pension record for the authenticated user.
+ * Save, update, or append monthly pension record for the authenticated user.
  */
 export async function POST(request) {
   try {
@@ -44,56 +43,58 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { month, records, sbnAvailable } = body;
+    const { month, date, editingDate, records, sbnAvailable } = body;
 
-    if (!month || !Array.isArray(records)) {
-      return NextResponse.json({ error: 'Data tidak lengkap (month, records required)' }, { status: 400 });
+    const dateStr = (date || editingDate || new Date().toISOString().slice(0, 10)).slice(0, 10);
+    const monthStr = month || dateStr.slice(0, 7);
+
+    if (!Array.isArray(records) || records.length === 0) {
+      return NextResponse.json({ error: 'Data records tidak boleh kosong' }, { status: 400 });
     }
 
-    const savedRecords = [];
+    // Parse target execution date
+    const executionDate = new Date(`${dateStr}T12:00:00.000Z`);
 
+    // If editing a specific execution date, clear previous records for that exact date first
+    if (editingDate) {
+      const editDateStr = editingDate.slice(0, 10);
+      const startOfDay = new Date(`${editDateStr}T00:00:00.000Z`);
+      const endOfDay = new Date(`${editDateStr}T23:59:59.999Z`);
+
+      await prisma.pensionRecord.deleteMany({
+        where: {
+          userId,
+          date: {
+            gte: startOfDay,
+            lte: endOfDay
+          }
+        }
+      });
+    }
+
+    // Insert new/updated execution records
+    const savedRecords = [];
     for (const rec of records) {
       const { category, ticker, lots, price, amount, notes } = rec;
       const tickerVal = ticker || '';
+      const safeLots = lots !== undefined && lots !== null ? Math.max(0, Math.round(Number(lots) || 0)) : null;
+      const safePrice = price !== undefined && price !== null ? Math.max(0, Number(price) || 0) : null;
+      const safeAmount = Number.isFinite(Number(amount)) ? Math.max(0, Number(amount)) : 0;
 
-      const existing = await prisma.pensionRecord.findFirst({
-        where: {
+      const record = await prisma.pensionRecord.create({
+        data: {
           userId,
-          month,
+          month: monthStr,
+          date: executionDate,
           category,
           ticker: tickerVal,
+          lots: safeLots,
+          price: safePrice,
+          amount: safeAmount,
+          notes: notes || null,
+          sbnAvailable: sbnAvailable !== undefined ? sbnAvailable : true,
         }
       });
-
-      let record;
-      if (existing) {
-        record = await prisma.pensionRecord.update({
-          where: { id: existing.id },
-          data: {
-            lots: lots !== undefined ? lots : null,
-            price: price !== undefined ? price : null,
-            amount: amount || 0,
-            notes: notes || null,
-            sbnAvailable: sbnAvailable !== undefined ? sbnAvailable : true,
-            date: new Date()
-          }
-        });
-      } else {
-        record = await prisma.pensionRecord.create({
-          data: {
-            userId,
-            month,
-            category,
-            ticker: tickerVal,
-            lots: lots !== undefined ? lots : null,
-            price: price !== undefined ? price : null,
-            amount: amount || 0,
-            notes: notes || null,
-            sbnAvailable: sbnAvailable !== undefined ? sbnAvailable : true,
-            date: new Date()
-          }
-        });
-      }
 
       savedRecords.push(record);
     }
@@ -106,8 +107,7 @@ export async function POST(request) {
 }
 
 /**
- * DELETE /api/pension?month=2026-08
- * Delete records for a specific month for the authenticated user.
+ * DELETE /api/pension?id=123 | ?date=2026-09-02 | ?month=2026-08
  */
 export async function DELETE(request) {
   try {
@@ -117,17 +117,41 @@ export async function DELETE(request) {
     }
 
     const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    const date = searchParams.get('date');
     const month = searchParams.get('month');
 
-    if (!month) {
-      return NextResponse.json({ error: 'Parameter month diperlukan' }, { status: 400 });
+    if (id) {
+      await prisma.pensionRecord.deleteMany({
+        where: { userId, id: Number(id) }
+      });
+      return NextResponse.json({ success: true, message: 'Catatan berhasil dihapus' });
     }
 
-    await prisma.pensionRecord.deleteMany({
-      where: { userId, month }
-    });
+    if (date) {
+      const dateStr = date.slice(0, 10);
+      const startOfDay = new Date(`${dateStr}T00:00:00.000Z`);
+      const endOfDay = new Date(`${dateStr}T23:59:59.999Z`);
+      await prisma.pensionRecord.deleteMany({
+        where: {
+          userId,
+          date: {
+            gte: startOfDay,
+            lte: endOfDay
+          }
+        }
+      });
+      return NextResponse.json({ success: true, message: `Catatan eksekusi tanggal ${dateStr} berhasil dihapus` });
+    }
 
-    return NextResponse.json({ success: true, message: `Data bulan ${month} berhasil dihapus` });
+    if (month) {
+      await prisma.pensionRecord.deleteMany({
+        where: { userId, month }
+      });
+      return NextResponse.json({ success: true, message: `Data bulan ${month} berhasil dihapus` });
+    }
+
+    return NextResponse.json({ error: 'Parameter id, date, atau month diperlukan' }, { status: 400 });
   } catch (err) {
     console.error('[pension/DELETE] error:', err);
     return NextResponse.json({ error: 'Gagal menghapus data' }, { status: 500 });

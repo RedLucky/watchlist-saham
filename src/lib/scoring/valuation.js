@@ -4,6 +4,7 @@
  *
  * Sector average PER/PBV benchmarks based on IDX-IC classification.
  */
+import { getExchangeRateSync } from '../currencyService.js';
 
 const SECTOR_AVERAGES = {
   Financials:                   { per: 12, pbv: 2.0 },
@@ -35,7 +36,8 @@ export function calculateValuationScore(stock) {
   const safePER = Number.isFinite(per) ? per : null;
   let safePBV = Number.isFinite(pbv) ? pbv : null;
   if (safePBV !== null && safePBV > 500) {
-    safePBV = Number((safePBV / 16200).toFixed(2));
+    const usdRate = getExchangeRateSync('USD');
+    safePBV = Number((safePBV / usdRate).toFixed(2));
   }
   let score = 0;
   const details = [];

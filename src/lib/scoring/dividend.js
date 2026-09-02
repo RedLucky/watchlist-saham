@@ -1,7 +1,7 @@
 import { getExchangeRateSync } from '../currencyService.js';
 
 export function calculateRawDividendYield(stock) {
-  const { dividendYield: yahooYield, marketCap, yahooDividendHistory } = stock.fundamentals || {};
+  const { dividendYield: yahooYield, marketCap, sharesOutstanding, yahooDividendHistory } = stock.fundamentals || {};
   const yDivHistory = yahooDividendHistory || stock.yahooDividendHistory;
   let safeYield = 0;
   let ttmPerSaham = 0;
@@ -11,7 +11,22 @@ export function calculateRawDividendYield(stock) {
   const oneYearAgo = new Date();
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
-  // 1. Ambil dari riwayat dividen BEI (IDX) dengan konversi mata uang
+  // 1. Ambil dari riwayat dividen Yahoo Finance terverifikasi (sudah dalam IDR per lembar dan berdesimal tepat)
+  let yahooTtm = 0;
+  if (stock.price > 0 && Array.isArray(yDivHistory) && yDivHistory.length > 0) {
+    for (const div of yDivHistory) {
+      if (div.date && Number.isFinite(Number(div.dividends))) {
+        const divDate = new Date(div.date);
+        if (divDate >= oneYearAgo) {
+          hasRecentDividendEvent = true;
+          yahooTtm += Number(div.dividends);
+        }
+      }
+    }
+  }
+
+  // 2. Ambil dari riwayat dividen BEI (IDX) dengan validasi cerdas & konversi mata uang
+  let beiTtm = 0;
   if (stock.price > 0 && Array.isArray(stock.dividendHistory) && stock.dividendHistory.length > 0) {
     for (const div of stock.dividendHistory) {
       const dateVal = div.TanggalCum || div.TanggalEx || div.TanggalRecording || div.TanggalPembayaran;
@@ -25,50 +40,60 @@ export function calculateRawDividendYield(stock) {
 
           const rate = getExchangeRateSync(currencyField);
           const totalRate = getExchangeRateSync(totalCurrencyField);
-          const usdRate = getExchangeRateSync('USD');
 
-          let dps = Number(div.CashDividenPerSaham ?? div.JumlahDividenKasPerSaham ?? div.DividenPerSaham ?? div.amount ?? div.dividend ?? 0);
-          let totalDiv = Number(div.CashDividenTotal ?? div.JumlahDividenKasTotal ?? 0);
+          let rawDps = Number(div.CashDividenPerSaham ?? div.JumlahDividenKasPerSaham ?? div.DividenPerSaham ?? div.amount ?? div.dividend ?? 0);
+          let rawTotal = Number(div.CashDividenTotal ?? div.JumlahDividenKasTotal ?? 0);
 
-          // Konversi mata uang asing (USD, SGD, EUR, AUD, dll.) ke Rupiah secara real-time
+          let dps = rawDps;
+          let totalDiv = rawTotal;
+
+          // Jika BEI memiliki Total Dividen dan Jumlah Saham, hitung DPS matematis presisi
+          const shares = Number(sharesOutstanding || stock.sharesOutstanding || 0);
+          if (rawTotal > 0 && shares > 0) {
+            const computedDps = (rawTotal * totalRate) / shares;
+            if (computedDps > 0 && (computedDps / stock.price) <= 0.35) {
+              dps = computedDps;
+            }
+          }
+
+          // Validasi konversi mata uang (hindari salah kali lipat jika DPS sudah dalam Rupiah)
           if (rate > 1 && dps > 0) {
-            dps = dps * rate;
-          } else if (rate === 1 && dps > 0 && dps <= 20 && stock.price >= 500) {
-            // Implicit USD dividend detection (e.g. ITMG/ADRO/AADI announced $0.15/share without explicit MU tag)
-            dps = dps * usdRate;
+            if ((dps * rate) / stock.price > 0.35 && (dps / stock.price) <= 0.35) {
+              // DPS aslinya sudah dalam IDR meskipun tag emiten USD (seperti kasus INDY)
+            } else if ((dps * rate) / stock.price <= 0.35) {
+              dps = dps * rate;
+            }
+          }
+
+          // Validasi desimal yang hilang di API BEI (contoh: 5694 harusnya 5.694)
+          if (stock.price > 0 && (dps / stock.price) > 0.35) {
+            if ((dps / 1000 / stock.price) <= 0.35) {
+              dps = dps / 1000;
+            }
           }
 
           if (totalRate > 1 && totalDiv > 0) {
             totalDiv = totalDiv * totalRate;
-          } else if (totalRate === 1 && totalDiv > 0 && totalDiv < 5000000000 && stock.price >= 500) {
-            // Implicit USD total dividend detection
-            totalDiv = totalDiv * usdRate;
           }
 
-          ttmPerSaham += Number.isFinite(dps) ? dps : 0;
+          beiTtm += Number.isFinite(dps) ? dps : 0;
           ttmTotalRupiah += Number.isFinite(totalDiv) ? totalDiv : 0;
         }
       }
     }
   }
 
-  // 2. Ambil dari riwayat dividen Yahoo Finance (sudah dalam IDR per lembar)
-  if (stock.price > 0 && Array.isArray(yDivHistory) && yDivHistory.length > 0) {
-    let yahooTtm = 0;
-    for (const div of yDivHistory) {
-      if (div.date && Number.isFinite(Number(div.dividends))) {
-        const divDate = new Date(div.date);
-        if (divDate >= oneYearAgo) {
-          hasRecentDividendEvent = true;
-          yahooTtm += Number(div.dividends);
-        }
-      }
-    }
-    if (yahooTtm > ttmPerSaham) {
-      ttmPerSaham = yahooTtm;
-    }
+  // Pilih TTM DPS yang paling bersih dan realistis
+  if (yahooTtm > 0 && (yahooTtm / stock.price) <= 0.35) {
+    ttmPerSaham = yahooTtm;
+  } else if (beiTtm > 0 && (beiTtm / stock.price) <= 0.35) {
+    ttmPerSaham = beiTtm;
+  } else if (yahooTtm > 0) {
+    ttmPerSaham = yahooTtm;
+  } else {
+    ttmPerSaham = beiTtm;
   }
-  
+
   // LAYER 1: Hitung dari akumulasi dividen per lembar 12 bulan terakhir (TTM DPS / Price)
   if (stock.price > 0 && ttmPerSaham > 0) {
     safeYield = (ttmPerSaham / stock.price) * 100;
@@ -81,8 +106,17 @@ export function calculateRawDividendYield(stock) {
   else if (safeYield === 0 && Number.isFinite(yahooYield) && yahooYield > 0) {
     safeYield = yahooYield;
   }
+
+  // Sanity Guard: Jika safeYield masih > 35% akibat anomali korporasi ekstrim, gunakan summary atau batasi di angka wajar
+  if (safeYield > 35) {
+    if (Number.isFinite(yahooYield) && yahooYield > 0 && yahooYield <= 35) {
+      safeYield = yahooYield;
+    } else {
+      safeYield = Math.min(30, safeYield);
+    }
+  }
   
-  return safeYield;
+  return Number(safeYield.toFixed(2));
 }
 
 export function calculateDividendScore(stock) {

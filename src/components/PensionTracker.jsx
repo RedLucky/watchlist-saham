@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 
 export default function PensionTracker({ records, onRefresh, currentCalculations, stockPrices, sbnAvailable }) {
   const growthCanvasRef = useRef(null);
   const streakCanvasRef = useRef(null);
+  const formRef = useRef(null);
 
   // Modal & Toast States
   const [toast, setToast] = useState(null);
@@ -15,129 +16,257 @@ export default function PensionTracker({ records, onRefresh, currentCalculations
     setTimeout(() => setToast(null), 4000);
   };
 
- // Form Modal State
- const [showForm, setShowForm] = useState(false);
- const [recordDate, setRecordDate] = useState(new Date().toISOString().slice(0, 10)); // YYYY-MM-DD
- const [formSbnAvailable, setFormSbnAvailable] = useState(sbnAvailable);
- const [formSbnAmount, setFormSbnAmount] = useState(currentCalculations.sbnAllocation);
- const [formRdpuAmount, setFormRdpuAmount] = useState(currentCalculations.finalRdpuTopup);
- 
- // Stocks form items
- const [formStocks, setFormStocks] = useState(
- currentCalculations.calculatedStocks 
- ? currentCalculations.calculatedStocks.map(st => ({
- ticker: st.ticker,
- lots: st.lots,
- price: st.price,
- amount: st.cost
- }))
- : []
- );
+  // Form Modal State
+  const [showForm, setShowForm] = useState(false);
+  const [formMode, setFormMode] = useState('create'); // 'create' | 'edit'
+  const [editingDate, setEditingDate] = useState(null); // 'YYYY-MM-DD' when editing
+  const [recordDate, setRecordDate] = useState(new Date().toISOString().slice(0, 10)); // YYYY-MM-DD
+  const [formSbnAvailable, setFormSbnAvailable] = useState(sbnAvailable ?? true);
+  const [formSbnAmount, setFormSbnAmount] = useState(currentCalculations?.sbnAllocation || 0);
+  const [formRdpuAmount, setFormRdpuAmount] = useState(currentCalculations?.finalRdpuTopup || 0);
+  
+  // Stocks form items
+  const [formStocks, setFormStocks] = useState(
+    currentCalculations?.calculatedStocks 
+      ? currentCalculations.calculatedStocks.map(st => ({
+          ticker: st.ticker,
+          lots: st.lots ?? 0,
+          price: st.price ?? 0,
+          amount: st.cost ?? 0
+        }))
+      : []
+  );
 
- // Update default form values whenever calculations/prices change
- useEffect(() => {
- setFormSbnAvailable(sbnAvailable);
- setFormSbnAmount(currentCalculations.sbnAllocation);
- setFormRdpuAmount(currentCalculations.finalRdpuTopup);
- setFormStocks(
- currentCalculations.calculatedStocks 
- ? currentCalculations.calculatedStocks.map(st => ({
- ticker: st.ticker,
- lots: st.lots,
- price: st.price,
- amount: st.cost
- }))
- : []
- );
- }, [currentCalculations, stockPrices, sbnAvailable]);
+  // Update default form values whenever calculations/prices change (only if creating new and form closed)
+  useEffect(() => {
+    if (!showForm || formMode !== 'edit') {
+      setFormSbnAvailable(sbnAvailable ?? true);
+      setFormSbnAmount(currentCalculations?.sbnAllocation || 0);
+      setFormRdpuAmount(currentCalculations?.finalRdpuTopup || 0);
+      setFormStocks(
+        currentCalculations?.calculatedStocks 
+          ? currentCalculations.calculatedStocks.map(st => ({
+              ticker: st.ticker,
+              lots: st.lots ?? 0,
+              price: st.price ?? 0,
+              amount: st.cost ?? 0
+            }))
+          : []
+      );
+    }
+  }, [currentCalculations, stockPrices, sbnAvailable, showForm, formMode]);
 
- // Group records by month YYYY-MM
- const monthsGrouped = React.useMemo(() => {
- const map = {};
- records.forEach((r) => {
- if (!map[r.month]) {
- map[r.month] = {
- month: r.month,
- items: [],
- totalAmount: 0,
- sbnAvailable: r.sbnAvailable,
- date: r.date
- };
- }
- map[r.month].items.push(r);
- map[r.month].totalAmount += r.amount || 0;
- });
+  // Group records by Month YYYY-MM, and inside each month group by Execution Date
+  const monthsGrouped = useMemo(() => {
+    const monthMap = {};
 
- return Object.values(map).sort((a, b) => b.month.localeCompare(a.month));
- }, [records]);
+    (records || []).forEach((r) => {
+      const monthKey = r.month || (r.date ? r.date.slice(0, 7) : new Date().toISOString().slice(0, 7));
+      const dateKey = r.date ? r.date.slice(0, 10) : `${monthKey}-01`;
 
- // Update stock form row when lot or price changes
- const handleStockFormChange = (index, field, value) => {
- setFormStocks((prev) => {
- const updated = [...prev];
- const row = { ...updated[index], [field]: Math.max(0, Number(value) || 0) };
- // Recalculate amount if lot or price change
- if (field === 'lots' || field === 'price') {
- row.amount = row.lots * row.price * 100;
- }
- updated[index] = row;
- return updated;
- });
- };
+      if (!monthMap[monthKey]) {
+        monthMap[monthKey] = {
+          month: monthKey,
+          totalAmount: 0,
+          totalStocks: 0,
+          totalSbn: 0,
+          totalRdpu: 0,
+          sbnAvailable: r.sbnAvailable ?? true,
+          dateMap: {},
+          stockBreakdown: {} // { TICKER: totalLots }
+        };
+      }
 
- // Submit Form
- const handleSubmitForm = async (e) => {
- e.preventDefault();
- const month = recordDate.slice(0, 7); //"YYYY-MM"
+      const mObj = monthMap[monthKey];
+      const itemAmount = Number(r.amount) || 0;
+      mObj.totalAmount += itemAmount;
 
- const recordsToSave = [];
+      if (r.category === 'SAHAM') {
+        mObj.totalStocks += itemAmount;
+        if (r.ticker) {
+          mObj.stockBreakdown[r.ticker] = (mObj.stockBreakdown[r.ticker] || 0) + (r.lots || 0);
+        }
+      } else if (r.category === 'SBN') {
+        mObj.totalSbn += itemAmount;
+        if (r.sbnAvailable === false) mObj.sbnAvailable = false;
+      } else if (r.category === 'RDPU') {
+        mObj.totalRdpu += itemAmount;
+      }
 
- // SBN Allocation (if checked/available)
- if (formSbnAvailable) {
- recordsToSave.push({
- category: 'SBN',
- ticker: '',
- amount: formSbnAmount,
- notes: 'SBN Ritel'
- });
- }
+      // Group by execution date inside month
+      if (!mObj.dateMap[dateKey]) {
+        mObj.dateMap[dateKey] = {
+          dateStr: dateKey,
+          formattedDate: formatDateIndo(dateKey),
+          sbnAvailable: r.sbnAvailable ?? true,
+          totalAmount: 0,
+          items: []
+        };
+      }
 
- // Stocks
- formStocks.forEach((st) => {
- if (st.amount > 0 || st.ticker === 'ANTM') {
- recordsToSave.push({
- category: 'SAHAM',
- ticker: st.ticker,
- lots: st.lots,
- price: st.price,
- amount: st.amount,
- notes: `Pembelian ${st.lots} Lot ${st.ticker}`
- });
- }
- });
+      mObj.dateMap[dateKey].items.push(r);
+      mObj.dateMap[dateKey].totalAmount += itemAmount;
+      if (r.sbnAvailable === false) {
+        mObj.dateMap[dateKey].sbnAvailable = false;
+      }
+    });
 
- // RDPU
- recordsToSave.push({
- category: 'RDPU',
- ticker: '',
- amount: formRdpuAmount,
- notes: 'Top-up RDPU'
- });
+    return Object.values(monthMap)
+      .map(m => ({
+        ...m,
+        executions: Object.values(m.dateMap).sort((a, b) => b.dateStr.localeCompare(a.dateStr))
+      }))
+      .sort((a, b) => b.month.localeCompare(a.month));
+  }, [records]);
 
- try {
- const res = await fetch('/api/pension', {
- method: 'POST',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({
- month,
- sbnAvailable: formSbnAvailable,
- records: recordsToSave
- })
- });
+  function formatDateIndo(dateString) {
+    try {
+      const d = new Date(`${dateString}T00:00:00`);
+      return d.toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      });
+    } catch {
+      return dateString;
+    }
+  }
+
+  // Handle Open Create Form
+  const handleOpenAddForm = () => {
+    setFormMode('create');
+    setEditingDate(null);
+    setRecordDate(new Date().toISOString().slice(0, 10));
+    setFormSbnAvailable(sbnAvailable ?? true);
+    setFormSbnAmount(currentCalculations?.sbnAllocation || 0);
+    setFormRdpuAmount(currentCalculations?.finalRdpuTopup || 0);
+    setFormStocks(
+      currentCalculations?.calculatedStocks 
+        ? currentCalculations.calculatedStocks.map(st => ({
+            ticker: st.ticker,
+            lots: st.lots ?? 0,
+            price: st.price ?? 0,
+            amount: st.cost ?? 0
+          }))
+        : []
+    );
+    setShowForm(true);
+    setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+  };
+
+  // Handle Open Edit Form with Auto-fill from selected execution
+  const handleOpenEditForm = (execSession) => {
+    setFormMode('edit');
+    setEditingDate(execSession.dateStr);
+    setRecordDate(execSession.dateStr);
+
+    const sbnItem = execSession.items.find(i => i.category === 'SBN');
+    const rdpuItem = execSession.items.find(i => i.category === 'RDPU');
+    const stockItems = execSession.items.filter(i => i.category === 'SAHAM');
+
+    setFormSbnAvailable(sbnItem ? (sbnItem.sbnAvailable ?? true) : execSession.sbnAvailable ?? true);
+    setFormSbnAmount(sbnItem ? (sbnItem.amount || 0) : 0);
+    setFormRdpuAmount(rdpuItem ? (rdpuItem.amount || 0) : 0);
+
+    if (stockItems.length > 0) {
+      setFormStocks(
+        stockItems.map(st => ({
+          ticker: st.ticker,
+          lots: st.lots ?? 0,
+          price: st.price ?? 0,
+          amount: st.amount ?? ((st.lots ?? 0) * (st.price ?? 0) * 100)
+        }))
+      );
+    } else if (currentCalculations?.calculatedStocks) {
+      setFormStocks(
+        currentCalculations.calculatedStocks.map(st => ({
+          ticker: st.ticker,
+          lots: 0,
+          price: st.price ?? 0,
+          amount: 0
+        }))
+      );
+    }
+
+    setShowForm(true);
+    setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+  };
+
+  // Update stock form row when lot or price changes
+  const handleStockFormChange = (index, field, value) => {
+    setFormStocks((prev) => {
+      const updated = [...prev];
+      const row = { ...updated[index], [field]: Math.max(0, Number(value) || 0) };
+      if (field === 'lots' || field === 'price') {
+        row.amount = (row.lots || 0) * (row.price || 0) * 100;
+      }
+      updated[index] = row;
+      return updated;
+    });
+  };
+
+  // Submit Form (Save / Update)
+  const handleSubmitForm = async (e) => {
+    e.preventDefault();
+    const month = recordDate.slice(0, 7); // "YYYY-MM"
+
+    const recordsToSave = [];
+
+    // 1. SBN Allocation
+    recordsToSave.push({
+      category: 'SBN',
+      ticker: '',
+      amount: formSbnAvailable ? (Number(formSbnAmount) || 0) : 0,
+      notes: formSbnAvailable ? 'SBN Ritel' : 'SBN Off'
+    });
+
+    // 2. Stocks - allow saving 0 lots if user chooses not to buy any shares on this date
+    formStocks.forEach((st) => {
+      if (st.ticker) {
+        const lots = Math.max(0, Number(st.lots) || 0);
+        const price = Math.max(0, Number(st.price) || 0);
+        const amount = lots * price * 100;
+        recordsToSave.push({
+          category: 'SAHAM',
+          ticker: st.ticker,
+          lots,
+          price,
+          amount,
+          notes: lots > 0 ? `Pembelian ${lots} Lot ${st.ticker}` : `Alokasi 0 Lot ${st.ticker}`
+        });
+      }
+    });
+
+    // 3. RDPU
+    recordsToSave.push({
+      category: 'RDPU',
+      ticker: '',
+      amount: Number(formRdpuAmount) || 0,
+      notes: 'Top-up RDPU'
+    });
+
+    try {
+      const res = await fetch('/api/pension', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          month,
+          date: recordDate,
+          editingDate: formMode === 'edit' ? editingDate : null,
+          sbnAvailable: formSbnAvailable,
+          records: recordsToSave
+        })
+      });
 
       if (res.ok) {
-        showToast(`✅ Berhasil menyimpan catatan eksekusi tanggal ${recordDate}!`, 'success');
+        showToast(
+          formMode === 'edit'
+            ? `✅ Berhasil memperbarui catatan eksekusi tanggal ${formatDateIndo(recordDate)}!`
+            : `✅ Berhasil menyimpan catatan eksekusi tanggal ${formatDateIndo(recordDate)}!`,
+          'success'
+        );
         setShowForm(false);
+        setEditingDate(null);
         if (onRefresh) onRefresh();
       } else {
         const errData = await res.json().catch(() => ({}));
@@ -149,18 +278,45 @@ export default function PensionTracker({ records, onRefresh, currentCalculations
     }
   };
 
+  // Delete an entire month
   const handleDeleteMonth = (month) => {
     setConfirmDialog({
       isOpen: true,
       title: '🗑️ Hapus Catatan Bulanan?',
-      message: `Apakah Anda yakin ingin menghapus seluruh catatan eksekusi bulan ${month}?`,
-      confirmLabel: 'Ya, Hapus',
+      message: `Apakah Anda yakin ingin menghapus seluruh catatan eksekusi untuk bulan ${month}?`,
+      confirmLabel: 'Ya, Hapus Bulan Ini',
       onConfirm: async () => {
         setConfirmDialog(null);
         try {
           const res = await fetch(`/api/pension?month=${month}`, { method: 'DELETE' });
           if (res.ok) {
-            showToast(`Catatan bulan ${month} berhasil dihapus`, 'success');
+            showToast(`Seluruh catatan bulan ${month} berhasil dihapus`, 'success');
+            if (onRefresh) onRefresh();
+          } else {
+            showToast('Gagal menghapus catatan', 'error');
+          }
+        } catch (e) {
+          console.error(e);
+          showToast('Terjadi kesalahan saat menghapus', 'error');
+        }
+      },
+      onCancel: () => setConfirmDialog(null)
+    });
+  };
+
+  // Delete a specific execution date
+  const handleDeleteDate = (dateStr) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: '🗑️ Hapus Eksekusi Tanggal?',
+      message: `Apakah Anda yakin ingin menghapus catatan eksekusi tanggal ${formatDateIndo(dateStr)}?`,
+      confirmLabel: 'Ya, Hapus Tanggal Ini',
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        try {
+          const res = await fetch(`/api/pension?date=${dateStr}`, { method: 'DELETE' });
+          if (res.ok) {
+            showToast(`Catatan tanggal ${formatDateIndo(dateStr)} berhasil dihapus`, 'success');
             if (onRefresh) onRefresh();
           } else {
             showToast('Gagal menghapus catatan', 'error');
@@ -308,316 +464,444 @@ export default function PensionTracker({ records, onRefresh, currentCalculations
 
  }, [monthsGrouped]);
 
- const currentMonthStr = new Date().toISOString().slice(0, 7);
- const isCurrentMonthRecorded = monthsGrouped.some((m) => m.month === currentMonthStr);
+  return (
+    <div className="space-y-6">
+      {/* Top Banner & Fast Actions */}
+      <div className="glass-panel p-6 rounded-2xl border border-slate-300 dark:border-white/10 bg-gradient-to-br from-slate-900 via-indigo-950/30 to-slate-50 dark:to-[#0a0f1a] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">📈</span>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Tracker Konsistensi & Pertumbuhan Aset</h3>
+          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Catat eksekusi investasi berkala untuk memantau disiplin investasi pensiun dan akumulasi portofolio secara rapi per bulan.
+          </p>
+        </div>
 
- return (
- <div className="space-y-6">
- {/* Top Banner & Fast Actions */}
- <div className="glass-panel p-6 rounded-2xl border border-slate-300 dark:border-white/10 bg-gradient-to-br from-slate-900 via-indigo-950/30 to-slate-50 dark:to-[#0a0f1a] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
- <div>
- <div className="flex items-center gap-2">
- <span className="text-2xl">📈</span>
- <h3 className="text-lg font-bold text-slate-900 dark:text-white">Tracker Konsistensi & Growth Aset</h3>
- </div>
- <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
- Catat eksekusi bulanan untuk memantau disiplin investasi pensiun dan pertumbuhan aset riil dari waktu ke waktu.
- </p>
- </div>
+        <button
+          onClick={() => {
+            if (showForm) {
+              setShowForm(false);
+              setEditingDate(null);
+            } else {
+              handleOpenAddForm();
+            }
+          }}
+          className={`px-5 py-2.5 rounded-xl font-extrabold text-xs shadow-lg transition-all flex items-center gap-2 ${
+            showForm
+              ? 'bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/40 hover:bg-amber-500/30'
+              : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold shadow-emerald-500/20'
+          }`}
+        >
+          {showForm ? '✖ Tutup Form Input' : '➕ Tambah Catatan Eksekusi'}
+        </button>
+      </div>
 
- <button
- onClick={() => setShowForm(!showForm)}
- className={`px-5 py-2.5 rounded-xl font-extrabold text-xs shadow-lg transition-all flex items-center gap-2 ${
- showForm
- ? 'bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/40 hover:bg-amber-500/30'
- : isCurrentMonthRecorded
- ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 font-bold'
- : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold shadow-emerald-500/20'
- }`}
- >
- {showForm ? '✖ Tutup Form Input' : isCurrentMonthRecorded ? '✏️ Edit / Catat Bulan Ini' : '➕ Input Form Catat Bulan Ini'}
- </button>
- </div>
+      {/* MODAL FORM INPUT CATATAN */}
+      {showForm && (
+        <form
+          ref={formRef}
+          onSubmit={handleSubmitForm}
+          className="glass-panel p-6 rounded-2xl border border-emerald-500/30 bg-emerald-50/70 dark:bg-emerald-950/20 space-y-5 animate-in fade-in duration-300 shadow-xl"
+        >
+          <div className="flex justify-between items-center pb-3 border-b border-slate-300 dark:border-white/10">
+            <div>
+              <h4 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                <span>{formMode === 'edit' ? '✏️' : '📝'}</span>
+                {formMode === 'edit'
+                  ? `Edit Catatan Eksekusi (${formatDateIndo(recordDate)})`
+                  : 'Form Input Catatan Eksekusi Investasi'}
+              </h4>
+              <span className="text-[11px] text-slate-700 dark:text-slate-300 font-medium">
+                {formMode === 'edit'
+                  ? 'Data telah diisi otomatis dari catatan yang dipilih. Anda dapat menyesuaikan angka lalu klik simpan.'
+                  : 'Angka otomatis disesuaikan dari kalkulator. Anda dapat menambah eksekusi baru kapan saja.'}
+              </span>
+            </div>
+            <span className="text-xs font-extrabold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/20">
+              Total Eksekusi: Rp {((formSbnAvailable ? formSbnAmount : 0) + formRdpuAmount + formStocks.reduce((a, b) => a + (b.amount || 0), 0)).toLocaleString('id-ID')}
+            </span>
+          </div>
 
- {/* MODAL FORM INPUT CATATAN */}
- {showForm && (
- <form onSubmit={handleSubmitForm} className="glass-panel p-6 rounded-2xl border border-emerald-500/30 bg-emerald-50/70 dark:bg-emerald-950/20 space-y-5 animate-in fade-in duration-300">
- <div className="flex justify-between items-center pb-3 border-b border-slate-300 dark:border-white/10">
- <div>
- <h4 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
- 📝 Form Input Eksekusi Investasi
- </h4>
- <span className="text-[11px] text-slate-700 dark:text-slate-300 font-medium">Angka otomatis diisi dari alokasi kalkulator saat ini. Anda dapat me-adjust sebelum simpan.</span>
- </div>
- <span className="text-xs font-extrabold text-emerald-700 dark:text-emerald-400">
- Total: Rp {((formSbnAvailable ? formSbnAmount : 0) + formRdpuAmount + formStocks.reduce((a, b) => a + b.amount, 0)).toLocaleString('id-ID')}
- </span>
- </div>
+          {/* Date Picker */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-xs font-extrabold text-slate-700 dark:text-slate-300 block">
+                📅 Tanggal Eksekusi (Bisa Beda Tanggal di Bulan yang Sama)
+              </label>
+              <input
+                type="date"
+                value={recordDate}
+                onChange={(e) => setRecordDate(e.target.value)}
+                className="w-full bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-lg px-3 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-emerald-400"
+                required
+              />
+            </div>
 
- {/* Date Picker */}
- <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
- <div className="space-y-1">
- <label className="text-xs font-extrabold text-slate-700 dark:text-slate-300 block">📅 Tanggal Eksekusi</label>
- <input
- type="date"
- value={recordDate}
- onChange={(e) => setRecordDate(e.target.value)}
- className="w-full bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-lg px-3 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-emerald-400"
- required
- />
- </div>
+            <div className="space-y-1">
+              <label className="text-xs font-extrabold text-slate-700 dark:text-slate-300 block">🏛️ Status SBN Ritel</label>
+              <button
+                type="button"
+                onClick={() => setFormSbnAvailable(!formSbnAvailable)}
+                className={`w-full py-2 px-3 rounded-lg text-xs font-extrabold transition-all border ${
+                  formSbnAvailable
+                    ? 'bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border-emerald-500/30'
+                    : 'bg-amber-500/20 text-amber-800 dark:text-amber-300 border-amber-500/30'
+                }`}
+              >
+                {formSbnAvailable ? '✓ SBN Ada Masa Penawaran' : '⚠️ SBN Off (Dialihkan ke RDPU)'}
+              </button>
+            </div>
+          </div>
 
- <div className="space-y-1">
- <label className="text-xs font-extrabold text-slate-700 dark:text-slate-300 block">🏛️ Status SBN Ritel</label>
- <button
- type="button"
- onClick={() => setFormSbnAvailable(!formSbnAvailable)}
- className={`w-full py-2 px-3 rounded-lg text-xs font-extrabold transition-all border ${
- formSbnAvailable
- ? 'bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border-emerald-500/30'
- : 'bg-amber-500/20 text-amber-800 dark:text-amber-300 border-amber-500/30'
- }`}
- >
- {formSbnAvailable ? '✓ SBN Ada Masa Penawaran' : '⚠️ SBN Off (Dialihkan ke RDPU)'}
- </button>
- </div>
- </div>
+          {/* Category Allocations */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* SBN Input */}
+            <div className={`p-4 rounded-xl border space-y-2 ${formSbnAvailable ? 'bg-white dark:bg-white/5 border-slate-300 dark:border-white/10' : 'bg-slate-200/50 dark:bg-[#0a0f1a]/20 border-slate-300 dark:border-white/5 opacity-50'}`}>
+              <span className="text-xs font-extrabold text-emerald-700 dark:text-emerald-400 block">1. Nominal SBN Ritel</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-700 dark:text-slate-400 font-bold">Rp</span>
+                <input
+                  type="number"
+                  disabled={!formSbnAvailable}
+                  value={formSbnAvailable ? formSbnAmount : 0}
+                  onChange={(e) => setFormSbnAmount(Math.max(0, Number(e.target.value) || 0))}
+                  className="w-full bg-slate-50 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded px-2.5 py-1.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-emerald-400"
+                />
+              </div>
+            </div>
 
- {/* Category Allocations */}
- <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
- 
- {/* SBN Input */}
- <div className={`p-4 rounded-xl border space-y-2 ${formSbnAvailable ? 'bg-slate-100 dark:bg-white/5 border-slate-300 dark:border-white/10' : 'bg-slate-200/50 dark:bg-[#0a0f1a]/20 border-slate-300 dark:border-white/5 opacity-50'}`}>
- <span className="text-xs font-extrabold text-emerald-700 dark:text-emerald-400 block">1. Nominal SBN Ritel</span>
- <div className="flex items-center gap-2">
- <span className="text-xs text-slate-700 dark:text-slate-400 font-bold">Rp</span>
- <input
- type="number"
- disabled={!formSbnAvailable}
- value={formSbnAvailable ? formSbnAmount : 0}
- onChange={(e) => setFormSbnAmount(Number(e.target.value))}
- className="w-full bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded px-2.5 py-1.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-emerald-400"
- />
- </div>
- </div>
+            {/* RDPU Input */}
+            <div className="p-4 rounded-xl bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 space-y-2">
+              <span className="text-xs font-extrabold text-purple-700 dark:text-purple-400 block">2. Nominal Top-up RDPU</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-700 dark:text-slate-400 font-bold">Rp</span>
+                <input
+                  type="number"
+                  value={formRdpuAmount}
+                  onChange={(e) => setFormRdpuAmount(Math.max(0, Number(e.target.value) || 0))}
+                  className="w-full bg-slate-50 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded px-2.5 py-1.5 text-xs font-bold text-purple-700 dark:text-purple-300 focus:outline-none focus:border-purple-400"
+                />
+              </div>
+            </div>
+          </div>
 
- {/* RDPU Input */}
- <div className="p-4 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 space-y-2">
- <span className="text-xs font-extrabold text-purple-700 dark:text-purple-400 block">2. Nominal Top-up RDPU</span>
- <div className="flex items-center gap-2">
- <span className="text-xs text-slate-700 dark:text-slate-400 font-bold">Rp</span>
- <input
- type="number"
- value={formRdpuAmount}
- onChange={(e) => setFormRdpuAmount(Number(e.target.value))}
- className="w-full bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded px-2.5 py-1.5 text-xs font-bold text-purple-700 dark:text-purple-300 focus:outline-none focus:border-purple-400"
- />
- </div>
- </div>
+          {/* Stock Purchases Form */}
+          <div className="p-4 rounded-xl bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-xs font-extrabold text-indigo-700 dark:text-indigo-400 block">
+                3. Pembelian Lot Saham (Bisa isi 0 jika tidak beli saham pada tanggal ini)
+              </span>
+              <span className="text-[11px] text-slate-500 font-bold">
+                Subtotal Saham: Rp {formStocks.reduce((a, b) => a + (b.amount || 0), 0).toLocaleString('id-ID')}
+              </span>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {formStocks.map((st, idx) => (
+                <div key={st.ticker || idx} className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="font-extrabold text-slate-900 dark:text-white text-xs">{st.ticker}</span>
+                    <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-extrabold">
+                      Rp {(st.amount || 0).toLocaleString('id-ID')}
+                    </span>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-[10px] text-slate-600 dark:text-slate-400 font-bold block">Jumlah Lot</span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={st.lots}
+                        onChange={(e) => handleStockFormChange(idx, 'lots', e.target.value)}
+                        className="w-full bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded px-2 py-1 text-xs font-extrabold text-emerald-700 dark:text-emerald-300 focus:outline-none focus:border-emerald-400"
+                      />
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-600 dark:text-slate-400 font-bold block">Harga/Lembar (Rp)</span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={st.price}
+                        onChange={(e) => handleStockFormChange(idx, 'price', e.target.value)}
+                        className="w-full bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded px-2 py-1 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-emerald-400"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
 
- </div>
+          {/* Form Action Buttons */}
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => {
+                setShowForm(false);
+                setEditingDate(null);
+              }}
+              className="px-4 py-2 rounded-xl bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 text-slate-900 dark:text-white font-bold text-xs"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-lg shadow-emerald-500/20 flex items-center gap-1.5"
+            >
+              <span>💾</span>
+              {formMode === 'edit' ? 'Update Catatan Eksekusi' : 'Simpan Catatan Eksekusi'}
+            </button>
+          </div>
+        </form>
+      )}
 
- {/* Stock Purchases Form */}
- <div className="p-4 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 space-y-3">
- <span className="text-xs font-extrabold text-indigo-700 dark:text-indigo-400 block">3. Pembelian Lot Saham</span>
- 
- <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
- {formStocks.map((st, idx) => (
- <div key={st.ticker} className="p-3 rounded-lg bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-white/10 space-y-2">
- <div className="flex justify-between items-center">
- <span className="font-extrabold text-slate-900 dark:text-white text-xs">{st.ticker}</span>
- <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-extrabold">Total: Rp {(st.amount || 0).toLocaleString('id-ID')}</span>
- </div>
- 
- <div className="grid grid-cols-2 gap-2 text-xs">
- <div>
- <span className="text-[10px] text-slate-700 dark:text-slate-400 font-bold block">Jumlah Lot</span>
- <input
- type="number"
- value={st.lots}
- onChange={(e) => handleStockFormChange(idx, 'lots', e.target.value)}
- className="w-full bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded px-2 py-1 text-xs font-extrabold text-emerald-700 dark:text-emerald-300"
- />
- </div>
- <div>
- <span className="text-[10px] text-slate-700 dark:text-slate-400 font-bold block">Harga/Lembar (Rp)</span>
- <input
- type="number"
- value={st.price}
- onChange={(e) => handleStockFormChange(idx, 'price', e.target.value)}
- className="w-full bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded px-2 py-1 text-xs font-bold text-slate-900 dark:text-white"
- />
- </div>
- </div>
- </div>
- ))}
- </div>
- </div>
+      {/* Visual Charts Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Asset Growth Chart */}
+        <div className="glass-panel p-5 rounded-2xl border border-slate-300 dark:border-white/10 space-y-3">
+          <div className="flex justify-between items-center">
+            <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+              Akumulasi Pertumbuhan Aset (Rp)
+            </h4>
+            <span className="text-[10px] text-emerald-400 font-medium">Kumulatif</span>
+          </div>
+          <div className="w-full flex justify-center overflow-x-auto">
+            <canvas ref={growthCanvasRef} width={450} height={200} className="w-full max-w-[450px] h-auto"/>
+          </div>
+        </div>
 
- {/* Form Action Buttons */}
- <div className="flex justify-end gap-3 pt-2">
- <button
- type="button"
- onClick={() => setShowForm(false)}
- className="px-4 py-2 rounded-xl bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 text-slate-900 dark:text-white font-bold text-xs"
- >
- Batal
- </button>
- <button
- type="submit"
- className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-lg shadow-emerald-500/20"
- >
- 💾 Simpan Catatan Eksekusi
- </button>
- </div>
- </form>
- )}
+        {/* Consistency Bar Chart */}
+        <div className="glass-panel p-5 rounded-2xl border border-slate-300 dark:border-white/10 space-y-3">
+          <div className="flex justify-between items-center">
+            <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-indigo-400"></span>
+              Nominal Setoran Per Bulan
+            </h4>
+            <span className="text-[10px] text-indigo-400 font-medium">Streak ({monthsGrouped.length} Bulan)</span>
+          </div>
+          <div className="w-full flex justify-center overflow-x-auto">
+            <canvas ref={streakCanvasRef} width={450} height={200} className="w-full max-w-[450px] h-auto"/>
+          </div>
+        </div>
+      </div>
 
- {/* Visual Charts Row */}
- <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
- {/* Asset Growth Chart */}
- <div className="glass-panel p-5 rounded-2xl border border-slate-300 dark:border-white/10 space-y-3">
- <div className="flex justify-between items-center">
- <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
- <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
- Akumulasi Pertumbuhan Aset (Rp)
- </h4>
- <span className="text-[10px] text-emerald-400 font-medium">Kumulatif</span>
- </div>
- <div className="w-full flex justify-center overflow-x-auto">
- <canvas ref={growthCanvasRef} width={450} height={200} className="w-full max-w-[450px] h-auto"/>
- </div>
- </div>
+      {/* Execution History Grouped Per Month */}
+      <div className="glass-panel p-6 rounded-2xl border border-slate-300 dark:border-white/10 space-y-5">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          <div>
+            <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <span>📜</span> Riwayat & Laporan Eksekusi (Dikelompokkan Per Bulan)
+            </h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Seluruh transaksi per tanggal dikelompokkan dan ditotal secara otomatis per bulan kalender.
+            </p>
+          </div>
+          <button
+            onClick={handleOpenAddForm}
+            className="px-3.5 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 font-bold text-xs flex items-center gap-1.5 transition-colors"
+          >
+            <span>➕</span> Tambah Catatan Baru
+          </button>
+        </div>
 
- {/* Consistency Bar Chart */}
- <div className="glass-panel p-5 rounded-2xl border border-slate-300 dark:border-white/10 space-y-3">
- <div className="flex justify-between items-center">
- <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
- <span className="w-2 h-2 rounded-full bg-indigo-400"></span>
- Nominal Setoran Per Bulan
- </h4>
- <span className="text-[10px] text-indigo-400 font-medium">Streak ({monthsGrouped.length} Bulan)</span>
- </div>
- <div className="w-full flex justify-center overflow-x-auto">
- <canvas ref={streakCanvasRef} width={450} height={200} className="w-full max-w-[450px] h-auto"/>
- </div>
- </div>
- </div>
+        {monthsGrouped.length === 0 ? (
+          <div className="text-center py-10 text-xs text-slate-500 dark:text-slate-400 border border-dashed border-slate-300 dark:border-white/10 rounded-xl space-y-2">
+            <div className="text-2xl">📝</div>
+            <p>Belum ada riwayat eksekusi tersimpan.</p>
+            <p className="text-[11px] text-slate-400">Klik tombol &quot;Tambah Catatan Eksekusi&quot; untuk mencatat setoran investasi pertama Anda.</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {monthsGrouped.map((mg) => (
+              <div key={mg.month} className="p-5 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 space-y-4 shadow-sm">
+                {/* Month Summary Header */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-200 dark:border-white/10 pb-3">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <span className="text-sm font-black text-slate-900 dark:text-white px-3 py-1 rounded-xl bg-indigo-500/20 border border-indigo-500/30">
+                      🗓️ {mg.month}
+                    </span>
+                    <span className="text-xs text-emerald-700 dark:text-emerald-400 font-extrabold bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
+                      Total Bulan Ini: Rp {mg.totalAmount.toLocaleString('id-ID')}
+                    </span>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">
+                      ({mg.executions.length}x Eksekusi Tanggal)
+                    </span>
+                    {!mg.sbnAvailable && (
+                      <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30">
+                        ⚠️ SBN Off
+                      </span>
+                    )}
+                  </div>
 
- {/* Execution History Table */}
- <div className="glass-panel p-6 rounded-2xl border border-slate-300 dark:border-white/10 space-y-4">
- <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
- <span>📜</span> Riwayat Eksekusi Menabung Bulanan
- </h4>
+                  <button
+                    onClick={() => handleDeleteMonth(mg.month)}
+                    className="text-[11px] font-bold text-rose-600 dark:text-rose-400 hover:text-rose-700 hover:bg-rose-500/10 px-2.5 py-1 rounded-lg transition-colors border border-rose-500/20"
+                  >
+                    🗑️ Hapus Seluruh Bulan
+                  </button>
+                </div>
 
- {monthsGrouped.length === 0 ? (
- <div className="text-center py-8 text-xs text-slate-500 dark:text-slate-400 border border-dashed border-slate-300 dark:border-white/10 rounded-xl">
- Belum ada riwayat eksekusi tersimpan. Klik tombol &quot;Input Form Catat Bulan Ini&quot; untuk mengisi form.
- </div>
- ) : (
- <div className="space-y-4">
- {monthsGrouped.map((mg) => (
- <div key={mg.month} className="p-4 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 space-y-3">
- <div className="flex justify-between items-center border-b border-slate-300 dark:border-white/10 pb-2">
- <div className="flex items-center gap-3">
- <span className="text-sm font-black text-slate-900 dark:text-white px-2.5 py-1 rounded bg-indigo-500/20 border border-indigo-500/30">
- {mg.month}
- </span>
- <span className="text-xs text-emerald-400 font-bold">
- Total: Rp {mg.totalAmount.toLocaleString('id-ID')}
- </span>
- {!mg.sbnAvailable && (
- <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30">
- ⚠️ SBN Off (Dialihkan ke RDPU)
- </span>
- )}
- </div>
+                {/* Monthly Aggregate Breakdown Pills */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/5 flex justify-between items-center">
+                    <span className="text-slate-600 dark:text-slate-400 font-bold">🏛️ Total SBN</span>
+                    <span className="font-extrabold text-slate-900 dark:text-white">Rp {mg.totalSbn.toLocaleString('id-ID')}</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/5 flex justify-between items-center">
+                    <span className="text-slate-600 dark:text-slate-400 font-bold">💼 Total RDPU</span>
+                    <span className="font-extrabold text-slate-900 dark:text-white">Rp {mg.totalRdpu.toLocaleString('id-ID')}</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/5 flex justify-between items-center">
+                    <span className="text-slate-600 dark:text-slate-400 font-bold">📈 Total Saham</span>
+                    <span className="font-extrabold text-emerald-600 dark:text-emerald-400">Rp {mg.totalStocks.toLocaleString('id-ID')}</span>
+                  </div>
+                </div>
 
- <button
- onClick={() => handleDeleteMonth(mg.month)}
- className="text-[10px] text-red-400 hover:text-red-300 hover:bg-red-500/10 px-2 py-1 rounded transition-colors"
- >
- Hapus
- </button>
- </div>
+                {/* Stock Accumulation Summary in Month */}
+                {Object.keys(mg.stockBreakdown).length > 0 && (
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-white/5 space-y-1.5">
+                    <span className="text-[11px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                      Akumulasi Lot Saham Bulan {mg.month}:
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {Object.entries(mg.stockBreakdown).map(([tkr, lots]) => (
+                        <span key={tkr} className="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-500/20 text-xs font-bold text-indigo-900 dark:text-indigo-300">
+                          {tkr}: <strong className="text-indigo-600 dark:text-indigo-400">{lots} Lot</strong>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
- <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs">
- {mg.items.map((item, idx) => (
- <div key={idx} className="p-2.5 rounded-lg bg-slate-50 dark:bg-[#0a0f1a]/30 border border-slate-200 dark:border-white/5 flex justify-between items-center">
- <div>
- <span className="font-bold text-slate-900 dark:text-white">
- {item.category} {item.ticker ? `(${item.ticker})` : ''}
- </span>
- <div className="text-[10px] text-slate-500 dark:text-slate-400">
- {item.lots ? `${item.lots} Lot @ Rp ${item.price?.toLocaleString('id-ID')}` : item.notes || '-'}
- </div>
- </div>
- <span className="font-semibold text-emerald-300">
- Rp {item.amount.toLocaleString('id-ID')}
- </span>
- </div>
- ))}
- </div>
- </div>
- ))}
- </div>
- )}
- </div>
+                {/* List of Execution Dates in this Month */}
+                <div className="space-y-3 pt-1">
+                  <span className="text-xs font-extrabold text-slate-700 dark:text-slate-300 block">
+                    Detail Eksekusi Per Tanggal:
+                  </span>
 
- {/* ── MODAL: CUSTOM CONFIRMATION DIALOG ──────────────────────────── */}
- {confirmDialog && confirmDialog.isOpen && (
-   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
-     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-       <div className="flex items-start gap-3">
-         <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center text-xl shrink-0">
-           🗑️
-         </div>
-         <div>
-           <h3 className="text-base font-black text-slate-900 dark:text-white">
-             {confirmDialog.title}
-           </h3>
-           <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-             {confirmDialog.message}
-           </p>
-         </div>
-       </div>
+                  {mg.executions.map((ex) => (
+                    <div
+                      key={ex.dateStr}
+                      className="p-3.5 rounded-xl bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-white/10 space-y-2.5 transition-all hover:border-slate-300 dark:hover:border-white/20"
+                    >
+                      <div className="flex justify-between items-center border-b border-slate-100 dark:border-white/5 pb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-extrabold text-slate-900 dark:text-white">
+                            📅 {ex.formattedDate}
+                          </span>
+                          <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-500/20">
+                            Rp {ex.totalAmount.toLocaleString('id-ID')}
+                          </span>
+                        </div>
 
-       <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
-         <button
-           type="button"
-           onClick={confirmDialog.onCancel}
-           className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition-colors"
-         >
-           Batal
-         </button>
-         <button
-           type="button"
-           onClick={confirmDialog.onConfirm}
-           className="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl shadow-md transition-all"
-         >
-           {confirmDialog.confirmLabel || 'Ya, Lanjutkan'}
-         </button>
-       </div>
-     </div>
-   </div>
- )}
+                        {/* Action buttons: Edit and Hapus */}
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditForm(ex)}
+                            className="px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border border-amber-500/30 transition-colors flex items-center gap-1"
+                          >
+                            <span>✏️</span> Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteDate(ex.dateStr)}
+                            className="px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 transition-colors flex items-center gap-1"
+                          >
+                            <span>🗑️</span> Hapus
+                          </button>
+                        </div>
+                      </div>
 
- {/* ── TOAST NOTIFICATION ──────────────────────────────────────────── */}
- {toast && (
-   <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5 duration-200">
-     <div className={`px-4 py-3 rounded-2xl shadow-2xl border text-xs font-bold flex items-center gap-2.5 backdrop-blur-md ${
-       toast.type === 'error'
-         ? 'bg-rose-50/95 dark:bg-rose-950/95 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200'
-         : toast.type === 'warning'
-         ? 'bg-amber-50/95 dark:bg-amber-950/95 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200'
-         : 'bg-emerald-50/95 dark:bg-emerald-950/95 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200'
-     }`}>
-       <span>{toast.type === 'error' ? '❌' : toast.type === 'warning' ? '⚠️' : '✅'}</span>
-       <span>{toast.message}</span>
-       <button onClick={() => setToast(null)} className="ml-2 text-slate-400 hover:text-slate-600 text-xs">✕</button>
-     </div>
-   </div>
- )}
- </div>
- );
+                      {/* Items executed on this date */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs">
+                        {ex.items.map((item, idx) => (
+                          <div
+                            key={idx}
+                            className="p-2 rounded-lg bg-slate-50 dark:bg-[#0a0f1a]/50 border border-slate-100 dark:border-white/5 flex justify-between items-center"
+                          >
+                            <div>
+                              <span className="font-extrabold text-slate-900 dark:text-white text-xs">
+                                {item.category} {item.ticker ? `(${item.ticker})` : ''}
+                              </span>
+                              <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                                {item.lots !== null && item.lots !== undefined
+                                  ? `${item.lots} Lot @ Rp ${(item.price || 0).toLocaleString('id-ID')}`
+                                  : item.notes || '-'}
+                              </div>
+                            </div>
+                            <span className="font-extrabold text-emerald-600 dark:text-emerald-400 text-xs">
+                              Rp {(item.amount || 0).toLocaleString('id-ID')}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── MODAL: CUSTOM CONFIRMATION DIALOG ──────────────────────────── */}
+      {confirmDialog && confirmDialog.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center text-xl shrink-0">
+                🗑️
+              </div>
+              <div>
+                <h3 className="text-base font-black text-slate-900 dark:text-white">
+                  {confirmDialog.title}
+                </h3>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                  {confirmDialog.message}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={confirmDialog.onCancel}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={confirmDialog.onConfirm}
+                className="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl shadow-md transition-all"
+              >
+                {confirmDialog.confirmLabel || 'Ya, Lanjutkan'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── TOAST NOTIFICATION ──────────────────────────────────────────── */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5 duration-200">
+          <div className={`px-4 py-3 rounded-2xl shadow-2xl border text-xs font-bold flex items-center gap-2.5 backdrop-blur-md ${
+            toast.type === 'error'
+              ? 'bg-rose-50/95 dark:bg-rose-950/95 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200'
+              : toast.type === 'warning'
+              ? 'bg-amber-50/95 dark:bg-amber-950/95 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200'
+              : 'bg-emerald-50/95 dark:bg-emerald-950/95 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200'
+          }`}>
+            <span>{toast.type === 'error' ? '❌' : toast.type === 'warning' ? '⚠️' : '✅'}</span>
+            <span>{toast.message}</span>
+            <button onClick={() => setToast(null)} className="ml-2 text-slate-400 hover:text-slate-600 text-xs">✕</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }

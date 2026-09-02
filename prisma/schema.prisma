@@ -115,8 +115,8 @@ model PensionRecord {
   notes        String?  @db.Text
   sbnAvailable Boolean  @default(true)
 
-  @@unique([userId, month, category, ticker])
   @@index([userId, month])
+  @@index([userId, date])
 }
 
 model User {

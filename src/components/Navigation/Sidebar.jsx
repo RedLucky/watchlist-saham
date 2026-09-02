@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ThemeToggle } from '../ThemeToggle';
 
 export const NAVIGATION_MENU = [
@@ -33,6 +33,31 @@ export default function Sidebar({
   fetchData, 
   loading 
 }) {
+  const [kseiWarning, setKseiWarning] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/ksei/periods')
+      .then(res => res.json())
+      .then(data => {
+        const periods = data.periods || [];
+        const now = new Date();
+        const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const prevYear = prevDate.getFullYear();
+        const prevMonthNumStr = String(prevDate.getMonth() + 1).padStart(2, '0');
+        const enShortMonths = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+        const prevEngShort = enShortMonths[prevDate.getMonth()];
+        const hasData = periods.some(p => {
+          if (!p) return false;
+          const str = String(p).toUpperCase();
+          return str.includes(`${prevYear}-${prevMonthNumStr}`) || 
+                 str.includes(`${prevEngShort}-${prevYear}`) || 
+                 str.includes(`${prevEngShort} ${prevYear}`);
+        });
+        setKseiWarning(!hasData);
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <aside className="hidden lg:flex flex-col w-64 h-screen sticky top-0 bg-white/70 dark:bg-[#0a0f1a]/70 backdrop-blur-xl border-r border-slate-200 dark:border-slate-800/60 transition-colors z-40">
       {/* Brand / Logo Area */}
@@ -67,14 +92,21 @@ export default function Sidebar({
                   <button
                     key={item.id}
                     onClick={() => setActiveTab(item.id)}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 ${
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 ${
                       isActive
                         ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/25 font-extrabold'
                         : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/10'
                     }`}
                   >
-                    <span className="text-base">{item.icon}</span>
-                    <span>{item.label}</span>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="text-base flex-shrink-0">{item.icon}</span>
+                      <span className="truncate">{item.label}</span>
+                    </div>
+                    {item.id === 'ksei-upload' && kseiWarning && (
+                      <span className="text-[10px] bg-amber-500 text-amber-950 px-1.5 py-0.5 rounded-full font-black animate-pulse flex items-center gap-0.5 flex-shrink-0">
+                        <span>⚠️</span> Update
+                      </span>
+                    )}
                   </button>
                 );
               })}

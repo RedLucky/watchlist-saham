@@ -5,7 +5,7 @@
  * Uses 20-day moving average volume for comparison (instead of entire history).
  */
 
-import { calculateVolumeMA } from '../indicators';
+import { calculateVolumeMA } from '../indicators.js';
 
 export function calculateTrendingScore(stock) {
   const { volumes } = stock?.technicals || {};

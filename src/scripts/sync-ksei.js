@@ -126,15 +126,29 @@ function parseKseiRow(line) {
 /**
  * Enriches historical array with month-over-month deltas (+/-)
  */
-function enrichKseiHistoryWithDeltas(history) {
+function enrichKseiHistoryWithDeltas(history = []) {
   if (!Array.isArray(history) || history.length === 0) return [];
 
+  // Sort chronologically ascending
   const sorted = [...history].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-  return sorted.map((current, idx) => {
+  return sorted.map((curr, idx) => {
     if (idx === 0) {
       return {
-        ...current,
+        ...curr,
+        deltaRetail: 0,
+        deltaRetailPct: 0,
+        deltaForeign: 0,
+        deltaForeignPct: 0,
+        deltaPension: 0,
+        deltaMutualFund: 0,
+        deltaInsurance: 0,
+        deltaCorporate: 0,
+        deltaSmartMoney: 0,
+        deltaRetailRp: 0,
+        deltaSmartMoneyRp: 0,
+        bfi: 0,
+        verdict: 'Neutral ⚪',
         delta: {
           retailShares: 0,
           retailPercent: 0,
@@ -150,25 +164,60 @@ function enrichKseiHistoryWithDeltas(history) {
     }
 
     const prev = sorted[idx - 1];
-    const prevForeignTotal = prev.foreign?.total || 0;
-    const currForeignTotal = current.foreign?.total || 0;
-    const prevPensionTotal = (prev.local?.pf || 0) + (prev.foreign?.pf || 0);
-    const currPensionTotal = (current.local?.pf || 0) + (current.foreign?.pf || 0);
-    const prevMutualFundTotal = (prev.local?.mf || 0) + (prev.foreign?.mf || 0);
-    const currMutualFundTotal = (current.local?.mf || 0) + (current.foreign?.mf || 0);
+
+    const deltaRetail = curr.retailShares - prev.retailShares;
+    const deltaRetailPct = Number((curr.retailPercent - prev.retailPercent).toFixed(4));
+
+    const deltaForeign = (curr.foreign?.total || 0) - (prev.foreign?.total || 0);
+    const deltaForeignPct = Number(((curr.foreignPercent || 0) - (prev.foreignPercent || 0)).toFixed(4));
+
+    const deltaPension = ((curr.local?.pf || 0) + (curr.foreign?.pf || 0)) - ((prev.local?.pf || 0) + (prev.foreign?.pf || 0));
+    const deltaMutualFund = ((curr.local?.mf || 0) + (curr.foreign?.mf || 0)) - ((prev.local?.mf || 0) + (prev.foreign?.mf || 0));
+    const deltaInsurance = ((curr.local?.is || 0) + (curr.foreign?.is || 0)) - ((prev.local?.is || 0) + (prev.foreign?.is || 0));
+    const deltaCorporate = ((curr.local?.cp || 0) + (curr.foreign?.cp || 0)) - ((prev.local?.cp || 0) + (prev.foreign?.cp || 0));
+    const deltaInstitutional = (curr.institutionalShares || 0) - (prev.institutionalShares || 0);
+
+    const deltaSmartMoney = (deltaForeign + deltaPension + deltaMutualFund + deltaInsurance);
+    const deltaRetailRp = Math.round(deltaRetail * (curr.price || prev.price || 0));
+    const deltaSmartMoneyRp = Math.round(deltaSmartMoney * (curr.price || prev.price || 0));
+
+    const floatBase = curr.freeFloatShares > 0 ? curr.freeFloatShares : curr.secNum;
+    const bfi = floatBase > 0 ? Number((((deltaSmartMoney - deltaRetail) / floatBase) * 100).toFixed(2)) : 0;
+
+    let verdict = 'Neutral ⚪';
+    if (bfi >= 2.0 || (deltaSmartMoney > 0 && deltaRetail < 0)) {
+      verdict = bfi >= 3.5 ? 'Super Akumulasi 🚀' : 'Akumulasi Institusi 🟢';
+    } else if (bfi <= -2.0 || (deltaSmartMoney < 0 && deltaRetail > 0)) {
+      verdict = bfi <= -3.5 ? 'Distribusi Masif 🔴' : 'Distribusi Ritel Masuk 🔴';
+    } else if (deltaSmartMoney > 0) {
+      verdict = 'Akumulasi Diam-Diam 🟡';
+    }
 
     return {
-      ...current,
+      ...curr,
+      deltaRetail,
+      deltaRetailPct,
+      deltaForeign,
+      deltaForeignPct,
+      deltaPension,
+      deltaMutualFund,
+      deltaInsurance,
+      deltaCorporate,
+      deltaSmartMoney,
+      deltaRetailRp,
+      deltaSmartMoneyRp,
+      bfi,
+      verdict,
       delta: {
-        retailShares: current.retailShares - prev.retailShares,
-        retailPercent: Number((current.retailPercent - prev.retailPercent).toFixed(4)),
-        foreignShares: currForeignTotal - prevForeignTotal,
-        foreignPercent: Number((current.foreignPercent - prev.foreignPercent).toFixed(4)),
-        controllerShares: current.controllerShares - prev.controllerShares,
-        controllerPercent: Number((current.controllerPercent - prev.controllerPercent).toFixed(4)),
-        institutionalShares: current.institutionalShares - prev.institutionalShares,
-        pensionShares: currPensionTotal - prevPensionTotal,
-        mutualFundShares: currMutualFundTotal - prevMutualFundTotal,
+        retailShares: deltaRetail,
+        retailPercent: deltaRetailPct,
+        foreignShares: deltaForeign,
+        foreignPercent: deltaForeignPct,
+        controllerShares: (curr.controllerShares || 0) - (prev.controllerShares || 0),
+        controllerPercent: Number(((curr.controllerPercent || 0) - (prev.controllerPercent || 0)).toFixed(4)),
+        institutionalShares: deltaInstitutional,
+        pensionShares: deltaPension,
+        mutualFundShares: deltaMutualFund,
       }
     };
   });

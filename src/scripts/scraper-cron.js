@@ -4,7 +4,8 @@ const { exec } = require('child_process');
 console.log('🤖 Scraper & Price Sync Cron Scheduler Started (Alpine Minimalist)!');
 console.log('Jadwal:');
 console.log('  - Sync Harga Saham: Setiap 5 Menit');
-console.log('  - Sync KSEI & Ownership: Setiap Hari Rabu pukul 08:30 WIB');
+console.log('  - Sync KSEI & Ownership: Setiap Hari pukul 10:00 WIB');
+console.log('  - Rekomendasi Saham Discord: Setiap Hari pukul 18:00 WIB');
 
 // 1. Jalankan sinkronisasi harga pertama kali saat boot
 console.log('\n[Boot] Menjalankan initial Price Sync...');
@@ -12,7 +13,7 @@ runPriceSync();
 
 // 2. Jalankan initial KSEI & Ownership sync
 console.log('[Boot] Menjalankan initial KSEI & Ownership Scraper...');
-runWeeklyScrapers();
+runDailyScrapers();
 
 // Jadwal Cron: Setiap 5 Menit -> Sync Harga Saham ("*/5 * * * *")
 cron.schedule('*/5 * * * *', () => {
@@ -20,10 +21,16 @@ cron.schedule('*/5 * * * *', () => {
   runPriceSync();
 });
 
-// Jadwal Cron: Setiap Hari Rabu pukul 08:30 WIB ("30 8 * * 3")
-cron.schedule('30 8 * * 3', () => {
-  console.log(`\n[${new Date().toISOString()}] [CRON-WEEKLY] Jadwal Mingguan Terpicu! Memulai KSEI & Ownership Scraping...`);
-  runWeeklyScrapers();
+// Jadwal Cron: Setiap Hari pukul 10:00 WIB ("0 10 * * *")
+cron.schedule('0 10 * * *', () => {
+  console.log(`\n[${new Date().toISOString()}] [CRON-DAILY] Jadwal Harian Terpicu! Memulai KSEI & Ownership Scraping...`);
+  runDailyScrapers();
+});
+
+// Jadwal Cron: Setiap Hari pukul 18:00 WIB -> Kirim Rekomendasi Saham ke Discord ("0 18 * * *")
+cron.schedule('0 18 * * *', () => {
+  console.log(`\n[${new Date().toISOString()}] [CRON-DISCORD] Jadwal 18:00 WIB Terpicu! Mengirim Rekomendasi Saham ke Discord...`);
+  runDiscordNotifier();
 });
 
 function runPriceSync() {
@@ -37,7 +44,21 @@ function runPriceSync() {
   proc.stderr.on('data', (data) => console.error(data.trim()));
 }
 
-function runWeeklyScrapers() {
+function runDiscordNotifier() {
+  console.log('\n[DISCORD] Memulai pengiriman rekomendasi harian ke Discord...');
+  const proc = exec('node src/scripts/discord-notifier.js', (err) => {
+    if (err) {
+      console.error(`[DISCORD-ERR] Gagal mengirim notifikasi Discord: ${err.message}`);
+    } else {
+      console.log(`[DISCORD-SUCCESS] Notifikasi Discord selesai diproses.`);
+    }
+  });
+
+  proc.stdout.on('data', (data) => console.log(data.trim()));
+  proc.stderr.on('data', (data) => console.error(data.trim()));
+}
+
+function runDailyScrapers() {
   console.log('\n[1/2] Memulai Sinkronisasi Otomatis Data ZIP KSEI...');
   const kseiProc = exec('node src/scripts/sync-ksei.js', (kseiErr) => {
     if (kseiErr) {
@@ -53,7 +74,7 @@ function runWeeklyScrapers() {
         console.error(`[OWNERSHIP-CRASH] Scraping ownership gagal: ${ownErr.message}`);
         return;
       }
-      console.log(`[SUCCESS] Semua proses scraping mingguan selesai!`);
+      console.log(`[SUCCESS] Semua proses scraping harian selesai!`);
     });
 
     ownProc.stdout.on('data', (data) => console.log(data.trim()));

@@ -241,8 +241,8 @@ export async function GET(request) {
       const finalPensionScore = Math.max(0, Math.round(basePensionScore + stabilityBonus + sectorBonus + fcfGuard + moatBonus - safetyPenalty + retailPenalty));
 
       const reinvestmentRate = Math.max(0, (100 - payoutRatio) / 100);
-      const estimatedGrowth = Math.max(2.0, Math.min(15.0, roe * reinvestmentRate));
-      const totalEstimatedReturn = dividendYield + estimatedGrowth;
+      const estimatedGrowth = Math.max(2.0, Math.min(12.0, roe * reinvestmentRate));
+      const totalEstimatedReturn = Math.min(25.0, Number((dividendYield + estimatedGrowth).toFixed(1)));
 
       let isDividendTrap = false;
       const historyArr = stockObj.dividendHistory;
@@ -277,9 +277,9 @@ export async function GET(request) {
         fundamentalScore: fundRes.score,
         valuationScore: valRes.score,
         dividendScore: divRes.score,
-        dividendYield: divRes.metrics.dividendYield || 0,
+        dividendYield: Number(dividendYield.toFixed(2)),
         estimatedGrowth: Number(estimatedGrowth.toFixed(1)),
-        totalEstimatedReturn: Number(totalEstimatedReturn.toFixed(1)),
+        totalEstimatedReturn,
         finalPensionScore,
         isDividendTrap: isDividendTrap && isRetailEntering,
         metrics: {
@@ -330,8 +330,8 @@ export async function GET(request) {
           const roe = fundRes.metrics.roe || 0;
           const payoutRatio = divRes.metrics.payoutRatio || 50;
           const reinvestmentRate = Math.max(0, (100 - payoutRatio) / 100);
-          const estimatedGrowth = Math.max(2.0, Math.min(15.0, roe * reinvestmentRate));
-          const totalEstimatedReturn = dividendYield + estimatedGrowth;
+          const estimatedGrowth = Math.max(2.0, Math.min(12.0, roe * reinvestmentRate));
+          const totalEstimatedReturn = Math.min(25.0, Number((dividendYield + estimatedGrowth).toFixed(1)));
 
           const dps = divRes.metrics.dps || (st.price > 0 ? (st.price * (dividendYield / 100)) : 0);
 
@@ -344,9 +344,9 @@ export async function GET(request) {
             fundamentalScore: fundRes.score,
             valuationScore: valRes.score,
             dividendScore: divRes.score,
-            dividendYield,
+            dividendYield: Number(dividendYield.toFixed(2)),
             estimatedGrowth: Number(estimatedGrowth.toFixed(1)),
-            totalEstimatedReturn: Number(totalEstimatedReturn.toFixed(1)),
+            totalEstimatedReturn,
             finalPensionScore: 80,
             isDividendTrap: false,
             metrics: {
@@ -366,12 +366,14 @@ export async function GET(request) {
         .filter(Boolean);
     } else {
       // BACKPROPAGATION-DRIVEN COMBINATORIAL PORTFOLIO OPTIMIZER
-      // 1. Filter Top 22 Candidates (Highest Pension Safety & Compounding Return)
-      const topCandidates = scoredStocks
+      // 1. Filter Top 18 Elite Candidates sorted strictly by Pension Quality Score
+      const eligibleCandidates = scoredStocks
         .filter(st => st.price > 0 && st.finalPensionScore >= 60)
-        .slice(0, 22);
+        .sort((a, b) => b.finalPensionScore - a.finalPensionScore);
 
-      // 2. Generate thousands of 4-stock combinations (up to 7,315 combinations)
+      const topCandidates = eligibleCandidates.slice(0, 18);
+
+      // 2. Generate 4-stock combinations from top candidates
       if (topCandidates.length >= 4) {
         const allCombos = getCombinations(topCandidates, 4);
         const evaluatedCombos = [];
@@ -401,19 +403,19 @@ export async function GET(request) {
           const optGrowth = weights[0] * growths[0] + weights[1] * growths[1] + weights[2] * growths[2] + weights[3] * growths[3];
           const optScore = weights[0] * combo[0].finalPensionScore + weights[1] * combo[1].finalPensionScore + weights[2] * combo[2].finalPensionScore + weights[3] * combo[3].finalPensionScore;
 
-          // Composite Backpropagation Fitness Score
-          const fitness = (optReturn * 0.45) + (optGrowth * 0.35) + (optScore * 0.20);
+          // Composite Backpropagation Fitness Score: Prioritize Quality & Stability Score (50%) + Return (30%) + Growth (20%)
+          const fitness = (optScore * 0.50) + (optReturn * 0.30) + (optGrowth * 0.20);
           evaluatedCombos.push({ combo, weights, optReturn, optGrowth, optScore, fitness });
         }
 
         if (evaluatedCombos.length > 0) {
-          // Sort all thousands of combinations by Backpropagation Fitness (highest first)
+          // Sort combinations by Backpropagation Fitness (highest first)
           evaluatedCombos.sort((a, b) => b.fitness - a.fitness);
 
-          // Select the top-performing combination
+          // Select combination
           if (forceRefresh) {
-            // When user clicks 'Generate Ulang', pick among the top 3 elite combinations
-            const elitePool = evaluatedCombos.slice(0, 3);
+            // When user clicks 'Generate Ulang', pick randomly among the top 10 elite combinations for variety with guaranteed quality
+            const elitePool = evaluatedCombos.slice(0, Math.min(10, evaluatedCombos.length));
             const picked = elitePool[Math.floor(Math.random() * elitePool.length)];
             selectedPreset = picked.combo;
           } else {

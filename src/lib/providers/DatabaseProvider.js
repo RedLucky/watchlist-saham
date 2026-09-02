@@ -4,12 +4,13 @@
  * This is the primary data provider (DATA_PROVIDER=database).
  * Data is populated and maintained by the syncService + worker.
  */
-import { DataProvider } from './DataProvider';
-import { prisma } from '../prisma';
-import { getSectorByTicker, normalizeSectorName, isSyariahStock } from '../sectorUniverse';
-import { calculateVolumeMA } from '../indicators';
-import { calculateRawDividendYield } from '../scoring/dividend';
-import { getBandarmologiVerdict } from '../scoring/smartMoney';
+import { DataProvider } from './DataProvider.js';
+import { prisma } from '../prisma.js';
+import { getSectorByTicker, normalizeSectorName, isSyariahStock } from '../sectorUniverse.js';
+import { calculateVolumeMA } from '../indicators.js';
+import { calculateRawDividendYield } from '../scoring/dividend.js';
+import { getExchangeRateSync } from '../currencyService.js';
+import { getBandarmologiVerdict } from '../scoring/smartMoney.js';
 
 export class DatabaseProvider extends DataProvider {
   async getMarketData() {
@@ -344,7 +345,7 @@ export class DatabaseProvider extends DataProvider {
             der: fundamentals.der ?? null,
             netProfit: fundamentals.netProfit ?? null,
             per: fundamentals.per ?? null,
-            pbv: (fundamentals.pbv && fundamentals.pbv > 500) ? Number((fundamentals.pbv / 16200).toFixed(2)) : (fundamentals.pbv ?? null),
+            pbv: (fundamentals.pbv && fundamentals.pbv > 500) ? Number((fundamentals.pbv / getExchangeRateSync('USD')).toFixed(2)) : (fundamentals.pbv ?? null),
             dividendYield: calculateRawDividendYield({
               price: Number(s.price || 0),
               dividendHistory,

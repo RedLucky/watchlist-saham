@@ -6,7 +6,7 @@
  * instead of today's snapshot.
  */
 
-import { calculateVolumeMA } from '../indicators';
+import { calculateVolumeMA } from '../indicators.js';
 
 export function calculateLiquidityScore(stock) {
   const { volumes } = stock.technicals;

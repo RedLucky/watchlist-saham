@@ -812,11 +812,13 @@ export default function PensionCalculator() {
 
  const targetCorpusNominal = futureAnnualExpense * 25; // 4% Rule
 
- const rMonthly = expectedReturn / 100 / 12;
- const nMonths = yearsToRetire * 12;
+    const rMonthly = expectedReturn / 100 / 12;
+    const nMonths = yearsToRetire * 12;
 
- const fvMonthlySavings = totalBudget * ((Math.pow(1 + rMonthly, nMonths) - 1) / rMonthly) * (1 + rMonthly);
- const fvExistingPortfolio = accumulatedExistingPortfolio * Math.pow(1 + rMonthly, nMonths);
+    const fvMonthlySavings = rMonthly > 0 
+      ? totalBudget * ((Math.pow(1 + rMonthly, nMonths) - 1) / rMonthly) * (1 + rMonthly)
+      : totalBudget * nMonths;
+    const fvExistingPortfolio = accumulatedExistingPortfolio * Math.pow(1 + Math.max(0, rMonthly), nMonths);
 
  const projectedFutureCorpus = fvMonthlySavings + fvExistingPortfolio;
  const corpusAchievementPct = Math.min(100, (projectedFutureCorpus / targetCorpusNominal) * 100).toFixed(1);

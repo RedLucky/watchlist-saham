@@ -1,7 +1,32 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ThemeToggle } from '../ThemeToggle';
 
 export default function TopHeader({ user, handleLogout }) {
+  const [kseiWarning, setKseiWarning] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/ksei/periods')
+      .then(res => res.json())
+      .then(data => {
+        const periods = data.periods || [];
+        const now = new Date();
+        const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const prevYear = prevDate.getFullYear();
+        const prevMonthNumStr = String(prevDate.getMonth() + 1).padStart(2, '0');
+        const enShortMonths = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+        const prevEngShort = enShortMonths[prevDate.getMonth()];
+        const hasData = periods.some(p => {
+          if (!p) return false;
+          const str = String(p).toUpperCase();
+          return str.includes(`${prevYear}-${prevMonthNumStr}`) || 
+                 str.includes(`${prevEngShort}-${prevYear}`) || 
+                 str.includes(`${prevEngShort} ${prevYear}`);
+        });
+        setKseiWarning(!hasData);
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <header className="lg:hidden sticky top-0 z-30 w-full bg-white/95 dark:bg-[#0a0f1a]/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800/60 transition-colors">
       <div className="w-full px-3 py-2">
@@ -29,11 +54,14 @@ export default function TopHeader({ user, handleLogout }) {
             {/* Upload KSEI Button */}
             <a
               href="/admin/ksei"
-              className="text-[11px] font-bold p-1.5 sm:px-2.5 sm:py-1 rounded-lg bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/25 transition-all flex items-center gap-1 flex-shrink-0"
+              className="relative text-[11px] font-bold p-1.5 sm:px-2.5 sm:py-1 rounded-lg bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/25 transition-all flex items-center gap-1 flex-shrink-0"
               title="Kelola & Upload Data Kepemilikan KSEI Bulanan"
             >
               <span>🏛️</span>
               <span className="hidden sm:inline text-[10px]">KSEI</span>
+              {kseiWarning && (
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse"></span>
+              )}
             </a>
 
             {/* User Profile & Logout Button */}

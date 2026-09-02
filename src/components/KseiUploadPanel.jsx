@@ -120,11 +120,33 @@ export default function KseiUploadPanel() {
       fetchStoredPeriods();
     } catch (err) {
       console.error(err);
-      setStatusMessage({ type: 'error', text: err.message || 'Terjadi kesalahan saat memproses data.' });
     } finally {
       setIsProcessing(false);
     }
   };
+
+  // Month names in Indonesian and English for previous month calculation
+  const idMonths = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  ];
+  const enShortMonths = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+
+  const now = new Date();
+  const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const prevMonthName = idMonths[prevDate.getMonth()];
+  const prevYear = prevDate.getFullYear();
+  const prevMonthNumStr = String(prevDate.getMonth() + 1).padStart(2, '0');
+  const prevEngShort = enShortMonths[prevDate.getMonth()];
+
+  // Check if previous month's data exists in stored snapshot periods
+  const hasLastMonthData = storedPeriods.some(p => {
+    if (!p) return false;
+    const str = String(p).toUpperCase();
+    return str.includes(`${prevYear}-${prevMonthNumStr}`) || 
+           str.includes(`${prevEngShort}-${prevYear}`) || 
+           str.includes(`${prevEngShort} ${prevYear}`);
+  });
 
   return (
     <div className="space-y-6">
@@ -135,10 +157,72 @@ export default function KseiUploadPanel() {
             🏛️ Upload Data Kepemilikan KSEI
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Input snapshot bulanan KSEI untuk menghitung Market Cap resmi dan pergerakan kepemilikan saham ($\Delta + / -$)
+            Input snapshot bulanan KSEI untuk menghitung Market Cap resmi dan pergerakan kepemilikan saham (&Delta; + / -)
           </p>
         </div>
       </div>
+
+      {/* Previous Month Upload Requirement Alert Banner */}
+      {!loadingPeriods && (
+        !hasLastMonthData ? (
+          <div className="p-4 sm:p-5 rounded-2xl bg-amber-500/10 border border-amber-500/40 text-amber-900 dark:text-amber-200 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in fade-in duration-200">
+            <div className="flex items-start gap-3.5">
+              <span className="text-2xl sm:text-3xl p-2 bg-amber-500/20 rounded-xl border border-amber-500/30 flex-shrink-0">
+                ⚠️
+              </span>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="font-extrabold text-sm sm:text-base text-amber-950 dark:text-amber-100">
+                    Perhatian: Data KSEI Bulan Lalu ({prevMonthName} {prevYear}) Belum Diunggah!
+                  </h3>
+                  <span className="text-[10px] uppercase tracking-wider font-black px-2 py-0.5 rounded-full bg-amber-500 text-amber-950">
+                    Perlu Tindakan
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm text-amber-800 dark:text-amber-200/85 leading-relaxed">
+                  Data kepemilikan efek untuk akhir periode <strong>{prevMonthName} {prevYear}</strong> belum terdaftar di database. Harap unduh data resmi dari portal KSEI lalu unggah melalui formulir di bawah ini agar pergerakan akumulasi bandarmologi &amp; kepemilikan ritel tetap mutakhir.
+                </p>
+              </div>
+            </div>
+
+            <a
+              href="https://www.ksei.co.id/id/publikasi/data-dan-statistik/kepemilikan-efek?page=1"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 whitespace-nowrap transition-all active:scale-95 flex-shrink-0"
+            >
+              <span>📥</span>
+              <span>Unduh Data di Portal KSEI</span>
+              <span className="text-xs">↗</span>
+            </a>
+          </div>
+        ) : (
+          <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/40 text-emerald-900 dark:text-emerald-200 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in duration-200">
+            <div className="flex items-center gap-3">
+              <span className="text-xl p-1.5 bg-emerald-500/20 rounded-lg border border-emerald-500/30">
+                ✅
+              </span>
+              <div>
+                <h3 className="font-bold text-xs sm:text-sm text-emerald-950 dark:text-emerald-100">
+                  Data KSEI Periode Terakhir ({prevMonthName} {prevYear}) Sudah Terunggah
+                </h3>
+                <p className="text-[11px] text-emerald-700 dark:text-emerald-300/80">
+                  Sistem telah memiliki snapshot kepemilikan efek mutakhir untuk analisis time-series bandarmologi.
+                </p>
+              </div>
+            </div>
+
+            <a
+              href="https://www.ksei.co.id/id/publikasi/data-dan-statistik/kepemilikan-efek?page=1"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-bold flex items-center gap-1 hover:underline whitespace-nowrap self-end sm:self-center"
+            >
+              <span>Portal Publikasi KSEI ↗</span>
+            </a>
+          </div>
+        )
+      )}
 
       {/* Info Card */}
       <div className="p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-500/30 text-xs sm:text-sm text-indigo-900 dark:text-indigo-200 flex items-start gap-3 shadow-sm">
