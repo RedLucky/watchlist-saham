@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import StockChart from './StockChart';
 
 function getNominalChange(price, changePercent) {
@@ -950,6 +950,24 @@ export default function StockExplorer({ user }) {
   const b = stockDetail?.bandarmologi || {};
   const isUp = (stockDetail?.changePercent || 0) >= 0;
 
+  // Yield Obligasi SUN 10-Tahun Dinamis (Acuan Graham Intrinsic Value & MoS)
+  const [customBondYield, setCustomBondYield] = useState(6.5);
+
+  // Kalkulasi Realtime Benjamin Graham Fair Value & MoS berdasarkan Yield SUN Dinamis
+  const dynamicFairValue = useMemo(() => {
+    const eps = Number(f.eps) || 0;
+    const cagr = Math.max(0, Math.min(25, Number(proj.cagrPercent) || 0));
+    const y = Number(customBondYield) > 0 ? Number(customBondYield) : 6.5;
+    if (eps <= 0) return proj.fairValue || null;
+    return Math.round(eps * (8.5 + 2 * cagr) * (4.4 / y));
+  }, [f.eps, proj.cagrPercent, proj.fairValue, customBondYield]);
+
+  const dynamicMoS = useMemo(() => {
+    const price = Number(stockDetail?.price) || 0;
+    if (!dynamicFairValue || dynamicFairValue <= 0 || price <= 0) return proj.marginOfSafety ?? null;
+    return Number((((dynamicFairValue - price) / dynamicFairValue) * 100).toFixed(1));
+  }, [dynamicFairValue, stockDetail?.price, proj.marginOfSafety]);
+
   return (
     <div className="space-y-6 pb-12">
       {/* ── TOP HEADER & MODE NAVIGATION TABS ──────────────────────────── */}
@@ -1598,13 +1616,13 @@ export default function StockExplorer({ user }) {
                           </h3>
                         </div>
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          (proj.marginOfSafety || 0) > 15 
+                          (dynamicMoS || 0) > 15 
                             ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300' 
-                            : (proj.marginOfSafety || 0) < -15 
+                            : (dynamicMoS || 0) < -15 
                             ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300' 
                             : 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300'
                         }`}>
-                          {(proj.marginOfSafety || 0) > 15 ? 'Undervalued ✅' : (proj.marginOfSafety || 0) < -15 ? 'Overvalued 🔴' : 'Wajar ⚠️'}
+                          {(dynamicMoS || 0) > 15 ? 'Undervalued ✅' : (dynamicMoS || 0) < -15 ? 'Overvalued 🔴' : 'Wajar ⚠️'}
                         </span>
                       </div>
 
@@ -1642,16 +1660,43 @@ export default function StockExplorer({ user }) {
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">Fair Value (DCF):</span>
+                          <span className="text-slate-600 dark:text-slate-400">Fair Value (Graham):</span>
                           <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                            {proj.fairValue ? `Rp ${proj.fairValue.toLocaleString('id-ID')}` : '-'}
+                            {dynamicFairValue ? `Rp ${dynamicFairValue.toLocaleString('id-ID')}` : '-'}
                           </span>
+                        </div>
+
+                        {/* Interactive Dynamic SUN 10-Yr Yield Input */}
+                        <div className="flex items-center justify-between pt-1.5 border-t border-dashed border-slate-200 dark:border-slate-800">
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1" title="Imbal hasil obligasi negara acuan formula Graham (dapat diubah dinamis)">
+                            <span>🏛️</span> SUN 10-Yr Yield:
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              step="0.1"
+                              min="4.0"
+                              max="12.0"
+                              value={customBondYield}
+                              onChange={(e) => setCustomBondYield(parseFloat(e.target.value) || 6.5)}
+                              className="w-14 px-1.5 py-0.5 text-right text-xs font-bold bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-indigo-600 dark:text-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                            />
+                            <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold">%</span>
+                          </div>
                         </div>
                       </div>
                     </div>
                     <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400 flex items-center justify-between">
                       <span>Margin of Safety:</span>
-                      <span className="font-bold text-slate-900 dark:text-slate-100">{proj.marginOfSafety != null ? `${proj.marginOfSafety}%` : '-'}</span>
+                      <span className={`font-bold ${
+                        (dynamicMoS || 0) > 15 
+                          ? 'text-emerald-600 dark:text-emerald-400' 
+                          : (dynamicMoS || 0) < -15 
+                          ? 'text-rose-600 dark:text-rose-400' 
+                          : 'text-slate-900 dark:text-slate-100'
+                      }`}>
+                        {dynamicMoS != null ? `${dynamicMoS}%` : '-'}
+                      </span>
                     </div>
                   </div>
 

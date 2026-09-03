@@ -7,6 +7,7 @@ import { calculateTechnicalScore } from '@/lib/scoring/technical';
 import { calculateTrendingScore } from '@/lib/scoring/trending';
 import { calculateSmartMoneyScore, getBandarmologiVerdict } from '@/lib/scoring/smartMoney';
 import { calculateDividendScore } from '@/lib/scoring/dividend';
+import { calculatePiotroskiFScore, calculateAltmanZScore, calculateGrahamValuation } from '@/lib/scoring/financialHealth';
 
 export const dynamic = 'force-dynamic';
 
@@ -137,174 +138,33 @@ export async function GET(request, { params }) {
     };
 
     // 1. Projections (EPS, BVPS, CAGR, Graham, Fair Value)
-    // 1. Projections (EPS, BVPS, CAGR, Graham, Fair Value)
-    const projections = {};
+    // 1. Projections & Financial Health (DRY via financialHealth.js)
+    // Mendukung penyesuaian yield obligasi SUN dinamis & realtime dari client
+    const { searchParams } = new URL(request.url);
+    const bondYieldParam = searchParams.get('bondYield');
+    const bondYield = bondYieldParam ? (parseFloat(bondYieldParam) || 6.5) : 6.5;
+
     const price = stock.price || 0;
-    
-    let eps = 0;
-    let bvps = 0;
-    let cagr = 0;
 
-    // 1a. EPS in Local Currency
-    if (fundamentals.eps && fundamentals.eps > 0) {
-      eps = Number(fundamentals.eps);
-    } else if (fundamentals.per && fundamentals.per > 0 && price > 0) {
-      eps = price / fundamentals.per;
-    } else if (fundamentals.netProfit && stock.sharesOutstanding) {
-      const netProfitList = Array.isArray(fundamentals.netProfit) ? fundamentals.netProfit : [];
-      if (netProfitList.length > 0) {
-        const latestProfit = netProfitList[netProfitList.length - 1];
-        const shares = Number(stock.sharesOutstanding);
-        if (shares > 0 && Number.isFinite(latestProfit)) {
-          eps = latestProfit / shares;
-        }
-      }
-    }
-    fundamentals.eps = eps > 0 ? Number(eps.toFixed(2)) : (fundamentals.eps || null);
+    const grahamVal = calculateGrahamValuation({
+      fundamentals,
+      price,
+      bondYield
+    });
 
-    // 1b. Profit CAGR
-    if (fundamentals.netProfit) {
-      const netProfitList = Array.isArray(fundamentals.netProfit) ? fundamentals.netProfit : [];
-      if (netProfitList.length >= 2) {
-        const first = netProfitList[0];
-        const last = netProfitList[netProfitList.length - 1];
-        const years = netProfitList.length - 1;
-        if (first > 0 && last > 0 && years > 0) {
-          cagr = Math.pow(last / first, 1 / years) - 1;
-        }
-      }
-    }
+    fundamentals.eps = grahamVal.eps;
+    fundamentals.piotroskiFScore = calculatePiotroskiFScore(fundamentals, stock.sector);
+    fundamentals.altmanZScore = calculateAltmanZScore(fundamentals, stock.sector, price);
 
-    // CAGR Fallback: use revenueGrowth if profit CAGR is unavailable
-    if (cagr === 0 && fundamentals.revenueGrowth && Number.isFinite(fundamentals.revenueGrowth)) {
-      cagr = fundamentals.revenueGrowth / 100;
-    }
-
-    // 1c. BVPS in Local Currency (Price / PBV)
-    if (fundamentals.pbv && fundamentals.pbv > 0 && price > 0) {
-      bvps = price / fundamentals.pbv;
-    }
-
-    if (eps > 0 && bvps > 0) {
-      const grahamValue = 22.5 * eps * bvps;
-      if (grahamValue > 0) {
-        projections.grahamNumber = Math.round(Math.sqrt(grahamValue));
-      }
-    }
-
-    if (eps > 0) {
-      // Benjamin Graham Fair Value = EPS * (8.5 + 2 * CAGR%) * (4.4 / 6.5)
-      // Clamp CAGR between 0% and 25% for conservative valuation
-      const cappedCAGR = Math.max(0, Math.min(25, cagr * 100));
-      const fairVal = eps * (8.5 + 2 * cappedCAGR) * (4.4 / 6.5);
-      projections.fairValue = Math.round(fairVal);
-      
-      if (projections.fairValue > 0 && price > 0) {
-        projections.marginOfSafety = Number((((projections.fairValue - price) / projections.fairValue) * 100).toFixed(1));
-      }
-
-      projections.projectedPrice12m = Math.round(price * (1 + (cagr > -0.5 ? cagr : 0)));
-      if (price > 0) {
-        projections.projectedUpside = Number((((projections.projectedPrice12m - price) / price) * 100).toFixed(1));
-      }
-      projections.cagrPercent = Number((cagr * 100).toFixed(1));
-    }
-
-    // 2. Improved Piotroski F-Score (9 criteria → 1-9)
-    let computedFScore = 5;
-    if (fundamentals) {
-      let score = 0;
-      const roe = fundamentals.roe || 0;
-      const roa = fundamentals.roa || 0;
-      const opm = fundamentals.opm || 0;
-      const eps = fundamentals.eps || 0;
-      const fcf = fundamentals.freeCashflow || 0;
-      const ocf = fundamentals.operatingCashflow || fcf;
-      const der = fundamentals.der || 0;
-      const currentRatio = fundamentals.currentRatio || 0;
-      const revenueGrowth = fundamentals.revenueGrowth || 0;
-      const netProfitList = Array.isArray(fundamentals.netProfit) ? fundamentals.netProfit : [];
-      const netIncome = fundamentals.netIncome || (netProfitList.length > 0 ? netProfitList[netProfitList.length - 1] : 0);
-      
-      // 1. ROA > 0 (Profitability) — asli: Net Income > 0
-      if (roa > 0 || (roa === 0 && roe > 0)) score++;
-      // 2. Operating Cash Flow > 0
-      if (ocf > 0) score++;
-      // 3. Cash Flow > Net Income (Accruals quality)
-      if (ocf > netIncome && netIncome > 0) score++;
-      // 4. Net Profit growth (latest > previous) — proxy for ROA improvement
-      if (netProfitList.length >= 2) {
-        if (netProfitList[netProfitList.length - 1] > netProfitList[netProfitList.length - 2]) score++;
-      } else if (eps > 0 && revenueGrowth > 0) {
-        score++; // proxy: positive EPS with growing revenue
-      }
-      // 5. Leverage: DER menurun atau rendah (< 1.0)
-      if (der > 0 && der <= 1.0) score++;
-      // 6. Liquidity: Current Ratio >= 1.5
-      if (currentRatio >= 1.5) score++;
-      // 7. No dilution: proxy — shares outstanding stable (not checked, give point if OPM healthy)
-      if (opm >= 10) score++;
-      // 8. Gross/Operating Margin positive & healthy
-      if (opm > 0 || (fundamentals.gpm && fundamentals.gpm > 0)) score++;
-      // 9. Asset Turnover proxy: Revenue growth > 0
-      if (revenueGrowth > 0) score++;
-      
-      computedFScore = Math.max(1, Math.min(9, score));
-    }
-
-    // 3. Improved Altman Z-Score estimation
-    let computedZScore = 2.5; // default neutral
-    const sectorUpper = (stock.sector || '').toUpperCase();
-    if (sectorUpper === 'FINANCIALS' || sectorUpper === 'FINANCE' || sectorUpper.includes('BANK')) {
-      computedZScore = 3.0; // Banks — deposit-backed, Z-Score not applicable
-    } else if (fundamentals) {
-      const cr = fundamentals.currentRatio || 1.2;
-      const der = fundamentals.der || 1.0;
-      const roe = fundamentals.roe || 0;
-      const roa = fundamentals.roa || 0;
-      const opm = fundamentals.opm || 0;
-      const marketCap = fundamentals.marketCap || 0;
-      const totalDebt = fundamentals.totalDebt || 0;
-      const totalRevenue = fundamentals.totalRevenue || 0;
-      const price = stock.price || 0;
-      
-      let z = 0.5; // base
-      
-      // Working Capital proxy (Current Ratio contribution)
-      z += Math.min(1.2, (cr - 1.0) * 1.5);
-      
-      // Retained Earnings / Leverage proxy
-      if (der > 0) {
-        z += Math.min(1.2, 1.0 / der);
-      } else {
-        z += 1.2;
-      }
-      
-      // EBIT/Total Assets proxy (ROA + OPM combined)
-      const profitProxy = Math.max(roa, opm * 0.3);
-      z += Math.min(0.8, (profitProxy / 100) * 3);
-      
-      // Market Cap / Total Liabilities proxy
-      if (totalDebt > 0 && marketCap > 0) {
-        const equityToDebt = marketCap / totalDebt;
-        z += Math.min(1.0, equityToDebt * 0.3);
-      } else if (der > 0 && der < 2.0) {
-        z += 0.5;
-      }
-      
-      // Sales / Total Assets proxy (revenue efficiency)
-      if (totalRevenue > 0 && marketCap > 0) {
-        // Use revenue/marketCap as loose proxy for asset turnover
-        const revenueRatio = totalRevenue / marketCap;
-        z += Math.min(0.5, revenueRatio * 0.3);
-      }
-      
-      computedZScore = Number(Math.max(0.5, Math.min(4.5, z)).toFixed(2));
-    }
-
-    // Assign to fundamentals object
-    fundamentals.piotroskiFScore = computedFScore;
-    fundamentals.altmanZScore = computedZScore;
+    const projections = {
+      grahamNumber: grahamVal.grahamNumber,
+      fairValue: grahamVal.fairValue,
+      marginOfSafety: grahamVal.marginOfSafety,
+      projectedPrice12m: grahamVal.projectedPrice12m,
+      projectedUpside: grahamVal.projectedUpside,
+      cagrPercent: grahamVal.cagrPercent,
+      bondYield: grahamVal.bondYield
+    };
 
     const enrichedStock = {
       ...stock,

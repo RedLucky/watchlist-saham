@@ -310,20 +310,20 @@ async function deepSyncStockOnce(fullTicker) {
   }
 
   let quote;
-  let historical;
+  let chartRes;
   let summary = {};
-  let divHistoryRaw = [];
   try {
-    [quote, historical, summary, divHistoryRaw] = await Promise.all([
+    [quote, chartRes, summary] = await Promise.all([
       withTimeout(yahooFinance.quote(fullTicker, {}, { validateResult: false }), 15000, `Quote timeout for ${fullTicker}`),
       withTimeout(
-        yahooFinance.historical(fullTicker, {
+        yahooFinance.chart(fullTicker, {
           period1: formatDateWIB(period1),
           period2: formatDateWIB(period2),
-          interval: '1d'
+          interval: '1d',
+          events: 'dividends'
         }, { validateResult: false }),
         20000,
-        `Historical timeout for ${fullTicker}`
+        `Chart timeout for ${fullTicker}`
       ),
       withTimeout(
         yahooFinance.quoteSummary(fullTicker, {
@@ -331,20 +331,19 @@ async function deepSyncStockOnce(fullTicker) {
         }, { validateResult: false }),
         20000,
         `QuoteSummary timeout for ${fullTicker}`
-      ).catch(() => ({})),
-      withTimeout(
-        yahooFinance.historical(fullTicker, {
-          period1: formatDateWIB(periodDiv),
-          period2: formatDateWIB(period2),
-          events: 'dividends'
-        }, { validateResult: false }),
-        20000,
-        `Dividend history timeout for ${fullTicker}`
-      ).catch(() => ([]))
+      ).catch(() => ({}))
     ]);
   } catch (apiErr) {
     throw new Error(`API call failed for ${fullTicker}: ${apiErr.message || apiErr}`);
   }
+
+  const historical = chartRes?.quotes || [];
+  const divHistoryRaw = chartRes?.events?.dividends
+    ? Object.values(chartRes.events.dividends).map(d => ({
+        date: d.date,
+        dividends: Number(d.amount ?? d.dividends ?? 0)
+      }))
+    : [];
 
   if (!quote) {
     throw new Error(`Missing quote data for ${fullTicker}`);

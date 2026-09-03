@@ -98,10 +98,16 @@ export async function GET(request) {
 
     const evaluatedStocks = evaluateAlphaLegends(stocksToProcess);
 
-    // Filter by formula if requested
+    // Filter & Sort by formula Match Score descending
     let finalStocks = evaluatedStocks;
     if (formula && formula !== 'all') {
-      finalStocks = evaluatedStocks.filter(s => s.passedFormulaKeys.includes(formula));
+      // Prioritaskan saham dengan ketercapaian matchScore >= 50% atau lolos formula
+      finalStocks = evaluatedStocks
+        .filter(s => (s.evaluationDetails?.[formula]?.matchScore || 0) >= 50 || s.passedFormulaKeys.includes(formula))
+        .sort((a, b) => (b.evaluationDetails?.[formula]?.matchScore || 0) - (a.evaluationDetails?.[formula]?.matchScore || 0));
+    } else {
+      // Default: Urutkan berdasarkan Match Score tertinggi di antara seluruh legenda
+      finalStocks = [...evaluatedStocks].sort((a, b) => (b.maxMatchScore || 0) - (a.maxMatchScore || 0));
     }
 
     return NextResponse.json({

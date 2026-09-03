@@ -6,6 +6,8 @@
  * rather than causing the stock to be rated poorly.
  */
 
+import { isFinancialSector } from './financialHealth.js';
+
 export function calculateFundamentalScore(stock) {
   const { roe, der, netProfit, revenueGrowth, opm, eps, forwardEps, per } = stock?.fundamentals || {};
   const sector = stock?.sector;
@@ -13,20 +15,26 @@ export function calculateFundamentalScore(stock) {
   let score = 0;
   const details = [];
 
-  // ── 1. ROE Quality (25%) ──────────────────────────────────────────────
-  // 8% = baseline, 20%+ = excellent
+  // ── 1. ROE Quality (25%) — Dikalibrasi dengan Cost of Equity Indonesia (11%–13%) ──
+  // Perusahaan dengan ROE di atas Cost of Equity menciptakan nilai tambah (Economic Value Added).
   const safeROE = Number.isFinite(roe) ? roe : null;
-  let roeScore = 50; // default if no data
+  let roeScore = 50; // default jika data kosong
   if (safeROE !== null) {
-    roeScore = clamp(((safeROE - 8) / 22) * 100, 0, 100);
     if (safeROE >= 20) {
-      details.push(`Excellent ROE of ${safeROE.toFixed(1)}% — perusahaan sangat efisien menghasilkan laba`);
+      roeScore = 100;
+      details.push(`Excellent ROE ${safeROE.toFixed(1)}% — Super Compounder efisiensi modal sangat tinggi`);
     } else if (safeROE >= 15) {
-      details.push(`Good ROE of ${safeROE.toFixed(1)}% — profitabilitas di atas rata-rata`);
+      roeScore = 85;
+      details.push(`Good ROE ${safeROE.toFixed(1)}% — profitabilitas solid di atas Cost of Equity IDX (11-13%)`);
+    } else if (safeROE >= 10) {
+      roeScore = 65;
+      details.push(`Adequate ROE ${safeROE.toFixed(1)}% — memenuhi batas imbal hasil modal pasar berkembang`);
     } else if (safeROE >= 8) {
-      details.push(`Adequate ROE of ${safeROE.toFixed(1)}% — memenuhi ambang batas minimum`);
+      roeScore = 40;
+      details.push(`Low ROE ${safeROE.toFixed(1)}% — marjinal mendekati imbal hasil obligasi pemerintah (SUN)`);
     } else {
-      details.push(`Low ROE of ${safeROE.toFixed(1)}% — di bawah standar`);
+      roeScore = 15;
+      details.push(`Subpar ROE ${safeROE.toFixed(1)}% — di bawah biaya modal (Cost of Equity) pasar Indonesia`);
     }
   } else {
     details.push('Data ROE belum tersedia');
@@ -129,7 +137,7 @@ export function calculateFundamentalScore(stock) {
   // ── 4. Financial Health / DER (15%) ────────────────────────────────────
   const safeDER = Number.isFinite(der) ? der : null;
   let derScore = 50;
-  const isFinance = sector === 'Financials' || sector === 'Finance';
+  const isFinance = isFinancialSector(sector);
 
   if (safeDER !== null) {
     if (isFinance) {

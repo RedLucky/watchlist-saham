@@ -5,7 +5,7 @@
  * Sector-aware: DER threshold is skipped for Financials (banks naturally have high DER).
  */
 
-const FINANCIALS_SECTOR = 'Financials';
+import { isFinancialSector } from './financialHealth.js';
 
 export function applyHardFilter(stocks) {
   return stocks.filter(stock => {
@@ -14,21 +14,21 @@ export function applyHardFilter(stocks) {
     const txnAvg = Number(stock?.transactionAvg || 0);
     const sector = stock?.sector || '';
 
-    // ROE ≥ 8% (lowered from 10% to include more quality stocks)
+    // 1. ROE ≥ 8% (Penyaringan awal profitabilitas minimum)
     const roe = fundamentals.roe;
     if (Number.isFinite(roe) && roe < 8) {
       return false;
     }
-    // If ROE data is missing (null), we still pass — let scoring handle it
+    // Jika data ROE belum tersedia (null), loloskan agar dapat dinilai oleh scoring
 
-    // Net profit positive for available years (if data exists)
+    // 2. Laba bersih positif untuk tahun yang tersedia
     if (profits.length >= 2 && profits.some(p => p <= 0)) {
       return false;
     }
-    // If netProfit is null/empty, we still pass — data might not be synced yet
 
-    // DER ≤ 1.5 — SKIP for Financials sector (banks naturally have high DER)
-    if (sector !== FINANCIALS_SECTOR) {
+    // 3. DER ≤ 1.5 — DILEWATI untuk Sektor Keuangan/Perbankan
+    // (Bank secara alami memiliki DER tinggi karena dana nasabah tercatat sebagai utang)
+    if (!isFinancialSector(sector)) {
       const der = fundamentals.der;
       if (Number.isFinite(der) && der > 1.5) {
         return false;
@@ -63,8 +63,8 @@ export function getFilterReasons(stock) {
     reasons.push('Net profit was negative in at least one recent year');
   }
 
-  if (sector !== FINANCIALS_SECTOR && Number.isFinite(fundamentals.der) && fundamentals.der > 1.5) {
-    reasons.push(`DER ${fundamentals.der.toFixed(2)} exceeds maximum 1.5 (non-financial sector)`);
+  if (!isFinancialSector(sector) && Number.isFinite(fundamentals.der) && fundamentals.der > 1.5) {
+    reasons.push(`DER ${fundamentals.der.toFixed(2)} melebihi batas maksimum 1.5x (sektor non-finansial)`);
   }
 
   if (Number(stock?.transactionAvg || 0) < 30000000) {
