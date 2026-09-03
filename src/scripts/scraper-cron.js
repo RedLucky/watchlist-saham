@@ -25,12 +25,16 @@ cron.schedule('*/5 * * * *', () => {
 cron.schedule('0 10 * * *', () => {
   console.log(`\n[${new Date().toISOString()}] [CRON-DAILY] Jadwal Harian Terpicu! Memulai KSEI & Ownership Scraping...`);
   runDailyScrapers();
+}, {
+  timezone: "Asia/Jakarta"
 });
 
 // Jadwal Cron: Setiap Hari pukul 18:00 WIB -> Kirim Rekomendasi Saham ke Discord ("0 18 * * *")
 cron.schedule('0 18 * * *', () => {
   console.log(`\n[${new Date().toISOString()}] [CRON-DISCORD] Jadwal 18:00 WIB Terpicu! Mengirim Rekomendasi Saham ke Discord...`);
   runDiscordNotifier();
+}, {
+  timezone: "Asia/Jakarta"
 });
 
 function runPriceSync() {

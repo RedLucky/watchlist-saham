@@ -34,6 +34,8 @@ services:
     restart: always
     environment:
       - DATABASE_URL=postgresql://user:password@db:5432/watchlist?schema=public
+      - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL}
+      - TZ=Asia/Jakarta
     depends_on:
       db:
         condition: service_healthy
