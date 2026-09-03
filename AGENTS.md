@@ -16,3 +16,18 @@ ALWAYS prefix all shell commands with `rtk` (e.g. `rtk git ...`, `rtk npm ...`, 
 NEVER execute raw shell commands without `rtk` to minimize token consumption.
 
 <!-- END:rtk-rules -->
+
+<!-- BEGIN:llm-wiki-rules -->
+
+# Mandatory Project Knowledge Base (LLM Wiki Ground Truth)
+
+BEFORE proposing architectural decisions, modifying formulas, changing database schemas, or writing trading logic in any new session, you MUST read the Wiki Index at `docs/wiki/en/index.md` (and the specific linked pages for the task at hand).
+The `docs/wiki/en/` directory is the persistent, compiled ground truth of this project:
+- System Architecture (`docs/wiki/en/architecture/`)
+- Financial Engine, Graham Valuation, Scoring Weights (`docs/wiki/en/financial-engine/`)
+- Order Lifecycle, Waiting Buy, Win Rate (`docs/wiki/en/trading-system/`)
+
+DO NOT re-derive financial formulas or guess database behaviors from scratch. Consult the wiki first to prevent context loss, token waste, and hallucination. Keep the wiki updated when adding or revising features.
+
+<!-- END:llm-wiki-rules -->
+
