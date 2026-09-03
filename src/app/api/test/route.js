@@ -7,6 +7,6 @@ export async function GET() {
     const stocks = await provider.getStocks();
     return NextResponse.json({ success: true, count: stocks.length, stocks: stocks.map(s => s.ticker) });
   } catch (e) {
-    return NextResponse.json({ success: false, error: e.message, stack: e.stack });
+    return NextResponse.json({ success: false, error: e.message });
   }
 }

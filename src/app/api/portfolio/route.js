@@ -8,6 +8,9 @@ export const dynamic = 'force-dynamic';
 export async function GET(request) {
   try {
     const userId = getUserIdFromRequest(request);
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const portfolio = await prisma.portfolio.findMany({
       where: { userId },

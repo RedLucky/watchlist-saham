@@ -3,10 +3,13 @@ import crypto from 'crypto';
 function getJwtSecret() {
   const secret = process.env.JWT_SECRET;
   if (!secret) {
-    if (process.env.NODE_ENV === 'production' && !process.env.NEXT_PHASE) {
-      console.warn("⚠️ Warning: process.env.JWT_SECRET is not set. Using fallback for build.");
+    if (process.env.NEXT_PHASE === 'phase-production-build') {
+      return 'build_time_static_dummy_secret_not_valid_for_runtime';
     }
-    return 'build_time_fallback_secret_must_set_env_in_production';
+    if (process.env.NODE_ENV === 'test') {
+      return 'test_environment_temporary_jwt_secret_key_123';
+    }
+    throw new Error("FATAL SECURITY CONFIGURATION: process.env.JWT_SECRET must be defined in production runtime!");
   }
   return secret;
 }
@@ -83,8 +86,39 @@ export function verifyToken(token) {
 }
 
 export function getUserIdFromRequest(request) {
-  const token = request.cookies.get('auth_token')?.value;
+  const token = request.cookies?.get?.('auth_token')?.value;
   if (!token) return null;
   const payload = verifyToken(token);
   return payload?.userId || null;
+}
+
+/**
+ * Verifies administrative authority via:
+ * 1. API Key matching process.env.ADMIN_SECRET_KEY via 'x-admin-key' or 'Authorization: Bearer <KEY>'
+ * 2. An authenticated user session
+ */
+export function verifyAdminAccess(request) {
+  const adminKey = process.env.ADMIN_SECRET_KEY;
+  
+  // 1. Check API Key header
+  const headerKey = request.headers?.get?.('x-admin-key');
+  const authHeader = request.headers?.get?.('authorization');
+  const bearerKey = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
+  const providedKey = headerKey || bearerKey;
+
+  if (adminKey && providedKey) {
+    const bufA = Buffer.from(providedKey);
+    const bufB = Buffer.from(adminKey);
+    if (bufA.length === bufB.length && crypto.timingSafeEqual(bufA, bufB)) {
+      return { authorized: true, type: 'API_KEY' };
+    }
+  }
+
+  // 2. Check logged-in user session
+  const userId = getUserIdFromRequest(request);
+  if (userId) {
+    return { authorized: true, userId, type: 'USER_SESSION' };
+  }
+
+  return { authorized: false, error: 'Unauthorized: Kredensial administratif atau sesi login diperlukan' };
 }

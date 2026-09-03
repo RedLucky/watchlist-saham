@@ -1,10 +1,16 @@
 import { NextResponse } from 'next/server';
 import { ingestKseiText } from '@/lib/kseiService';
+import { verifyAdminAccess } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request) {
   try {
+    const auth = verifyAdminAccess(request);
+    if (!auth.authorized) {
+      return NextResponse.json({ error: auth.error }, { status: 401 });
+    }
+
     let rawText = '';
     const contentType = request.headers.get('content-type') || '';
 

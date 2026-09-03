@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { fastSyncPrices, deepSyncStock, getTargetTickers } from '@/lib/syncService';
 import { prisma } from '@/lib/prisma';
-import { getUserIdFromRequest } from '@/lib/auth';
+import { verifyAdminAccess } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,9 +40,9 @@ export async function GET() {
 }
 
 export async function POST(request) {
-  const userId = getUserIdFromRequest(request);
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const auth = verifyAdminAccess(request);
+  if (!auth.authorized) {
+    return NextResponse.json({ error: auth.error }, { status: 401 });
   }
 
   if (isSyncing) {

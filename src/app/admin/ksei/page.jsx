@@ -13,9 +13,18 @@ export default function KseiAdminPage() {
   const [storedPeriods, setStoredPeriods] = useState([]);
   const [totalStocksWithKsei, setTotalStocksWithKsei] = useState(0);
   const [loadingPeriods, setLoadingPeriods] = useState(true);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [adminKey, setAdminKey] = useState('');
 
-  // Fetch existing stored periods
+  // Fetch auth & existing stored periods
   useEffect(() => {
+    fetch('/api/auth/me')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data?.user) setCurrentUser(data.user);
+      })
+      .catch(() => {});
+
     fetchStoredPeriods();
   }, []);
 
@@ -102,7 +111,10 @@ export default function KseiAdminPage() {
     try {
       const res = await fetch('/api/ksei/ingest', {
         method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
+        headers: {
+          'Content-Type': 'text/plain',
+          ...(adminKey.trim() ? { 'x-admin-key': adminKey.trim() } : {}),
+        },
         body: pastedText,
       });
 
@@ -181,6 +193,32 @@ export default function KseiAdminPage() {
           >
             ← Kembali ke Dashboard
           </Link>
+        </div>
+
+        {/* Admin Authorization Box */}
+        <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <span className="text-lg">🔐</span>
+            <div>
+              <span className="text-xs font-bold text-white block">Status Akses Administratif</span>
+              <span className="text-[11px] text-slate-400">
+                {currentUser 
+                  ? `Terotentikasi sebagai ${currentUser.name} (${currentUser.email})`
+                  : 'Memerlukan sesi login atau Admin Secret Key untuk ingest data.'}
+              </span>
+            </div>
+          </div>
+          {!currentUser && (
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <input
+                type="password"
+                value={adminKey}
+                onChange={(e) => setAdminKey(e.target.value)}
+                placeholder="Masukkan Admin Key..."
+                className="px-3 py-1.5 bg-slate-950 border border-slate-700 rounded-xl text-xs font-mono text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-48"
+              />
+            </div>
+          )}
         </div>
 
         {/* Previous Month Upload Requirement Alert Banner */}

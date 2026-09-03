@@ -42,5 +42,13 @@ COPY src/scripts ./src/scripts
 # Generate Prisma Client for Alpine (musl)
 RUN npx prisma generate
 
+# Create non-root user for security and configure permissions
+RUN addgroup -g 1001 -S scrapergroup && \
+    adduser -u 1001 -S scraperuser -G scrapergroup && \
+    mkdir -p /home/scraperuser/Downloads /app/.cache && \
+    chown -R scraperuser:scrapergroup /app /home/scraperuser
+
+USER scraperuser
+
 # Start the node-cron scheduler
 CMD ["node", "src/scripts/scraper-cron.js"]

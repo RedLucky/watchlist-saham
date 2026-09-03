@@ -1,9 +1,15 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyAdminAccess } from '@/lib/auth';
 import { normalizeTicker, getSectorByTicker, getSubSectorByTicker, isSyariahStock } from '@/lib/sectorUniverse';
 
 export async function POST(request) {
   try {
+    const auth = verifyAdminAccess(request);
+    if (!auth.authorized) {
+      return NextResponse.json({ error: auth.error }, { status: 401 });
+    }
+
     const body = await request.json();
     const ticker = body.ticker;
 

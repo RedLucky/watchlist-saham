@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { signToken } from '@/lib/auth';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
@@ -31,6 +32,15 @@ function hashPassword(password) {
 
 export async function POST(request) {
   try {
+    const clientIp = getClientIp(request);
+    const rateCheck = checkRateLimit(`login:${clientIp}`, { max: 7, windowMs: 5 * 60 * 1000 });
+    if (rateCheck.isLimited) {
+      return NextResponse.json(
+        { error: 'Terlalu banyak percobaan login. Silakan tunggu 5 menit sebelum mencoba kembali demi keamanan.' },
+        { status: 429 }
+      );
+    }
+
     const { email, password } = await request.json();
 
     if (!email || !password) {
