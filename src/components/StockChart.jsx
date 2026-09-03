@@ -75,6 +75,7 @@ export default function StockChart({ ticker }) {
           timeScale: {
             borderColor: borderColor,
             timeVisible: true,
+            minBarSpacing: 0.2,
           },
           handleScroll: isMobile
             ? {
@@ -99,22 +100,24 @@ export default function StockChart({ ticker }) {
         const candlestickSeries = chart.addSeries(CandlestickSeries, {
           upColor: '#10b981',
           downColor: '#ef4444',
-          borderVisible: false,
+          borderVisible: true,
+          borderUpColor: '#10b981',
+          borderDownColor: '#ef4444',
           wickUpColor: '#10b981',
           wickDownColor: '#ef4444',
         });
         candlestickSeries.setData(data);
         candlestickSeriesRef.current = candlestickSeries;
 
-        // Draw Candlestick Pattern Markers directly on chart!
+        // Draw Candlestick Pattern Markers directly on chart (limited to latest 25 to prevent canvas congestion)
         if (detectedPatterns.allDetected?.length > 0) {
-          const markers = detectedPatterns.allDetected.map(p => ({
+          const markers = detectedPatterns.allDetected.slice(-25).map(p => ({
             time: p.time,
             position: p.direction === 'bullish' ? 'belowBar' : 'aboveBar',
             color: p.direction === 'bullish' ? '#10b981' : p.direction === 'bearish' ? '#ef4444' : '#f59e0b',
             shape: p.direction === 'bullish' ? 'arrowUp' : p.direction === 'bearish' ? 'arrowDown' : 'circle',
             text: `${p.emoji} ${p.shortName || p.name.split(' ')[0]}`,
-            size: 1.5,
+            size: 1.2,
           }));
           createSeriesMarkers(candlestickSeries, markers);
         }
@@ -214,16 +217,13 @@ export default function StockChart({ ticker }) {
           });
         }
 
-        // Set default visible range to 1 Year ('1Y' / 1T)
+        // Set default visible range to 1 Year ('1Y' / 1T) using bar indices
         if (data.length > 0) {
-          const lastItem = data[data.length - 1];
-          const lastDate = new Date(lastItem.time);
-          const fromDate = new Date(lastDate);
-          fromDate.setFullYear(fromDate.getFullYear() - 1);
-          const fromStr = fromDate.toISOString().split('T')[0];
-          const toStr = lastDate.toISOString().split('T')[0];
           try {
-            chart.timeScale().setVisibleRange({ from: fromStr, to: toStr });
+            const barsToShow = 252;
+            const fromIndex = Math.max(0, data.length - barsToShow);
+            const toIndex = data.length - 1;
+            chart.timeScale().setVisibleLogicalRange({ from: fromIndex, to: toIndex });
           } catch (e) {
             chart.timeScale().fitContent();
           }
@@ -326,31 +326,48 @@ export default function StockChart({ ticker }) {
     if (!chartInstanceRef.current || !rawChartDataRef.current?.length) return;
     
     const chartData = rawChartDataRef.current;
-    if (range === '5Y' || range === 'ALL') {
-      chartInstanceRef.current.timeScale().fitContent();
-      return;
+    const totalBars = chartData.length;
+
+    let barsToShow;
+    switch (range) {
+      case '1M':
+        barsToShow = 22;
+        break;
+      case '3M':
+        barsToShow = 66;
+        break;
+      case '6M':
+        barsToShow = 132;
+        break;
+      case '1Y':
+        barsToShow = 252;
+        break;
+      case '3Y':
+        barsToShow = 756;
+        break;
+      case '5Y':
+      case 'ALL':
+      default:
+        barsToShow = totalBars;
+        break;
     }
 
-    const lastItem = chartData[chartData.length - 1];
-    const lastDate = new Date(lastItem.time);
-    const fromDate = new Date(lastDate);
-
-    if (range === '1M') fromDate.setMonth(fromDate.getMonth() - 1);
-    else if (range === '3M') fromDate.setMonth(fromDate.getMonth() - 3);
-    else if (range === '6M') fromDate.setMonth(fromDate.getMonth() - 6);
-    else if (range === '1Y') fromDate.setFullYear(fromDate.getFullYear() - 1);
-    else if (range === '3Y') fromDate.setFullYear(fromDate.getFullYear() - 3);
-
-    const fromStr = fromDate.toISOString().split('T')[0];
-    const toStr = lastDate.toISOString().split('T')[0];
-
     try {
-      chartInstanceRef.current.timeScale().setVisibleRange({
-        from: fromStr,
-        to: toStr,
-      });
+      if (barsToShow >= totalBars) {
+        chartInstanceRef.current.timeScale().fitContent();
+      } else {
+        const fromIndex = Math.max(0, totalBars - barsToShow);
+        const toIndex = totalBars - 1;
+        chartInstanceRef.current.timeScale().setVisibleLogicalRange({
+          from: fromIndex,
+          to: toIndex,
+        });
+      }
     } catch (e) {
-      chartInstanceRef.current.timeScale().fitContent();
+      console.warn('Failed to set visible logical range:', e);
+      try {
+        chartInstanceRef.current.timeScale().fitContent();
+      } catch (err) {}
     }
   };
 
