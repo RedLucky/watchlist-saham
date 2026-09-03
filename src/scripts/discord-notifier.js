@@ -18,94 +18,126 @@ async function generateRecommendations() {
   ]);
 
   const { map: sectorMap } = calculateSectorStrengths(sectorPerformance);
-  const modes = ['balanced', 'growth', 'conservative', 'defensive'];
-  const styles = ['daily', 'swing'];
+  const { detectMarketMode } = require('../lib/modes.js');
+  const detectedMode = detectMarketMode(marketData);
 
-  const results = [];
+  // 1. Config for 3 Distinct Horizons
+  const scalpStyle = getStyleConfig('scalping');
+  const scalpMode = getModeConfig('growth');
 
-  for (const mName of modes) {
-    for (const sName of styles) {
-      const modeConfig = getModeConfig(mName);
-      const styleConfig = getStyleConfig(sName);
-      const scoredStocks = scoreAllStocks(providerStocks, modeConfig.weights, styleConfig, sectorMap, modeConfig.name);
-      const passedByScore = scoredStocks.filter(s => s.score >= modeConfig.threshold);
+  const dailyStyle = getStyleConfig('daily');
+  const dailyMode = getModeConfig(detectedMode);
 
-      const candidates = passedByScore.map(s => {
-        const tradeSetup = calculateTradeSetup(s.rawData, s.subScores.technical, styleConfig);
+  const swingStyle = getStyleConfig('swing');
+  const swingMode = getModeConfig('conservative');
 
-        // Supertrend & DEMA Calculation
-        const rawTech = s.rawData?.technicals || {};
-        const prices = Array.isArray(rawTech.prices) && rawTech.prices.length > 0 ? rawTech.prices : [s.price];
-        const highs = Array.isArray(rawTech.highs) && rawTech.highs.length > 0 ? rawTech.highs : prices;
-        const lows = Array.isArray(rawTech.lows) && rawTech.lows.length > 0 ? rawTech.lows : prices;
-        
-        const candleData = prices.map((p, idx) => ({
-          high: highs[idx] ?? p,
-          low: lows[idx] ?? p,
-          close: p
-        }));
+  // 2. Score Provider Stocks for Each Horizon
+  const scalpScored = scoreAllStocks(providerStocks, scalpMode.weights, scalpStyle, sectorMap, 'growth');
+  const dailyScored = scoreAllStocks(providerStocks, dailyMode.weights, dailyStyle, sectorMap, detectedMode);
+  const swingScored = scoreAllStocks(providerStocks, swingMode.weights, swingStyle, sectorMap, 'conservative');
 
-        const dema20 = calculateDEMA(prices, 20);
-        const supertrend = calculateSupertrend(candleData, 10, 3.0);
+  // Helper to extract top actionable stocks and avoid cross-category duplicate recommendations
+  function filterActionableTop(scoredStocks, styleConfig, maxLimit, usedTickers) {
+    const output = [];
+    const minRR = styleConfig.qualityGate?.minRiskReward ?? 1.2;
+    const minTech = styleConfig.qualityGate?.minTechnicalScore ?? 50;
 
-        const isBullSuper = supertrend.trend === 'bullish';
-        const isAboveDema = s.price >= dema20;
+    for (const s of scoredStocks) {
+      if (usedTickers.has(s.ticker)) continue;
 
-        let stBadge = '⚪ WAIT';
-        if (isBullSuper && isAboveDema) {
-          stBadge = supertrend.isReversal ? '🚀 S.BUY' : '🟢 BUY';
-        } else if (!isBullSuper && !isAboveDema) {
-          stBadge = '🔴 SELL';
-        } else if (isBullSuper && !isAboveDema) {
-          stBadge = '🟡 PULLBACK';
-        } else if (!isBullSuper && isAboveDema) {
-          stBadge = '🔵 TEST BO';
-        }
+      const tradeSetup = calculateTradeSetup(s.rawData, s.subScores.technical, styleConfig);
+      const actionable = String(tradeSetup.setup || '').toLowerCase() !== 'none';
+      const techScore = Number(s.subScores.technical?.score || 0);
 
-        return {
-          ticker: s.ticker,
-          name: s.name,
-          score: s.score,
-          price: s.price,
-          entry: tradeSetup.entry,
-          target: tradeSetup.target,
-          stopLoss: tradeSetup.stopLoss,
-          riskReward: tradeSetup.riskReward,
-          setup: tradeSetup.setup,
-          stBadge,
-          dema20: Math.round(dema20),
-          supertrendValue: Math.round(supertrend.value),
-          kseiLatest: s.rawData?.kseiLatest
-        };
+      if (!actionable || tradeSetup.riskReward < minRR || techScore < minTech) {
+        continue;
+      }
+
+      // Supertrend & DEMA status
+      const rawTech = s.rawData?.technicals || {};
+      const prices = Array.isArray(rawTech.prices) && rawTech.prices.length > 0 ? rawTech.prices : [s.price];
+      const highs = Array.isArray(rawTech.highs) && rawTech.highs.length > 0 ? rawTech.highs : prices;
+      const lows = Array.isArray(rawTech.lows) && rawTech.lows.length > 0 ? rawTech.lows : prices;
+      const candleData = prices.map((p, idx) => ({ high: highs[idx] ?? p, low: lows[idx] ?? p, close: p }));
+
+      const dema20 = calculateDEMA(prices, 20);
+      const supertrend = calculateSupertrend(candleData, 10, 3.0);
+      const isBull = supertrend.trend === 'bullish';
+      const isAboveDema = s.price >= dema20;
+
+      let badge = '⚪ WAIT';
+      if (isBull && isAboveDema) badge = supertrend.isReversal ? '🚀 S.BUY' : '🟢 BUY';
+      else if (!isBull && !isAboveDema) badge = '🔴 SELL';
+      else if (isBull && !isAboveDema) badge = '🟡 PULLBACK';
+      else if (!isBull && isAboveDema) badge = '🔵 TEST BO';
+
+      let smartMoneyBadge = '';
+      if (s.rawData?.kseiLatest) {
+        if (s.rawData.kseiLatest.deltaSmartMoney > 0) smartMoneyBadge = ' 🟢 Akumulasi';
+        else if (s.rawData.kseiLatest.deltaSmartMoney < 0) smartMoneyBadge = ' 🔴 Distribusi';
+      }
+
+      output.push({
+        ticker: s.ticker,
+        name: s.name,
+        price: s.price,
+        score: s.score,
+        entry: tradeSetup.entry,
+        target: tradeSetup.target,
+        stopLoss: tradeSetup.stopLoss,
+        riskReward: tradeSetup.riskReward,
+        setup: tradeSetup.setup,
+        badge,
+        smartMoneyBadge
       });
 
-      const qualityGate = styleConfig.qualityGate || {};
-      const minRiskReward = qualityGate.minRiskReward ?? 1.2;
-
-      const passedQuality = candidates.filter(st => {
-        const actionable = String(st.setup || '').toLowerCase() !== 'none';
-        return st.riskReward >= minRiskReward && actionable;
-      }).slice(0, modeConfig.maxStocks);
-
-      // Hanya simpan jika ada isinya!
-      if (passedQuality.length > 0) {
-        results.push({
-          modeName: modeConfig.name,
-          modeLabel: modeConfig.label,
-          modeEmoji: modeConfig.emoji,
-          styleName: styleConfig.name,
-          styleLabel: styleConfig.label,
-          styleEmoji: styleConfig.emoji,
-          stocks: passedQuality
-        });
-      }
+      if (output.length >= maxLimit) break;
     }
+    return output;
   }
 
-  return { marketData, results };
+  const used = new Set();
+
+  // Tier 1: Beli Pagi Jual Sore (Scalping) — Top 3
+  const scalps = filterActionableTop(scalpScored, scalpStyle, 3, used);
+  scalps.forEach(s => used.add(s.ticker));
+
+  // Tier 2: Hold 2 - 3 Hari (Daily) — Top 3
+  const dailies = filterActionableTop(dailyScored, dailyStyle, 3, used);
+  dailies.forEach(s => used.add(s.ticker));
+
+  // Tier 3: Hold 1 - 3 Minggu (Swing) — Top 3
+  const swings = filterActionableTop(swingScored, swingStyle, 3, used);
+
+  const categories = [
+    {
+      id: 'scalping',
+      title: '⚡ 1. BELI PAGI - JUAL SORE (One Day Trade / Scalping)',
+      subtitle: 'Target: +1.5% s/d +2.5% | Stop Loss: -1.0% | Sifat: Keluar sebelum tutup bursa hari ini',
+      color: 0xf43f5e, // Rose / Red
+      stocks: scalps
+    },
+    {
+      id: 'daily',
+      title: '📊 2. HOLD 2 s/d 3 HARI KEDEPAN (Fast Swing / Daily)',
+      subtitle: 'Target: +4.0% s/d +5.5% | Stop Loss: -2.5% | Sifat: T+1 s/d T+3',
+      color: 0x3b82f6, // Blue
+      stocks: dailies
+    },
+    {
+      id: 'swing',
+      title: '📈 3. HOLD 1 s/d 3 MINGGU (Position / Swing Trading)',
+      subtitle: 'Target: +8.0% s/d +12.0% | Stop Loss: -4.0% | Sifat: Trend Following aman',
+      color: 0x10b981, // Emerald Green
+      stocks: swings
+    }
+  ];
+
+  return { marketData, detectedMode, categories };
 }
 
-function formatDiscordEmbeds(results, marketData) {
+function formatDiscordEmbeds(data) {
+  const { marketData, detectedMode, categories } = data;
   const now = new Date();
   const dateStr = now.toLocaleDateString('id-ID', {
     weekday: 'long',
@@ -115,106 +147,54 @@ function formatDiscordEmbeds(results, marketData) {
     timeZone: 'Asia/Jakarta'
   });
 
-  if (results.length === 0) {
-    return [
-      {
-        embeds: [
-          {
-            title: `📋 WATCHLIST SAHAM IDX UNTUK BESOK (${dateStr})`,
-            description: `*Kondisi pasar saat ini defensif / konsolidasi. Tidak ada saham yang memenuhi ambang batas kualitas & risk-to-reward hari ini.*`,
-            color: 0xf59e0b,
-            footer: { text: 'Watchlist Saham • Automated Advisor' },
-            timestamp: now.toISOString()
-          }
-        ]
-      }
-    ];
-  }
-
-  const colorMap = {
-    balanced: 0x3b82f6, // blue
-    growth: 0x10b981,   // green
-    conservative: 0x6366f1, // indigo
-    defensive: 0xf59e0b, // amber
-  };
-
   const embeds = [];
 
   // 1. Overview Header Embed
+  const ihsgChange = Number(marketData?.indexChange || 0);
+  const ihsgSign = ihsgChange >= 0 ? '+' : '';
   embeds.push({
-    title: `📋 WATCHLIST & REKOMENDASI SAHAM IDX (${dateStr})`,
-    description: `Daftar pantauan saham potensial (*watchlist*) untuk perdagangan esok hari, dikurasi otomatis dari berbagai mode strategi berdasarkan integrasi data Fundamental, Analisis Teknikal, Supertrend + DEMA (20), dan Smart Money Flow (KSEI/IDX).`,
-    color: 0x6366f1,
-    fields: [
-      {
-        name: '📌 Petunjuk Pembacaan Watchlist',
-        value: '• **Sinyal ST+DEMA**: [🟢 BUY / 🚀 S.BUY / 🟡 PULLBACK / 🔴 SELL] Konfirmasi tren Supertrend & DEMA 20.\n• **Area Beli (Buy)**: Area harga entry optimal.\n• **TP / SL**: Target Take Profit & Batas Stop Loss disiplin.\n• **Skor & Smart Money**: Kekuatan komposit & indikasi pergerakan bandar (`🟢 Akumulasi` / `🔴 Distribusi`).',
-        inline: false
-      }
-    ]
+    title: `📋 WATCHLIST EKSEKUSI SAHAM IDX (${dateStr})`,
+    description: `Watchlist harian presisi dikurasi berdasarkan horizon trading: **Beli Pagi Jual Sore**, **Hold 2-3 Hari**, dan **Hold 1-3 Minggu**.\n\n` +
+      `🏛️ **Kondisi Pasar**: IHSG **${Number(marketData?.indexValue || 7200).toLocaleString('id-ID')}** (${ihsgSign}${ihsgChange.toFixed(2)}%) • Mode: **${(detectedMode || 'Balanced').toUpperCase()}**`,
+    color: 0x6366f1, // Indigo
   });
 
-  // 2. Mode Strategy Embeds
-  for (const group of results) {
-    let lines = [];
-    for (const s of group.stocks) {
-      let smartMoneyBadge = '';
-      if (s.kseiLatest) {
-        if (s.kseiLatest.deltaSmartMoney > 0) smartMoneyBadge = ' 🟢 Akumulasi';
-        else if (s.kseiLatest.deltaSmartMoney < 0) smartMoneyBadge = ' 🔴 Distribusi';
-      }
-
-      lines.push(`• **${s.ticker}**: [**${s.stBadge}**] Buy: **Rp ${s.entry.low.toLocaleString('id-ID')} - ${s.entry.high.toLocaleString('id-ID')}** | TP: **Rp ${s.target.toLocaleString('id-ID')}** | SL: **Rp ${s.stopLoss.toLocaleString('id-ID')}** | Skor: **${s.score}** (*${s.setup}*)${smartMoneyBadge}`);
+  // 2. Category Embeds
+  for (const cat of categories) {
+    if (cat.stocks.length === 0) {
+      embeds.push({
+        title: cat.title,
+        description: `*${cat.subtitle}*\n\n*(Tidak ada saham yang memenuhi kriteria risk-reward ketat pada horizon ini hari ini)*`,
+        color: cat.color
+      });
+      continue;
     }
 
-    // Split into chunks if exceeds 1000 characters
-    const fieldChunks = [];
-    let currentChunk = '';
-    for (const line of lines) {
-      if ((currentChunk + '\n' + line).length > 1000) {
-        fieldChunks.push(currentChunk);
-        currentChunk = line;
-      } else {
-        currentChunk = currentChunk ? currentChunk + '\n' + line : line;
-      }
-    }
-    if (currentChunk) fieldChunks.push(currentChunk);
-
-    const fields = fieldChunks.map((chunk, idx) => ({
-      name: idx === 0 ? `${group.modeEmoji} [${group.modeLabel.toUpperCase()}] ${group.styleEmoji} ${group.styleLabel}` : `(Lanjutan)`,
-      value: chunk,
-      inline: false
-    }));
+    const lines = cat.stocks.map((s, idx) => {
+      const entryRange = `Rp ${s.entry.low.toLocaleString('id-ID')} - ${s.entry.high.toLocaleString('id-ID')}`;
+      return `**${idx + 1}. ${s.ticker}** (Rp ${s.price.toLocaleString('id-ID')}):\n` +
+        `   • Area Beli: **${entryRange}**\n` +
+        `   • Target TP: **Rp ${s.target.toLocaleString('id-ID')}** | Cut Loss (SL): **Rp ${s.stopLoss.toLocaleString('id-ID')}**\n` +
+        `   • Sinyal: [**${s.badge}**] • Setup: *${s.setup}* • Skor: **${s.score}**${s.smartMoneyBadge}`;
+    });
 
     embeds.push({
-      title: `${group.modeEmoji} Watchlist Mode ${group.modeLabel} — ${group.styleLabel}`,
-      color: colorMap[group.modeName] || 0x3b82f6,
-      fields: fields,
+      title: cat.title,
+      description: `*${cat.subtitle}*\n\n` + lines.join('\n\n'),
+      color: cat.color
     });
   }
 
-  // 3. Disclaimer & Risk Notice Embed at the end
+  // 3. Compact Risk Disclaimer
   embeds.push({
-    title: `⚠️ PERINGATAN RISIKO & DISCLAIMER PENTING`,
-    description: `• **Bukan Ajakan Beli / Jual**: Daftar pantauan (*watchlist*) ini merupakan hasil komputasi algoritma sistem dan **BUKAN merupakan rekomendasi, anjuran, atau ajakan mutlak untuk melakukan pembelian maupun penjualan saham tertentu**.\n• **Do Your Own Research (DYOR)**: Harap selalu lakukan analisis mandiri dan sesuaikan dengan profil risiko, rencana trading (*trading plan*), serta horizon investasi masing-masing.\n• **Money Management**: Disiplin menerapkan manajemen modal yang terukur, rasio risiko-imbal hasil yang sehat, serta batasan *Stop Loss* untuk proteksi modal.\n• **Tanggung Jawab Pribadi**: Segala keputusan eksekusi, potensi keuntungan, maupun risiko kerugian finansial sepenuhnya merupakan tanggung jawab pribadi masing-masing investor/trader.`,
-    color: 0xe11d48, // rose / red
-    footer: {
-      text: 'Watchlist Saham • Sistem Rekomendasi & Watchlist Otomatis'
-    },
+    title: `⚠️ Disclaimer & Money Management`,
+    description: `Watchlist ini adalah hasil komputasi algoritma & bukan anjuran mutlak beli/jual (DYOR). Disiplin terapkan batasan Stop Loss untuk proteksi modal. Keputusan transaksi sepenuhnya tanggung jawab pribadi.`,
+    color: 0x64748b, // Slate
+    footer: { text: 'Watchlist Saham • Automated Advisor' },
     timestamp: now.toISOString()
   });
 
-  // Discord allows up to 10 embeds per webhook message
-  const payloads = [];
-  const maxEmbedsPerMsg = 4;
-  for (let i = 0; i < embeds.length; i += maxEmbedsPerMsg) {
-    const chunkEmbeds = embeds.slice(i, i + maxEmbedsPerMsg);
-    payloads.push({
-      embeds: chunkEmbeds
-    });
-  }
-
-  return payloads;
+  return [{ embeds }];
 }
 
 async function sendToDiscord(payloads) {
