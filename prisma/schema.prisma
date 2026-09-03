@@ -28,10 +28,12 @@ model Recommendation {
   exitPrice        Float?
   exitDate         DateTime?
   notes            String?   @db.Text
+  source           String    @default("USER") // "SYSTEM" (Bot Discord) vs "USER" (Manual Pantau)
 
   @@index([userId])
   @@index([ticker])
   @@index([date])
+  @@index([source])
 }
 
 model Portfolio {

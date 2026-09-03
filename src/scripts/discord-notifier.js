@@ -256,6 +256,62 @@ async function sendToDiscord(payloads) {
   }
 }
 
+async function recordSystemRecommendations(categories, detectedMode) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  let addedCount = 0;
+
+  for (const cat of categories) {
+    const style = cat.id; // 'scalping', 'daily', 'swing'
+    for (const s of cat.stocks) {
+      try {
+        // Prevent duplicate system recommendations for same ticker and style on the same day
+        const existing = await prisma.recommendation.findFirst({
+          where: {
+            source: 'SYSTEM',
+            ticker: s.ticker,
+            style: style,
+            date: { gte: today }
+          }
+        });
+
+        if (existing) {
+          continue;
+        }
+
+        const buyPrice = s.entry.low;
+        await prisma.recommendation.create({
+          data: {
+            userId: null,
+            source: 'SYSTEM',
+            ticker: s.ticker,
+            name: s.name,
+            date: new Date(),
+            mode: detectedMode || 'balanced',
+            style: style,
+            score: s.score || 0,
+            priceAtRecommend: buyPrice,
+            entryLow: s.entry.low,
+            entryHigh: s.entry.high,
+            targetPrice: s.target,
+            stopLoss: s.stopLoss,
+            rrRatio: s.riskReward || 0,
+            status: 'WAITING_BUY',
+            notes: `Rekomendasi otomatis Bot Discord (${style.toUpperCase()}). Menunggu antrean beli di Rp ${s.entry.low.toLocaleString('id-ID')} - ${s.entry.high.toLocaleString('id-ID')}.`
+          }
+        });
+        addedCount++;
+      } catch (err) {
+        console.error(`[DISCORD-RECORD] Gagal mencatat ${s.ticker} ke database:`, err.message);
+      }
+    }
+  }
+
+  console.log(`[DISCORD-RECORD] 📊 Berhasil mencatat ${addedCount} rekomendasi sistem ke Win Rate Dashboard (status: WAITING_BUY).`);
+  return addedCount;
+}
+
 async function main() {
   console.log('=== MEMULAI GENERASI REKOMENDASI SAHAM UNTUK DISCORD ===');
   try {
@@ -264,6 +320,7 @@ async function main() {
     console.log(`Ditemukan total ${totalStocks} saham rekomendasi dari 3 horizon waktu.`);
     const payloads = formatDiscordEmbeds(data);
     await sendToDiscord(payloads);
+    await recordSystemRecommendations(data.categories, data.detectedMode);
   } catch (err) {
     console.error('[DISCORD-ERROR]', err);
   } finally {
@@ -275,4 +332,4 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { generateRecommendations, formatDiscordEmbeds, sendToDiscord };
+module.exports = { generateRecommendations, formatDiscordEmbeds, sendToDiscord, recordSystemRecommendations };

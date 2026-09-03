@@ -23,46 +23,75 @@ export async function GET(request) {
       });
     }
 
-    // Include user-specific and legacy unassigned recommendations
+    const { searchParams } = new URL(request.url);
+    const filterSource = searchParams.get('source'); // 'SYSTEM', 'USER', or null/ALL
+
+    // Base query conditions: User can see their own records, system records, and legacy null user records
+    let whereClause = {
+      OR: [
+        { userId },
+        { source: 'SYSTEM' },
+        { userId: null }
+      ]
+    };
+
+    if (filterSource === 'SYSTEM') {
+      whereClause = { source: 'SYSTEM' };
+    } else if (filterSource === 'USER') {
+      whereClause = { userId, source: 'USER' };
+    }
+
     const recommendations = await prisma.recommendation.findMany({
-      where: {
-        OR: [
-          { userId },
-          { userId: null }
-        ]
-      },
+      where: whereClause,
       orderBy: {
         date: 'desc',
       },
-      take: 50, // Last 50 recommendations
+      take: 100,
     });
 
-    // Calculate Win Rate & Status counts
-    const waiting = recommendations.filter(r => r.status === 'WAITING_BUY').length;
-    const open = recommendations.filter(r => r.status === 'OPEN').length;
-    const wins = recommendations.filter(r => r.status === 'WIN').length;
-    const losses = recommendations.filter(r => r.status === 'LOSS').length;
-    const expired = recommendations.filter(r => r.status === 'EXPIRED' || r.status === 'CANCELLED').length;
-    const closed = recommendations.filter(r => ['WIN', 'LOSS', 'CLOSED', 'EXPIRED'].includes(r.status));
-    
-    // Win rate is strictly calculated from resolved trades: WIN / (WIN + LOSS)
-    const resolvedTrades = wins + losses;
-    const winRate = resolvedTrades > 0 
-      ? Math.round((wins / resolvedTrades) * 100) 
-      : (closed.length > 0 ? Math.round((wins / closed.length) * 100) : 0);
+    // Helper to calculate Win Rate and breakdown
+    const computeStats = (items) => {
+      const waiting = items.filter(r => r.status === 'WAITING_BUY').length;
+      const open = items.filter(r => r.status === 'OPEN').length;
+      const wins = items.filter(r => r.status === 'WIN').length;
+      const losses = items.filter(r => r.status === 'LOSS').length;
+      const expired = items.filter(r => r.status === 'EXPIRED' || r.status === 'CANCELLED').length;
+      const closed = items.filter(r => ['WIN', 'LOSS', 'CLOSED', 'EXPIRED'].includes(r.status));
+      const resolvedTrades = wins + losses;
+      const winRateNum = resolvedTrades > 0 ? Math.round((wins / resolvedTrades) * 100) : 0;
 
-    return NextResponse.json({
-      recommendations,
-      stats: {
-        total: recommendations.length,
+      return {
+        total: items.length,
         waiting,
         open,
         closed: closed.length,
         wins,
         losses,
         expired,
-        winRate: `${winRate}%`,
+        winRate: `${winRateNum}%`,
+        winRateNum
+      };
+    };
+
+    // Calculate comparative stats
+    const allUserRecommendations = await prisma.recommendation.findMany({
+      where: {
+        OR: [
+          { userId },
+          { source: 'SYSTEM' },
+          { userId: null }
+        ]
       }
+    });
+
+    const systemItems = allUserRecommendations.filter(r => r.source === 'SYSTEM');
+    const userItems = allUserRecommendations.filter(r => r.source !== 'SYSTEM' && r.userId === userId);
+
+    return NextResponse.json({
+      recommendations,
+      stats: computeStats(recommendations),
+      systemStats: computeStats(systemItems),
+      userStats: computeStats(userItems),
     });
   } catch (error) {
     console.error("GET History Error:", error);
@@ -109,6 +138,7 @@ export async function POST(request) {
     const rec = await prisma.recommendation.create({
       data: {
         userId,
+        source: 'USER',
         ticker: stock.ticker,
         name: stock.name,
         date: new Date(),
