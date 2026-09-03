@@ -174,6 +174,21 @@ async function syncAllPrices(limit = null) {
   }
 
   console.log(`[PRICE-SYNC] [SUCCESS] Updated ${updatedCount} stocks in database.`);
+
+  // Real-time tracking evaluation for pending recommendations (WAITING_BUY -> OPEN, OPEN -> WIN/LOSS)
+  try {
+    const { updateExistingRecommendations } = require('../lib/recommendationTracker.js');
+    const allLatestStocks = await prisma.stockData.findMany({
+      select: { ticker: true, price: true }
+    });
+    const resolved = await updateExistingRecommendations(allLatestStocks);
+    if (resolved > 0) {
+      console.log(`[RECOMMENDATION-TRACKER] Evaluasi posisi trading: ${resolved} posisi selesai ditutup.`);
+    }
+  } catch (trackErr) {
+    console.error(`[RECOMMENDATION-TRACKER-ERR] Gagal mengevaluasi rekomendasi:`, trackErr.message);
+  }
+
   return updatedCount;
 }
 

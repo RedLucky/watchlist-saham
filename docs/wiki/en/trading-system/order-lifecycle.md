@@ -57,6 +57,12 @@ To prevent premature Win/Loss calculations before a stock is actually bought, th
 * **`LOSS`**: $\text{currentPrice} \le \text{stopLoss}$ (Cut Loss triggered).
 * **`CLOSED`**: Position held beyond `maxHoldingDays` without hitting TP or SL (Time Stop exit at market price).
 
+### 4. 📢 Real-Time Discord Notifications (WIN & LOSS Only)
+Whenever a position transitions from `OPEN` into `WIN` or `LOSS`, the system (`src/lib/recommendationTracker.js`) automatically dispatches a real-time rich embed notification to the configured Discord channel:
+* 🏆 **WIN**: Green alert with ticker, company name, entry price, exit price, realized profit %, target price, style, and trading source (`🤖 SYSTEM` vs `👤 USER`).
+* 🛑 **LOSS**: Red alert with ticker, company name, entry price, exit price, realized loss %, stop loss level, style, and trading source.
+* *Note: Transitions to `WAITING_BUY`, `OPEN`, `EXPIRED`, and `CLOSED` do NOT trigger alerts to avoid notification noise.*
+
 ---
 
 ## 🎯 Win Rate Formula

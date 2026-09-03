@@ -57,6 +57,12 @@ Untuk mencegah klaim kemenangan (*WIN*) atau kekalahan (*LOSS*) sebelum saham be
 * **`LOSS`**: $\text{Harga Pasar} \le \text{Stop Loss}$ (Batas Cut Loss tersentuh).
 * **`CLOSED`**: Posisi ditutup pada harga pasar karena melewati batas maksimal penahanan (*Time Stop*).
 
+### 4. 📢 Notifikasi Real-Time Discord (Hanya WIN & LOSS)
+Setiap kali status posisi trading berubah dari `OPEN` menjadi `WIN` atau `LOSS`, modul pelacak (`src/lib/recommendationTracker.js`) secara otomatis mengirimkan notifikasi *rich embed* ke channel Discord yang terhubung:
+* 🏆 **WIN**: Embed hijau berisi kode saham, nama emiten, harga beli, harga keluar, persentase profit riil (+X%), target TP, gaya trading, serta sumber (`🤖 Sistem` vs `👤 User`).
+* 🛑 **LOSS**: Embed merah berisi kode saham, nama emiten, harga beli, harga keluar, persentase cut loss (-X%), level SL, gaya trading, dan sumber.
+* *Catatan: Transisi status `WAITING_BUY`, `OPEN`, `EXPIRED`, maupun `CLOSED` tidak dikirim ke Discord demi mencegah spam notifikasi.*
+
 ---
 
 ## 🎯 Rumus Perhitungan Win Rate Riil
