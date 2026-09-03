@@ -5,10 +5,32 @@ import { getUserIdFromRequest } from '@/lib/auth';
 export async function GET(request) {
   try {
     const userId = getUserIdFromRequest(request);
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    
+    // If not authenticated, return empty stats dataset instead of breaking the UI with 401
+    if (!userId) {
+      return NextResponse.json({
+        recommendations: [],
+        stats: {
+          total: 0,
+          waiting: 0,
+          open: 0,
+          closed: 0,
+          wins: 0,
+          losses: 0,
+          expired: 0,
+          winRate: '0%',
+        }
+      });
+    }
 
+    // Include user-specific and legacy unassigned recommendations
     const recommendations = await prisma.recommendation.findMany({
-      where: { userId },
+      where: {
+        OR: [
+          { userId },
+          { userId: null }
+        ]
+      },
       orderBy: {
         date: 'desc',
       },
@@ -21,7 +43,7 @@ export async function GET(request) {
     const wins = recommendations.filter(r => r.status === 'WIN').length;
     const losses = recommendations.filter(r => r.status === 'LOSS').length;
     const expired = recommendations.filter(r => r.status === 'EXPIRED' || r.status === 'CANCELLED').length;
-    const closed = recommendations.filter(r => ['WIN', 'LOSS', 'CLOSED'].includes(r.status));
+    const closed = recommendations.filter(r => ['WIN', 'LOSS', 'CLOSED', 'EXPIRED'].includes(r.status));
     
     // Win rate is strictly calculated from resolved trades: WIN / (WIN + LOSS)
     const resolvedTrades = wins + losses;
@@ -43,6 +65,7 @@ export async function GET(request) {
       }
     });
   } catch (error) {
+    console.error("GET History Error:", error);
     return NextResponse.json({ error: 'Gagal memuat riwayat' }, { status: 500 });
   }
 }

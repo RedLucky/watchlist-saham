@@ -3,18 +3,41 @@
 import { useState, useEffect } from 'react';
 
 export default function HistoryPanel() {
- const [history, setHistory] = useState(null);
- const [loading, setLoading] = useState(true);
+  const [history, setHistory] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [filterTab, setFilterTab] = useState('ALL');
+  const [fetchError, setFetchError] = useState(null);
 
- useEffect(() => {
- fetch('/api/history')
- .then(res => res.json())
- .then(data => {
- setHistory(data);
- setLoading(false);
- })
- .catch(() => setLoading(false));
- }, []);
+  useEffect(() => {
+    fetch('/api/history')
+      .then(async (res) => {
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || `HTTP ${res.status}`);
+        }
+        return res.json();
+      })
+      .then(data => {
+        setHistory(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error("HistoryPanel fetch error:", err);
+        setFetchError(err.message || 'Gagal memuat riwayat');
+        setLoading(false);
+      });
+  }, []);
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '-';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return '-';
+      return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+    } catch {
+      return '-';
+    }
+  };
 
   if (loading) {
     return (
@@ -24,9 +47,29 @@ export default function HistoryPanel() {
     );
   }
 
+  if (fetchError) {
+    return (
+      <div className="p-6 rounded-3xl bg-white dark:bg-slate-900/85 border border-rose-200 dark:border-rose-900/40 text-center space-y-2">
+        <p className="text-sm font-bold text-rose-600 dark:text-rose-400">⚠️ {fetchError}</p>
+        <button 
+          onClick={() => {
+            setLoading(true);
+            setFetchError(null);
+            fetch('/api/history')
+              .then(r => r.json())
+              .then(d => { setHistory(d); setLoading(false); })
+              .catch(e => { setFetchError(e.message); setLoading(false); });
+          }}
+          className="px-4 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold hover:bg-slate-200 text-slate-700 dark:text-slate-300 transition-all cursor-pointer"
+        >
+          Coba Muat Ulang
+        </button>
+      </div>
+    );
+  }
+
   const recommendations = history?.recommendations || [];
   const stats = history?.stats || { total: 0, waiting: 0, open: 0, wins: 0, losses: 0, winRate: '0%' };
-  const [filterTab, setFilterTab] = useState('ALL');
 
   const filteredRecommendations = recommendations.filter((rec) => {
     if (filterTab === 'WAITING') return rec.status === 'WAITING_BUY';
@@ -151,7 +194,7 @@ export default function HistoryPanel() {
               {filteredRecommendations.map((rec) => (
                 <tr key={rec.id} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                   <td className="p-3 text-slate-500 font-mono whitespace-nowrap">
-                    {new Date(rec.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    {formatDate(rec.date)}
                   </td>
                   <td className="p-3 font-extrabold text-slate-900 dark:text-white">{rec.ticker}</td>
                   <td className="p-3">
