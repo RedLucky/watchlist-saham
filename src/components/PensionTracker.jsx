@@ -519,23 +519,23 @@ export default function PensionTracker({ records, onRefresh, currentCalculations
         <form
           ref={formRef}
           onSubmit={handleSubmitForm}
-          className="glass-panel p-6 rounded-2xl border border-emerald-500/30 bg-emerald-50/70 dark:bg-emerald-950/20 space-y-5 animate-in fade-in duration-300 shadow-xl"
+          className="glass-panel p-4 sm:p-6 rounded-2xl border border-emerald-500/30 bg-emerald-50/60 dark:bg-emerald-950/20 space-y-5 animate-in fade-in duration-300 shadow-xl"
         >
-          <div className="flex justify-between items-center pb-3 border-b border-slate-300 dark:border-white/10">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-3 border-b border-slate-200 dark:border-slate-800">
             <div>
-              <h4 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+              <h4 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
                 <span>{formMode === 'edit' ? '✏️' : '📝'}</span>
                 {formMode === 'edit'
                   ? `Edit Catatan Eksekusi (${formatDateIndo(recordDate)})`
                   : 'Form Input Catatan Eksekusi Investasi'}
               </h4>
-              <span className="text-[11px] text-slate-700 dark:text-slate-300 font-medium">
+              <span className="text-[11px] text-slate-600 dark:text-slate-400 font-medium">
                 {formMode === 'edit'
                   ? 'Data telah diisi otomatis dari catatan yang dipilih. Anda dapat menyesuaikan angka lalu klik simpan.'
                   : 'Angka otomatis disesuaikan dari kalkulator. Anda dapat menambah eksekusi baru kapan saja.'}
               </span>
             </div>
-            <span className="text-xs font-extrabold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/20">
+            <span className="text-xs font-black text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/30 self-start sm:self-auto font-mono">
               Total Eksekusi: Rp {((formSbnAvailable ? formSbnAmount : 0) + formRdpuAmount + formStocks.reduce((a, b) => a + (b.amount || 0), 0)).toLocaleString('id-ID')}
             </span>
           </div>
@@ -543,24 +543,24 @@ export default function PensionTracker({ records, onRefresh, currentCalculations
           {/* Date Picker */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="text-xs font-extrabold text-slate-700 dark:text-slate-300 block">
+              <label className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
                 📅 Tanggal Eksekusi (Bisa Beda Tanggal di Bulan yang Sama)
               </label>
               <input
                 type="date"
                 value={recordDate}
                 onChange={(e) => setRecordDate(e.target.value)}
-                className="w-full bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-lg px-3 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-emerald-400"
+                className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 shadow-2xs"
                 required
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-extrabold text-slate-700 dark:text-slate-300 block">🏛️ Status SBN Ritel</label>
+              <label className="text-xs font-bold text-slate-800 dark:text-slate-200 block">🏛️ Status SBN Ritel</label>
               <button
                 type="button"
                 onClick={() => setFormSbnAvailable(!formSbnAvailable)}
-                className={`w-full py-2 px-3 rounded-lg text-xs font-extrabold transition-all border ${
+                className={`w-full py-2 px-3 rounded-xl text-xs font-extrabold transition-all border cursor-pointer shadow-2xs ${
                   formSbnAvailable
                     ? 'bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border-emerald-500/30'
                     : 'bg-amber-500/20 text-amber-800 dark:text-amber-300 border-amber-500/30'

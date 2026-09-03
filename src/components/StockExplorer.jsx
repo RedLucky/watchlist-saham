@@ -221,6 +221,7 @@ export default function StockExplorer({ user }) {
   const [monitorTargetPrice, setMonitorTargetPrice] = useState('');
   const [monitorStopLoss, setMonitorStopLoss] = useState('');
   const [monitorStyle, setMonitorStyle] = useState('swing');
+  const [monitorAlreadyBought, setMonitorAlreadyBought] = useState(false);
   const [savingMonitor, setSavingMonitor] = useState(false);
   // Toast Notification State
   const [toast, setToast] = useState(null);
@@ -734,6 +735,7 @@ export default function StockExplorer({ user }) {
     setMonitorTargetPrice(target ? target.toString() : '');
     setMonitorStopLoss(stopLoss ? stopLoss.toString() : '');
     setMonitorStyle('swing');
+    setMonitorAlreadyBought(false);
   };
 
   const handleExecuteSaveMonitor = async (e) => {
@@ -773,6 +775,7 @@ export default function StockExplorer({ user }) {
           },
           style: monitorStyle,
           mode: 'explorer',
+          isAlreadyBought: monitorAlreadyBought,
         }),
       });
 
@@ -786,7 +789,8 @@ export default function StockExplorer({ user }) {
       if (data.message === 'Already saved today') {
         showToast(`⚠️ Saham ${monitorModal.ticker} (${monitorStyle}) sudah dipantau hari ini`, 'warning');
       } else {
-        showToast(`🎯 Saham ${monitorModal.ticker} mulai dipantau di Win Rate Dashboard pada harga Rp ${entryPrice.toLocaleString('id-ID')}!`, 'success');
+        const statusText = monitorAlreadyBought ? 'Posisi Aktif' : 'Antri Beli';
+        showToast(`🎯 Saham ${monitorModal.ticker} mulai dipantau (${statusText}) di Win Rate Dashboard pada harga Rp ${entryPrice.toLocaleString('id-ID')}!`, 'success');
       }
 
       setMonitorModal(null);
@@ -2731,7 +2735,7 @@ export default function StockExplorer({ user }) {
       {/* ── MODAL: CREATE COLLECTION ─────────────────────────────────── */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-black text-slate-900 dark:text-white">📁 Buat Koleksi Baru</h3>
               <button onClick={() => setShowCreateModal(false)} className="text-slate-400 hover:text-slate-600">✕</button>
@@ -2802,7 +2806,7 @@ export default function StockExplorer({ user }) {
       {/* ── MODAL: SAVE STOCK TO COLLECTION (WITH TARGET BUY & SELL) ───── */}
       {showSaveModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-black text-slate-900 dark:text-white">
                 💾 Simpan {selectedStock} ke Koleksi
@@ -2939,7 +2943,7 @@ export default function StockExplorer({ user }) {
       {/* ── MODAL: EDIT COLLECTION ITEM (NOTES, TARGET BUY, TARGET SELL) ── */}
       {showEditItemModal && editingItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-xl">✏️</span>
@@ -3069,7 +3073,7 @@ export default function StockExplorer({ user }) {
       {/* ── MODAL: EDIT COLLECTION METADATA ────────────────────────────── */}
       {showEditModal && editingCollection && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-2xl">{newCollectionEmoji || '📁'}</span>
@@ -3161,7 +3165,7 @@ export default function StockExplorer({ user }) {
       )}
       {showMoveModal && movingItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-2xl">📦</span>
@@ -3415,9 +3419,33 @@ export default function StockExplorer({ user }) {
                 </select>
               </div>
 
-              <div className="p-3 bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 rounded-xl text-[11px] text-emerald-900 dark:text-emerald-200 font-medium flex items-center justify-between">
-                <span>📈 <span className="font-bold">Status:</span> OPEN</span>
-                <span>🏆 Akan masuk ke kalkulasi Win Rate</span>
+              {/* Checkbox Sudah Beli */}
+              <label className="flex items-start gap-2.5 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={monitorAlreadyBought}
+                  onChange={(e) => setMonitorAlreadyBought(e.target.checked)}
+                  className="w-4 h-4 mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 dark:border-slate-600 cursor-pointer"
+                />
+                <div className="space-y-0.5">
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">
+                    Sudah Beli di Harga Ini (Bukan Antri)
+                  </div>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
+                    {monitorAlreadyBought 
+                      ? '✅ Posisi langsung aktif (OPEN) & mulai pantau Target TP/SL.' 
+                      : '⏳ Default: Antri Beli. Sistem akan menunggu harga pasar turun ke level beli sebelum memantau Win/Loss.'}
+                  </p>
+                </div>
+              </label>
+
+              <div className="p-3 bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-[11px] font-medium flex items-center justify-between">
+                <span className="font-bold text-slate-900 dark:text-white">
+                  {monitorAlreadyBought ? '📈 Status Awal: OPEN (Posisi Aktif)' : '⏳ Status Awal: WAITING_BUY (Antri Beli)'}
+                </span>
+                <span className="text-slate-500 dark:text-slate-400 font-medium">
+                  {monitorAlreadyBought ? '🏆 Langsung pantau TP/SL' : '🎯 Aktif saat antrean match'}
+                </span>
               </div>
 
               <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">

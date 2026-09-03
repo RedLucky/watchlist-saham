@@ -34,11 +34,11 @@ export default function DetailPanel({ stock, mode, styleName }) {
 
   const getRiskColor = (level) => {
     switch (level) {
-      case 'Rendah': return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
-      case 'Sedang': return 'text-blue-400 bg-blue-500/10 border-blue-500/20';
-      case 'Menengah': return 'text-amber-400 bg-amber-500/10 border-amber-500/20';
-      case 'Tinggi': return 'text-red-400 bg-red-500/10 border-red-500/20';
-      default: return 'text-slate-400 bg-slate-500/10 border-slate-500/20';
+      case 'Rendah': return 'text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30 font-bold';
+      case 'Sedang': return 'text-blue-700 dark:text-blue-400 bg-blue-500/10 border-blue-500/30 font-bold';
+      case 'Menengah': return 'text-amber-800 dark:text-amber-400 bg-amber-500/10 border-amber-500/30 font-bold';
+      case 'Tinggi': return 'text-rose-700 dark:text-rose-400 bg-rose-500/10 border-rose-500/30 font-bold';
+      default: return 'text-slate-700 dark:text-slate-400 bg-slate-500/10 border-slate-500/30 font-bold';
     }
   };
 
@@ -74,12 +74,13 @@ export default function DetailPanel({ stock, mode, styleName }) {
 
   const handleOpenMonitorPrompt = () => {
     setPromptValue(stock.price ? stock.price.toString() : '');
+    setIsAlreadyBought(false);
     setPromptModal({
       title: `Pantau Saham ${stock.ticker}`,
       message: `Masukkan harga entry untuk ${stock.ticker} (default: harga saat ini Rp ${formatPrice(stock.price)}):`,
       placeholder: 'Harga Entry...',
       confirmLabel: 'Mulai Pantau',
-      onSubmit: (val) => {
+      onSubmit: (val, boughtFlag) => {
         const inputPrice = parseFloat((val || '').replace(/[^\d.-]/g, ''));
         if (isNaN(inputPrice) || inputPrice <= 0) {
           showToast('Harga entry tidak valid!', 'error');
@@ -101,14 +102,18 @@ export default function DetailPanel({ stock, mode, styleName }) {
           body: JSON.stringify({
             stock: modifiedStock,
             mode,
-            style: styleName
+            style: styleName,
+            isAlreadyBought: Boolean(boughtFlag)
           })
         })
           .then(r => r.json())
           .then(res => {
             if (res.error) showToast(res.error, 'error');
             else if (res.message) showToast(res.message, 'success');
-            else showToast(`${stock.ticker} mulai dipantau di Win Rate Dashboard dengan harga entry Rp ${formatPrice(inputPrice)}!`, 'success');
+            else {
+              const statusDesc = boughtFlag ? 'Posisi Aktif' : 'Antri Beli';
+              showToast(`🎯 ${stock.ticker} mulai dipantau (${statusDesc}) di Win Rate Dashboard dengan harga Rp ${formatPrice(inputPrice)}!`, 'success');
+            }
           })
           .catch(() => showToast('Gagal menyimpan ke dashboard', 'error'));
 
@@ -192,28 +197,28 @@ export default function DetailPanel({ stock, mode, styleName }) {
 
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
  <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.04]">
- <Tooltip term="target">
- <span className="text-xs text-slate-500 dark:text-slate-400">Target Jual</span>
- </Tooltip>
- <div className="text-lg font-semibold text-emerald-400 mt-1">
- {formatPrice(stock.target)}
- </div>
- <div className="text-[10px] text-emerald-400/60">
- {targetPct === null ? '-' : `${targetPct > 0 ? '+' : ''}${targetPct}%`}
- </div>
- </div>
- <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.04]">
- <Tooltip term="stopLoss">
- <span className="text-xs text-slate-500 dark:text-slate-400">Cut Loss</span>
- </Tooltip>
- <div className="text-lg font-semibold text-red-600 dark:text-red-300 bg-red-500/10 px-2 py-0.5 rounded leading-none inline-block mb-1">
- {formatPrice(stock.stopLoss)}
- </div>
- <div className="text-[10px] text-red-400/60 block">
- {stopLossPct === null ? '-' : `${stopLossPct}%`}
- </div>
- </div>
- </div>
+  <Tooltip term="target">
+  <span className="text-xs text-slate-600 dark:text-slate-400 font-bold">Target Jual</span>
+  </Tooltip>
+  <div className="text-lg font-black text-emerald-700 dark:text-emerald-400 mt-1 font-mono">
+  {formatPrice(stock.target)}
+  </div>
+  <div className="text-[10px] text-emerald-600/80 dark:text-emerald-400/80 font-bold">
+  {targetPct === null ? '-' : `${targetPct > 0 ? '+' : ''}${targetPct}%`}
+  </div>
+  </div>
+  <div className="p-3 rounded-xl bg-slate-100/70 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.04]">
+  <Tooltip term="stopLoss">
+  <span className="text-xs text-slate-600 dark:text-slate-400 font-bold">Cut Loss</span>
+  </Tooltip>
+  <div className="text-lg font-black text-rose-700 dark:text-rose-300 bg-rose-500/10 px-2 py-0.5 rounded leading-none inline-block mb-1 font-mono">
+  {formatPrice(stock.stopLoss)}
+  </div>
+  <div className="text-[10px] text-rose-600/80 dark:text-rose-400/80 font-bold block">
+  {stopLossPct === null ? '-' : `${stopLossPct}%`}
+  </div>
+  </div>
+  </div>
 
  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.04]">
  <div>
@@ -280,21 +285,21 @@ export default function DetailPanel({ stock, mode, styleName }) {
 
  {/* Mengapa Saham Ini? */}
  <div className="lg:col-span-1">
- <h4 className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">
- Mengapa Saham Ini?
- </h4>
- <div className="space-y-2.5">
- {stock.explanations.map((explanation, index) => (
- <div
- key={index}
- className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.04] animate-fade-in"
- style={{ animationDelay: `${index * 0.08}s` }}
- >
- <span className="text-emerald-400 mt-0.5 flex-shrink-0">✓</span>
- <p className="text-sm text-slate-400 dark:text-slate-500 leading-relaxed">{explanation}</p>
- </div>
- ))}
- </div>
+  <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-4">
+  Mengapa Saham Ini?
+  </h4>
+  <div className="space-y-2.5">
+  {stock.explanations.map((explanation, index) => (
+  <div
+  key={index}
+  className="flex items-start gap-3 p-3 rounded-xl bg-slate-100/70 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.04] animate-fade-in"
+  style={{ animationDelay: `${index * 0.08}s` }}
+  >
+  <span className="text-emerald-600 dark:text-emerald-400 font-bold mt-0.5 flex-shrink-0">✓</span>
+  <p className="text-sm text-slate-800 dark:text-slate-200 leading-relaxed font-medium">{explanation}</p>
+  </div>
+  ))}
+  </div>
 
  {/* Score detail pills */}
  <div className="mt-4 flex flex-wrap gap-2">
@@ -421,33 +426,55 @@ export default function DetailPanel({ stock, mode, styleName }) {
               </p>
             </div>
 
-            <input
-              type="text"
-              autoFocus
-              placeholder={promptModal.placeholder || 'Ketik di sini...'}
-              value={promptValue}
-              onChange={(e) => setPromptValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  promptModal.onSubmit(promptValue);
-                }
-              }}
-              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+            <div className="space-y-3">
+              <input
+                type="text"
+                autoFocus
+                placeholder={promptModal.placeholder || 'Ketik di sini...'}
+                value={promptValue}
+                onChange={(e) => setPromptValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    promptModal.onSubmit(promptValue, isAlreadyBought);
+                  }
+                }}
+                className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+
+              {/* Checkbox Sudah Beli */}
+              <label className="flex items-start gap-2.5 p-3 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-slate-800/40 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={isAlreadyBought}
+                  onChange={(e) => setIsAlreadyBought(e.target.checked)}
+                  className="w-4 h-4 mt-0.5 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 dark:border-slate-600 cursor-pointer"
+                />
+                <div className="space-y-0.5">
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">
+                    Sudah Beli di Harga Ini (Bukan Antri)
+                  </div>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
+                    {isAlreadyBought 
+                      ? '✅ Posisi langsung aktif (OPEN) & mulai pantau Target TP/SL.' 
+                      : '⏳ Default: Antri Beli. Sistem akan menunggu harga pasar turun ke level beli sebelum memantau Win/Loss.'}
+                  </p>
+                </div>
+              </label>
+            </div>
 
             <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => setPromptModal(null)}
-                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition-colors"
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition-colors cursor-pointer"
               >
                 Batal
               </button>
               <button
                 type="button"
-                onClick={() => promptModal.onSubmit(promptValue)}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-md transition-all"
+                onClick={() => promptModal.onSubmit(promptValue, isAlreadyBought)}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-md transition-all cursor-pointer"
               >
                 {promptModal.confirmLabel || 'Simpan'}
               </button>

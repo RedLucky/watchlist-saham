@@ -308,6 +308,7 @@ export function calculateGrahamValuation({ fundamentals = {}, price = 0, bondYie
     eps: Number(eps.toFixed(2)),
     bvps: Number(bvps.toFixed(2)),
     cagrPercent: Number((cagr * 100).toFixed(1)),
+    cappedCagrPercent: Number(cappedCAGR.toFixed(1)),
     bondYield: safeYield,
     grahamNumber,
     fairValue,

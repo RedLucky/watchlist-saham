@@ -185,7 +185,7 @@ export default function Dashboard() {
  }
 
  return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#0a0f1a] flex">
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#070b14] flex">
       {/* Desktop Sidebar Navigation */}
       <Sidebar 
         activeTab={activeTab} 
@@ -212,33 +212,36 @@ export default function Dashboard() {
           )}
 
           {/* TAB 1: WATCHLIST & ANALISIS SAHAM */}
-  {activeTab === 'watchlist' && (
-    <div className="space-y-5 animate-in fade-in duration-300">
-      {/* Market Condition Badge & Summary */}
-      <MarketBadge market={market} />
+          {activeTab === 'watchlist' && (
+            <div className="space-y-5 animate-in fade-in duration-300">
+              {/* Market Condition 4-Card Cockpit */}
+              <MarketBadge market={market} />
 
-      {/* Style Selector (Scalping, Daily, Swing) & Strategy Mode */}
-      <div className="space-y-4">
-        {/* Style Selector Container */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-sm">
-          <div>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Gaya Trading</h3>
-            <p className="text-xs text-slate-700 dark:text-slate-300 font-medium">Pilih strategi horison waktu transaksi untuk penyesuaian bobot indikator</p>
-          </div>
-          <div className="w-full sm:w-72 flex-shrink-0">
-            <StyleSelector currentStyle={style} onStyleChange={setStyle} />
-          </div>
-        </div>
+              {/* Style Selector (Scalping, Daily, Swing) & Strategy Mode */}
+              <div className="space-y-4">
+                {/* Style Selector Container */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900/85 border border-slate-200/80 dark:border-slate-800 shadow-xs">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">⚡</span>
+                      <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white">Horison Waktu Trading</h3>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">Pilih strategi horison waktu transaksi untuk penyesuaian bobot indikator teknikal vs fundamental</p>
+                  </div>
+                  <div className="w-full sm:w-80 flex-shrink-0">
+                    <StyleSelector currentStyle={style} onStyleChange={setStyle} />
+                  </div>
+                </div>
 
-        <ModeSelector currentMode={mode} onModeChange={setMode} />
-        
-        {mode === 'custom' && (
-          <CustomSliders 
-            onWeightsChange={setCustomWeights} 
-            initialStyle={style} 
-          />
-        )}
-      </div>
+                <ModeSelector currentMode={mode} onModeChange={setMode} />
+                
+                {mode === 'custom' && (
+                  <CustomSliders 
+                    onWeightsChange={setCustomWeights} 
+                    initialStyle={style} 
+                  />
+                )}
+              </div>
 
  {/* Sector Bar */}
  <SectorBar sectors={sectors} />

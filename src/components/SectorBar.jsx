@@ -20,52 +20,64 @@ const sectorNameID = {
 export default function SectorBar({ sectors }) {
  if (!sectors || sectors.length === 0) return null;
 
- const getTrendColor = (trend) => {
- switch (trend) {
- case 'strong': return 'from-emerald-500/20 to-emerald-600/10 border-emerald-500/30 text-emerald-400';
- case 'positive': return 'from-blue-500/20 to-blue-600/10 border-blue-500/30 text-blue-400';
- default: return 'from-slate-500/20 to-slate-600/10 border-slate-500/30 text-slate-400';
- }
- };
+  const getTrendColor = (trend, index) => {
+    if (index < 2) {
+      return 'border-amber-500/40 bg-gradient-to-br from-amber-500/15 via-orange-500/5 to-transparent text-amber-900 dark:text-amber-200 shadow-xs';
+    }
+    switch (trend) {
+      case 'strong': return 'border-emerald-500/30 bg-gradient-to-br from-emerald-500/15 to-emerald-500/5 text-emerald-800 dark:text-emerald-300';
+      case 'positive': return 'border-blue-500/30 bg-gradient-to-br from-blue-500/15 to-blue-500/5 text-blue-800 dark:text-blue-300';
+      default: return 'border-slate-200 dark:border-slate-800 bg-slate-100/80 dark:bg-slate-800/40 text-slate-700 dark:text-slate-300';
+    }
+  };
 
- const getReturnColor = (ret) => {
- if (ret >= 2) return 'text-emerald-400';
- if (ret >= 0) return 'text-blue-400';
- return 'text-red-400';
- };
+  const getReturnColor = (ret) => {
+    if (ret >= 2) return 'text-emerald-700 dark:text-emerald-400 font-black';
+    if (ret >= 0) return 'text-blue-700 dark:text-blue-400 font-black';
+    return 'text-rose-700 dark:text-rose-400 font-black';
+  };
 
- return (
- <div className="glass rounded-2xl p-5">
- <div className="flex items-center justify-between mb-3">
- <h2 className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Kekuatan Sektor</h2>
- <span className="text-xs text-slate-500 dark:text-slate-400">Performa 5 hari</span>
- </div>
+  return (
+    <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900/85 border border-slate-200/80 dark:border-slate-800 shadow-xs">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <span className="text-base">🧭</span>
+          <h2 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">
+            Rotasi & Kekuatan Sektor BEI
+          </h2>
+        </div>
+        <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
+          Performa 5 Hari Terakhir
+        </span>
+      </div>
 
- <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
- {sectors.map((sector, index) => (
- <div
- key={sector.name}
- className={`sector-chip flex-shrink-0 px-4 py-2.5 rounded-xl bg-gradient-to-br border ${getTrendColor(sector.trend)}`}
- >
- <div className="flex items-center gap-2">
- {index < 2 && (
- <span className="text-xs">🔥</span>
- )}
- <span className="text-sm font-medium text-slate-900 dark:text-white whitespace-nowrap">
- {sectorNameID[sector.name] || sector.name}
- </span>
- </div>
- <div className="flex items-center gap-2 mt-1">
- <span className={`text-xs font-semibold ${getReturnColor(sector.return5d)}`}>
- {sector.return5d > 0 ? '+' : ''}{sector.return5d}%
- </span>
- <span className="text-[10px] text-slate-500 dark:text-slate-400">
- Vol {(sector.volumeGrowth).toFixed(1)}x
- </span>
- </div>
- </div>
- ))}
- </div>
- </div>
- );
+      <div className="flex gap-2.5 overflow-x-auto pb-1.5 -mx-1 px-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden snap-x">
+        {sectors.map((sector, index) => (
+          <div
+            key={sector.name}
+            className={`sector-chip snap-start flex-shrink-0 px-3.5 py-2.5 rounded-xl border transition-all duration-200 hover:scale-[1.02] cursor-default ${getTrendColor(sector.trend, index)}`}
+          >
+            <div className="flex items-center gap-1.5">
+              {index < 2 ? (
+                <span className="text-xs">🔥</span>
+              ) : (
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-400/60"></span>
+              )}
+              <span className="text-xs font-black text-slate-900 dark:text-white whitespace-nowrap">
+                {sectorNameID[sector.name] || sector.name}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 mt-1.5 text-[11px]">
+              <span className={`font-mono ${getReturnColor(sector.return5d)}`}>
+                {sector.return5d > 0 ? '+' : ''}{sector.return5d}%
+              </span>
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">
+                Vol {(sector.volumeGrowth).toFixed(1)}x
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }

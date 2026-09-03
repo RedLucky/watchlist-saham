@@ -588,16 +588,16 @@ export default function StockScreener() {
   return (
     <div className="space-y-5">
       {/* Sub-tab Navigation (Horizontal Scrollable on Mobile) */}
-      <div className="overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden snap-x">
-        <div className="flex gap-2 p-1 bg-slate-100 dark:bg-white/5 rounded-xl border border-slate-300 dark:border-white/10 w-max">
+      <div className="overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden snap-x pb-1">
+        <div className="flex gap-1.5 p-1.5 bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 w-max shadow-2xs">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => { setActiveTab(tab.id); setExpandedRow(null); }}
-              className={`snap-start px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-bold transition-all duration-300 whitespace-nowrap ${
+              className={`snap-start px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 whitespace-nowrap cursor-pointer ${
                 activeTab === tab.id
-                  ? 'bg-gradient-to-r from-amber-600 via-indigo-600 to-purple-600 text-white font-extrabold shadow-md'
-                  : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-white/10'
+                  ? 'bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 text-white font-black shadow-md shadow-blue-500/20'
+                  : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10'
               }`}
             >
               {tab.label}
@@ -608,7 +608,7 @@ export default function StockScreener() {
       
       {/* Tab Description & Mobile Sort Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
-        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+        <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-medium">
           {tabs.find(t => t.id === activeTab)?.desc}
         </p>
 

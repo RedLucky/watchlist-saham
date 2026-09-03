@@ -15,17 +15,30 @@ export async function GET(request) {
       take: 50, // Last 50 recommendations
     });
 
-    // Calculate Win Rate (Simple logic for now)
-    const closed = recommendations.filter(r => r.status !== 'OPEN');
-    const wins = closed.filter(r => r.status === 'WIN').length;
-    const winRate = closed.length > 0 ? Math.round((wins / closed.length) * 100) : 0;
+    // Calculate Win Rate & Status counts
+    const waiting = recommendations.filter(r => r.status === 'WAITING_BUY').length;
+    const open = recommendations.filter(r => r.status === 'OPEN').length;
+    const wins = recommendations.filter(r => r.status === 'WIN').length;
+    const losses = recommendations.filter(r => r.status === 'LOSS').length;
+    const expired = recommendations.filter(r => r.status === 'EXPIRED' || r.status === 'CANCELLED').length;
+    const closed = recommendations.filter(r => ['WIN', 'LOSS', 'CLOSED'].includes(r.status));
+    
+    // Win rate is strictly calculated from resolved trades: WIN / (WIN + LOSS)
+    const resolvedTrades = wins + losses;
+    const winRate = resolvedTrades > 0 
+      ? Math.round((wins / resolvedTrades) * 100) 
+      : (closed.length > 0 ? Math.round((wins / closed.length) * 100) : 0);
 
     return NextResponse.json({
       recommendations,
       stats: {
         total: recommendations.length,
+        waiting,
+        open,
         closed: closed.length,
         wins,
+        losses,
+        expired,
         winRate: `${winRate}%`,
       }
     });
@@ -40,7 +53,7 @@ export async function POST(request) {
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const data = await request.json();
-    const { stock, style, mode } = data;
+    const { stock, style, mode, isAlreadyBought } = data;
 
     if (!stock || !stock.ticker) {
       return NextResponse.json({ error: 'Missing stock data' }, { status: 400 });
@@ -65,6 +78,11 @@ export async function POST(request) {
       return NextResponse.json({ message: 'Already saved today', recommendation: existing });
     }
 
+    const initialStatus = isAlreadyBought ? 'OPEN' : 'WAITING_BUY';
+    const notes = isAlreadyBought 
+      ? `Sudah beli pada harga Rp ${stock.price}`
+      : `Antri beli pada harga Rp ${stock.price}. Menunggu harga pasar turun menyentuh level beli.`;
+
     const rec = await prisma.recommendation.create({
       data: {
         userId,
@@ -80,7 +98,8 @@ export async function POST(request) {
         targetPrice: stock.target,
         stopLoss: stock.stopLoss,
         rrRatio: stock.riskReward || 0,
-        status: 'OPEN',
+        status: initialStatus,
+        notes,
       },
     });
 

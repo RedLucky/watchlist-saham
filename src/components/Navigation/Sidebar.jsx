@@ -59,21 +59,21 @@ export default function Sidebar({
   }, []);
 
   return (
-    <aside className="hidden lg:flex flex-col w-64 h-screen sticky top-0 bg-white/70 dark:bg-[#0a0f1a]/70 backdrop-blur-xl border-r border-slate-200 dark:border-slate-800/60 transition-colors z-40">
+    <aside className="hidden lg:flex flex-col w-64 h-screen sticky top-0 bg-white/85 dark:bg-[#070b14]/85 backdrop-blur-xl border-r border-slate-200/80 dark:border-slate-800/80 transition-colors z-40">
       {/* Brand / Logo Area */}
-      <div className="p-5 border-b border-slate-200 dark:border-slate-800/60">
+      <div className="p-5 border-b border-slate-200/80 dark:border-slate-800/80">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-md shadow-blue-500/20 flex-shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 via-blue-600 to-indigo-600 flex items-center justify-center shadow-md shadow-blue-500/20 flex-shrink-0">
             <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M3 3v18h18" />
               <path d="M7 16l4-8 4 4 5-9" />
             </svg>
           </div>
           <div className="overflow-hidden">
-            <h1 className="text-base font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight truncate">
+            <h1 className="text-base font-black tracking-tight text-slate-900 dark:text-white leading-tight truncate">
               IDX Watchlist
             </h1>
-            <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate">Analisis Saham Pintar</p>
+            <p className="text-[10px] font-bold text-slate-600 dark:text-slate-400 truncate">Smart Stock Analytics</p>
           </div>
         </div>
       </div>
@@ -82,7 +82,7 @@ export default function Sidebar({
       <div className="flex-1 overflow-y-auto py-5 px-3 space-y-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {NAVIGATION_MENU.map((group, idx) => (
           <div key={idx}>
-            <h3 className="px-3 mb-2.5 text-[11px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+            <h3 className="px-3 mb-2.5 text-[11px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400">
               {group.category}
             </h3>
             <div className="space-y-1">
@@ -92,10 +92,10 @@ export default function Sidebar({
                   <button
                     key={item.id}
                     onClick={() => setActiveTab(item.id)}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 ${
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer ${
                       isActive
-                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/25 font-extrabold'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/10'
+                        ? 'bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/25 font-extrabold'
+                        : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10'
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
@@ -116,15 +116,15 @@ export default function Sidebar({
       </div>
       
       {/* Footer Area / Controls & Utilities */}
-      <div className="p-4 border-t border-slate-200 dark:border-slate-800/60 space-y-3 bg-slate-50/50 dark:bg-black/20">
+      <div className="p-4 border-t border-slate-200/80 dark:border-slate-800/80 space-y-3 bg-slate-50/70 dark:bg-black/20">
         
         {/* Database Sync Status Badge */}
-        <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 shadow-xs">
+        <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-2xs">
           <div className="flex items-center gap-2 min-w-0">
-            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${syncInfo?.isSyncing ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'}`}></div>
+            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${syncInfo?.isSyncing ? 'bg-amber-400 animate-pulse' : 'bg-emerald-500'}`}></div>
             <div className="flex flex-col min-w-0">
-              <span className="text-[9px] font-bold uppercase text-slate-500 dark:text-slate-400 leading-none">Yahoo Finance</span>
-              <span className="text-[10px] text-slate-700 dark:text-slate-300 font-semibold leading-tight truncate">
+              <span className="text-[9px] font-extrabold uppercase text-slate-600 dark:text-slate-400 leading-none">Yahoo Finance</span>
+              <span className="text-[10px] text-slate-800 dark:text-slate-200 font-bold leading-tight truncate">
                 {syncInfo?.isSyncing ? 'Syncing...' : (syncInfo?.stats?.lastSyncTime ? `Aktif (${new Date(syncInfo.stats.lastSyncTime).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})} WIB)` : 'Aktif')}
               </span>
             </div>

@@ -922,56 +922,56 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
  return (
  <div className="space-y-6 max-w-[1400px] mx-auto pb-12">
  
- {/* Top User Auth Bar */}
- <div className="flex justify-between items-center bg-slate-100 dark:bg-white/5 p-3.5 rounded-2xl border border-slate-300 dark:border-white/10">
- <div className="flex items-center gap-3">
- <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center font-bold text-slate-900 dark:text-white text-xs">
- {currentUser ? currentUser.name.charAt(0).toUpperCase() : '👤'}
- </div>
- <div>
- {currentUser ? (
- <div className="flex items-center gap-2">
- <span className="text-xs font-bold text-slate-900 dark:text-white">Halo, {currentUser.name}</span>
- <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 font-bold border border-indigo-500/30">
- {riskProfile}
- </span>
- </div>
- ) : (
- <span className="text-xs text-slate-500 dark:text-slate-400">
- Mode Tamu (Silakan login untuk menyimpan portofolio tracker Anda ke database)
- </span>
- )}
- </div>
- </div>
+  {/* Top User Auth Bar */}
+  <div className="flex justify-between items-center bg-white dark:bg-slate-900/80 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
+  <div className="flex items-center gap-3">
+  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center font-black text-white text-xs shadow-xs">
+  {currentUser ? currentUser.name.charAt(0).toUpperCase() : '👤'}
+  </div>
+  <div>
+  {currentUser ? (
+  <div className="flex items-center gap-2">
+  <span className="text-xs font-black text-slate-900 dark:text-white">Halo, {currentUser.name}</span>
+  <span className="text-[10px] px-2 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-extrabold border border-indigo-200 dark:border-indigo-500/30">
+  {riskProfile}
+  </span>
+  </div>
+  ) : (
+  <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+  Mode Tamu (Silakan login untuk menyimpan portofolio tracker Anda ke database)
+  </span>
+  )}
+  </div>
+  </div>
 
- <div>
- {currentUser ? (
- <button
- onClick={handleLogout}
- className="text-xs text-red-400 hover:text-red-300 font-semibold px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 transition-colors"
- >
- Logout
- </button>
- ) : (
- <button
- onClick={() => setShowAuthModal(true)}
- className="text-xs font-extrabold text-white bg-indigo-600 hover:bg-indigo-700 px-4 py-1.5 rounded-xl shadow-lg transition-all"
- >
- 🔑 Login / Registrasi Akun
- </button>
- )}
- </div>
- </div>
+  <div>
+  {currentUser ? (
+  <button
+  onClick={handleLogout}
+  className="text-xs text-rose-700 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 font-bold px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 transition-colors"
+  >
+  Logout
+  </button>
+  ) : (
+  <button
+  onClick={() => setShowAuthModal(true)}
+  className="text-xs font-black text-white bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 px-4 py-2 rounded-xl shadow-md shadow-indigo-500/20 transition-all cursor-pointer"
+  >
+  🔑 Login / Registrasi Akun
+  </button>
+  )}
+  </div>
+  </div>
 
- {/* Header Banner */}
- <div className="glass-panel p-4 sm:p-6 rounded-2xl border border-slate-300 dark:border-white/10 relative overflow-hidden bg-gradient-to-br from-indigo-900/40 via-purple-900/20 to-slate-50 dark:to-[#0a0f1a]">
- <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 sm:gap-4">
- <div>
- <div className="flex items-center gap-2 mb-1">
- <span className="text-xl sm:text-2xl">🏖️</span>
- <h2 className="text-base sm:text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
- Kalkulator Alokasi & Target Dana Pensiun
- </h2>
+  {/* Header Banner */}
+  <div className="glass-panel p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 relative overflow-hidden bg-gradient-to-br from-indigo-50/80 via-cyan-50/40 to-white dark:from-indigo-950/40 dark:via-cyan-950/20 dark:to-[#070b14]">
+  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 sm:gap-4">
+  <div>
+  <div className="flex items-center gap-2 mb-1">
+  <span className="text-xl sm:text-2xl">🏖️</span>
+  <h2 className="text-base sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
+  Kalkulator Alokasi & Target Dana Pensiun
+  </h2>
  </div>
  <p className="text-[11px] sm:text-xs text-slate-600 dark:text-slate-400 font-medium max-w-2xl">
  Rekomendasi preset saham dinamis ter-update dari database (Analisis Fundamental, Valuasi PER/PBV & Dividen Yield/Streak).

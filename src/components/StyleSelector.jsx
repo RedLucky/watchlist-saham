@@ -8,17 +8,17 @@ const STYLES = [
 
 export default function StyleSelector({ currentStyle, onStyleChange }) {
   return (
-    <div className="flex bg-slate-100 dark:bg-white/5 p-1 rounded-xl border border-slate-200 dark:border-white/10">
+    <div className="flex bg-slate-100 dark:bg-slate-800/60 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
       {STYLES.map((style) => {
         const isActive = currentStyle === style.name;
         return (
           <button
             key={style.name}
             onClick={() => onStyleChange(style.name)}
-            className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+            className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               isActive
-                ? `${style.bg} ${style.color} ${style.border} border shadow-sm`
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-white/5'
+                ? `${style.bg} ${style.color} ${style.border} border shadow-xs font-black scale-[1.02]`
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-700/60'
             }`}
           >
             <span>{style.emoji}</span>

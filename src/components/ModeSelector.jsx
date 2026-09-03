@@ -11,18 +11,21 @@ const MODES = [
 
 export default function ModeSelector({ currentMode, autoDetectedMode, onModeChange, detection }) {
   return (
-    <div className="glass rounded-2xl p-4 sm:p-5">
+    <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900/85 border border-slate-200/80 dark:border-slate-800 shadow-xs">
       <div className="flex items-center justify-between mb-3">
-        <div>
-          <h2 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Mode Strategi</h2>
+        <div className="flex items-center gap-2">
+          <span className="text-base">⚙️</span>
+          <h2 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">
+            Mode Strategi Algoritma
+          </h2>
         </div>
         {detection && (
-          <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
+          <span className={`text-[11px] px-2.5 py-1 rounded-lg font-bold border ${
             detection === 'auto'
-              ? 'bg-purple-500/10 text-purple-600 dark:text-purple-300 border border-purple-500/20'
-              : 'bg-blue-500/10 text-blue-600 dark:text-blue-300 border border-blue-500/20'
+              ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 border-purple-200 dark:border-purple-800/40'
+              : 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border-blue-200 dark:border-blue-800/40'
           }`}>
-            {detection === 'auto' ? '🤖 Deteksi Otomatis' : '👤 Dipilih Pengguna'}
+            {detection === 'auto' ? '🤖 Deteksi Otomatis' : '👤 Pilihan Pengguna'}
           </span>
         )}
       </div>
@@ -36,16 +39,16 @@ export default function ModeSelector({ currentMode, autoDetectedMode, onModeChan
             <button
               key={mode.name}
               onClick={() => onModeChange(mode.name)}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                 isActive
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20 border border-indigo-500'
-                  : 'bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-white/10'
+                  ? 'bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/25 border border-blue-500/40 font-black scale-[1.02]'
+                  : 'bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-slate-800'
               }`}
             >
               <span>{mode.emoji}</span>
               <span>{mode.label}</span>
               {mode.name === 'auto' && autoDetectedMode && isAutoActive && (
-                <span className="text-[10px] text-indigo-100 opacity-90">
+                <span className="text-[10px] text-cyan-100 font-extrabold bg-black/20 px-1.5 py-0.5 rounded">
                   → {autoDetectedMode}
                 </span>
               )}
@@ -56,7 +59,7 @@ export default function ModeSelector({ currentMode, autoDetectedMode, onModeChan
 
       {/* Mode description */}
       <div className="mt-3 p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-slate-800/40">
-        <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+        <p className="text-xs text-slate-800 dark:text-slate-200 leading-relaxed font-medium">
           {MODES.find(m => m.name === currentMode)?.description || MODES[0].description}
         </p>
       </div>

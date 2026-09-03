@@ -272,51 +272,82 @@ export async function GET(request) {
 
 
 /**
- * Phase 2 Lanjutan: Pelacakan Win-Rate
- * Mengecek rekomendasi yang 'OPEN' dan menutupnya jika harga menyentuh target atau stop loss
+ * Phase 2 Lanjutan: Pelacakan Win-Rate & Antrean Beli
+ * 1. Mengecek antrean 'WAITING_BUY': jika harga pasar turun <= harga beli, posisi MATCH dan status menjadi 'OPEN'.
+ * 2. Mengecek posisi 'OPEN': menutup menjadi 'WIN' (TP) atau 'LOSS' (SL) atau 'CLOSED' (Time Stop).
  */
 async function updateExistingRecommendations(currentStocks) {
-  const openRecommendations = await prisma.recommendation.findMany({
-    where: { status: 'OPEN' }
+  const pendingRecommendations = await prisma.recommendation.findMany({
+    where: { 
+      status: { in: ['WAITING_BUY', 'OPEN'] }
+    }
   });
 
-  if (openRecommendations.length === 0) return;
+  if (pendingRecommendations.length === 0) return;
 
-  for (const rec of openRecommendations) {
+  for (const rec of pendingRecommendations) {
     const currentData = currentStocks.find(s => s.ticker === rec.ticker);
     if (!currentData) continue;
 
     const currentPrice = currentData.price;
-    let newStatus = null;
-    let exitPrice = null;
-
-    if (currentPrice >= rec.targetPrice) {
-      newStatus = 'WIN';
-      exitPrice = currentPrice;
-    } else if (currentPrice <= rec.stopLoss) {
-      newStatus = 'LOSS';
-      exitPrice = currentPrice;
-    }
-    
-    // Penutupan jika sudah lewat batas waktu maksimal (Time Stop) berdasarkan gaya
     const styleConfig = getStyleConfig(rec.style || 'swing');
     const maxDays = styleConfig.maxHoldingDays || 7;
     const ageInDays = (new Date() - new Date(rec.date)) / (1000 * 60 * 60 * 24);
-    if (!newStatus && ageInDays > maxDays) {
-      newStatus = 'CLOSED';
-      exitPrice = currentPrice;
+
+    // ── KASUS 1: STATUS WAITING_BUY (Antri Beli) ──────────────────
+    if (rec.status === 'WAITING_BUY') {
+      const buyThreshold = rec.priceAtRecommend || rec.entryHigh || rec.entryLow;
+      
+      // Order Match: jika harga pasar turun menyentuh atau berada di bawah harga antre beli
+      if (currentPrice <= buyThreshold) {
+        await prisma.recommendation.update({
+          where: { id: rec.id },
+          data: {
+            status: 'OPEN',
+            notes: `Order antre beli match pada harga pasar Rp ${currentPrice} (Target Antre: Rp ${buyThreshold})`,
+          }
+        });
+      } else if (ageInDays > maxDays) {
+        // Antrean kedaluwarsa jika dalam maxDays harga tidak pernah menyentuh level beli
+        await prisma.recommendation.update({
+          where: { id: rec.id },
+          data: {
+            status: 'EXPIRED',
+            exitDate: new Date(),
+            notes: `Antrean beli kedaluwarsa setelah ${maxDays} hari tanpa match.`,
+          }
+        });
+      }
+      continue;
     }
 
-    if (newStatus) {
-      await prisma.recommendation.update({
-        where: { id: rec.id },
-        data: {
-          status: newStatus,
-          exitPrice: exitPrice,
-          exitDate: new Date(),
-          notes: `Closed automatically by system. Status: ${newStatus}`
-        }
-      });
+    // ── KASUS 2: STATUS OPEN (Posisi Aktif / Sudah Terbeli) ──────────
+    if (rec.status === 'OPEN') {
+      let newStatus = null;
+      let exitPrice = null;
+
+      if (currentPrice >= rec.targetPrice) {
+        newStatus = 'WIN';
+        exitPrice = currentPrice;
+      } else if (currentPrice <= rec.stopLoss) {
+        newStatus = 'LOSS';
+        exitPrice = currentPrice;
+      } else if (ageInDays > maxDays) {
+        newStatus = 'CLOSED';
+        exitPrice = currentPrice;
+      }
+
+      if (newStatus) {
+        await prisma.recommendation.update({
+          where: { id: rec.id },
+          data: {
+            status: newStatus,
+            exitPrice: exitPrice,
+            exitDate: new Date(),
+            notes: `Posisi selesai ditutup oleh sistem. Status: ${newStatus} pada Rp ${exitPrice}`
+          }
+        });
+      }
     }
   }
 }
