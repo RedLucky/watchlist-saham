@@ -27,6 +27,7 @@ Tabel utama yang menyimpan seluruh data emiten saham di Indonesia:
 
 ### 2. `Recommendation`
 Tabel pencatatan rekam jejak sinyal dan saham yang dipantau pengguna:
+* `source`: Pembeda sumber rekomendasi (`"SYSTEM"` untuk pilihan bot Discord otomatis vs `"USER"` untuk pantauan manual pengguna). Memiliki indeks database `@@index([source])`.
 * `priceAtRecommend`: Harga saat sinyal keluar atau harga antre beli yang dimasukkan pengguna.
 * `targetPrice`: Target Jual / Take Profit (TP).
 * `stopLoss`: Batas Cut Loss (SL).

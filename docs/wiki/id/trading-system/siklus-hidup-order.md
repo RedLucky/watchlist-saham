@@ -65,6 +65,30 @@ Setiap kali status posisi trading berubah dari `OPEN` menjadi `WIN` atau `LOSS`,
 
 ---
 
+## 🤖 Pemisahan Sumber Rekomendasi (Sistem vs User)
+
+Untuk memisahkan antara akurasi sinyal bot otomatis dengan pilihan subjektif pengguna, setiap rekomendasi ditandai dengan `source`:
+* `source: 'SYSTEM'`: Dibuat otomatis oleh cron rekomendasi harian jam 18:00 WIB (`src/scripts/discord-notifier.js`) untuk setup Scalping, Daily, dan Swing.
+* `source: 'USER'`: Ditambahkan secara manual oleh pengguna yang login melalui modal "Pantau" di halaman Analisis Saham.
+
+Dashboard Win Rate (`src/components/HistoryPanel.jsx`) menyajikan kartu KPI perbandingan mandiri:
+* **🤖 Bot Discord**: Win rate riil, total transaksi, serta statistik WIN/LOSS/OPEN khusus sinyal algoritma sistem.
+* **👤 Pantauan Anda**: Win rate riil dan riwayat transaksi khusus saham pilihan mandiri pengguna.
+
+---
+
+## ⚙️ Mekanisme Evaluasi Status Otomatis (Dual-Trigger)
+
+Status posisi diperbarui secara otomatis menggunakan modul terpadu `src/lib/recommendationTracker.js` melalui dua jalur eksekusi:
+1. **Background Daemon Cron (Setiap 5 Menit di Docker)**:
+   * Kontainer `watchlist_scraper` mengeksekusi `src/scripts/sync-prices.js` secara berkala setiap 5 menit.
+   * Tepat setelah menyimpan harga pasar terbaru dari Yahoo Finance, fungsi `updateExistingRecommendations()` memeriksa seluruh antrean `WAITING_BUY` dan posisi aktif `OPEN`.
+   * Berjalan otomatis 24 jam nonstop tanpa perlu interaksi pengguna di browser.
+2. **Jalur Akses Web API (On-Demand)**:
+   * Setiap kali endpoint `/api/stocks` dipanggil saat pengguna membuka aplikasi web, fungsi evaluasi yang sama dijalankan untuk memastikan kesegaran data (*failsafe*).
+
+---
+
 ## 🎯 Rumus Perhitungan Win Rate Riil
 
 $$\text{Win Rate} = \frac{\text{Jumlah Transaksi WIN}}{\text{Jumlah Transaksi WIN} + \text{Jumlah Transaksi LOSS}} \times 100\%$$

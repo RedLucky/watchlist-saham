@@ -28,6 +28,7 @@ The primary table for all Indonesian listed stocks:
 ### 2. `Recommendation`
 Persists the real-world performance record of stock picks and user-monitored tickers:
 * `userId` (Int, optional): Owner of the recommendation.
+* `source` (String, default: `"USER"`): Discriminator between automated Discord bot picks (`"SYSTEM"`) and manual user watchlists (`"USER"`). Indexed via `@@index([source])`.
 * `ticker`, `name`, `date` (DateTime).
 * `priceAtRecommend` (Float): Target entry or current market price.
 * `targetPrice` (Float): Take Profit (TP).
