@@ -232,9 +232,10 @@ async function sendToDiscord(payloads) {
 async function main() {
   console.log('=== MEMULAI GENERASI REKOMENDASI SAHAM UNTUK DISCORD ===');
   try {
-    const { results, marketData } = await generateRecommendations();
-    console.log(`Ditemukan ${results.length} grup rekomendasi yang memiliki saham aktif.`);
-    const payloads = formatDiscordEmbeds(results, marketData);
+    const data = await generateRecommendations();
+    const totalStocks = data.categories.reduce((acc, c) => acc + c.stocks.length, 0);
+    console.log(`Ditemukan total ${totalStocks} saham rekomendasi dari 3 horizon waktu.`);
+    const payloads = formatDiscordEmbeds(data);
     await sendToDiscord(payloads);
   } catch (err) {
     console.error('[DISCORD-ERROR]', err);
