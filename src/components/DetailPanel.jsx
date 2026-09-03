@@ -8,6 +8,7 @@ import StockChart from './StockChart';
 export default function DetailPanel({ stock, mode, styleName }) {
   const [promptModal, setPromptModal] = useState(null);
   const [promptValue, setPromptValue] = useState('');
+  const [isAlreadyBought, setIsAlreadyBought] = useState(false);
   const [toast, setToast] = useState(null);
 
   const showToast = (message, type = 'success') => {
@@ -52,6 +53,7 @@ export default function DetailPanel({ stock, mode, styleName }) {
       message: `Berapa lembar saham ${stock.ticker} yang ingin dibeli? (1 lot = 100 lembar)`,
       placeholder: 'Contoh: 100',
       confirmLabel: '+ Tambah ke Portofolio',
+      showBoughtCheckbox: false,
       onSubmit: (val) => {
         const shares = parseInt(val, 10);
         if (shares > 0) {
@@ -73,11 +75,13 @@ export default function DetailPanel({ stock, mode, styleName }) {
   };
 
   const handleOpenMonitorPrompt = () => {
-    setPromptValue(stock.price ? stock.price.toString() : '');
+    const defaultEntryPrice = stock.entry?.low || stock.price;
+    setPromptValue(defaultEntryPrice ? defaultEntryPrice.toString() : '');
     setIsAlreadyBought(false);
     setPromptModal({
+      showBoughtCheckbox: true,
       title: `Pantau Saham ${stock.ticker}`,
-      message: `Masukkan harga entry untuk ${stock.ticker} (default: harga saat ini Rp ${formatPrice(stock.price)}):`,
+      message: `Masukkan harga entry untuk ${stock.ticker} (default rekomendasi: Rp ${formatPrice(defaultEntryPrice)}):`,
       placeholder: 'Harga Entry...',
       confirmLabel: 'Mulai Pantau',
       onSubmit: (val, boughtFlag) => {
@@ -109,8 +113,9 @@ export default function DetailPanel({ stock, mode, styleName }) {
           .then(r => r.json())
           .then(res => {
             if (res.error) showToast(res.error, 'error');
-            else if (res.message) showToast(res.message, 'success');
-            else {
+            else if (res.message === 'Already saved today') {
+              showToast(`⚠️ Saham ${stock.ticker} (${styleName || 'swing'}) sudah dipantau hari ini`, 'warning');
+            } else {
               const statusDesc = boughtFlag ? 'Posisi Aktif' : 'Antri Beli';
               showToast(`🎯 ${stock.ticker} mulai dipantau (${statusDesc}) di Win Rate Dashboard dengan harga Rp ${formatPrice(inputPrice)}!`, 'success');
             }
@@ -443,24 +448,26 @@ export default function DetailPanel({ stock, mode, styleName }) {
               />
 
               {/* Checkbox Sudah Beli */}
-              <label className="flex items-start gap-2.5 p-3 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-slate-800/40 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={isAlreadyBought}
-                  onChange={(e) => setIsAlreadyBought(e.target.checked)}
-                  className="w-4 h-4 mt-0.5 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 dark:border-slate-600 cursor-pointer"
-                />
-                <div className="space-y-0.5">
-                  <div className="text-xs font-bold text-slate-900 dark:text-white">
-                    Sudah Beli di Harga Ini (Bukan Antri)
+              {promptModal.showBoughtCheckbox && (
+                <label className="flex items-start gap-2.5 p-3 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-slate-800/40 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={isAlreadyBought}
+                    onChange={(e) => setIsAlreadyBought(e.target.checked)}
+                    className="w-4 h-4 mt-0.5 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 dark:border-slate-600 cursor-pointer"
+                  />
+                  <div className="space-y-0.5">
+                    <div className="text-xs font-bold text-slate-900 dark:text-white">
+                      Sudah Beli di Harga Ini (Bukan Antri)
+                    </div>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
+                      {isAlreadyBought 
+                        ? '✅ Posisi langsung aktif (OPEN) & mulai pantau Target TP/SL.' 
+                        : '⏳ Default: Antri Beli. Sistem akan menunggu harga pasar turun ke level beli sebelum memantau Win/Loss.'}
+                    </p>
                   </div>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
-                    {isAlreadyBought 
-                      ? '✅ Posisi langsung aktif (OPEN) & mulai pantau Target TP/SL.' 
-                      : '⏳ Default: Antri Beli. Sistem akan menunggu harga pasar turun ke level beli sebelum memantau Win/Loss.'}
-                  </p>
-                </div>
-              </label>
+                </label>
+              )}
             </div>
 
             <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
