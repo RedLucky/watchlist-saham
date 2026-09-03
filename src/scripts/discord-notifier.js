@@ -136,15 +136,42 @@ async function generateRecommendations() {
   return { marketData, detectedMode, categories };
 }
 
+function getNextTradingDate(currentDate = new Date()) {
+  const jakartaStr = currentDate.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' });
+  const d = new Date(jakartaStr);
+  const hour = d.getHours();
+
+  // Jika lewat jam 15:00 WIB (menjelang / setelah bursa tutup), target eksekusi adalah hari bursa berikutnya
+  if (hour >= 15) {
+    d.setDate(d.getDate() + 1);
+  }
+
+  // Lewati Sabtu (6) dan Minggu (0) ke hari bursa Senin
+  while (d.getDay() === 0 || d.getDay() === 6) {
+    d.setDate(d.getDate() + 1);
+  }
+
+  return d;
+}
+
 function formatDiscordEmbeds(data) {
   const { marketData, detectedMode, categories } = data;
   const now = new Date();
-  const dateStr = now.toLocaleDateString('id-ID', {
+  
+  const createdDateStr = now.toLocaleDateString('id-ID', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
     year: 'numeric',
     timeZone: 'Asia/Jakarta'
+  });
+
+  const nextTradingDate = getNextTradingDate(now);
+  const targetTradingDateStr = nextTradingDate.toLocaleDateString('id-ID', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
   });
 
   const embeds = [];
@@ -153,8 +180,8 @@ function formatDiscordEmbeds(data) {
   const ihsgChange = Number(marketData?.indexChange || 0);
   const ihsgSign = ihsgChange >= 0 ? '+' : '';
   embeds.push({
-    title: `📋 WATCHLIST EKSEKUSI SAHAM IDX (${dateStr})`,
-    description: `Watchlist harian presisi dikurasi berdasarkan horizon trading: **Beli Pagi Jual Sore**, **Hold 2-3 Hari**, dan **Hold 1-3 Minggu**.\n\n` +
+    title: `📋 WATCHLIST EKSEKUSI SAHAM IDX — ${targetTradingDateStr.toUpperCase()}`,
+    description: `Watchlist saham presisi untuk perdagangan bursa hari **${targetTradingDateStr}** *(Disiapkan: ${createdDateStr})*.\n\n` +
       `🏛️ **Kondisi Pasar**: IHSG **${Number(marketData?.indexValue || 7200).toLocaleString('id-ID')}** (${ihsgSign}${ihsgChange.toFixed(2)}%) • Mode: **${(detectedMode || 'Balanced').toUpperCase()}**`,
     color: 0x6366f1, // Indigo
   });
