@@ -332,8 +332,22 @@ export async function GET(request) {
     const provider = getActiveProvider();
     const stocks = await provider.getStocks();
 
-    // Basic filter: price > 50 and not index
-    const validStocks = stocks.filter(s => s && s.price > 50 && s.ticker !== '^JKSE');
+    // Filter likuiditas dinamis (Opsi B):
+    // - passive / dividend : min Rp 500 Juta
+    // - potential : min Rp 250 Juta
+    // - cheap / quality / pick : min Rp 150 Juta
+    const screenerMinTurnover = (type === 'passive' || type === 'dividend')
+      ? 500_000_000
+      : (type === 'potential')
+      ? 250_000_000
+      : 150_000_000;
+
+    const validStocks = stocks.filter(s => 
+      s && 
+      s.price > 50 && 
+      s.ticker !== '^JKSE' && 
+      Number(s.transactionAvg || s.dailyTurnover || 0) >= screenerMinTurnover
+    );
 
     let results = [];
     const swingStyle = getStyleConfig('swing');

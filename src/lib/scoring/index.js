@@ -7,13 +7,14 @@ import { calculateTrendingScore } from './trending.js';
 import { calculateValuationScore } from './valuation.js';
 import { calculateLiquidityScore } from './liquidity.js';
 import { calculateDividendScore } from './dividend.js';
-import { applyHardFilter } from './hardFilter.js';
+import { applyHardFilter, getMinTurnoverThreshold } from './hardFilter.js';
 
 const SCORE_KEYS = ['fundamental', 'technical', 'smartMoney', 'trending', 'valuation', 'liquidity', 'dividend'];
 
 export function scoreAllStocks(stocks, marketWeights, styleConfig, sectorStrengths = {}, modeName = 'balanced') {
-  // Langkah 1: Hard filter
-  const filtered = applyHardFilter(stocks);
+  // Langkah 1: Hard filter dengan likuiditas dinamis (Opsi B)
+  const minTurnover = getMinTurnoverThreshold(modeName, styleConfig?.name);
+  const filtered = applyHardFilter(stocks, minTurnover);
 
   // Langkah 2: Gabungkan bobot mode pasar + gaya trading.
   const marketInfluence = clamp(Number(styleConfig.marketInfluence ?? 0.5), 0, 1);

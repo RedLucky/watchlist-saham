@@ -3,11 +3,46 @@
  * This is the first gate — no exceptions.
  *
  * Sector-aware: DER threshold is skipped for Financials (banks naturally have high DER).
+ * Dynamic Turnover: Likuiditas minimum menyesuaikan gaya trading & mode pasar.
  */
 
 import { isFinancialSector } from './financialHealth.js';
 
-export function applyHardFilter(stocks) {
+/**
+ * Menentukan batas minimum turnover harian (Rupiah) berdasarkan gaya trading dan mode pasar:
+ * - Scalping / Daily / Swing : Rp 250 Juta (Eksekusi cepat, minim slippage, likuiditas aktif)
+ * - Defensive / Conservative / Dividend / Passive : Rp 1 Miliar (Investor institusi / Blue Chip mapan)
+ * - Growth / Balanced / Auto : Rp 150 Juta (Keseimbangan emiten compounder potensial)
+ * - Custom : Rp 50 Juta (Fleksibilitas riset mandiri)
+ *
+ * @param {string} [modeName='balanced']
+ * @param {string} [styleName='swing']
+ * @returns {number} Batas minimum turnover dalam Rupiah
+ */
+export function getMinTurnoverThreshold(modeName = 'balanced', styleName = 'swing') {
+  const mode = String(modeName || '').toLowerCase().trim();
+  const style = String(styleName || '').toLowerCase().trim();
+
+  // 1. Trading aktif (Scalping / Daily / Swing): butuh likuiditas order book tebal
+  if (style === 'scalping' || style === 'daily' || style === 'swing') {
+    return 250_000_000; // Rp 250 Juta
+  }
+
+  // 2. Investor defensif / dividen: fokus emiten berkapitalisasi besar
+  if (mode === 'defensive' || mode === 'conservative' || mode === 'dividend' || mode === 'passive') {
+    return 1_000_000_000; // Rp 1 Miliar
+  }
+
+  // 3. Custom mode: fleksibilitas eksplorasi
+  if (mode === 'custom') {
+    return 50_000_000; // Rp 50 Juta
+  }
+
+  // 4. Default mode (Growth, Balanced, Auto)
+  return 150_000_000; // Rp 150 Juta
+}
+
+export function applyHardFilter(stocks, minTurnover = 30000000) {
   return stocks.filter(stock => {
     const fundamentals = stock?.fundamentals || {};
     const profits = Array.isArray(fundamentals.netProfit) ? fundamentals.netProfit.filter(p => Number.isFinite(p)) : [];
@@ -35,8 +70,8 @@ export function applyHardFilter(stocks) {
       }
     }
 
-    // Avg daily turnover ≥ 30M IDR/day
-    if (txnAvg < 30000000) {
+    // 4. Turnover harian dinamis (berdasarkan gaya & mode pasar)
+    if (txnAvg < minTurnover) {
       return false;
     }
 
@@ -49,7 +84,7 @@ export function applyHardFilter(stocks) {
   });
 }
 
-export function getFilterReasons(stock) {
+export function getFilterReasons(stock, minTurnover = 30000000) {
   const reasons = [];
   const fundamentals = stock?.fundamentals || {};
   const sector = stock?.sector || '';
@@ -67,8 +102,11 @@ export function getFilterReasons(stock) {
     reasons.push(`DER ${fundamentals.der.toFixed(2)} melebihi batas maksimum 1.5x (sektor non-finansial)`);
   }
 
-  if (Number(stock?.transactionAvg || 0) < 30000000) {
-    reasons.push('Average daily turnover below 30M IDR');
+  if (Number(stock?.transactionAvg || 0) < minTurnover) {
+    const formatted = minTurnover >= 1_000_000_000 
+      ? `Rp ${(minTurnover / 1_000_000_000).toFixed(1)} Miliar` 
+      : `Rp ${(minTurnover / 1_000_000).toFixed(0)} Juta`;
+    reasons.push(`Turnover harian di bawah batas minimum ${formatted}/hari`);
   }
 
   if (stock?.status !== 'active') {

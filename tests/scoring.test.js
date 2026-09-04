@@ -12,7 +12,7 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateFundamentalScore } from '../src/lib/scoring/fundamental.js';
 import { calculateValuationScore } from '../src/lib/scoring/valuation.js';
-import { applyHardFilter } from '../src/lib/scoring/hardFilter.js';
+import { applyHardFilter, getMinTurnoverThreshold } from '../src/lib/scoring/hardFilter.js';
 import { calculateSmartMoneyScore } from '../src/lib/scoring/smartMoney.js';
 
 describe('1. Skoring Fundamental (calculateFundamentalScore)', () => {
@@ -147,6 +147,48 @@ describe('3. Hard Filter (applyHardFilter)', () => {
     ];
     const filtered = applyHardFilter(illiquidStocks);
     assert.equal(filtered.length, 0);
+  });
+
+  test('Menghitung ambang turnover dinamis berdasarkan mode pasar dan gaya trading (Opsi B)', () => {
+    assert.equal(getMinTurnoverThreshold('balanced', 'scalping'), 250000000);
+    assert.equal(getMinTurnoverThreshold('balanced', 'swing'), 250000000);
+    assert.equal(getMinTurnoverThreshold('conservative', 'swing'), 250000000); // style swing prioritizes Rp 250 Jt
+    assert.equal(getMinTurnoverThreshold('defensive', 'investor'), 1000000000);
+    assert.equal(getMinTurnoverThreshold('dividend', 'investor'), 1000000000);
+    assert.equal(getMinTurnoverThreshold('custom', 'investor'), 50000000);
+    assert.equal(getMinTurnoverThreshold('growth', 'investor'), 150000000);
+  });
+
+  test('Memfilter saham berdasarkan ambang turnover dinamis secara ketat', () => {
+    const testStocks = [
+      {
+        ticker: 'SMALL',
+        sector: 'Basic Materials',
+        status: 'active',
+        transactionAvg: 100000000, // Rp 100 Juta
+        fundamentals: { roe: 15, der: 0.5, netProfit: [100, 120] }
+      },
+      {
+        ticker: 'MEDIUM',
+        sector: 'Basic Materials',
+        status: 'active',
+        transactionAvg: 300000000, // Rp 300 Juta
+        fundamentals: { roe: 15, der: 0.5, netProfit: [100, 120] }
+      }
+    ];
+
+    // Pada threshold custom (Rp 50 Jt): kedua saham lolos
+    const passCustom = applyHardFilter(testStocks, 50000000);
+    assert.equal(passCustom.length, 2);
+
+    // Pada threshold swing/trader (Rp 250 Jt): hanya MEDIUM yang lolos
+    const passSwing = applyHardFilter(testStocks, 250000000);
+    assert.equal(passSwing.length, 1);
+    assert.equal(passSwing[0].ticker, 'MEDIUM');
+
+    // Pada threshold defensive/blue-chip (Rp 1 Miliar): keduanya gugur
+    const passDefensive = applyHardFilter(testStocks, 1000000000);
+    assert.equal(passDefensive.length, 0);
   });
 });
 

@@ -48,3 +48,14 @@ The scoring engine evaluates every stock on a normalized scale of **0 to 100**.
 | **Growth 🚀** | 35% | 10% | 20% | 25% | 10% |
 | **Conservative 🛡️** | 45% | 25% | 10% | 10% | 10% |
 | **Defensive 🔒** | 50% | 30% | 10% | 5% | 5% |
+
+---
+
+## 🛡️ Dynamic Hard Filter & Liquidity Protection
+
+To eliminate illiquid traps and slippage, the initial screening gate enforces dynamic daily turnover thresholds:
+* **Scalping / Daily / Swing**: Minimum **Rp 250 Juta/day** (ensures active order book depth for rapid position entries/exits).
+* **Defensive / Conservative / Dividend / Passive**: Minimum **Rp 1 Miliar/day** (restricts universe strictly to institutional-grade blue-chips).
+* **Growth / Balanced / Auto**: Minimum **Rp 150 Juta/day** (balances agile potential compounders with safe exit liquidity).
+* **Custom Mode**: Minimum **Rp 50 Juta/day** (allows flexible user-directed research).
+

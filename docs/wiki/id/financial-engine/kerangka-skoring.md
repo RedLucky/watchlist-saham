@@ -48,3 +48,14 @@ Engine skoring mengevaluasi setiap emiten menggunakan skala terstandarisasi **0 
 | **Pertumbuhan 🚀** | 35% | 10% | 20% | 25% | 10% |
 | **Konservatif 🛡️** | 45% | 25% | 10% | 10% | 10% |
 | **Defensif 🔒** | 50% | 30% | 10% | 5% | 5% |
+
+---
+
+## 🛡️ Hard Filter Dinamis & Perlindungan Likuiditas
+
+Untuk mencegah risiko terjebak pada saham tidak likuid (*liquidity trap*) dan meminimalisir *slippage*, gerbang penyaringan awal menerapkan batas transaksi harian dinamis:
+* **Scalping / Daily / Swing**: Minimum **Rp 250 Juta/hari** (menjamin ketebalan antrean bid/offer untuk keluar-masuk cepat).
+* **Defensif / Konservatif / Dividen / Pasif**: Minimum **Rp 1 Miliar/hari** (membatasi pilihan hanya pada saham berkapitalisasi besar / institusional).
+* **Pertumbuhan (Growth) / Seimbang (Balanced) / Auto**: Minimum **Rp 150 Juta/hari** (keseimbangan antara potensi compounder dan likuiditas aman).
+* **Mode Kustom (Custom)**: Minimum **Rp 50 Juta/hari** (memberikan fleksibilitas riset mandiri bagi pengguna).
+
