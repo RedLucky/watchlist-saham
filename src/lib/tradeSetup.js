@@ -68,15 +68,52 @@ export function calculateTradeSetup(stock, technicalResult, styleConfig) {
     entryHigh = entryLow + getIDXPriceStep(entryLow);
   }
 
-  // 2. Target Price (Take Profit): Wajib berada di atas entry.high minimal 2 fraksi
+  // 2. Target Price (Take Profit): Padukan target persentase dengan Resisten Swing High terdekat
   const rawTarget = price * (1 + targetPct / 100);
-  let target = roundToIDXTick(rawTarget, 'up');
+  let targetCandidate = rawTarget;
+
+  // Periksa swing high 20 hari terakhir dari technicals.highs atau technicals.prices
+  const recentHighs = Array.isArray(technicals.highs) && technicals.highs.length >= 5
+    ? technicals.highs.slice(-20)
+    : (Array.isArray(technicals.prices) && technicals.prices.length >= 5 ? technicals.prices.slice(-20) : []);
+  
+  if (recentHighs.length > 0) {
+    const swingResistance = Math.max(...recentHighs);
+    // Jika resisten berada di atas entryHigh minimal 2.5% dan dalam jangkauan wajar
+    if (swingResistance > entryHigh * 1.025 && swingResistance < entryHigh * 1.35) {
+      // Pasang TP 1 fraksi di bawah level resisten agar order mudah tereksekusi sebelum pembalikan arah
+      const step = getIDXPriceStep(swingResistance);
+      const resistanceTarget = swingResistance - step;
+      if (resistanceTarget > entryHigh * 1.025) {
+        targetCandidate = Math.max(rawTarget, resistanceTarget);
+      }
+    }
+  }
+
+  let target = roundToIDXTick(targetCandidate, 'up');
   const minTarget = entryHigh + (getIDXPriceStep(entryHigh) * 2);
   target = Math.max(target, minTarget);
 
-  // 3. Stop Loss: WAJIB berada di bawah entry.low (minimal 2 fraksi di bawah harga beli terendah)
-  const rawStopLoss = entryLow * (1 - stopLossPct / 100);
-  let stopLoss = roundToIDXTick(rawStopLoss, 'down');
+  // 3. Stop Loss: Dinamis berbasis Volatilitas (ATR) & Supertrend
+  const atr = Number(technicals.atr14 || technicals.atr || 0);
+  const percentStopLoss = entryLow * (1 - stopLossPct / 100);
+  
+  let dynamicStopLoss = percentStopLoss;
+  if (atr > 0) {
+    // Berikan bantalan volatilitas 1.5x ATR di bawah entryLow
+    const atrStopLoss = entryLow - (1.5 * atr);
+    // Batasi risiko maksimal agar tidak lebih dalam dari -8%
+    const maxRiskFloor = entryLow * 0.92;
+    dynamicStopLoss = Math.max(maxRiskFloor, Math.min(percentStopLoss, atrStopLoss));
+  }
+
+  // Jika Supertrend lower band tersedia dan berada di bawah entryLow, pertimbangkan sebagai level support
+  const stLower = Number(technicals.supertrend?.lowerBand || (technicals.supertrend?.trend === 'bullish' ? technicals.supertrend?.value : null));
+  if (stLower && stLower < entryLow && stLower >= entryLow * 0.92) {
+    dynamicStopLoss = Math.min(dynamicStopLoss, stLower);
+  }
+
+  let stopLoss = roundToIDXTick(dynamicStopLoss, 'down');
   const maxStopLoss = entryLow - (getIDXPriceStep(entryLow) * 2);
   stopLoss = Math.min(stopLoss, maxStopLoss);
 

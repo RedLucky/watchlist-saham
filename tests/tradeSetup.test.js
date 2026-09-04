@@ -86,4 +86,37 @@ test('3. Trade Setup Constraints (calculateTradeSetup)', async (t) => {
   await t.test('Risk Reward ratio bernilai positif dan logis', () => {
     assert.ok(setup.riskReward > 0);
   });
+
+  await t.test('Menggunakan ATR untuk bantalan Stop Loss jika volatilitas tinggi', () => {
+    const volatileStock = {
+      price: 2000,
+      technicals: {
+        atr14: 60, // 1.5 * 60 = 90 poin buffer di bawah entry
+        prices: [1950, 1980, 2000],
+      }
+    };
+    const volatileSetup = calculateTradeSetup(volatileStock, { setup: 'swing' }, {
+      name: 'swing',
+      exit: { tp: 5.0, sl: 2.5 }
+    });
+    // Default SL 2.5% dari 2000 adalah 1950 (50 poin). Dengan ATR 60, 1.5 * ATR = 90 -> SL dinamis ~ 1910
+    assert.ok(volatileSetup.stopLoss <= volatileSetup.entry.low - 80, `Stop Loss (${volatileSetup.stopLoss}) harus memperhitungkan buffer ATR 1.5x`);
+    assert.ok(volatileSetup.stopLoss >= volatileSetup.entry.low * 0.92, 'Stop Loss tidak boleh melampaui batas risiko -8%');
+  });
+
+  await t.test('Target Price menempel di bawah Resisten Swing High terdekat', () => {
+    const swingStock = {
+      price: 2000,
+      technicals: {
+        highs: [1980, 2010, 2050, 2120, 2110, 2100], // swing resistance = 2120
+      }
+    };
+    const swingSetup = calculateTradeSetup(swingStock, { setup: 'swing' }, {
+      name: 'swing',
+      exit: { tp: 3.0, sl: 2.5 } // raw TP 3% = 2060
+    });
+    // Resistance adalah 2120. Step untuk 2120 adalah 10. Resisten target = 2120 - 10 = 2110 > raw target 2060.
+    assert.ok(swingSetup.target >= 2110, `Target price (${swingSetup.target}) harus terjangkar pada swing high resistance 2120`);
+  });
 });
+

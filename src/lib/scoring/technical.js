@@ -5,7 +5,7 @@
 import { evaluateStyleSignal } from '../signals/styleSignal.js';
 
 export function calculateTechnicalScore(stock, styleConfig = { name: 'swing', label: 'Swing Trading', indicators: { rsiPeriod: 14, maShort: 20, maLong: 50, volSpike: 1.1 }}) {
-  const { rsi7, rsi14, ma9, ma20, ma50, ma200, prices, volumes, resistance, macd } = stock?.technicals || {};
+  const { rsi7, rsi14, ma9, ma20, ma50, ma200, prices, volumes, resistance, macd, bollinger } = stock?.technicals || {};
   const { rsiPeriod = 14, maShort = 20, maLong = 50, volSpike = 1.1 } = styleConfig?.indicators || {};
   
   const price = stock?.price || 0;
@@ -117,6 +117,13 @@ export function calculateTechnicalScore(stock, styleConfig = { name: 'swing', la
       : 'Belum ada setup beli yang jelas untuk mode ini'
     );
   }
+
+  // Bollinger Squeeze Bonus (Kompresi volatilitas ketat berpotensi ledakan breakout)
+  if (bollinger?.bandwidth && bollinger.bandwidth > 0 && bollinger.bandwidth <= 0.12) {
+    setupScore = Math.min(100, setupScore + 10);
+    details.push(`🔥 Bollinger Squeeze (BW ${(bollinger.bandwidth * 100).toFixed(1)}%) — kompresi volatilitas ketat, potensi ledakan harga tinggi`);
+  }
+
   score += setupScore * 0.35;
 
   // 3. RSI Zone (15%)
@@ -192,6 +199,7 @@ export function calculateTechnicalScore(stock, styleConfig = { name: 'swing', la
       shortMAName: `MA${maShort}`,
       longMAName: `MA${maLong}`,
       macdHistogram: macd && Number.isFinite(macd.histogram) ? Number(macd.histogram).toFixed(2) : '0.00',
+      bollingerBandwidth: bollinger?.bandwidth ? (bollinger.bandwidth * 100).toFixed(1) + '%' : null,
     },
   };
 }

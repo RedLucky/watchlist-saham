@@ -14,6 +14,7 @@ import { calculateFundamentalScore } from '../src/lib/scoring/fundamental.js';
 import { calculateValuationScore } from '../src/lib/scoring/valuation.js';
 import { applyHardFilter, getMinTurnoverThreshold } from '../src/lib/scoring/hardFilter.js';
 import { calculateSmartMoneyScore } from '../src/lib/scoring/smartMoney.js';
+import { calculateTechnicalScore } from '../src/lib/scoring/technical.js';
 
 describe('1. Skoring Fundamental (calculateFundamentalScore)', () => {
   test('Super Compounder (ROE >= 20%, OPM >= 20%, DER Rendah) mendapat skor >= 85', () => {
@@ -206,3 +207,38 @@ describe('4. Smart Money / Bandarmologi (calculateSmartMoneyScore)', () => {
     assert.ok(res.details.some(d => d.includes('Volume meningkat kuat')));
   });
 });
+
+describe('5. Skoring Teknikal & Bollinger Squeeze (calculateTechnicalScore)', () => {
+  test('Bollinger Squeeze (bandwidth <= 0.12) memberikan bonus skor setup breakout', () => {
+    const stockNormal = {
+      price: 2000,
+      technicals: {
+        rsi14: 55,
+        ma20: 1950,
+        ma50: 1900,
+        prices: [1950, 1980, 2000],
+        volumes: [1000, 1000, 1000, 1000, 1000, 1500],
+        bollinger: { bandwidth: 0.25 }
+      }
+    };
+    const resNormal = calculateTechnicalScore(stockNormal);
+
+    const stockSqueeze = {
+      price: 2000,
+      technicals: {
+        rsi14: 55,
+        ma20: 1950,
+        ma50: 1900,
+        prices: [1950, 1980, 2000],
+        volumes: [1000, 1000, 1000, 1000, 1000, 1500],
+        bollinger: { bandwidth: 0.08 } // Squeeze ketat 8%
+      }
+    };
+    const resSqueeze = calculateTechnicalScore(stockSqueeze);
+
+    assert.ok(resSqueeze.score >= resNormal.score, `Skor saham squeeze (${resSqueeze.score}) harus >= saham normal (${resNormal.score})`);
+    assert.ok(resSqueeze.details.some(d => d.includes('Bollinger Squeeze')), 'Detail teknikal harus mendeteksi Bollinger Squeeze');
+    assert.equal(resSqueeze.metrics.bollingerBandwidth, '8.0%');
+  });
+});
+

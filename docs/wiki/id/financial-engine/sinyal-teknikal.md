@@ -43,3 +43,30 @@ $$\text{DEMA} = 2 \times \text{EMA}(20) - \text{EMA}(\text{EMA}(20))$$
 * $\text{Garis MACD} = \text{EMA}(12) - \text{EMA}(26)$
 * $\text{Garis Sinyal} = \text{EMA}(\text{Garis MACD}, 9)$
 * $\text{Histogram} = \text{Garis MACD} - \text{Garis Sinyal}$
+
+---
+
+## 🎯 4. Bollinger Bands & Kompresi Volatilitas (Squeeze)
+* $\text{Pita Tengah} = \text{SMA}(20)$
+* $\text{Pita Atas / Bawah} = \text{SMA}(20) \pm (2.0 \times \sigma)$
+* $\text{Bandwidth} = \frac{\text{Pita Atas} - \text{Pita Bawah}}{\text{Pita Tengah}}$
+* **Pemicu Bollinger Squeeze**: Ketika $\text{Bandwidth} \le 0.12$ (12%), volatilitas mengalami kompresi ketat. Mesin skoring teknikal memberikan **bonus +10** untuk mendeteksi potensi ledakan breakout eksplosif.
+
+---
+
+## 🛡️ 5. Presisi Setup Trading & Manajemen Risiko
+
+Implementasi terdapat pada `src/lib/tradeSetup.js`. Seluruh batasan harga mematuhi fraksi harga resmi Bursa Efek Indonesia (`getIDXPriceStep`).
+
+### 1. Stop Loss Dinamis Berbasis Volatilitas (ATR & Supertrend)
+Mencegah terjadinya *shakeout* prematur pada saham ber-beta tinggi dengan tetap menjaga modal secara disiplin:
+$$\text{ATR Stop Loss} = \text{Entry Low} - (1.5 \times \text{ATR}_{14})$$
+* **Batasan Dinamis**: $\text{Stop Loss} = \max(\text{Entry Low} \times 0.92, \, \min(\text{Fixed \% SL}, \, \text{ATR Stop Loss}))$
+* **Penyangga Supertrend**: Jika pita bawah Supertrend tersedia dan $\ge \text{Entry Low} \times 0.92$, dijadikan level penopang struktural.
+* **Aturan Baku**: Stop Loss wajib berjarak minimal 2 fraksi harga di bawah $\text{Entry Low}$ dan batas toleransi penurunan maksimal $-8\%$.
+
+### 2. Target Price (Take Profit) Terjangkar Resisten Swing High
+Bukan sekadar target persentase kaku, level ambil untung disinkronkan dengan resisten *swing high* 20 hari terakhir:
+$$\text{Target} = \max(\text{Raw Target}, \, \text{Swing Resistance}_{20} - \text{Fraksi Harga})$$
+* Memasang TP 1 tick tepat di bawah level resisten memastikan peluang *fill* order lebih tinggi sebelum tekanan jual memicu pembalikan arah.
+

@@ -43,3 +43,30 @@ $$\text{DEMA} = 2 \times \text{EMA}(20) - \text{EMA}(\text{EMA}(20))$$
 * $\text{MACD Line} = \text{EMA}(12) - \text{EMA}(26)$
 * $\text{Signal Line} = \text{EMA}(\text{MACD Line}, 9)$
 * $\text{Histogram} = \text{MACD Line} - \text{Signal Line}$
+
+---
+
+## 🎯 4. Bollinger Bands & Volatility Squeeze
+* $\text{Middle Band} = \text{SMA}(20)$
+* $\text{Upper / Lower Band} = \text{SMA}(20) \pm (2.0 \times \sigma)$
+* $\text{Bandwidth} = \frac{\text{Upper Band} - \text{Lower Band}}{\text{Middle Band}}$
+* **Bollinger Squeeze Trigger**: When $\text{Bandwidth} \le 0.12$ (12%), volatility has contracted into a tight coil. The technical scoring engine awards a **+10 bonus** for primed explosive breakout setups.
+
+---
+
+## 🛡️ 5. Precision Trade Setup & Risk Management
+
+Located in `src/lib/tradeSetup.js`. All price boundaries strictly adhere to official Indonesia Stock Exchange (IDX) price ticks (`getIDXPriceStep`).
+
+### 1. Volatility-Adaptive Stop Loss (ATR & Supertrend)
+Prevents premature shakeouts on volatile mid/small caps while maintaining strict capital defense:
+$$\text{ATR Stop Loss} = \text{Entry Low} - (1.5 \times \text{ATR}_{14})$$
+* **Dynamic Bound**: $\text{Stop Loss} = \max(\text{Entry Low} \times 0.92, \, \min(\text{Fixed \% SL}, \, \text{ATR Stop Loss}))$
+* **Supertrend Floor**: If Supertrend Lower Band is available and $\ge \text{Entry Low} \times 0.92$, it serves as structural support.
+* **Hard Rule**: Stop Loss is capped at a minimum of 2 IDX price ticks below $\text{Entry Low}$ and cannot exceed $-8\%$ maximum drawdown.
+
+### 2. Resistance-Anchored Target Price (Take Profit)
+Instead of arbitrary percentage targets, take profit levels anchor directly to the 20-day swing high resistance:
+$$\text{Target} = \max(\text{Raw Target}, \, \text{Swing Resistance}_{20} - \text{Tick Size})$$
+* Placing TP 1 tick below resistance guarantees higher execution fill rates before selling pressure triggers reversal.
+
