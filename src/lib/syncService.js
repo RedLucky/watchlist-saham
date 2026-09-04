@@ -561,6 +561,7 @@ async function deepSyncStockOnce(fullTicker) {
     support: safeNumber(quote?.fiftyTwoWeekLow, (() => { const pos = prices.filter(p => p > 0); return pos.length > 0 ? Math.min(...pos) * 0.98 : prices[prices.length - 1] || 0; })()),
     atr14: calculateATR(cleanRows, 14),
     macd,
+    bollinger: bb,
     bollingerBands: bb,
   };
 

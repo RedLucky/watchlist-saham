@@ -220,7 +220,8 @@ export class DatabaseProvider extends DataProvider {
           support: technicals.support ?? s.price * 0.95,
           atr14: technicals.atr14 ?? 0,
           macd: technicals.macd ?? { macdLine: 0, signalLine: 0, histogram: 0 },
-          bollingerBands: technicals.bollingerBands ?? { upper: s.price, middle: s.price, lower: s.price, bandwidth: 0 },
+          bollinger: technicals.bollinger ?? technicals.bollingerBands ?? { upper: s.price, middle: s.price, lower: s.price, bandwidth: 0 },
+          bollingerBands: technicals.bollingerBands ?? technicals.bollinger ?? { upper: s.price, middle: s.price, lower: s.price, bandwidth: 0 },
         };
 
         const brokerData = deriveBrokerData(normalizedTechnicals, Number(s.price || 0));
