@@ -286,6 +286,7 @@ export default function HistoryPanel() {
                 <th className="p-3">Saham</th>
                 <th className="p-3">Gaya</th>
                 <th className="p-3 text-right">Harga Beli / Antre</th>
+                <th className="p-3 text-right">Harga Saat Ini</th>
                 <th className="p-3 text-right">Target (TP)</th>
                 <th className="p-3 text-right">Cut Loss (SL)</th>
                 <th className="p-3 text-center">Status</th>
@@ -315,13 +316,42 @@ export default function HistoryPanel() {
                       {rec.style}
                     </span>
                   </td>
-                  <td className="p-3 text-right text-slate-800 dark:text-slate-200 font-bold font-mono">
+                  <td className="p-3 text-right text-slate-800 dark:text-slate-200 font-bold font-mono whitespace-nowrap">
                     Rp {Number(rec.priceAtRecommend || 0).toLocaleString('id-ID')}
                   </td>
-                  <td className="p-3 text-right text-emerald-600 dark:text-emerald-400 font-bold font-mono">
+                  <td className="p-3 text-right font-mono whitespace-nowrap">
+                    {rec.currentPrice != null ? (
+                      <div className="flex flex-col items-end leading-tight">
+                        <span className="font-extrabold text-slate-900 dark:text-white">
+                          Rp {Number(rec.currentPrice).toLocaleString('id-ID')}
+                        </span>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          {rec.floatingGainPercent != null && (
+                            <span className={`text-[10px] font-bold ${
+                              rec.floatingGainPercent > 0 
+                                ? 'text-emerald-600 dark:text-emerald-400' 
+                                : rec.floatingGainPercent < 0 
+                                ? 'text-rose-600 dark:text-rose-400' 
+                                : 'text-slate-400'
+                            }`}>
+                              {rec.floatingGainPercent > 0 ? '+' : ''}{rec.floatingGainPercent.toFixed(1)}%
+                            </span>
+                          )}
+                          {rec.exitPrice != null && (rec.status === 'WIN' || rec.status === 'LOSS' || rec.status === 'CLOSED') && (
+                            <span className="text-[9px] text-slate-400 font-semibold" title={`Exit di Rp ${Number(rec.exitPrice).toLocaleString('id-ID')}`}>
+                              (Exit: {Number(rec.exitPrice).toLocaleString('id-ID')})
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-slate-400 font-mono text-xs">-</span>
+                    )}
+                  </td>
+                  <td className="p-3 text-right text-emerald-600 dark:text-emerald-400 font-bold font-mono whitespace-nowrap">
                     Rp {Number(rec.targetPrice || 0).toLocaleString('id-ID')}
                   </td>
-                  <td className="p-3 text-right text-rose-600 dark:text-rose-400 font-bold font-mono">
+                  <td className="p-3 text-right text-rose-600 dark:text-rose-400 font-bold font-mono whitespace-nowrap">
                     Rp {Number(rec.stopLoss || 0).toLocaleString('id-ID')}
                   </td>
                   <td className="p-3 text-center whitespace-nowrap">

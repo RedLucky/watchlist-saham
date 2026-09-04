@@ -49,6 +49,33 @@ export async function GET(request) {
       take: 100,
     });
 
+    // Fetch current live prices from StockData for all unique tickers in recommendations
+    const tickers = [...new Set(recommendations.map(r => r.ticker).filter(Boolean))];
+    const liveStocks = await prisma.stockData.findMany({
+      where: { ticker: { in: tickers } },
+      select: { ticker: true, price: true, changePercent: true }
+    });
+    const priceMap = new Map(liveStocks.map(s => [s.ticker, { price: s.price, changePercent: s.changePercent }]));
+
+    const enrichedRecommendations = recommendations.map(rec => {
+      const live = priceMap.get(rec.ticker);
+      const currentPrice = live ? live.price : null;
+      const currentChangePercent = live ? live.changePercent : null;
+      
+      const entryPrice = rec.priceAtRecommend || rec.entryLow || 0;
+      let floatingGainPercent = null;
+      if (currentPrice != null && entryPrice > 0) {
+        floatingGainPercent = Number((((currentPrice - entryPrice) / entryPrice) * 100).toFixed(2));
+      }
+
+      return {
+        ...rec,
+        currentPrice,
+        currentChangePercent,
+        floatingGainPercent
+      };
+    });
+
     // Helper to calculate Win Rate and breakdown
     const computeStats = (items) => {
       const waiting = items.filter(r => r.status === 'WAITING_BUY').length;
@@ -88,7 +115,7 @@ export async function GET(request) {
     const userItems = allUserRecommendations.filter(r => r.source !== 'SYSTEM' && r.userId === userId);
 
     return NextResponse.json({
-      recommendations,
+      recommendations: enrichedRecommendations,
       stats: computeStats(recommendations),
       systemStats: computeStats(systemItems),
       userStats: computeStats(userItems),
