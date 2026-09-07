@@ -50,7 +50,7 @@ function runPriceSync() {
 
 function runDiscordNotifier() {
   console.log('\n[DISCORD] Memulai pengiriman rekomendasi harian ke Discord...');
-  const proc = exec('node src/scripts/discord-notifier.js', (err) => {
+  const proc = exec('node src/scripts/discord-notifier.js', { maxBuffer: 10 * 1024 * 1024 }, (err) => {
     if (err) {
       console.error(`[DISCORD-ERR] Gagal mengirim notifikasi Discord: ${err.message}`);
     } else {
