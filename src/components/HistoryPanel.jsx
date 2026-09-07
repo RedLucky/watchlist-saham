@@ -86,7 +86,8 @@ export default function HistoryPanel() {
     return true;
   });
 
-  const getStatusBadge = (status) => {
+  const getStatusBadge = (status, notes = '') => {
+    const isTimeStop = Boolean(notes && notes.includes('Time Stop'));
     switch (status) {
       case 'WAITING_BUY':
         return (
@@ -103,13 +104,19 @@ export default function HistoryPanel() {
       case 'WIN':
         return (
           <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 flex items-center justify-center gap-1">
-            <span>🏆</span> WIN (TP)
+            <span>🏆</span> {isTimeStop ? 'WIN (Time)' : 'WIN (TP)'}
           </span>
         );
       case 'LOSS':
         return (
           <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-700 flex items-center justify-center gap-1">
-            <span>🛑</span> LOSS (SL)
+            <span>🛑</span> {isTimeStop ? 'LOSS (Time)' : 'LOSS (SL)'}
+          </span>
+        );
+      case 'CLOSED':
+        return (
+          <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-700 flex items-center justify-center gap-1">
+            <span>⚪</span> Ditutup
           </span>
         );
       case 'EXPIRED':
@@ -355,7 +362,7 @@ export default function HistoryPanel() {
                     Rp {Number(rec.stopLoss || 0).toLocaleString('id-ID')}
                   </td>
                   <td className="p-3 text-center whitespace-nowrap">
-                    {getStatusBadge(rec.status)}
+                    {getStatusBadge(rec.status, rec.notes)}
                   </td>
                   <td className="p-3 text-slate-500 dark:text-slate-400 text-[11px] max-w-xs truncate" title={rec.notes || ''}>
                     {rec.notes || '-'}

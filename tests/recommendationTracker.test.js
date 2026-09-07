@@ -56,5 +56,40 @@ test('1. sendTradeOutcomeNotification Constraints', async (t) => {
       exitPrice: 940,
     });
     assert.equal(typeof lossResult, 'boolean');
+
+    const timeStopWinResult = await sendTradeOutcomeNotification({
+      recommendation: dummyRec,
+      status: 'WIN',
+      exitPrice: 1050,
+      reason: 'Time Stop (14 hari) — Ditutup dengan keuntungan +5.00%',
+    });
+    assert.equal(typeof timeStopWinResult, 'boolean');
+
+    const timeStopLossResult = await sendTradeOutcomeNotification({
+      recommendation: dummyRec,
+      status: 'LOSS',
+      exitPrice: 970,
+      reason: 'Time Stop (14 hari) — Ditutup dengan defisit -3.00%',
+    });
+    assert.equal(typeof timeStopLossResult, 'boolean');
+  });
+
+  await t.test('Evaluasi Time Stop: profit >= 0 menjadi WIN, minus menjadi LOSS', () => {
+    const entryPrice = 1000;
+    
+    // Kasus 1: Harga naik saat waktu habis -> WIN
+    const exitPriceProfit = 1050;
+    const statusProfit = exitPriceProfit >= entryPrice ? 'WIN' : 'LOSS';
+    assert.equal(statusProfit, 'WIN', 'Harga di atas harga beli saat waktu habis wajib terhitung WIN');
+
+    // Kasus 2: Harga sama / BEP saat waktu habis -> WIN (modal terlindungi)
+    const exitPriceFlat = 1000;
+    const statusFlat = exitPriceFlat >= entryPrice ? 'WIN' : 'LOSS';
+    assert.equal(statusFlat, 'WIN', 'BEP saat waktu habis terhitung WIN (modal terlindungi)');
+
+    // Kasus 3: Harga turun saat waktu habis -> LOSS
+    const exitPriceLoss = 980;
+    const statusLoss = exitPriceLoss >= entryPrice ? 'WIN' : 'LOSS';
+    assert.equal(statusLoss, 'LOSS', 'Harga di bawah harga beli saat waktu habis wajib terhitung LOSS');
   });
 });

@@ -4,6 +4,13 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-09-07] feat | Time Stop P/L Resolution & 100% Win Rate Measurement
+- Eliminated ambiguous `CLOSED` status in `src/lib/recommendationTracker.js` (Solution 1).
+- Time Stop exits beyond `maxHoldingDays` now evaluate realized P/L: $\text{exitPrice} \ge \text{entryPrice}$ resolves to `WIN (Time)`, while $\text{exitPrice} < \text{entryPrice}$ resolves to `LOSS (Time)`.
+- Updated `src/components/HistoryPanel.jsx` status badges to distinguish `WIN (TP)` vs `WIN (Time)` and `LOSS (SL)` vs `LOSS (Time)`.
+- Updated Discord rich embed alerts to notify on Time Stop profit or cut-balance events.
+- Migrated legacy `CLOSED` database records into respective `WIN` / `LOSS` classifications.
+
 ## [2026-09-04] feat | Technical Precision, ATR Stop Loss, and Indicator Upgrades
 - Added Volatility-Adaptive Stop Loss using $1.5 \times \text{ATR}_{14}$ & Supertrend bounds in `src/lib/tradeSetup.js`.
 - Added 20-day swing high resistance-anchored Take Profit in `src/lib/tradeSetup.js`.

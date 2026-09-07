@@ -34,34 +34,40 @@ To prevent premature Win/Loss calculations before a stock is actually bought, th
                  │                ▼                               ▼
                  └───────► Status: OPEN (Matched!)          Status: EXPIRED
                                   │                         (Zero Win Rate Penalty)
-                 ┌────────────────┴────────────────┐
-                 ▼                                 ▼
-         [ currentPrice >= TP ]            [ currentPrice <= SL ]
-                 │                                 │
-                 ▼                                 ▼
-             Status: WIN                       Status: LOSS
+                 ┌────────────────┼──────────────────────────────┐
+                 ▼                ▼                              ▼
+       [ currentPrice >= TP ]  [ currentPrice <= SL ]  [ Beyond maxHoldingDays ]
+                 │                │                       (Time Stop Evaluation)
+                 │                │                              │
+                 │                │                      ┌───────┴───────┐
+                 │                │                      ▼               ▼
+                 ▼                ▼                 (P/L >= 0%)      (P/L < 0%)
+            Status: WIN      Status: LOSS                │               │
+                                                         ▼               ▼
+                                                    Status: WIN     Status: LOSS
 ```
 
 ### 1. `WAITING_BUY` (Pending Limit Queue)
 * Assigned by default when a user clicks "Pantau" with the "Sudah Beli di Harga Ini" checkbox left **unchecked**.
 * System does NOT evaluate Win or Loss during this state.
 * **Matching Trigger**: When daily market price dips to or below the entry price ($\text{currentPrice} \le \text{entryPrice}$), the order matches and moves to `OPEN`.
-* **Expiry Trigger**: If market price does not touch the entry level within the strategy's `maxHoldingDays` (3–14 days), status becomes `EXPIRED`. It is excluded from the Win Rate divisor.
+* **Expiry Trigger**: If market price does not touch the entry level within the strategy's `maxHoldingDays` (2–14 days), status becomes `EXPIRED`. It is excluded from the Win Rate divisor.
 
 ### 2. `OPEN` (Active Position)
 * Assigned immediately if the user **checks** "Sudah Beli di Harga Ini", or automatically upon a `WAITING_BUY` match.
 * Actively monitors daily price action against trading plan targets.
 
-### 3. `WIN` vs `LOSS` vs `CLOSED`
-* **`WIN`**: $\text{currentPrice} \ge \text{targetPrice}$ (Take Profit reached).
-* **`LOSS`**: $\text{currentPrice} \le \text{stopLoss}$ (Cut Loss triggered).
-* **`CLOSED`**: Position held beyond `maxHoldingDays` without hitting TP or SL (Time Stop exit at market price).
+### 3. Definitive Resolution: `WIN` vs `LOSS` (100% Measured)
+Every closed position is decisively measured as either a Win or a Loss:
+* **`WIN (TP)`**: $\text{currentPrice} \ge \text{targetPrice}$ (Take Profit target reached).
+* **`LOSS (SL)`**: $\text{currentPrice} \le \text{stopLoss}$ (Cut Loss stop triggered).
+* **`WIN (Time)`**: Holding duration exceeded `maxHoldingDays` (2–14 days) and closed at market price with $\text{P/L} \ge 0\%$.
+* **`LOSS (Time)`**: Holding duration exceeded `maxHoldingDays` and closed at market price with $\text{P/L} < 0\%$.
 
-### 4. 📢 Real-Time Discord Notifications (WIN & LOSS Only)
-Whenever a position transitions from `OPEN` into `WIN` or `LOSS`, the system (`src/lib/recommendationTracker.js`) automatically dispatches a real-time rich embed notification to the configured Discord channel:
-* 🏆 **WIN**: Green alert with ticker, company name, entry price, exit price, realized profit %, target price, style, and trading source (`🤖 SYSTEM` vs `👤 USER`).
-* 🛑 **LOSS**: Red alert with ticker, company name, entry price, exit price, realized loss %, stop loss level, style, and trading source.
-* *Note: Transitions to `WAITING_BUY`, `OPEN`, `EXPIRED`, and `CLOSED` do NOT trigger alerts to avoid notification noise.*
+### 4. 📢 Real-Time Discord Notifications (All Resolved Trades)
+Whenever a position transitions from `OPEN` into `WIN` or `LOSS` (via TP/SL or Time Stop), the tracker (`src/lib/recommendationTracker.js`) automatically dispatches a real-time rich embed notification to Discord:
+* 🏆 **WIN**: Green alert with ticker, entry, exit price, realized profit %, and resolution type (`TP` vs `Time Stop`).
+* 🛑 **LOSS**: Red alert with ticker, entry, exit price, realized loss %, and resolution type (`SL` vs `Time Stop`).
 
 ---
 

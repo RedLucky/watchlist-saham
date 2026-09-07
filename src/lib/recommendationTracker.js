@@ -8,7 +8,7 @@ import { getStyleConfig } from './modes.js';
  * @param {string} params.status - 'WIN' | 'LOSS'
  * @param {number} params.exitPrice - The price at which position was closed
  */
-export async function sendTradeOutcomeNotification({ recommendation: rec, status, exitPrice }) {
+export async function sendTradeOutcomeNotification({ recommendation: rec, status, exitPrice, reason }) {
   if (status !== 'WIN' && status !== 'LOSS') return false;
 
   const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
@@ -18,24 +18,38 @@ export async function sendTradeOutcomeNotification({ recommendation: rec, status
   }
 
   const isWin = status === 'WIN';
+  const isTimeStop = Boolean(reason && reason.includes('Time Stop'));
   const entryPrice = Number(rec.priceAtRecommend || rec.entryLow || exitPrice);
   const pnlPercent = entryPrice > 0 ? (((exitPrice - entryPrice) / entryPrice) * 100).toFixed(2) : '0.00';
   const isPositive = Number(pnlPercent) >= 0;
 
   // Visual embed formatting
   const color = isWin ? 0x10B981 : 0xEF4444; // Emerald Green (WIN) vs Rose Red (LOSS)
-  const title = isWin 
-    ? `🏆 TARGET TERCAPAI (WIN / TAKE PROFIT) — $${rec.ticker}` 
-    : `🛑 STOP LOSS TERSENTUH (LOSS / CUT LOSS) — $${rec.ticker}`;
+  let title = '';
+  let description = '';
+
+  if (isTimeStop) {
+    title = isWin 
+      ? `⏰ WAKTU HABIS (WIN / PROFIT) — $${rec.ticker}` 
+      : `⏰ WAKTU HABIS (LOSS / CUT BALANCE) — $${rec.ticker}`;
+    description = isWin 
+      ? `Batas waktu simpan saham **${rec.ticker}** (${rec.name || ''}) telah tercapai dan posisi resmi ditutup untung (**WIN**).`
+      : `Batas waktu simpan saham **${rec.ticker}** (${rec.name || ''}) telah tercapai dan posisi resmi ditutup rugi (**LOSS**).`;
+  } else {
+    title = isWin 
+      ? `🏆 TARGET TERCAPAI (WIN / TAKE PROFIT) — $${rec.ticker}` 
+      : `🛑 STOP LOSS TERSENTUH (LOSS / CUT LOSS) — $${rec.ticker}`;
+    description = isWin 
+      ? `Saham **${rec.ticker}** (${rec.name || ''}) berhasil menyentuh target profit! Posisi resmi ditutup dengan hasil **WIN**.`
+      : `Harga pasar saham **${rec.ticker}** (${rec.name || ''}) menyentuh level proteksi stop loss. Posisi resmi ditutup (**LOSS**).`;
+  }
 
   const sourceLabel = rec.source === 'SYSTEM' ? '🤖 Rekomendasi Sistem (Discord)' : '👤 Pantauan Manual User';
   const styleLabel = (rec.style || 'SWING').toUpperCase();
 
   const embed = {
     title,
-    description: isWin 
-      ? `Saham **${rec.ticker}** (${rec.name || ''}) berhasil menyentuh target profit! Posisi resmi ditutup dengan hasil **WIN**.`
-      : `Harga pasar saham **${rec.ticker}** (${rec.name || ''}) menyentuh level proteksi stop loss. Posisi resmi ditutup (**LOSS**).`,
+    description,
     color,
     fields: [
       { name: '🏷️ Saham & Sumber', value: `**${rec.ticker}** • ${sourceLabel}`, inline: true },
@@ -133,16 +147,29 @@ export async function updateExistingRecommendations(currentStocks) {
     if (rec.status === 'OPEN') {
       let newStatus = null;
       let exitPrice = null;
+      let exitReason = null;
 
       if (currentPrice >= rec.targetPrice) {
         newStatus = 'WIN';
         exitPrice = currentPrice;
+        exitReason = `Target Take Profit (TP) tercapai pada Rp ${currentPrice}`;
       } else if (currentPrice <= rec.stopLoss) {
         newStatus = 'LOSS';
         exitPrice = currentPrice;
+        exitReason = `Batas Cut Loss (SL) tersentuh pada Rp ${currentPrice}`;
       } else if (ageInDays > maxDays) {
-        newStatus = 'CLOSED';
+        // Solusi 1: Evaluasi P/L Riil saat batas waktu tercapai (Time Stop)
         exitPrice = currentPrice;
+        const entryPrice = Number(rec.priceAtRecommend || rec.entryLow || rec.entryHigh || currentPrice);
+        const pnl = entryPrice > 0 ? ((currentPrice - entryPrice) / entryPrice) * 100 : 0;
+        
+        if (currentPrice >= entryPrice) {
+          newStatus = 'WIN';
+          exitReason = `Time Stop (${maxDays} hari) — Ditutup dengan keuntungan ${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}% pada Rp ${currentPrice}`;
+        } else {
+          newStatus = 'LOSS';
+          exitReason = `Time Stop (${maxDays} hari) — Ditutup dengan defisit ${pnl.toFixed(2)}% pada Rp ${currentPrice}`;
+        }
       }
 
       if (newStatus) {
@@ -152,7 +179,7 @@ export async function updateExistingRecommendations(currentStocks) {
             status: newStatus,
             exitPrice: exitPrice,
             exitDate: new Date(),
-            notes: `Posisi selesai ditutup oleh sistem. Status: ${newStatus} pada Rp ${exitPrice}`
+            notes: exitReason || `Posisi selesai ditutup oleh sistem. Status: ${newStatus} pada Rp ${exitPrice}`
           }
         });
 
@@ -164,6 +191,7 @@ export async function updateExistingRecommendations(currentStocks) {
             recommendation: rec,
             status: newStatus,
             exitPrice: exitPrice,
+            reason: exitReason,
           }).catch(err => console.error('[DISCORD-ALERT-ERR]', err));
         }
       }
