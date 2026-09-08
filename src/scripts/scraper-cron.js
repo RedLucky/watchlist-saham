@@ -48,7 +48,7 @@ cron.schedule('0 18 * * *', () => {
 });
 
 function runPriceSync() {
-  const proc = exec('node src/scripts/sync-prices.js', (err) => {
+  const proc = exec('node --max-old-space-size=896 src/scripts/sync-prices.js', (err) => {
     if (err) {
       console.error(`[PRICE-SYNC-ERR] Gagal sync harga: ${err.message}`);
     }
@@ -60,7 +60,7 @@ function runPriceSync() {
 
 function runDiscordNotifier() {
   console.log('\n[DISCORD] Memulai pengiriman rekomendasi harian ke Discord...');
-  const proc = exec('node src/scripts/discord-notifier.js', { maxBuffer: 10 * 1024 * 1024 }, (err) => {
+  const proc = exec('node --max-old-space-size=896 src/scripts/discord-notifier.js', { maxBuffer: 10 * 1024 * 1024 }, (err) => {
     if (err) {
       console.error(`[DISCORD-ERR] Gagal mengirim notifikasi Discord: ${err.message}`);
     } else {
@@ -74,7 +74,7 @@ function runDiscordNotifier() {
 
 function runDailyScrapers() {
   console.log('\n[1/2] Memulai Sinkronisasi Otomatis Data ZIP KSEI...');
-  const kseiProc = exec('node src/scripts/sync-ksei.js', (kseiErr) => {
+  const kseiProc = exec('node --max-old-space-size=896 src/scripts/sync-ksei.js', (kseiErr) => {
     if (kseiErr) {
       console.error(`[KSEI-CRASH] Sinkronisasi KSEI gagal: ${kseiErr.message}`);
     } else {
@@ -83,7 +83,7 @@ function runDailyScrapers() {
 
     // Lanjutkan ke IDX Ownership Scraper
     console.log('\n[2/2] Memulai Sinkronisasi Ownership & Insider IDX...');
-    const ownProc = exec('node src/scripts/sync-ownership.js', (ownErr) => {
+    const ownProc = exec('node --max-old-space-size=896 src/scripts/sync-ownership.js', (ownErr) => {
       if (ownErr) {
         console.error(`[OWNERSHIP-CRASH] Scraping ownership gagal: ${ownErr.message}`);
         return;

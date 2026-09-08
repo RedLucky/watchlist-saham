@@ -154,7 +154,30 @@ export class DatabaseProvider extends DataProvider {
     try {
       console.log(`[DatabaseProvider] Querying StockData...`);
       const dbStocks = await prisma.stockData.findMany({
-        where: { isDelisted: false }
+        where: { 
+          isDelisted: false,
+          price: { gt: 0 }
+        },
+        select: {
+          id: true,
+          ticker: true,
+          name: true,
+          sector: true,
+          subSector: true,
+          price: true,
+          changePercent: true,
+          volume: true,
+          avgVolume3mo: true,
+          fundamentals: true,
+          technicals: true,
+          shareholders: true,
+          ownership: true,
+          insiderTrades: true,
+          dividendHistory: true,
+          kseiLatest: true,
+          sharesOutstanding: true,
+          // Exclude massive blobs: historicalRaw and kseiHistory (saves ~420MB of heap RAM)
+        }
       });
       console.log(`[DatabaseProvider] Found ${dbStocks.length} total active rows in DB.`);
 
