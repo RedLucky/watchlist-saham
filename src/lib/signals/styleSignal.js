@@ -23,6 +23,11 @@ export function evaluateStyleSignal(styleName, ctx) {
     Number.isFinite(yesterdayHigh) && yesterdayHigh > 0 && price > yesterdayHigh && volumeRatio >= 1.3;
   const isBreakout = breakoutByResistance || breakoutByYesterdayHigh;
 
+  // Extreme Overbought Guard: Strictly reject actionable setups at price tops (RSI >= 75)
+  if (rsi >= 75) {
+    return { setup: 'none', actionable: false, strength: 'weak', reason: 'extreme_overbought' };
+  }
+
   if (safeStyle === 'scalping') {
     const rsiGood = rsi >= 50 && rsi <= 70;
     if (hasTrend && rsiGood && volumeRatio >= volSpike) {

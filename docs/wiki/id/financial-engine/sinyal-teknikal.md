@@ -21,6 +21,7 @@ $$\text{RSI} = 100 - \frac{100}{1 + \text{RS}}$$
 
 * $\text{RSI} < 30$: Area Jenuh Jual (*Oversold* - peluang pantulan harga).
 * $\text{RSI} > 70$: Area Jenuh Beli (*Overbought* - risiko koreksi).
+* **Proteksi Jenuh Beli Ekstrim ($\text{RSI} \ge 75$)**: Untuk melindungi trader dari jebakan beli di puncak harga (*FOMO buying*), emiten dengan $\text{RSI} \ge 75$ otomatis digagalkan dari setup beli (`setup: 'none'`), memperoleh subskor RSI 0, dan penalti setup -20 poin dengan label peringatan `⚠️ Extreme Overbought`.
 
 ---
 
@@ -43,6 +44,8 @@ $$\text{DEMA} = 2 \times \text{EMA}(20) - \text{EMA}(\text{EMA}(20))$$
 * $\text{Garis MACD} = \text{EMA}(12) - \text{EMA}(26)$
 * $\text{Garis Sinyal} = \text{EMA}(\text{Garis MACD}, 9)$
 * $\text{Histogram} = \text{Garis MACD} - \text{Garis Sinyal}$
+* **Fresh Golden Cross ($\text{hist}_t > 0 \land \text{hist}_{t-1} \le 0$)**: Menandai momentum awal pembalikan tren naik (*early markup*), memberikan **bonus +10** pada skor setup teknikal.
+* **Dead Cross ($\text{hist}_t < 0 \land \text{hist}_{t-1} \ge 0$)**: Menandai momentum melemah dan memotong sinyal ke bawah, memberikan **penalti -15** pada skor setup teknikal.
 
 ---
 

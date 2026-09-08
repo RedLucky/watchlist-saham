@@ -122,7 +122,14 @@ export function calculateATR(historical, period = 14) {
 export function calculateMACD(prices, fastPeriod = 12, slowPeriod = 26, signalPeriod = 9) {
   const clean = sanitizePrices(prices);
   if (clean.length < slowPeriod + signalPeriod) {
-    return { macdLine: 0, signalLine: 0, histogram: 0 };
+    return { 
+      macdLine: 0, 
+      signalLine: 0, 
+      histogram: 0, 
+      prevHistogram: 0, 
+      isGoldenCross: false, 
+      isDeadCross: false 
+    };
   }
 
   const fastK = 2 / (fastPeriod + 1);
@@ -148,21 +155,43 @@ export function calculateMACD(prices, fastPeriod = 12, slowPeriod = 26, signalPe
   }
 
   if (macdSeries.length < signalPeriod) {
-    return { macdLine: macdSeries[macdSeries.length - 1] || 0, signalLine: 0, histogram: 0 };
+    return { 
+      macdLine: macdSeries[macdSeries.length - 1] || 0, 
+      signalLine: 0, 
+      histogram: 0,
+      prevHistogram: 0,
+      isGoldenCross: false,
+      isDeadCross: false,
+    };
   }
 
   // Signal line = EMA of MACD series
   const sigK = 2 / (signalPeriod + 1);
   let signalLine = macdSeries.slice(0, signalPeriod).reduce((a, b) => a + b, 0) / signalPeriod;
+  let prevSignalLine = signalLine;
+
   for (let i = signalPeriod; i < macdSeries.length; i++) {
+    if (i === macdSeries.length - 1) {
+      prevSignalLine = signalLine;
+    }
     signalLine = macdSeries[i] * sigK + signalLine * (1 - sigK);
   }
 
   const macdLine = macdSeries[macdSeries.length - 1];
+  const prevMacdLine = macdSeries.length >= 2 ? macdSeries[macdSeries.length - 2] : macdLine;
+  const histogram = macdLine - signalLine;
+  const prevHistogram = prevMacdLine - prevSignalLine;
+
+  const isGoldenCross = histogram > 0 && prevHistogram <= 0;
+  const isDeadCross = histogram < 0 && prevHistogram >= 0;
+
   return {
     macdLine,
     signalLine,
-    histogram: macdLine - signalLine,
+    histogram,
+    prevHistogram,
+    isGoldenCross,
+    isDeadCross,
   };
 }
 

@@ -3,6 +3,7 @@
 // Integrates MA200 long-term trend, MACD confirmation, and Smart Money/Bandarmologi synergy
 
 import { evaluateStyleSignal } from '../signals/styleSignal.js';
+import { calculateMACD } from '../indicators.js';
 
 export function calculateTechnicalScore(stock, styleConfig = { name: 'swing', label: 'Swing Trading', indicators: { rsiPeriod: 14, maShort: 20, maLong: 50, volSpike: 1.1 }}) {
   const { rsi7, rsi14, ma9, ma20, ma50, ma200, prices, volumes, resistance, macd, bollinger, bollingerBands } = stock?.technicals || {};
@@ -53,6 +54,12 @@ export function calculateTechnicalScore(stock, styleConfig = { name: 'swing', la
   const isBullishCandle = recentPrices.length >= 2
     ? recentPrices[recentPrices.length - 1] > recentPrices[recentPrices.length - 2]
     : false;
+
+  let safeMacd = macd && Number.isFinite(macd.histogram) ? { ...macd } : null;
+  if ((!safeMacd || safeMacd.isGoldenCross === undefined) && Array.isArray(prices) && prices.length >= 35) {
+    const computed = calculateMACD(prices);
+    safeMacd = { ...(safeMacd || {}), ...computed };
+  }
   
   const kseiLatest = stock?.kseiLatest || null;
   const isSmartMoneyAccumulating = kseiLatest && (Number(kseiLatest.deltaSmartMoney) > 0 || Number(kseiLatest.bfi) > 0);
@@ -125,6 +132,20 @@ export function calculateTechnicalScore(stock, styleConfig = { name: 'swing', la
     details.push(`🔥 Bollinger Squeeze (BW ${(activeBollinger.bandwidth * 100).toFixed(1)}%) — kompresi volatilitas ketat, potensi ledakan harga tinggi`);
   }
 
+  // Fresh MACD Golden Cross (+10 setup bonus) & Dead Cross (-15 setup penalty)
+  if (safeMacd?.isGoldenCross) {
+    setupScore = Math.min(100, setupScore + 10);
+    details.push('✨ Fresh MACD Golden Cross — momentum awal pembalikan arah (early markup)');
+  } else if (safeMacd?.isDeadCross) {
+    setupScore = Math.max(0, setupScore - 15);
+    details.push('⚠️ MACD Dead Cross — momentum melemah, garis MACD memotong ke bawah sinyal');
+  }
+
+  // RSI Extreme Overbought setup penalty
+  if (currentRSI >= 75) {
+    setupScore = Math.max(0, setupScore - 20);
+  }
+
   score += setupScore * 0.35;
 
   // 3. RSI Zone (15%)
@@ -133,7 +154,10 @@ export function calculateTechnicalScore(stock, styleConfig = { name: 'swing', la
   const rsiMin = styleConfig?.name === 'scalping' ? 50 : styleConfig?.name === 'daily' ? 45 : 40;
   const rsiMax = styleConfig?.name === 'scalping' ? 70 : styleConfig?.name === 'daily' ? 65 : 60;
 
-  if (rsi >= rsiMin && rsi <= rsiMax) {
+  if (rsi >= 75) {
+    rsiScore = 0;
+    details.push(`⚠️ Extreme Overbought (RSI ${rsi.toFixed(1)}) — jenuh beli ekstrim, risiko tinggi koreksi tajam`);
+  } else if (rsi >= rsiMin && rsi <= rsiMax) {
     rsiScore = 100;
     details.push(`RSI (${rsiPeriod}) di level ${rsi.toFixed(1)} — zona optimal`);
   } else if (rsi < rsiMin && rsi >= rsiMin - 10) {
@@ -163,7 +187,6 @@ export function calculateTechnicalScore(stock, styleConfig = { name: 'swing', la
   let longTermScore = 50; // neutral default
   if (styleConfig?.name !== 'scalping') {
     const safeMA200 = Number.isFinite(ma200) && ma200 > 0 ? ma200 : null;
-    const safeMacd = macd && Number.isFinite(macd.histogram) ? macd : null;
 
     if (safeMA200) {
       const aboveMA200 = price > safeMA200;
@@ -199,7 +222,10 @@ export function calculateTechnicalScore(stock, styleConfig = { name: 'swing', la
       volumeRatio: Number.isFinite(volumeRatio) ? volumeRatio.toFixed(2) : '1.00',
       shortMAName: `MA${maShort}`,
       longMAName: `MA${maLong}`,
-      macdHistogram: macd && Number.isFinite(macd.histogram) ? Number(macd.histogram).toFixed(2) : '0.00',
+      macdHistogram: safeMacd && Number.isFinite(safeMacd.histogram) ? Number(safeMacd.histogram).toFixed(2) : '0.00',
+      isMacdGoldenCross: Boolean(safeMacd?.isGoldenCross),
+      isMacdDeadCross: Boolean(safeMacd?.isDeadCross),
+      rsiStatus: currentRSI >= 75 ? 'EXTREME_OVERBOUGHT' : (currentRSI >= 70 ? 'OVERBOUGHT' : (currentRSI <= 30 ? 'OVERSOLD' : 'NORMAL')),
       bollingerBandwidth: activeBollinger?.bandwidth ? (activeBollinger.bandwidth * 100).toFixed(1) + '%' : null,
     },
   };

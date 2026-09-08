@@ -240,5 +240,73 @@ describe('5. Skoring Teknikal & Bollinger Squeeze (calculateTechnicalScore)', ()
     assert.ok(resSqueeze.details.some(d => d.includes('Bollinger Squeeze')), 'Detail teknikal harus mendeteksi Bollinger Squeeze');
     assert.equal(resSqueeze.metrics.bollingerBandwidth, '8.0%');
   });
+
+  test('Fresh MACD Golden Cross memberikan bonus setup (+10) dan terdeteksi di metrics', () => {
+    const stockWithoutGC = {
+      price: 2000,
+      technicals: {
+        rsi14: 55,
+        ma20: 1950,
+        ma50: 1900,
+        prices: [1950, 1980, 2000],
+        volumes: [1000, 1000, 1000, 1000, 1000, 1500],
+        macd: { histogram: 5, prevHistogram: 4, isGoldenCross: false, isDeadCross: false }
+      }
+    };
+    const resWithout = calculateTechnicalScore(stockWithoutGC);
+
+    const stockWithGC = {
+      price: 2000,
+      technicals: {
+        rsi14: 55,
+        ma20: 1950,
+        ma50: 1900,
+        prices: [1950, 1980, 2000],
+        volumes: [1000, 1000, 1000, 1000, 1000, 1500],
+        macd: { histogram: 5, prevHistogram: -2, isGoldenCross: true, isDeadCross: false }
+      }
+    };
+    const resWith = calculateTechnicalScore(stockWithGC);
+
+    assert.ok(resWith.score >= resWithout.score, `Skor saham Golden Cross (${resWith.score}) harus >= non-GC (${resWithout.score})`);
+    assert.equal(resWith.metrics.isMacdGoldenCross, true);
+    assert.ok(resWith.details.some(d => d.includes('Fresh MACD Golden Cross')));
+  });
+
+  test('MACD Dead Cross memberikan penalti setup (-15) dan terdeteksi di metrics', () => {
+    const stockDeadCross = {
+      price: 2000,
+      technicals: {
+        rsi14: 55,
+        ma20: 1950,
+        ma50: 1900,
+        prices: [1950, 1980, 2000],
+        volumes: [1000, 1000, 1000, 1000, 1000, 1500],
+        macd: { histogram: -5, prevHistogram: 2, isGoldenCross: false, isDeadCross: true }
+      }
+    };
+    const res = calculateTechnicalScore(stockDeadCross);
+
+    assert.equal(res.metrics.isMacdDeadCross, true);
+    assert.ok(res.details.some(d => d.includes('MACD Dead Cross')));
+  });
+
+  test('RSI Extreme Overbought (RSI >= 75) membatalkan setup menjadi none dan memberi penalti skor', () => {
+    const stockOverbought = {
+      price: 2000,
+      technicals: {
+        rsi14: 82, // Ekstrim jenuh beli
+        ma20: 1950,
+        ma50: 1900,
+        prices: [1950, 1980, 2000],
+        volumes: [1000, 1000, 1000, 1000, 1000, 1500]
+      }
+    };
+    const res = calculateTechnicalScore(stockOverbought);
+
+    assert.equal(res.setup, 'none', 'Setup harus dibatalkan (none) saat RSI >= 75');
+    assert.equal(res.metrics.rsiStatus, 'EXTREME_OVERBOUGHT');
+    assert.ok(res.details.some(d => d.includes('Extreme Overbought')));
+  });
 });
 

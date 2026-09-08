@@ -88,6 +88,45 @@ describe('3. MACD (calculateMACD)', () => {
     const macd = calculateMACD(shortPrices, 12, 26, 9);
     assert.equal(macd.macdLine, 0);
     assert.equal(macd.signalLine, 0);
+    assert.equal(macd.histogram, 0);
+    assert.equal(macd.isGoldenCross, false);
+    assert.equal(macd.isDeadCross, false);
+  });
+
+  test('Mendeteksi Fresh Golden Cross saat histogram berbalik dari <= 0 menjadi > 0', () => {
+    const basePrices = [];
+    for (let i = 0; i < 50; i++) basePrices.push(5000 - i * 20);
+    let crossed = false;
+    const movingPrices = [...basePrices];
+    for (let step = 0; step < 20; step++) {
+      movingPrices.push(movingPrices[movingPrices.length - 1] + 80);
+      const res = calculateMACD(movingPrices, 12, 26, 9);
+      if (res.isGoldenCross) {
+        crossed = true;
+        assert.ok(res.histogram > 0, 'Histogram saat Golden Cross harus > 0');
+        assert.ok(res.prevHistogram <= 0, 'prevHistogram saat Golden Cross harus <= 0');
+        break;
+      }
+    }
+    assert.ok(crossed, 'Harus mendeteksi Golden Cross saat tren berbalik naik');
+  });
+
+  test('Mendeteksi Dead Cross saat histogram berbalik dari >= 0 menjadi < 0', () => {
+    const basePrices = [];
+    for (let i = 0; i < 50; i++) basePrices.push(1000 + i * 25);
+    let deadCrossed = false;
+    const movingPrices = [...basePrices];
+    for (let step = 0; step < 20; step++) {
+      movingPrices.push(movingPrices[movingPrices.length - 1] - 100);
+      const res = calculateMACD(movingPrices, 12, 26, 9);
+      if (res.isDeadCross) {
+        deadCrossed = true;
+        assert.ok(res.histogram < 0, 'Histogram saat Dead Cross harus < 0');
+        assert.ok(res.prevHistogram >= 0, 'prevHistogram saat Dead Cross harus >= 0');
+        break;
+      }
+    }
+    assert.ok(deadCrossed, 'Harus mendeteksi Dead Cross saat tren berbalik turun');
   });
 });
 

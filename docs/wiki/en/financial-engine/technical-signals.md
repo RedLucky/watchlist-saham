@@ -21,6 +21,7 @@ $$\text{RSI} = 100 - \frac{100}{1 + \text{RS}}$$
 
 * $\text{RSI} < 30$: Oversold (Rebound opportunity).
 * $\text{RSI} > 70$: Overbought (Correction risk).
+* **Extreme Overbought Guard ($\text{RSI} \ge 75$)**: To prevent retail FOMO buying at cyclical tops, any ticker with $\text{RSI} \ge 75$ is immediately rejected from actionable setups (`setup: 'none'`), receives an RSI subscore of 0, and incurs a -20 setup penalty with warning detail `⚠️ Extreme Overbought`.
 
 ---
 
@@ -43,6 +44,8 @@ $$\text{DEMA} = 2 \times \text{EMA}(20) - \text{EMA}(\text{EMA}(20))$$
 * $\text{MACD Line} = \text{EMA}(12) - \text{EMA}(26)$
 * $\text{Signal Line} = \text{EMA}(\text{MACD Line}, 9)$
 * $\text{Histogram} = \text{MACD Line} - \text{Signal Line}$
+* **Fresh Golden Cross ($\text{hist}_t > 0 \land \text{hist}_{t-1} \le 0$)**: Signals early markup and momentum reversal, awarding a **+10 bonus** to the technical setup score.
+* **Dead Cross ($\text{hist}_t < 0 \land \text{hist}_{t-1} \ge 0$)**: Signals momentum breakdown and bear shift, triggering a **-15 penalty** to the technical setup score.
 
 ---
 
