@@ -23,10 +23,15 @@ cron.schedule('*/5 * * * *', () => {
 
 // Jadwal Cron: Setiap Hari pukul 10:00 WIB ("0 10 * * *")
 cron.schedule('0 10 * * *', () => {
-  console.log(`\n[${new Date().toISOString()}] [CRON-DAILY] Jadwal Harian Terpicu! Memulai KSEI & Ownership Scraping...`);
+  console.log(`\n[${new Date().toISOString()}] [CRON-DAILY] Jadwal 10:00 WIB Terpicu! Memulai KSEI & Ownership Scraping...`);
   runDailyScrapers();
 }, {
-  timezone: "Asia/Jakarta"
+  timezone: "Asia/Jakarta",
+  missedExecutionTolerance: 300000,
+  onMissedExecution: (date) => {
+    console.warn(`\n[${new Date().toISOString()}] [CRON-DAILY-MISSED] Jadwal 10:00 WIB terlewat pada ${date}, menjalankan pemulihan...`);
+    runDailyScrapers();
+  }
 });
 
 // Jadwal Cron: Setiap Hari pukul 18:00 WIB -> Kirim Rekomendasi Saham ke Discord ("0 18 * * *")
@@ -34,7 +39,12 @@ cron.schedule('0 18 * * *', () => {
   console.log(`\n[${new Date().toISOString()}] [CRON-DISCORD] Jadwal 18:00 WIB Terpicu! Mengirim Rekomendasi Saham ke Discord...`);
   runDiscordNotifier();
 }, {
-  timezone: "Asia/Jakarta"
+  timezone: "Asia/Jakarta",
+  missedExecutionTolerance: 300000,
+  onMissedExecution: (date) => {
+    console.warn(`\n[${new Date().toISOString()}] [CRON-DISCORD-MISSED] Jadwal 18:00 WIB terlewat pada ${date}, menjalankan pemulihan...`);
+    runDiscordNotifier();
+  }
 });
 
 function runPriceSync() {
