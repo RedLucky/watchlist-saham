@@ -24,7 +24,7 @@ export default function HistoryPanel() {
   const [fetchError, setFetchError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const pageSize = 25;
+  const pageSize = 10;
 
   useEffect(() => {
     let ignore = false;

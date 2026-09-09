@@ -12,7 +12,7 @@ export async function GET(request) {
         recommendations: [],
         pagination: {
           page: 1,
-          limit: 25,
+          limit: 10,
           total: 0,
           totalPages: 1,
           hasNextPage: false,
@@ -59,7 +59,7 @@ export async function GET(request) {
     const filterStatus = searchParams.get('status'); // 'WAITING', 'OPEN', 'CLOSED', or null/ALL
     const isAll = searchParams.get('all') === 'true';
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
-    const limit = Math.max(1, Math.min(100, parseInt(searchParams.get('limit') || '25', 10)));
+    const limit = Math.max(1, Math.min(100, parseInt(searchParams.get('limit') || '10', 10)));
     const skip = (page - 1) * limit;
 
     // Base query conditions: User can see their own records, system records, and legacy null user records
