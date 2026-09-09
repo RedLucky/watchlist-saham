@@ -2,12 +2,27 @@
 
 import { useState, useEffect } from 'react';
 
+function getPageNumbers(current, total) {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+  if (current <= 4) {
+    return [1, 2, 3, 4, 5, '...', total];
+  }
+  if (current >= total - 3) {
+    return [1, '...', total - 4, total - 3, total - 2, total - 1, total];
+  }
+  return [1, '...', current - 1, current, current + 1, '...', total];
+}
+
 export default function HistoryPanel() {
   const [history, setHistory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [sourceTab, setSourceTab] = useState('ALL');
   const [filterTab, setFilterTab] = useState('ALL');
   const [fetchError, setFetchError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 25;
 
   useEffect(() => {
     fetch('/api/history')
@@ -85,6 +100,13 @@ export default function HistoryPanel() {
     if (filterTab === 'CLOSED') return ['WIN', 'LOSS', 'CLOSED', 'EXPIRED'].includes(rec.status);
     return true;
   });
+
+  const totalItems = filteredRecommendations.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+  const startIndex = (safeCurrentPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalItems);
+  const paginatedRecommendations = filteredRecommendations.slice(startIndex, endIndex);
 
   const getStatusBadge = (status, notes = '') => {
     const isTimeStop = Boolean(notes && notes.includes('Time Stop'));
@@ -247,7 +269,10 @@ export default function HistoryPanel() {
           ].map((t) => (
             <button
               key={t.id}
-              onClick={() => setSourceTab(t.id)}
+              onClick={() => {
+                setSourceTab(t.id);
+                setCurrentPage(1);
+              }}
               className={`px-3 py-1 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer border ${
                 sourceTab === t.id
                   ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-transparent shadow-xs font-black'
@@ -270,7 +295,10 @@ export default function HistoryPanel() {
           ].map((t) => (
             <button
               key={t.id}
-              onClick={() => setFilterTab(t.id)}
+              onClick={() => {
+                setFilterTab(t.id);
+                setCurrentPage(1);
+              }}
               className={`px-3 py-1 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer border ${
                 filterTab === t.id
                   ? 'bg-gradient-to-r from-cyan-600 to-indigo-600 text-white border-transparent shadow-xs font-black'
@@ -284,93 +312,145 @@ export default function HistoryPanel() {
       </div>
 
       {filteredRecommendations.length > 0 ? (
-        <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 uppercase font-bold text-[10px] border-b border-slate-200 dark:border-slate-800">
-              <tr>
-                <th className="p-3">Tanggal</th>
-                <th className="p-3">Sumber</th>
-                <th className="p-3">Saham</th>
-                <th className="p-3">Gaya</th>
-                <th className="p-3 text-right">Harga Beli / Antre</th>
-                <th className="p-3 text-right">Harga Saat Ini</th>
-                <th className="p-3 text-right">Target (TP)</th>
-                <th className="p-3 text-right">Cut Loss (SL)</th>
-                <th className="p-3 text-center">Status</th>
-                <th className="p-3">Catatan</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 font-medium">
-              {filteredRecommendations.map((rec) => (
-                <tr key={rec.id} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                  <td className="p-3 text-slate-500 font-mono whitespace-nowrap">
-                    {formatDate(rec.date)}
-                  </td>
-                  <td className="p-3 whitespace-nowrap">
-                    {rec.source === 'SYSTEM' ? (
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700">
-                        🤖 Sistem
-                      </span>
-                    ) : (
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
-                        👤 User
-                      </span>
-                    )}
-                  </td>
-                  <td className="p-3 font-extrabold text-slate-900 dark:text-white">{rec.ticker}</td>
-                  <td className="p-3">
-                    <span className="capitalize px-2.5 py-1 rounded-md text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                      {rec.style}
-                    </span>
-                  </td>
-                  <td className="p-3 text-right text-slate-800 dark:text-slate-200 font-bold font-mono whitespace-nowrap">
-                    Rp {Number(rec.priceAtRecommend || 0).toLocaleString('id-ID')}
-                  </td>
-                  <td className="p-3 text-right font-mono whitespace-nowrap">
-                    {rec.currentPrice != null ? (
-                      <div className="flex flex-col items-end leading-tight">
-                        <span className="font-extrabold text-slate-900 dark:text-white">
-                          Rp {Number(rec.currentPrice).toLocaleString('id-ID')}
-                        </span>
-                        <div className="flex items-center gap-1 mt-0.5">
-                          {rec.floatingGainPercent != null && (
-                            <span className={`text-[10px] font-bold ${
-                              rec.floatingGainPercent > 0 
-                                ? 'text-emerald-600 dark:text-emerald-400' 
-                                : rec.floatingGainPercent < 0 
-                                ? 'text-rose-600 dark:text-rose-400' 
-                                : 'text-slate-400'
-                            }`}>
-                              {rec.floatingGainPercent > 0 ? '+' : ''}{rec.floatingGainPercent.toFixed(1)}%
-                            </span>
-                          )}
-                          {rec.exitPrice != null && (rec.status === 'WIN' || rec.status === 'LOSS' || rec.status === 'CLOSED') && (
-                            <span className="text-[9px] text-slate-400 font-semibold" title={`Exit di Rp ${Number(rec.exitPrice).toLocaleString('id-ID')}`}>
-                              (Exit: {Number(rec.exitPrice).toLocaleString('id-ID')})
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      <span className="text-slate-400 font-mono text-xs">-</span>
-                    )}
-                  </td>
-                  <td className="p-3 text-right text-emerald-600 dark:text-emerald-400 font-bold font-mono whitespace-nowrap">
-                    Rp {Number(rec.targetPrice || 0).toLocaleString('id-ID')}
-                  </td>
-                  <td className="p-3 text-right text-rose-600 dark:text-rose-400 font-bold font-mono whitespace-nowrap">
-                    Rp {Number(rec.stopLoss || 0).toLocaleString('id-ID')}
-                  </td>
-                  <td className="p-3 text-center whitespace-nowrap">
-                    {getStatusBadge(rec.status, rec.notes)}
-                  </td>
-                  <td className="p-3 text-slate-500 dark:text-slate-400 text-[11px] max-w-xs truncate" title={rec.notes || ''}>
-                    {rec.notes || '-'}
-                  </td>
+        <div className="space-y-3">
+          <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 uppercase font-bold text-[10px] border-b border-slate-200 dark:border-slate-800">
+                <tr>
+                  <th className="p-3">Tanggal</th>
+                  <th className="p-3">Sumber</th>
+                  <th className="p-3">Saham</th>
+                  <th className="p-3">Gaya</th>
+                  <th className="p-3 text-right">Harga Beli / Antre</th>
+                  <th className="p-3 text-right">Harga Saat Ini</th>
+                  <th className="p-3 text-right">Target (TP)</th>
+                  <th className="p-3 text-right">Cut Loss (SL)</th>
+                  <th className="p-3 text-center">Status</th>
+                  <th className="p-3">Catatan</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 font-medium">
+                {paginatedRecommendations.map((rec) => (
+                  <tr key={rec.id} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                    <td className="p-3 text-slate-500 font-mono whitespace-nowrap">
+                      {formatDate(rec.date)}
+                    </td>
+                    <td className="p-3 whitespace-nowrap">
+                      {rec.source === 'SYSTEM' ? (
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700">
+                          🤖 Sistem
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                          👤 User
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-3 font-extrabold text-slate-900 dark:text-white">{rec.ticker}</td>
+                    <td className="p-3">
+                      <span className="capitalize px-2.5 py-1 rounded-md text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                        {rec.style}
+                      </span>
+                    </td>
+                    <td className="p-3 text-right text-slate-800 dark:text-slate-200 font-bold font-mono whitespace-nowrap">
+                      Rp {Number(rec.priceAtRecommend || 0).toLocaleString('id-ID')}
+                    </td>
+                    <td className="p-3 text-right font-mono whitespace-nowrap">
+                      {rec.currentPrice != null ? (
+                        <div className="flex flex-col items-end leading-tight">
+                          <span className="font-extrabold text-slate-900 dark:text-white">
+                            Rp {Number(rec.currentPrice).toLocaleString('id-ID')}
+                          </span>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            {rec.floatingGainPercent != null && (
+                              <span className={`text-[10px] font-bold ${
+                                rec.floatingGainPercent > 0 
+                                  ? 'text-emerald-600 dark:text-emerald-400' 
+                                  : rec.floatingGainPercent < 0 
+                                  ? 'text-rose-600 dark:text-rose-400' 
+                                  : 'text-slate-400'
+                              }`}>
+                                {rec.floatingGainPercent > 0 ? '+' : ''}{rec.floatingGainPercent.toFixed(1)}%
+                              </span>
+                            )}
+                            {rec.exitPrice != null && (rec.status === 'WIN' || rec.status === 'LOSS' || rec.status === 'CLOSED') && (
+                              <span className="text-[9px] text-slate-400 font-semibold" title={`Exit di Rp ${Number(rec.exitPrice).toLocaleString('id-ID')}`}>
+                                (Exit: {Number(rec.exitPrice).toLocaleString('id-ID')})
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-slate-400 font-mono text-xs">-</span>
+                      )}
+                    </td>
+                    <td className="p-3 text-right text-emerald-600 dark:text-emerald-400 font-bold font-mono whitespace-nowrap">
+                      Rp {Number(rec.targetPrice || 0).toLocaleString('id-ID')}
+                    </td>
+                    <td className="p-3 text-right text-rose-600 dark:text-rose-400 font-bold font-mono whitespace-nowrap">
+                      Rp {Number(rec.stopLoss || 0).toLocaleString('id-ID')}
+                    </td>
+                    <td className="p-3 text-center whitespace-nowrap">
+                      {getStatusBadge(rec.status, rec.notes)}
+                    </td>
+                    <td className="p-3 text-slate-500 dark:text-slate-400 text-[11px] max-w-xs truncate" title={rec.notes || ''}>
+                      {rec.notes || '-'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination Controls */}
+          {totalItems > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 text-xs">
+              <div className="text-slate-500 dark:text-slate-400 font-medium">
+                Menampilkan <span className="font-bold text-slate-800 dark:text-slate-200">{startIndex + 1}</span>–<span className="font-bold text-slate-800 dark:text-slate-200">{endIndex}</span> dari <span className="font-bold text-slate-800 dark:text-slate-200">{totalItems}</span> riwayat ({pageSize} per halaman)
+              </div>
+
+              {totalPages > 1 && (
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={safeCurrentPage === 1}
+                    className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-2xs"
+                  >
+                    ← Sebelumnya
+                  </button>
+
+                  {/* Page Number Buttons */}
+                  <div className="flex items-center gap-1">
+                    {getPageNumbers(safeCurrentPage, totalPages).map((p, idx) => (
+                      p === '...' ? (
+                        <span key={`dots-${idx}`} className="px-2 py-1 text-slate-400">...</span>
+                      ) : (
+                        <button
+                          key={p}
+                          onClick={() => setCurrentPage(p)}
+                          className={`w-8 h-8 rounded-xl font-bold transition-all cursor-pointer border text-xs flex items-center justify-center ${
+                            safeCurrentPage === p
+                              ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-transparent shadow-xs font-black'
+                              : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      )
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={safeCurrentPage === totalPages}
+                    className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-2xs"
+                  >
+                    Berikutnya →
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       ) : (
         <div className="p-8 text-center rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-dashed border-slate-300 dark:border-slate-700 text-slate-500 space-y-1">

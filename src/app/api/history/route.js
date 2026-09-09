@@ -46,7 +46,7 @@ export async function GET(request) {
       orderBy: {
         date: 'desc',
       },
-      take: 100,
+      take: 500,
     });
 
     // Fetch current live prices from StockData for all unique tickers in recommendations
