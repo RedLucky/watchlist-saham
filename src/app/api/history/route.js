@@ -10,6 +10,14 @@ export async function GET(request) {
     if (!userId) {
       return NextResponse.json({
         recommendations: [],
+        pagination: {
+          page: 1,
+          limit: 25,
+          total: 0,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPrevPage: false,
+        },
         stats: {
           total: 0,
           waiting: 0,
@@ -19,15 +27,43 @@ export async function GET(request) {
           losses: 0,
           expired: 0,
           winRate: '0%',
-        }
+          winRateNum: 0,
+        },
+        systemStats: {
+          total: 0,
+          waiting: 0,
+          open: 0,
+          closed: 0,
+          wins: 0,
+          losses: 0,
+          expired: 0,
+          winRate: '0%',
+          winRateNum: 0,
+        },
+        userStats: {
+          total: 0,
+          waiting: 0,
+          open: 0,
+          closed: 0,
+          wins: 0,
+          losses: 0,
+          expired: 0,
+          winRate: '0%',
+          winRateNum: 0,
+        },
       });
     }
 
     const { searchParams } = new URL(request.url);
     const filterSource = searchParams.get('source'); // 'SYSTEM', 'USER', or null/ALL
+    const filterStatus = searchParams.get('status'); // 'WAITING', 'OPEN', 'CLOSED', or null/ALL
+    const isAll = searchParams.get('all') === 'true';
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
+    const limit = Math.max(1, Math.min(100, parseInt(searchParams.get('limit') || '25', 10)));
+    const skip = (page - 1) * limit;
 
     // Base query conditions: User can see their own records, system records, and legacy null user records
-    let whereClause = {
+    const baseAccessCondition = {
       OR: [
         { userId },
         { source: 'SYSTEM' },
@@ -35,26 +71,54 @@ export async function GET(request) {
       ]
     };
 
+    const andConditions = [baseAccessCondition];
+
     if (filterSource === 'SYSTEM') {
-      whereClause = { source: 'SYSTEM' };
+      andConditions.push({ source: 'SYSTEM' });
     } else if (filterSource === 'USER') {
-      whereClause = { userId, source: 'USER' };
+      andConditions.push({ userId, source: { not: 'SYSTEM' } });
     }
 
-    const recommendations = await prisma.recommendation.findMany({
-      where: whereClause,
-      orderBy: {
-        date: 'desc',
-      },
-      take: 500,
-    });
+    if (filterStatus === 'WAITING') {
+      andConditions.push({ status: 'WAITING_BUY' });
+    } else if (filterStatus === 'OPEN') {
+      andConditions.push({ status: 'OPEN' });
+    } else if (filterStatus === 'CLOSED') {
+      andConditions.push({ status: { in: ['WIN', 'LOSS', 'CLOSED', 'EXPIRED'] } });
+    }
 
-    // Fetch current live prices from StockData for all unique tickers in recommendations
+    const whereClause = andConditions.length === 1 ? andConditions[0] : { AND: andConditions };
+
+    // Parallel queries: Count matching records, fetch paginated page, and fetch lightweight records for stats
+    const [total, recommendations, allUserRecommendations] = await Promise.all([
+      prisma.recommendation.count({ where: whereClause }),
+      prisma.recommendation.findMany({
+        where: whereClause,
+        orderBy: {
+          date: 'desc',
+        },
+        skip: isAll ? undefined : skip,
+        take: isAll ? undefined : limit,
+      }),
+      prisma.recommendation.findMany({
+        where: baseAccessCondition,
+        select: {
+          id: true,
+          source: true,
+          userId: true,
+          status: true,
+        },
+      }),
+    ]);
+
+    const totalPages = isAll ? 1 : Math.max(1, Math.ceil(total / limit));
+
+    // Fetch current live prices from StockData only for unique tickers in current page
     const tickers = [...new Set(recommendations.map(r => r.ticker).filter(Boolean))];
-    const liveStocks = await prisma.stockData.findMany({
+    const liveStocks = tickers.length > 0 ? await prisma.stockData.findMany({
       where: { ticker: { in: tickers } },
       select: { ticker: true, price: true, changePercent: true }
-    });
+    }) : [];
     const priceMap = new Map(liveStocks.map(s => [s.ticker, { price: s.price, changePercent: s.changePercent }]));
 
     const enrichedRecommendations = recommendations.map(rec => {
@@ -100,23 +164,20 @@ export async function GET(request) {
       };
     };
 
-    // Calculate comparative stats
-    const allUserRecommendations = await prisma.recommendation.findMany({
-      where: {
-        OR: [
-          { userId },
-          { source: 'SYSTEM' },
-          { userId: null }
-        ]
-      }
-    });
-
     const systemItems = allUserRecommendations.filter(r => r.source === 'SYSTEM');
     const userItems = allUserRecommendations.filter(r => r.source !== 'SYSTEM' && r.userId === userId);
 
     return NextResponse.json({
       recommendations: enrichedRecommendations,
-      stats: computeStats(recommendations),
+      pagination: {
+        page: isAll ? 1 : page,
+        limit: isAll ? total : limit,
+        total,
+        totalPages,
+        hasNextPage: isAll ? false : page < totalPages,
+        hasPrevPage: isAll ? false : page > 1,
+      },
+      stats: computeStats(allUserRecommendations),
       systemStats: computeStats(systemItems),
       userStats: computeStats(userItems),
     });

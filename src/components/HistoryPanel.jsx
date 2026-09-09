@@ -18,14 +18,30 @@ function getPageNumbers(current, total) {
 export default function HistoryPanel() {
   const [history, setHistory] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [tableLoading, setTableLoading] = useState(false);
   const [sourceTab, setSourceTab] = useState('ALL');
   const [filterTab, setFilterTab] = useState('ALL');
   const [fetchError, setFetchError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const pageSize = 25;
 
   useEffect(() => {
-    fetch('/api/history')
+    let ignore = false;
+    if (!history) {
+      setLoading(true);
+    } else {
+      setTableLoading(true);
+    }
+
+    const params = new URLSearchParams({
+      page: String(currentPage),
+      limit: String(pageSize),
+    });
+    if (sourceTab !== 'ALL') params.set('source', sourceTab);
+    if (filterTab !== 'ALL') params.set('status', filterTab);
+
+    fetch(`/api/history?${params.toString()}`)
       .then(async (res) => {
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
@@ -34,15 +50,25 @@ export default function HistoryPanel() {
         return res.json();
       })
       .then(data => {
-        setHistory(data);
-        setLoading(false);
+        if (!ignore) {
+          setHistory(data);
+          setLoading(false);
+          setTableLoading(false);
+        }
       })
       .catch(err => {
-        console.error("HistoryPanel fetch error:", err);
-        setFetchError(err.message || 'Gagal memuat riwayat');
-        setLoading(false);
+        if (!ignore) {
+          console.error("HistoryPanel fetch error:", err);
+          setFetchError(err.message || 'Gagal memuat riwayat');
+          setLoading(false);
+          setTableLoading(false);
+        }
       });
-  }, []);
+
+    return () => {
+      ignore = true;
+    };
+  }, [currentPage, sourceTab, filterTab, refreshTrigger]);
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '-';
@@ -69,12 +95,8 @@ export default function HistoryPanel() {
         <p className="text-sm font-bold text-rose-600 dark:text-rose-400">⚠️ {fetchError}</p>
         <button 
           onClick={() => {
-            setLoading(true);
             setFetchError(null);
-            fetch('/api/history')
-              .then(r => r.json())
-              .then(d => { setHistory(d); setLoading(false); })
-              .catch(e => { setFetchError(e.message); setLoading(false); });
+            setRefreshTrigger(prev => prev + 1);
           }}
           className="px-4 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold hover:bg-slate-200 text-slate-700 dark:text-slate-300 transition-all cursor-pointer"
         >
@@ -85,28 +107,17 @@ export default function HistoryPanel() {
   }
 
   const recommendations = history?.recommendations || [];
+  const pagination = history?.pagination || { page: 1, limit: pageSize, total: 0, totalPages: 1 };
   const stats = history?.stats || { total: 0, waiting: 0, open: 0, wins: 0, losses: 0, winRate: '0%' };
   const systemStats = history?.systemStats || { total: 0, waiting: 0, open: 0, wins: 0, losses: 0, winRate: '0%' };
   const userStats = history?.userStats || { total: 0, waiting: 0, open: 0, wins: 0, losses: 0, winRate: '0%' };
 
-  const filteredRecommendations = recommendations.filter((rec) => {
-    // Filter Source
-    if (sourceTab === 'SYSTEM' && rec.source !== 'SYSTEM') return false;
-    if (sourceTab === 'USER' && rec.source === 'SYSTEM') return false;
-
-    // Filter Status
-    if (filterTab === 'WAITING') return rec.status === 'WAITING_BUY';
-    if (filterTab === 'OPEN') return rec.status === 'OPEN';
-    if (filterTab === 'CLOSED') return ['WIN', 'LOSS', 'CLOSED', 'EXPIRED'].includes(rec.status);
-    return true;
-  });
-
-  const totalItems = filteredRecommendations.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const totalItems = pagination.total;
+  const totalPages = Math.max(1, pagination.totalPages);
   const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
-  const startIndex = (safeCurrentPage - 1) * pageSize;
-  const endIndex = Math.min(startIndex + pageSize, totalItems);
-  const paginatedRecommendations = filteredRecommendations.slice(startIndex, endIndex);
+  const startIndex = (safeCurrentPage - 1) * pagination.limit;
+  const endIndex = Math.min(startIndex + recommendations.length, totalItems);
+  const activeStats = sourceTab === 'SYSTEM' ? systemStats : sourceTab === 'USER' ? userStats : stats;
 
   const getStatusBadge = (status, notes = '') => {
     const isTimeStop = Boolean(notes && notes.includes('Time Stop'));
@@ -263,7 +274,7 @@ export default function HistoryPanel() {
         <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none]">
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">Sumber:</span>
           {[
-            { id: 'ALL', label: `🌐 Semua (${recommendations.length})` },
+            { id: 'ALL', label: `🌐 Semua (${stats.total || 0})` },
             { id: 'SYSTEM', label: `🤖 Sistem Discord (${systemStats.total || 0})` },
             { id: 'USER', label: `👤 Pantauan Saya (${userStats.total || 0})` },
           ].map((t) => (
@@ -289,9 +300,9 @@ export default function HistoryPanel() {
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">Status:</span>
           {[
             { id: 'ALL', label: `Semua Status` },
-            { id: 'WAITING', label: `⏳ Sedang Antri (${stats.waiting || 0})` },
-            { id: 'OPEN', label: `🟢 Posisi Aktif (${stats.open || 0})` },
-            { id: 'CLOSED', label: `🏁 Selesai (${stats.closed || 0})` },
+            { id: 'WAITING', label: `⏳ Sedang Antri (${activeStats.waiting || 0})` },
+            { id: 'OPEN', label: `🟢 Posisi Aktif (${activeStats.open || 0})` },
+            { id: 'CLOSED', label: `🏁 Selesai (${activeStats.closed || 0})` },
           ].map((t) => (
             <button
               key={t.id}
@@ -311,9 +322,9 @@ export default function HistoryPanel() {
         </div>
       </div>
 
-      {filteredRecommendations.length > 0 ? (
+      {recommendations.length > 0 ? (
         <div className="space-y-3">
-          <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800">
+          <div className={`overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 transition-opacity duration-150 ${tableLoading ? 'opacity-50 pointer-events-none' : ''}`}>
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 uppercase font-bold text-[10px] border-b border-slate-200 dark:border-slate-800">
                 <tr>
@@ -330,7 +341,7 @@ export default function HistoryPanel() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 font-medium">
-                {paginatedRecommendations.map((rec) => (
+                {recommendations.map((rec) => (
                   <tr key={rec.id} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                     <td className="p-3 text-slate-500 font-mono whitespace-nowrap">
                       {formatDate(rec.date)}
