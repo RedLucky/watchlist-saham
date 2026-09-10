@@ -39,17 +39,49 @@ export class DatabaseProvider extends DataProvider {
       const decline = safeChanges.filter((v) => v < -FLAT_THRESHOLD_PCT).length;
       const unchanged = safeChanges.length - advance - decline;
       const ihsgChange = Number.isFinite(Number(ihsg?.changePercent)) ? Number(ihsg.changePercent) : 0;
-      const indexTrend = ihsgChange > FLAT_THRESHOLD_PCT ? 'up' : ihsgChange < -FLAT_THRESHOLD_PCT ? 'down' : 'sideways';
-      const volumeVsAvg = Number(ihsg?.avgVolume3mo || 0) > 0
-        ? Number(ihsg?.volume || 0) / Number(ihsg.avgVolume3mo)
-        : 1;
+      let ihsgTech = null;
+      try {
+        ihsgTech = ihsg?.technicals ? JSON.parse(ihsg.technicals) : null;
+      } catch (_) {}
+
+      // Smoothing Tren Indeks: Jangan panik ke 'down' jika koreksi minor di atas MA20
+      let indexTrend = 'sideways';
+      const ihsgMa20 = Number(ihsgTech?.ma20 || 0);
+      const currentPrice = Number(ihsg?.price || 0);
+
+      if (ihsgChange > FLAT_THRESHOLD_PCT) {
+        indexTrend = 'up';
+      } else if (ihsgChange < -FLAT_THRESHOLD_PCT) {
+        if (ihsgMa20 > 0 && currentPrice >= ihsgMa20 && ihsgChange >= -0.75) {
+          indexTrend = 'sideways'; // Konsolidasi sehat dalam tren naik
+        } else {
+          indexTrend = 'down'; // Penurunan tajam atau breakdown di bawah MA20
+        }
+      } else {
+        indexTrend = 'sideways';
+      }
+
+      // Volume Fallback: Jika volume kolom quote bernilai 0/null, gunakan riwayat volume teknikal IHSG
+      let volumeVsAvg = 1;
+      const avgVol = Number(ihsg?.avgVolume3mo || 0);
+      if (avgVol > 0) {
+        const directVol = Number(ihsg?.volume || 0);
+        if (directVol > 0) {
+          volumeVsAvg = directVol / avgVol;
+        } else if (Array.isArray(ihsgTech?.volumes) && ihsgTech.volumes.length > 0) {
+          const lastTechVol = Number(ihsgTech.volumes[ihsgTech.volumes.length - 1] || 0);
+          if (lastTechVol > 0) {
+            volumeVsAvg = lastTechVol / avgVol;
+          }
+        }
+      }
 
       return {
         indexName: 'IHSG',
         indexValue: ihsg?.price || 7200,
         indexChange: ihsgChange,
         indexTrend,
-        volumeVsAvg,
+        volumeVsAvg: Number(volumeVsAvg.toFixed(4)),
         advanceDecline: { advance, decline, unchanged },
       };
     } catch (e) {

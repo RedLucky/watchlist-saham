@@ -22,6 +22,19 @@ export function getIDXPriceStep(price) {
 }
 
 /**
+ * Batas Auto Rejection Atas (ARA) resmi BEI:
+ * - Harga < Rp 200         : +35%
+ * - Harga Rp 200 - Rp 5.000: +25%
+ * - Harga > Rp 5.000      : +20%
+ */
+export function getIDXRiseLimitPct(price) {
+  const p = Number(price);
+  if (p < 200) return 35;
+  if (p <= 5000) return 25;
+  return 20;
+}
+
+/**
  * Membulatkan harga sesuai fraksi resmi BEI
  * @param {number} price 
  * @param {'nearest' | 'up' | 'down'} direction 
@@ -93,6 +106,12 @@ export function calculateTradeSetup(stock, technicalResult, styleConfig) {
   let target = roundToIDXTick(targetCandidate, 'up');
   const minTarget = entryHigh + (getIDXPriceStep(entryHigh) * 2);
   target = Math.max(target, minTarget);
+
+  // Plafon ARA resmi BEI: Target Price tidak boleh melebihi batas kenaikan harian maksimal
+  const maxAraPrice = roundToIDXTick(price * (1 + getIDXRiseLimitPct(price) / 100), 'down');
+  if (target > maxAraPrice && maxAraPrice >= minTarget) {
+    target = maxAraPrice;
+  }
 
   // 3. Stop Loss: Dinamis berbasis Volatilitas (ATR) & Supertrend
   const atr = Number(technicals.atr14 || technicals.atr || 0);

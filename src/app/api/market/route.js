@@ -22,7 +22,7 @@ export async function GET() {
       trend: marketData.indexTrend,
     },
     volume: {
-      vsAverage: marketData.volumeVsAvg,
+      vsAverage: Number(Number(marketData.volumeVsAvg || 1).toFixed(2)),
     },
     advanceDecline: marketData.advanceDecline,
     autoMode: {

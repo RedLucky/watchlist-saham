@@ -2,6 +2,31 @@ import { prisma } from './prisma.js';
 import { getStyleConfig } from './modes.js';
 
 /**
+ * Menghitung jumlah hari kerja bursa aktif (Senin s/d Jumat) yang telah lewat.
+ * Mengecualikan hari Sabtu dan Minggu agar order tidak kedaluwarsa prematur saat libur bursa.
+ */
+export function getTradingDaysElapsed(startDate, endDate = new Date()) {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) return 0;
+
+  // Normalisasi ke tanggal kalender (00:00:00) agar tidak terpengaruh jam/menit
+  const cur = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+  const target = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+
+  let tradingDays = 0;
+  while (cur < target) {
+    cur.setDate(cur.getDate() + 1);
+    const day = cur.getDay();
+    if (day !== 0 && day !== 6) {
+      tradingDays++;
+    }
+  }
+
+  return tradingDays;
+}
+
+/**
  * Send real-time Discord notification when a recommendation reaches WIN (TP) or LOSS (SL)
  * @param {Object} params
  * @param {Object} params.recommendation - The recommendation database record
@@ -114,7 +139,7 @@ export async function updateExistingRecommendations(currentStocks) {
 
     const styleConfig = getStyleConfig(rec.style || 'swing');
     const maxDays = styleConfig.maxHoldingDays || 7;
-    const ageInDays = (new Date() - new Date(rec.date)) / (1000 * 60 * 60 * 24);
+    const ageInDays = getTradingDaysElapsed(rec.date);
 
     // ── KASUS 1: STATUS WAITING_BUY (Antri Beli) ──────────────────
     if (rec.status === 'WAITING_BUY') {
@@ -130,13 +155,13 @@ export async function updateExistingRecommendations(currentStocks) {
           }
         });
       } else if (ageInDays > maxDays) {
-        // Antrean kedaluwarsa jika dalam maxDays harga tidak pernah menyentuh level beli
+        // Antrean kedaluwarsa jika dalam maxDays hari bursa harga tidak pernah menyentuh level beli
         await prisma.recommendation.update({
           where: { id: rec.id },
           data: {
             status: 'EXPIRED',
             exitDate: new Date(),
-            notes: `Antrean beli kedaluwarsa setelah ${maxDays} hari tanpa match.`,
+            notes: `Antrean beli kedaluwarsa setelah ${maxDays} hari bursa tanpa match.`,
           }
         });
       }
@@ -165,10 +190,10 @@ export async function updateExistingRecommendations(currentStocks) {
         
         if (currentPrice >= entryPrice) {
           newStatus = 'WIN';
-          exitReason = `Time Stop (${maxDays} hari) — Ditutup dengan keuntungan ${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}% pada Rp ${currentPrice}`;
+          exitReason = `Time Stop (${maxDays} hari bursa) — Ditutup dengan keuntungan ${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}% pada Rp ${currentPrice}`;
         } else {
           newStatus = 'LOSS';
-          exitReason = `Time Stop (${maxDays} hari) — Ditutup dengan defisit ${pnl.toFixed(2)}% pada Rp ${currentPrice}`;
+          exitReason = `Time Stop (${maxDays} hari bursa) — Ditutup dengan defisit ${pnl.toFixed(2)}% pada Rp ${currentPrice}`;
         }
       }
 

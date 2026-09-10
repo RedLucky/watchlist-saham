@@ -52,7 +52,7 @@ export const MODES = {
       liquidity: 5,
       dividend: 10,
     },
-    threshold: 70,
+    threshold: 66,
     maxStocks: 5,
     color: '#6366f1',
   },
@@ -64,13 +64,13 @@ export const MODES = {
     weights: {
       fundamental: 35,
       technical: 15,
-      smartMoney: 10,
-      trending: 5,
+      smartMoney: 15,
       valuation: 15,
+      dividend: 10,
       liquidity: 5,
-      dividend: 15,
+      trending: 5,
     },
-    threshold: 75,
+    threshold: 68,
     maxStocks: 3,
     color: '#f59e0b',
   },
@@ -102,14 +102,14 @@ export const TRADING_STYLES = {
     emoji: '⚡',
     riskLevel: 'Tinggi',
     riskColor: 'red',
-    description: 'Profit cepat dalam rentang waktu sangat pendek. Frekuensi tinggi dengan target kecil.',
+    description: 'Profit cepat dalam rentang intraday (ODT). Frekuensi tinggi dengan target terukur dan disiplin ketat.',
     // Lower market influence because scalping is highly tactical.
     marketInfluence: 0.35,
     indicators: { rsiPeriod: 7, maShort: 9, maLong: 20, volSpike: 1.5 },
     weights: { technical: 40, trending: 25, smartMoney: 20, fundamental: 5, valuation: 5, liquidity: 3, dividend: 2 },
-    exit: { tp: 1.5, sl: 0.75 }, // Average of ranges
-    maxHoldingDays: 2,
-    qualityGate: { minTechnicalScore: 55, minRiskReward: 1.2, requireActionableSetup: true },
+    exit: { tp: 3.0, sl: 1.5 },
+    maxHoldingDays: 1, // One Day Trade (ODT) di BEI
+    qualityGate: { minTechnicalScore: 55, minRiskReward: 1.5, requireActionableSetup: true },
   },
   daily: {
     name: 'daily',
@@ -117,14 +117,14 @@ export const TRADING_STYLES = {
     emoji: '📊',
     riskLevel: 'Sedang',
     riskColor: 'yellow',
-    description: 'Trading harian dengan rentang waktu 1-2 hari. Mencari pergerakan jangka pendek.',
+    description: 'Trading jangka pendek selaras siklus T+2 (1-3 hari bursa). Mencari momentum lanjutan.',
     // Balanced market-vs-style influence.
     marketInfluence: 0.50,
     indicators: { rsiPeriod: 14, maShort: 20, maLong: 50, volSpike: 1.2 },
     weights: { technical: 30, smartMoney: 25, trending: 20, fundamental: 15, valuation: 5, liquidity: 3, dividend: 2 },
-    exit: { tp: 4.5, sl: 2.5 },
-    maxHoldingDays: 5,
-    qualityGate: { minTechnicalScore: 60, minRiskReward: 1.4, requireActionableSetup: true },
+    exit: { tp: 5.0, sl: 2.5 },
+    maxHoldingDays: 3, // Sesuai siklus T+2 BEI
+    qualityGate: { minTechnicalScore: 60, minRiskReward: 1.6, requireActionableSetup: true },
   },
   swing: {
     name: 'swing',
@@ -132,14 +132,14 @@ export const TRADING_STYLES = {
     emoji: '📈',
     riskLevel: 'Rendah',
     riskColor: 'green',
-    description: 'Menangkap tren jangka menengah (3-15 hari). Lebih stabil dan cocok untuk pemula.',
+    description: 'Menangkap tren jangka menengah (1-2 minggu bursa). Lebih stabil dan cocok untuk pemula.',
     // Higher market influence for multi-day positioning.
     marketInfluence: 0.65,
     indicators: { rsiPeriod: 14, maShort: 20, maLong: 50, volSpike: 1.1 },
     weights: { fundamental: 25, technical: 20, smartMoney: 20, trending: 15, valuation: 10, liquidity: 5, dividend: 5 },
-    exit: { tp: 8.5, sl: 4.0 },
-    maxHoldingDays: 14,
-    qualityGate: { minTechnicalScore: 62, minRiskReward: 1.6, requireActionableSetup: true },
+    exit: { tp: 9.0, sl: 4.5 },
+    maxHoldingDays: 12, // 2-3 minggu kalender BEI
+    qualityGate: { minTechnicalScore: 62, minRiskReward: 1.8, requireActionableSetup: true },
   },
 };
 
@@ -151,28 +151,25 @@ export function detectMarketMode(marketData) {
   const adRatio = base > 0 ? adv / base : 0.5;
   const vol = Number(volumeVsAvg || 1);
 
-  // Bullish + participation kuat
-  if (indexTrend === 'up' && vol >= 1.2 && adRatio >= 0.55) {
-    return 'growth';
-  }
-
-  // Bearish/weak breadth
-  if (indexTrend === 'down' || adRatio < 0.4) {
+  // 1. Bearish / Weak breadth: tren turun atau breadth tertekan
+  if (indexTrend === 'down' || adRatio < 0.40) {
     return 'defensive';
   }
 
-  // Kondisi naik tapi tidak eksplosif: cocok konservatif
+  // 2. Bullish kuat: Index Up + Partisipasi Kuat + Volume di atas normal
+  if (indexTrend === 'up' && vol >= 1.05 && adRatio >= 0.55) {
+    return 'growth';
+  }
+
+  // 3. Pasar positif stabil / konsolidasi sehat
   if (
-    (indexTrend === 'up' && vol < 1.2 && adRatio >= 0.48 && adRatio < 0.58) ||
-    (indexTrend === 'sideways' && vol <= 1.0 && adRatio >= 0.5)
+    (indexTrend === 'up' && adRatio >= 0.48) ||
+    (indexTrend === 'sideways' && adRatio >= 0.50)
   ) {
     return 'conservative';
   }
 
-  if (indexTrend === 'sideways' || (adRatio >= 0.4 && adRatio < 0.55)) {
-    return 'balanced';
-  }
-
+  // 4. Default fallback: balanced
   return 'balanced';
 }
 

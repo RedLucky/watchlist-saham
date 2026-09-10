@@ -33,6 +33,21 @@ export default function MarketBadge({ market }) {
 
   const isBullishDominant = advance >= decline;
 
+  const volRatio = Number(market.volume?.vsAverage || 1);
+  const volPercentDiff = (volRatio - 1) * 100;
+  const volMultiplierStr = `${volRatio.toFixed(2)}x`;
+  const volDiffStr = `${volPercentDiff >= 0 ? '+' : ''}${volPercentDiff.toFixed(1)}%`;
+
+  let volActivityLabel = 'Partisipasi Moderat';
+  let volActivityColor = 'text-indigo-600 dark:text-indigo-400';
+  if (volRatio >= 1.2) {
+    volActivityLabel = 'Partisipasi Tinggi (Ramai)';
+    volActivityColor = 'text-emerald-600 dark:text-emerald-400';
+  } else if (volRatio < 0.8) {
+    volActivityLabel = 'Partisipasi Rendah (Sepi)';
+    volActivityColor = 'text-rose-600 dark:text-rose-400';
+  }
+
   return (
     <div className="space-y-3">
       {/* 4-Card Executive Market Cockpit */}
@@ -139,10 +154,19 @@ export default function MarketBadge({ market }) {
 
           <div className="flex items-baseline justify-between mt-1">
             <div>
-              <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-mono">
-                {market.volume?.vsAverage ? `${market.volume.vsAverage > 0 ? '+' : ''}${market.volume.vsAverage}%` : 'Normal'}
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-mono tracking-tight">
+                  {volMultiplierStr}
+                </span>
+                <span className={`text-xs font-black font-mono px-1.5 py-0.5 rounded-md border ${
+                  volPercentDiff >= 0
+                    ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20'
+                    : 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20'
+                }`}>
+                  {volDiffStr}
+                </span>
               </div>
-              <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+              <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">
                 Volume vs Rata-rata 3 Bulan
               </div>
             </div>
@@ -151,8 +175,8 @@ export default function MarketBadge({ market }) {
 
           <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[10px]">
             <span className="text-slate-500 dark:text-slate-400 font-semibold">Aktivitas Transaksi:</span>
-            <span className="font-extrabold text-indigo-600 dark:text-indigo-400">
-              {(market.volume?.vsAverage || 0) > 10 ? 'Partisipasi Tinggi' : 'Partisipasi Moderat'}
+            <span className={`font-extrabold ${volActivityColor}`}>
+              {volActivityLabel}
             </span>
           </div>
         </div>

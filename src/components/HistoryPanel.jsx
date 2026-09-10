@@ -195,12 +195,27 @@ export default function HistoryPanel() {
                 </p>
               </div>
             </div>
-            <div className="text-right">
-              <div className="text-xl font-black text-indigo-600 dark:text-indigo-400 font-mono">
-                {systemStats.winRate}
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <div className="text-lg sm:text-xl font-black text-indigo-600 dark:text-indigo-400 font-mono">
+                  {systemStats.winRate}
+                </div>
+                <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                  Win Rate
+                </div>
               </div>
-              <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
-                Win Rate
+              <div className="text-right pl-3 border-l border-indigo-200/80 dark:border-indigo-900/50">
+                <div className={`text-lg sm:text-xl font-black font-mono flex items-center justify-end gap-1 ${
+                  (systemStats.cumulativePnl ?? 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                }`}>
+                  <span>{(systemStats.cumulativePnl ?? 0) >= 0 ? '📈' : '📉'}</span>
+                  <span>{systemStats.cumulativePnlStr || '+0.00%'}</span>
+                </div>
+                <div className={`text-[10px] font-black uppercase tracking-wider ${
+                  (systemStats.cumulativePnl ?? 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                }`}>
+                  {(systemStats.cumulativePnl ?? 0) >= 0 ? 'Net Untung' : 'Net Defisit'}
+                </div>
               </div>
             </div>
           </div>
@@ -222,6 +237,28 @@ export default function HistoryPanel() {
               <div className="font-mono font-black text-rose-600">{systemStats.losses}</div>
             </div>
           </div>
+          <div className="grid grid-cols-4 gap-2 pt-2 border-t border-dashed border-indigo-200/60 dark:border-indigo-900/40 text-center text-xs bg-indigo-100/30 dark:bg-indigo-950/30 rounded-xl p-2">
+            <div>
+              <div className="text-[9px] text-slate-500 font-bold uppercase">Avg Win</div>
+              <div className="font-mono font-black text-emerald-600 dark:text-emerald-400 text-[11px]">{systemStats.avgWinStr || '+0.00%'}</div>
+            </div>
+            <div>
+              <div className="text-[9px] text-slate-500 font-bold uppercase">Avg Loss</div>
+              <div className="font-mono font-black text-rose-600 dark:text-rose-400 text-[11px]">{systemStats.avgLossStr || '0.00%'}</div>
+            </div>
+            <div>
+              <div className="text-[9px] text-slate-500 font-bold uppercase">Payoff</div>
+              <div className="font-mono font-black text-indigo-700 dark:text-indigo-300 text-[11px]">{systemStats.payoffRatio || 0}x</div>
+            </div>
+            <div>
+              <div className="text-[9px] text-slate-500 font-bold uppercase">Ekspektansi</div>
+              <div className={`font-mono font-black text-[11px] ${
+                (systemStats.expectancy ?? 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+              }`}>
+                {systemStats.expectancyStr || '+0.00%'}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Card 2: User Manual */}
@@ -238,12 +275,27 @@ export default function HistoryPanel() {
                 </p>
               </div>
             </div>
-            <div className="text-right">
-              <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
-                {userStats.winRate}
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <div className="text-lg sm:text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                  {userStats.winRate}
+                </div>
+                <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                  Win Rate
+                </div>
               </div>
-              <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
-                Win Rate
+              <div className="text-right pl-3 border-l border-emerald-200/80 dark:border-emerald-900/50">
+                <div className={`text-lg sm:text-xl font-black font-mono flex items-center justify-end gap-1 ${
+                  (userStats.cumulativePnl ?? 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                }`}>
+                  <span>{(userStats.cumulativePnl ?? 0) >= 0 ? '📈' : '📉'}</span>
+                  <span>{userStats.cumulativePnlStr || '+0.00%'}</span>
+                </div>
+                <div className={`text-[10px] font-black uppercase tracking-wider ${
+                  (userStats.cumulativePnl ?? 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                }`}>
+                  {(userStats.cumulativePnl ?? 0) >= 0 ? 'Net Untung' : 'Net Defisit'}
+                </div>
               </div>
             </div>
           </div>
@@ -263,6 +315,28 @@ export default function HistoryPanel() {
             <div>
               <div className="text-[10px] text-rose-600 font-bold uppercase">Loss</div>
               <div className="font-mono font-black text-rose-600">{userStats.losses}</div>
+            </div>
+          </div>
+          <div className="grid grid-cols-4 gap-2 pt-2 border-t border-dashed border-emerald-200/60 dark:border-emerald-900/40 text-center text-xs bg-emerald-100/30 dark:bg-emerald-950/30 rounded-xl p-2">
+            <div>
+              <div className="text-[9px] text-slate-500 font-bold uppercase">Avg Win</div>
+              <div className="font-mono font-black text-emerald-600 dark:text-emerald-400 text-[11px]">{userStats.avgWinStr || '+0.00%'}</div>
+            </div>
+            <div>
+              <div className="text-[9px] text-slate-500 font-bold uppercase">Avg Loss</div>
+              <div className="font-mono font-black text-rose-600 dark:text-rose-400 text-[11px]">{userStats.avgLossStr || '0.00%'}</div>
+            </div>
+            <div>
+              <div className="text-[9px] text-slate-500 font-bold uppercase">Payoff</div>
+              <div className="font-mono font-black text-emerald-700 dark:text-emerald-300 text-[11px]">{userStats.payoffRatio || 0}x</div>
+            </div>
+            <div>
+              <div className="text-[9px] text-slate-500 font-bold uppercase">Ekspektansi</div>
+              <div className={`font-mono font-black text-[11px] ${
+                (userStats.expectancy ?? 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+              }`}>
+                {userStats.expectancyStr || '+0.00%'}
+              </div>
             </div>
           </div>
         </div>
@@ -401,8 +475,19 @@ export default function HistoryPanel() {
                     <td className="p-3 text-right text-rose-600 dark:text-rose-400 font-bold font-mono whitespace-nowrap">
                       Rp {Number(rec.stopLoss || 0).toLocaleString('id-ID')}
                     </td>
-                    <td className="p-3 text-center whitespace-nowrap">
+                    <td className="p-3 text-center whitespace-nowrap space-y-1">
                       {getStatusBadge(rec.status, rec.notes)}
+                      {rec.realizedPnlPercent != null && (rec.status === 'WIN' || rec.status === 'LOSS' || rec.status === 'CLOSED') && (
+                        <div>
+                          <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-black font-mono ${
+                            rec.realizedPnlPercent >= 0 
+                              ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' 
+                              : 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                          }`}>
+                            {rec.realizedPnlPercent >= 0 ? '+' : ''}{rec.realizedPnlPercent.toFixed(2)}%
+                          </span>
+                        </div>
+                      )}
                     </td>
                     <td className="p-3 text-slate-500 dark:text-slate-400 text-[11px] max-w-xs truncate" title={rec.notes || ''}>
                       {rec.notes || '-'}

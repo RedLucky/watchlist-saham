@@ -28,6 +28,16 @@ export async function GET(request) {
           expired: 0,
           winRate: '0%',
           winRateNum: 0,
+          cumulativePnl: 0,
+          cumulativePnlStr: '+0.00%',
+          avgWin: 0,
+          avgWinStr: '+0.00%',
+          avgLoss: 0,
+          avgLossStr: '0.00%',
+          payoffRatio: 0,
+          expectancy: 0,
+          expectancyStr: '+0.00%',
+          isNetProfit: true,
         },
         systemStats: {
           total: 0,
@@ -39,6 +49,16 @@ export async function GET(request) {
           expired: 0,
           winRate: '0%',
           winRateNum: 0,
+          cumulativePnl: 0,
+          cumulativePnlStr: '+0.00%',
+          avgWin: 0,
+          avgWinStr: '+0.00%',
+          avgLoss: 0,
+          avgLossStr: '0.00%',
+          payoffRatio: 0,
+          expectancy: 0,
+          expectancyStr: '+0.00%',
+          isNetProfit: true,
         },
         userStats: {
           total: 0,
@@ -50,6 +70,16 @@ export async function GET(request) {
           expired: 0,
           winRate: '0%',
           winRateNum: 0,
+          cumulativePnl: 0,
+          cumulativePnlStr: '+0.00%',
+          avgWin: 0,
+          avgWinStr: '+0.00%',
+          avgLoss: 0,
+          avgLossStr: '0.00%',
+          payoffRatio: 0,
+          expectancy: 0,
+          expectancyStr: '+0.00%',
+          isNetProfit: true,
         },
       });
     }
@@ -107,6 +137,12 @@ export async function GET(request) {
           source: true,
           userId: true,
           status: true,
+          priceAtRecommend: true,
+          entryLow: true,
+          entryHigh: true,
+          targetPrice: true,
+          stopLoss: true,
+          exitPrice: true,
         },
       }),
     ]);
@@ -132,11 +168,22 @@ export async function GET(request) {
         floatingGainPercent = Number((((currentPrice - entryPrice) / entryPrice) * 100).toFixed(2));
       }
 
+      let realizedPnlPercent = null;
+      if (rec.status === 'WIN' || rec.status === 'LOSS' || rec.status === 'CLOSED') {
+        const exit = rec.exitPrice != null
+          ? Number(rec.exitPrice)
+          : (rec.status === 'WIN' ? Number(rec.targetPrice) : Number(rec.stopLoss));
+        if (entryPrice > 0 && exit > 0) {
+          realizedPnlPercent = Number((((exit - entryPrice) / entryPrice) * 100).toFixed(2));
+        }
+      }
+
       return {
         ...rec,
         currentPrice,
         currentChangePercent,
-        floatingGainPercent
+        floatingGainPercent,
+        realizedPnlPercent,
       };
     });
 
@@ -151,6 +198,34 @@ export async function GET(request) {
       const resolvedTrades = wins + losses;
       const winRateNum = resolvedTrades > 0 ? Math.round((wins / resolvedTrades) * 100) : 0;
 
+      // Akumulasi PnL, Rata-rata Win/Loss, Payoff Ratio, Expectancy
+      let cumulativePnl = 0;
+      let winSum = 0;
+      let lossSum = 0;
+
+      const resolvedItems = items.filter(r => r.status === 'WIN' || r.status === 'LOSS');
+      for (const r of resolvedItems) {
+        const entry = Number(r.priceAtRecommend || r.entryLow || 0);
+        const exit = r.exitPrice != null
+          ? Number(r.exitPrice)
+          : (r.status === 'WIN' ? Number(r.targetPrice || entry) : Number(r.stopLoss || entry));
+        if (entry > 0) {
+          const pnl = ((exit - entry) / entry) * 100;
+          cumulativePnl += pnl;
+          if (r.status === 'WIN') {
+            winSum += pnl;
+          } else {
+            lossSum += pnl;
+          }
+        }
+      }
+
+      const avgWin = wins > 0 ? winSum / wins : 0;
+      const avgLoss = losses > 0 ? lossSum / losses : 0;
+      const payoffRatio = Math.abs(avgLoss) > 0 ? Number((avgWin / Math.abs(avgLoss)).toFixed(2)) : (avgWin > 0 ? 99 : 0);
+      const winRateFraction = resolvedTrades > 0 ? wins / resolvedTrades : 0;
+      const expectancy = (winRateFraction * avgWin) + ((1 - winRateFraction) * avgLoss);
+
       return {
         total: items.length,
         waiting,
@@ -160,7 +235,17 @@ export async function GET(request) {
         losses,
         expired,
         winRate: `${winRateNum}%`,
-        winRateNum
+        winRateNum,
+        cumulativePnl: Number(cumulativePnl.toFixed(2)),
+        cumulativePnlStr: `${cumulativePnl >= 0 ? '+' : ''}${cumulativePnl.toFixed(2)}%`,
+        avgWin: Number(avgWin.toFixed(2)),
+        avgWinStr: `+${avgWin.toFixed(2)}%`,
+        avgLoss: Number(avgLoss.toFixed(2)),
+        avgLossStr: `${avgLoss.toFixed(2)}%`,
+        payoffRatio,
+        expectancy: Number(expectancy.toFixed(2)),
+        expectancyStr: `${expectancy >= 0 ? '+' : ''}${expectancy.toFixed(2)}%`,
+        isNetProfit: cumulativePnl >= 0,
       };
     };
 
