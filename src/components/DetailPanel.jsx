@@ -4,12 +4,20 @@ import { useState } from 'react';
 import ScoreBar from './ScoreBar';
 import Tooltip from './Tooltip';
 import StockChart from './StockChart';
+import { roundToIDXTick, calculateMonitorMetrics } from '@/lib/tradeSetup';
 
 export default function DetailPanel({ stock, mode, styleName }) {
   const [promptModal, setPromptModal] = useState(null);
   const [promptValue, setPromptValue] = useState('');
   const [isAlreadyBought, setIsAlreadyBought] = useState(false);
   const [toast, setToast] = useState(null);
+
+  // State Modal Pantau Saham
+  const [showMonitorModal, setShowMonitorModal] = useState(false);
+  const [monitorEntryPrice, setMonitorEntryPrice] = useState('');
+  const [monitorTargetPrice, setMonitorTargetPrice] = useState('');
+  const [monitorStopLoss, setMonitorStopLoss] = useState('');
+  const [savingMonitor, setSavingMonitor] = useState(false);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -75,56 +83,67 @@ export default function DetailPanel({ stock, mode, styleName }) {
   };
 
   const handleOpenMonitorPrompt = () => {
-    const defaultEntryPrice = stock.entry?.low || stock.price;
-    setPromptValue(defaultEntryPrice ? defaultEntryPrice.toString() : '');
+    const defaultEntry = stock.entry?.low || stock.price || 0;
+    const defaultTarget = stock.target || (defaultEntry > 0 ? roundToIDXTick(defaultEntry * 1.05) : '');
+    const defaultSL = stock.stopLoss || (defaultEntry > 0 ? roundToIDXTick(defaultEntry * 0.95) : '');
+
+    setMonitorEntryPrice(defaultEntry ? defaultEntry.toString() : '');
+    setMonitorTargetPrice(defaultTarget ? defaultTarget.toString() : '');
+    setMonitorStopLoss(defaultSL ? defaultSL.toString() : '');
     setIsAlreadyBought(false);
-    setPromptModal({
-      showBoughtCheckbox: true,
-      title: `Pantau Saham ${stock.ticker}`,
-      message: `Masukkan harga entry untuk ${stock.ticker} (default rekomendasi: Rp ${formatPrice(defaultEntryPrice)}):`,
-      placeholder: 'Harga Entry...',
-      confirmLabel: 'Mulai Pantau',
-      onSubmit: (val, boughtFlag) => {
-        const inputPrice = parseFloat((val || '').replace(/[^\d.-]/g, ''));
-        if (isNaN(inputPrice) || inputPrice <= 0) {
-          showToast('Harga entry tidak valid!', 'error');
-          return;
+    setShowMonitorModal(true);
+  };
+
+  const handleSaveMonitor = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const inputPrice = parseFloat(String(monitorEntryPrice || '').replace(/[^\d.-]/g, ''));
+    if (!inputPrice || isNaN(inputPrice) || inputPrice <= 0) {
+      showToast('Harga entry harus lebih dari 0!', 'error');
+      return;
+    }
+
+    const inputTarget = monitorTargetPrice ? parseFloat(monitorTargetPrice) : roundToIDXTick(inputPrice * 1.05);
+    const inputSL = monitorStopLoss ? parseFloat(monitorStopLoss) : roundToIDXTick(inputPrice * 0.95);
+    const risk = inputPrice - inputSL;
+    const reward = inputTarget - inputPrice;
+    const riskReward = (risk > 0 && reward > 0) ? Number((reward / risk).toFixed(2)) : 1.5;
+
+    const modifiedStock = {
+      ...stock,
+      price: inputPrice,
+      entry: {
+        low: inputPrice,
+        high: inputPrice
+      },
+      target: inputTarget,
+      stopLoss: inputSL,
+      riskReward,
+    };
+
+    setSavingMonitor(true);
+    fetch('/api/history', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        stock: modifiedStock,
+        mode,
+        style: styleName,
+        isAlreadyBought: Boolean(isAlreadyBought)
+      })
+    })
+      .then(r => r.json())
+      .then(res => {
+        if (res.error) showToast(res.error, 'error');
+        else if (res.message === 'Already saved today') {
+          showToast(`⚠️ Saham ${stock.ticker} (${styleName || 'swing'}) sudah dipantau hari ini`, 'warning');
+        } else {
+          const statusDesc = isAlreadyBought ? 'Posisi Aktif' : 'Antri Beli';
+          showToast(`🎯 ${stock.ticker} mulai dipantau (${statusDesc}) di Win Rate Dashboard dengan harga Rp ${formatPrice(inputPrice)}!`, 'success');
         }
-
-        const modifiedStock = {
-          ...stock,
-          price: inputPrice,
-          entry: {
-            low: inputPrice,
-            high: inputPrice
-          }
-        };
-
-        fetch('/api/history', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            stock: modifiedStock,
-            mode,
-            style: styleName,
-            isAlreadyBought: Boolean(boughtFlag)
-          })
-        })
-          .then(r => r.json())
-          .then(res => {
-            if (res.error) showToast(res.error, 'error');
-            else if (res.message === 'Already saved today') {
-              showToast(`⚠️ Saham ${stock.ticker} (${styleName || 'swing'}) sudah dipantau hari ini`, 'warning');
-            } else {
-              const statusDesc = boughtFlag ? 'Posisi Aktif' : 'Antri Beli';
-              showToast(`🎯 ${stock.ticker} mulai dipantau (${statusDesc}) di Win Rate Dashboard dengan harga Rp ${formatPrice(inputPrice)}!`, 'success');
-            }
-          })
-          .catch(() => showToast('Gagal menyimpan ke dashboard', 'error'));
-
-        setPromptModal(null);
-      }
-    });
+        setShowMonitorModal(false);
+      })
+      .catch(() => showToast('Gagal menyimpan ke dashboard', 'error'))
+      .finally(() => setSavingMonitor(false));
   };
 
  return (
@@ -417,6 +436,219 @@ export default function DetailPanel({ stock, mode, styleName }) {
   </div>
   </div>
   </div>
+
+      {/* ── MODAL: PANTAU SAHAM LENGKAP & REAKTIF DUA ARAH ────────── */}
+      {showMonitorModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-sm p-4 animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700/80 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl shrink-0">
+                  🎯
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-900 dark:text-white">
+                    Pantau {stock.ticker}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">
+                    {stock.name}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowMonitorModal(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveMonitor} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Harga Entry / Beli (Rp) <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  required
+                  value={monitorEntryPrice}
+                  onChange={(e) => setMonitorEntryPrice(e.target.value)}
+                  placeholder="Misal: 10825"
+                  className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Target Harga / TP (Rp)
+                  </label>
+                  <input
+                    type="number"
+                    value={monitorTargetPrice}
+                    onChange={(e) => setMonitorTargetPrice(e.target.value)}
+                    placeholder="Auto: +5%"
+                    className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
+                  />
+                  {/* Preset TP Cepat */}
+                  <div className="flex flex-wrap items-center gap-1 mt-1.5">
+                    <span className="text-[10px] text-slate-400 font-medium">Preset TP:</span>
+                    {[3, 5, 7, 10, 15].map((pct) => (
+                      <button
+                        key={pct}
+                        type="button"
+                        onClick={() => {
+                          const entry = parseFloat(String(monitorEntryPrice || '').replace(/[^\d.-]/g, ''));
+                          if (entry > 0) {
+                            setMonitorTargetPrice(roundToIDXTick(entry * (1 + pct / 100)).toString());
+                          }
+                        }}
+                        className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-slate-100 hover:bg-emerald-100 dark:bg-slate-800 dark:hover:bg-emerald-950/60 text-slate-700 hover:text-emerald-700 dark:text-slate-300 dark:hover:text-emerald-300 transition-colors cursor-pointer"
+                      >
+                        +{pct}%
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Stop Loss / SL (Rp)
+                  </label>
+                  <input
+                    type="number"
+                    value={monitorStopLoss}
+                    onChange={(e) => setMonitorStopLoss(e.target.value)}
+                    placeholder="Auto: -5%"
+                    className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
+                  />
+                  {/* Preset SL Cepat */}
+                  <div className="flex flex-wrap items-center gap-1 mt-1.5">
+                    <span className="text-[10px] text-slate-400 font-medium">Preset SL:</span>
+                    {[2, 3, 5, 7].map((pct) => (
+                      <button
+                        key={pct}
+                        type="button"
+                        onClick={() => {
+                          const entry = parseFloat(String(monitorEntryPrice || '').replace(/[^\d.-]/g, ''));
+                          if (entry > 0) {
+                            setMonitorStopLoss(roundToIDXTick(entry * (1 - pct / 100)).toString());
+                          }
+                        }}
+                        className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-slate-100 hover:bg-rose-100 dark:bg-slate-800 dark:hover:bg-rose-950/60 text-slate-700 hover:text-rose-700 dark:text-slate-300 dark:hover:text-rose-300 transition-colors cursor-pointer"
+                      >
+                        -{pct}%
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Panel Kalkulasi Real-Time Potensi Untung & Risiko Rugi */}
+              {(() => {
+                const calc = calculateMonitorMetrics(monitorEntryPrice, monitorTargetPrice, monitorStopLoss);
+                if (!calc.validEntry) {
+                  return (
+                    <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 text-[11px] text-slate-500 dark:text-slate-400 text-center">
+                      💡 Masukkan harga entry untuk melihat kalkulasi keuntungan & risiko kerugian secara real-time
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-2 p-3 rounded-xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/70 text-xs">
+                    <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700/60 pb-1.5">
+                      <span>Kalkulasi Rencana Pantauan:</span>
+                      {calc.rrRatio != null && (
+                        <span className="px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 font-bold">
+                          Risk/Reward: 1 : {calc.rrRatio}x
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      {/* Potensi Untung */}
+                      <div className={`p-2 rounded-lg border transition-all ${
+                        calc.hasProfit && calc.profitNominal > 0
+                          ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300'
+                          : calc.hasProfit && calc.profitNominal < 0
+                          ? 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/40 text-rose-800 dark:text-rose-300'
+                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400'
+                      }`}>
+                        <div className="text-[10px] font-medium opacity-80 mb-0.5">Potensi Untung (TP)</div>
+                        <div className="font-mono font-black text-xs flex flex-col">
+                          <span>
+                            {calc.hasProfit ? (calc.profitNominal >= 0 ? '+' : '') + `Rp ${calc.profitNominal.toLocaleString('id-ID')}` : '-'}
+                          </span>
+                          <span className="text-[10px] font-bold">
+                            {calc.hasProfit ? `(${calc.profitNominal >= 0 ? '+' : ''}${calc.profitPercent.toFixed(2)}%)` : '-'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Risiko Kerugian */}
+                      <div className={`p-2 rounded-lg border transition-all ${
+                        calc.hasLoss && calc.lossNominal > 0
+                          ? 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/40 text-rose-800 dark:text-rose-300'
+                          : calc.hasLoss && calc.lossNominal < 0
+                          ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300'
+                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400'
+                      }`}>
+                        <div className="text-[10px] font-medium opacity-80 mb-0.5">Risiko Rugi (SL)</div>
+                        <div className="font-mono font-black text-xs flex flex-col">
+                          <span>
+                            {calc.hasLoss ? `-Rp ${Math.abs(calc.lossNominal).toLocaleString('id-ID')}` : '-'}
+                          </span>
+                          <span className="text-[10px] font-bold">
+                            {calc.hasLoss ? `(-${Math.abs(calc.lossPercent).toFixed(2)}%)` : '-'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Checkbox Sudah Beli */}
+              <label className="flex items-start gap-2.5 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={isAlreadyBought}
+                  onChange={(e) => setIsAlreadyBought(e.target.checked)}
+                  className="w-4 h-4 mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 dark:border-slate-600 cursor-pointer"
+                />
+                <div className="space-y-0.5">
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">
+                    Sudah Beli di Harga Ini (Bukan Antri)
+                  </div>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
+                    {isAlreadyBought 
+                      ? '✅ Posisi langsung aktif (OPEN) & mulai pantau Target TP/SL.' 
+                      : '⏳ Default: Antri Beli. Sistem akan menunggu harga pasar turun ke level beli sebelum memantau Win/Loss.'}
+                  </p>
+                </div>
+              </label>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowMonitorModal(false)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingMonitor}
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                >
+                  {savingMonitor ? 'Menyimpan...' : '🎯 Mulai Pantau'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* ── MODAL: CUSTOM PROMPT DIALOG ─────────────────────────────────── */}
       {promptModal && (

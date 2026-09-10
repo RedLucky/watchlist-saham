@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserIdFromRequest } from '@/lib/auth';
+import { calculateWinRateMetrics } from '@/lib/winRateStats';
 
 export async function GET(request) {
   try {
@@ -187,67 +188,8 @@ export async function GET(request) {
       };
     });
 
-    // Helper to calculate Win Rate and breakdown
-    const computeStats = (items) => {
-      const waiting = items.filter(r => r.status === 'WAITING_BUY').length;
-      const open = items.filter(r => r.status === 'OPEN').length;
-      const wins = items.filter(r => r.status === 'WIN').length;
-      const losses = items.filter(r => r.status === 'LOSS').length;
-      const expired = items.filter(r => r.status === 'EXPIRED' || r.status === 'CANCELLED').length;
-      const closed = items.filter(r => ['WIN', 'LOSS', 'CLOSED', 'EXPIRED'].includes(r.status));
-      const resolvedTrades = wins + losses;
-      const winRateNum = resolvedTrades > 0 ? Math.round((wins / resolvedTrades) * 100) : 0;
-
-      // Akumulasi PnL, Rata-rata Win/Loss, Payoff Ratio, Expectancy
-      let cumulativePnl = 0;
-      let winSum = 0;
-      let lossSum = 0;
-
-      const resolvedItems = items.filter(r => r.status === 'WIN' || r.status === 'LOSS');
-      for (const r of resolvedItems) {
-        const entry = Number(r.priceAtRecommend || r.entryLow || 0);
-        const exit = r.exitPrice != null
-          ? Number(r.exitPrice)
-          : (r.status === 'WIN' ? Number(r.targetPrice || entry) : Number(r.stopLoss || entry));
-        if (entry > 0) {
-          const pnl = ((exit - entry) / entry) * 100;
-          cumulativePnl += pnl;
-          if (r.status === 'WIN') {
-            winSum += pnl;
-          } else {
-            lossSum += pnl;
-          }
-        }
-      }
-
-      const avgWin = wins > 0 ? winSum / wins : 0;
-      const avgLoss = losses > 0 ? lossSum / losses : 0;
-      const payoffRatio = Math.abs(avgLoss) > 0 ? Number((avgWin / Math.abs(avgLoss)).toFixed(2)) : (avgWin > 0 ? 99 : 0);
-      const winRateFraction = resolvedTrades > 0 ? wins / resolvedTrades : 0;
-      const expectancy = (winRateFraction * avgWin) + ((1 - winRateFraction) * avgLoss);
-
-      return {
-        total: items.length,
-        waiting,
-        open,
-        closed: closed.length,
-        wins,
-        losses,
-        expired,
-        winRate: `${winRateNum}%`,
-        winRateNum,
-        cumulativePnl: Number(cumulativePnl.toFixed(2)),
-        cumulativePnlStr: `${cumulativePnl >= 0 ? '+' : ''}${cumulativePnl.toFixed(2)}%`,
-        avgWin: Number(avgWin.toFixed(2)),
-        avgWinStr: `+${avgWin.toFixed(2)}%`,
-        avgLoss: Number(avgLoss.toFixed(2)),
-        avgLossStr: `${avgLoss.toFixed(2)}%`,
-        payoffRatio,
-        expectancy: Number(expectancy.toFixed(2)),
-        expectancyStr: `${expectancy >= 0 ? '+' : ''}${expectancy.toFixed(2)}%`,
-        isNetProfit: cumulativePnl >= 0,
-      };
-    };
+    // Compute Win Rate & Performance breakdown using pure calculation engine
+    const computeStats = calculateWinRateMetrics;
 
     const systemItems = allUserRecommendations.filter(r => r.source === 'SYSTEM');
     const userItems = allUserRecommendations.filter(r => r.source !== 'SYSTEM' && r.userId === userId);

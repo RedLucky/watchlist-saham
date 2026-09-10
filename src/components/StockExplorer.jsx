@@ -2,6 +2,12 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import StockChart from './StockChart';
+import {
+  roundToIDXTick,
+  calculateMonitorMetrics,
+  calculateTargetSellFromPercent,
+  calculateTargetPercentFromPrices,
+} from '@/lib/tradeSetup';
 
 function getNominalChange(price, changePercent) {
   if (!price || changePercent == null || !Number.isFinite(price) || !Number.isFinite(changePercent)) return 0;
@@ -105,20 +111,30 @@ function getAlgorithmicRecommendation({ stockDetail, scores }) {
   };
 }
 
+// ==========================================
+// KONSTANTA REKOMENDASI TARGET HARGA (EXPLORER)
+// ==========================================
+const DEFAULT_BUY_DISCOUNT_RATIO = 0.95;  // Diskon default 5% untuk area akumulasi sehat
+const DEFAULT_SELL_TARGET_RATIO = 1.15;   // Target keuntungan standar 15%
+const MIN_SUPPORT_DISCOUNT_RATIO = 0.99;  // Minimal diskon 1% di bawah harga saat ini
+const MIN_PROJECTED_PREMIUM_RATIO = 1.03; // Minimal proyeksi 12 bulan di atas harga +3%
+const MIN_RESISTANCE_PREMIUM_RATIO = 1.02;// Minimal resisten di atas harga +2%
+const MIN_FAIR_VALUE_PREMIUM_RATIO = 1.05;// Minimal DCF fair value di atas harga +5%
+
 // Helper: Hitung Rekomendasi Target Beli & Target Jual
 export function getRecommendedTargets(stockData) {
-  if (!stockData) return { targetBuy: null, targetSell: null, buyLabel: '', sellLabel: '' };
+  if (!stockData) return { targetBuy: null, targetSell: null, buyLabel: '', sellLabel: '', diff: null, gainPct: null };
 
   const price = Number(stockData.price || 0);
   const t = stockData.technicals || {};
   const proj = stockData.projections || {};
 
-  if (!price || price <= 0) return { targetBuy: null, targetSell: null, buyLabel: '', sellLabel: '' };
+  if (!price || price <= 0) return { targetBuy: null, targetSell: null, buyLabel: '', sellLabel: '', diff: null, gainPct: null };
 
   // 1. Target Buy (Area Beli Ideal / Support / Margin of Safety)
   let targetBuy = null;
   let buyLabel = 'Support Teknikal';
-  if (t.support && Number(t.support) > 0 && Number(t.support) <= price * 0.99) {
+  if (t.support && Number(t.support) > 0 && Number(t.support) <= price * MIN_SUPPORT_DISCOUNT_RATIO) {
     targetBuy = Math.round(Number(t.support));
     const discount = Math.round(((price - targetBuy) / price) * 100);
     buyLabel = `Support (-${discount}%)`;
@@ -127,31 +143,38 @@ export function getRecommendedTargets(stockData) {
     const discount = Math.round(((price - targetBuy) / price) * 100);
     buyLabel = `Graham Fair Value (-${discount}%)`;
   } else {
-    targetBuy = Math.round(price * 0.95);
+    targetBuy = Math.round(price * DEFAULT_BUY_DISCOUNT_RATIO);
     buyLabel = 'Diskon 5% (Area Sehat)';
   }
 
   // 2. Target Sell (Target Take Profit / Resistance / Fair Value)
   let targetSell = null;
   let sellLabel = 'Target 12 Bulan';
-  if (proj.projectedPrice12m && Number(proj.projectedPrice12m) > price * 1.03) {
+  if (proj.projectedPrice12m && Number(proj.projectedPrice12m) > price * MIN_PROJECTED_PREMIUM_RATIO) {
     targetSell = Math.round(Number(proj.projectedPrice12m));
     const upside = Math.round(((targetSell - price) / price) * 100);
     sellLabel = `Target 12B (+${upside}%)`;
-  } else if (t.resistance && Number(t.resistance) > price * 1.02) {
+  } else if (t.resistance && Number(t.resistance) > price * MIN_RESISTANCE_PREMIUM_RATIO) {
     targetSell = Math.round(Number(t.resistance));
     const upside = Math.round(((targetSell - price) / price) * 100);
     sellLabel = `Resistance (+${upside}%)`;
-  } else if (proj.fairValue && Number(proj.fairValue) > price * 1.05) {
+  } else if (proj.fairValue && Number(proj.fairValue) > price * MIN_FAIR_VALUE_PREMIUM_RATIO) {
     targetSell = Math.round(Number(proj.fairValue));
     const upside = Math.round(((targetSell - price) / price) * 100);
     sellLabel = `Nilai Wajar DCF (+${upside}%)`;
   } else {
-    targetSell = Math.round(price * 1.15);
+    targetSell = Math.round(price * DEFAULT_SELL_TARGET_RATIO);
     sellLabel = 'Target Standar (+15%)';
   }
 
-  return { targetBuy, targetSell, buyLabel, sellLabel };
+  // Bulatkan harga sesuai fraksi resmi BEI
+  if (targetBuy != null) targetBuy = roundToIDXTick(targetBuy);
+  if (targetSell != null) targetSell = roundToIDXTick(targetSell);
+
+  const diff = (targetBuy != null && targetSell != null) ? (targetSell - targetBuy) : null;
+  const gainPct = (targetBuy != null && targetSell != null && targetBuy > 0) ? ((diff / targetBuy) * 100) : null;
+
+  return { targetBuy, targetSell, buyLabel, sellLabel, diff, gainPct };
 }
 
 export default function StockExplorer({ user }) {
@@ -196,6 +219,7 @@ export default function StockExplorer({ user }) {
   const [targetCollectionId, setTargetCollectionId] = useState('');
   const [saveTargetBuy, setSaveTargetBuy] = useState('');
   const [saveTargetSell, setSaveTargetSell] = useState('');
+  const [saveTargetPercent, setSaveTargetPercent] = useState('');
 
   // Modal State: Edit Collection Item (Notes, Target Buy, Target Sell)
   const [showEditItemModal, setShowEditItemModal] = useState(false);
@@ -203,7 +227,56 @@ export default function StockExplorer({ user }) {
   const [editItemNotes, setEditItemNotes] = useState('');
   const [editItemTargetBuy, setEditItemTargetBuy] = useState('');
   const [editItemTargetSell, setEditItemTargetSell] = useState('');
+  const [editItemTargetPercent, setEditItemTargetPercent] = useState('');
   const [savingEditItem, setSavingEditItem] = useState(false);
+
+  // Sinkronisasi Interaktif Mode Input Sendiri (Modal Simpan)
+  const handleSaveBuyChange = (val) => {
+    setSaveTargetBuy(val);
+    if (saveTargetPercent) {
+      const newSell = calculateTargetSellFromPercent(val, saveTargetPercent);
+      if (newSell) setSaveTargetSell(newSell);
+    } else if (saveTargetSell) {
+      const newPct = calculateTargetPercentFromPrices(val, saveTargetSell);
+      if (newPct) setSaveTargetPercent(newPct);
+    }
+  };
+
+  const handleSaveSellChange = (val) => {
+    setSaveTargetSell(val);
+    const newPct = calculateTargetPercentFromPrices(saveTargetBuy, val);
+    setSaveTargetPercent(newPct);
+  };
+
+  const handleSavePercentChange = (pctStr) => {
+    setSaveTargetPercent(pctStr);
+    const newSell = calculateTargetSellFromPercent(saveTargetBuy, pctStr);
+    if (newSell) setSaveTargetSell(newSell);
+  };
+
+  // Sinkronisasi Interaktif Mode Input Sendiri (Modal Edit)
+  const handleEditBuyChange = (val) => {
+    setEditItemTargetBuy(val);
+    if (editItemTargetPercent) {
+      const newSell = calculateTargetSellFromPercent(val, editItemTargetPercent);
+      if (newSell) setEditItemTargetSell(newSell);
+    } else if (editItemTargetSell) {
+      const newPct = calculateTargetPercentFromPrices(val, editItemTargetSell);
+      if (newPct) setEditItemTargetPercent(newPct);
+    }
+  };
+
+  const handleEditSellChange = (val) => {
+    setEditItemTargetSell(val);
+    const newPct = calculateTargetPercentFromPrices(editItemTargetBuy, val);
+    setEditItemTargetPercent(newPct);
+  };
+
+  const handleEditPercentChange = (pctStr) => {
+    setEditItemTargetPercent(pctStr);
+    const newSell = calculateTargetSellFromPercent(editItemTargetBuy, pctStr);
+    if (newSell) setEditItemTargetSell(newSell);
+  };
 
   // Move Stock Between Collections State
   const [showMoveModal, setShowMoveModal] = useState(false);
@@ -638,6 +711,7 @@ export default function StockExplorer({ user }) {
       setStockNote('');
       setSaveTargetBuy('');
       setSaveTargetSell('');
+      setSaveTargetPercent('');
       showToast(data.updated ? `✅ Catatan saham ${selectedStock} berhasil diperbarui!` : `✅ Saham ${selectedStock} berhasil disimpan ke koleksi!`, 'success');
       await fetchCollections();
       if (selectedCollection?.id === parseInt(targetCollectionId, 10)) {
@@ -807,6 +881,8 @@ export default function StockExplorer({ user }) {
     setEditItemNotes(item.notes || '');
     setEditItemTargetBuy(item.targetBuy != null ? item.targetBuy.toString() : '');
     setEditItemTargetSell(item.targetSell != null ? item.targetSell.toString() : '');
+    const pct = calculateTargetPercentFromPrices(item.targetBuy, item.targetSell);
+    setEditItemTargetPercent(pct);
     setShowEditItemModal(true);
   };
 
@@ -1379,13 +1455,27 @@ export default function StockExplorer({ user }) {
 
                         {/* Target Buy & Sell Status Tags */}
                         {(item.targetBuy != null || item.targetSell != null) && (
-                          <div className="grid grid-cols-2 gap-1 mb-2 text-[10px] font-semibold">
-                            <div className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300">
-                              Beli: {item.targetBuy != null ? `Rp ${item.targetBuy.toLocaleString('id-ID')}` : '-'}
+                          <div className="space-y-1 mb-2">
+                            <div className="grid grid-cols-2 gap-1 text-[10px] font-semibold">
+                              <div className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300">
+                                Beli: {item.targetBuy != null ? `Rp ${item.targetBuy.toLocaleString('id-ID')}` : '-'}
+                              </div>
+                              <div className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300">
+                                Jual: {item.targetSell != null ? `Rp ${item.targetSell.toLocaleString('id-ID')}` : '-'}
+                              </div>
                             </div>
-                            <div className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300">
-                              Jual: {item.targetSell != null ? `Rp ${item.targetSell.toLocaleString('id-ID')}` : '-'}
-                            </div>
+                            {item.targetBuy != null && item.targetSell != null && Number(item.targetBuy) > 0 && (
+                              <div className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center justify-between ${
+                                item.targetSell >= item.targetBuy
+                                  ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40'
+                                  : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200/60 dark:border-rose-800/40'
+                              }`}>
+                                <span>Potensi Gain:</span>
+                                <span>
+                                  {item.targetSell >= item.targetBuy ? '+' : ''}Rp {(item.targetSell - item.targetBuy).toLocaleString('id-ID')} ({item.targetSell >= item.targetBuy ? '+' : ''}{(((item.targetSell - item.targetBuy) / item.targetBuy) * 100).toFixed(1)}%)
+                                </span>
+                              </div>
+                            )}
                           </div>
                         )}
 
@@ -2830,32 +2920,45 @@ export default function StockExplorer({ user }) {
                 </select>
               </div>
 
-              {/* Quick Auto-Fill Recommendation Banner */}
+              {/* Quick Auto-Fill Recommendation Banner (Versi Otomatis) */}
               {(() => {
                 const rec = getRecommendedTargets(stockDetail);
                 if (!rec.targetBuy && !rec.targetSell) return null;
+                const autoDiff = (rec.targetBuy && rec.targetSell) ? (rec.targetSell - rec.targetBuy) : null;
+                const autoPct = (rec.targetBuy && rec.targetSell && rec.targetBuy > 0) ? (((rec.targetSell - rec.targetBuy) / rec.targetBuy) * 100) : null;
+
                 return (
-                  <div className="bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 rounded-xl p-3 space-y-2">
+                  <div className="bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 rounded-xl p-3 space-y-2.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-indigo-900 dark:text-indigo-300 flex items-center gap-1">
-                        <span>⚡</span> Rekomendasi Target Algoritma
-                      </span>
+                      <div>
+                        <span className="text-xs font-bold text-indigo-900 dark:text-indigo-300 flex items-center gap-1">
+                          <span>⚡</span> Rekomendasi Target Algoritma (Otomatis)
+                        </span>
+                        {autoDiff != null && (
+                          <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 block mt-0.5">
+                            Potensi Gain: +Rp {autoDiff.toLocaleString('id-ID')} (+{autoPct.toFixed(2)}%)
+                          </span>
+                        )}
+                      </div>
                       <button
                         type="button"
                         onClick={() => {
                           if (rec.targetBuy) setSaveTargetBuy(rec.targetBuy.toString());
                           if (rec.targetSell) setSaveTargetSell(rec.targetSell.toString());
+                          if (autoPct != null) setSaveTargetPercent(autoPct.toFixed(2));
                         }}
-                        className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-black rounded-lg shadow-sm transition-all flex items-center gap-1 hover:scale-105 active:scale-95"
+                        className="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-black rounded-lg shadow-sm transition-all flex items-center gap-1 hover:scale-105 active:scale-95"
                       >
-                        <span>⚡ Auto-Fill</span>
+                        <span>⚡ Terapkan Otomatis</span>
                       </button>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 text-[11px]">
                       <button
                         type="button"
-                        onClick={() => rec.targetBuy && setSaveTargetBuy(rec.targetBuy.toString())}
+                        onClick={() => {
+                          if (rec.targetBuy) handleSaveBuyChange(rec.targetBuy.toString());
+                        }}
                         className="text-left p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-emerald-500 transition-all group"
                       >
                         <span className="text-slate-500 dark:text-slate-400 text-[10px] block truncate">Target Beli ({rec.buyLabel}):</span>
@@ -2866,7 +2969,9 @@ export default function StockExplorer({ user }) {
 
                       <button
                         type="button"
-                        onClick={() => rec.targetSell && setSaveTargetSell(rec.targetSell.toString())}
+                        onClick={() => {
+                          if (rec.targetSell) handleSaveSellChange(rec.targetSell.toString());
+                        }}
                         className="text-left p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-rose-500 transition-all group"
                       >
                         <span className="text-slate-500 dark:text-slate-400 text-[10px] block truncate">Target Jual ({rec.sellLabel}):</span>
@@ -2879,35 +2984,113 @@ export default function StockExplorer({ user }) {
                 );
               })()}
 
-              {/* Target Buy & Target Sell Inputs */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    🎯 Target Beli (Rp)
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="Contoh: 10000"
-                    value={saveTargetBuy}
-                    onChange={(e) => setSaveTargetBuy(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-                  />
-                  <span className="text-[10px] text-slate-400 mt-0.5 block">Card hijau jika harga ≤ target</span>
+              {/* Mode Input Target Beli & Jual Sendiri (Manual) */}
+              <div className="space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      🎯 Target Beli (Rp)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="Contoh: 10000"
+                      value={saveTargetBuy}
+                      onChange={(e) => handleSaveBuyChange(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <span className="text-[10px] text-slate-400 mt-0.5 block">Harga entry ideal</span>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      🚀 Target Jual (Rp)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="Contoh: 11500"
+                      value={saveTargetSell}
+                      onChange={(e) => handleSaveSellChange(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <span className="text-[10px] text-slate-400 mt-0.5 block">Target Take Profit</span>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      📊 Target Gain (%)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="0.1"
+                        placeholder="Contoh: 15"
+                        value={saveTargetPercent}
+                        onChange={(e) => handleSavePercentChange(e.target.value)}
+                        className="w-full px-3 py-2 pr-7 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                      />
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 mt-0.5 block">Kalkulasi otomatis</span>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    🚀 Target Jual (Rp)
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="Contoh: 11500"
-                    value={saveTargetSell}
-                    onChange={(e) => setSaveTargetSell(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-                  />
-                  <span className="text-[10px] text-slate-400 mt-0.5 block">Card merah jika harga ≥ target</span>
+
+                {/* Preset Persentase Keuntungan Cepat */}
+                <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                  <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 mr-0.5">Preset Gain:</span>
+                  {[3, 5, 7, 10, 15, 20, 25].map((pct) => (
+                    <button
+                      key={pct}
+                      type="button"
+                      onClick={() => handleSavePercentChange(pct.toString())}
+                      className={`px-2 py-0.5 text-[10px] font-bold rounded-lg border transition-all ${
+                        parseFloat(saveTargetPercent) === pct
+                          ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs'
+                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400'
+                      }`}
+                    >
+                      +{pct}%
+                    </button>
+                  ))}
                 </div>
               </div>
+
+              {/* Kalkulasi Dinamis Selisih Keuntungan / Kerugian */}
+              {(() => {
+                const buy = parseFloat(saveTargetBuy);
+                const sell = parseFloat(saveTargetSell);
+                if (!isNaN(buy) && buy > 0 && !isNaN(sell) && sell > 0) {
+                  const diff = sell - buy;
+                  const pct = ((sell - buy) / buy) * 100;
+                  const isProfit = diff > 0;
+                  const isLoss = diff < 0;
+                  return (
+                    <div className={`p-2.5 rounded-xl border flex items-center justify-between text-xs transition-all duration-200 ${
+                      isProfit 
+                        ? 'bg-emerald-50/90 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/50 text-emerald-800 dark:text-emerald-300' 
+                        : isLoss 
+                        ? 'bg-rose-50/90 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/50 text-rose-800 dark:text-rose-300' 
+                        : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                    }`}>
+                      <div className="flex items-center gap-1.5 font-medium">
+                        <span>{isProfit ? '📈 Potensi Keuntungan:' : isLoss ? '📉 Potensi Kerugian:' : '⚖️ Impas (BEP):'}</span>
+                      </div>
+                      <div className="font-bold font-mono text-right flex items-center gap-1.5">
+                        <span>
+                          {isProfit ? '+' : isLoss ? '-' : ''}Rp {Math.abs(diff).toLocaleString('id-ID')}
+                        </span>
+                        <span className={`px-1.5 py-0.5 rounded text-[11px] font-semibold ${
+                          isProfit 
+                            ? 'bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300' 
+                            : isLoss 
+                            ? 'bg-rose-100 dark:bg-rose-900/60 text-rose-700 dark:text-rose-300' 
+                            : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                        }`}>
+                          {isProfit ? '+' : ''}{pct.toFixed(2)}%
+                        </span>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Catatan Analisis (Opsional)</label>
@@ -2955,33 +3138,46 @@ export default function StockExplorer({ user }) {
             </div>
 
             <form onSubmit={handleSaveEditItem} className="space-y-4">
-              {/* Quick Auto-Fill Recommendation Banner */}
+              {/* Quick Auto-Fill Recommendation Banner (Versi Otomatis) */}
               {(() => {
                 const activeStockData = stockDetail?.ticker === editingItem.ticker ? stockDetail : editingItem.stock;
                 const rec = getRecommendedTargets(activeStockData);
                 if (!rec.targetBuy && !rec.targetSell) return null;
+                const autoDiff = (rec.targetBuy && rec.targetSell) ? (rec.targetSell - rec.targetBuy) : null;
+                const autoPct = (rec.targetBuy && rec.targetSell && rec.targetBuy > 0) ? (((rec.targetSell - rec.targetBuy) / rec.targetBuy) * 100) : null;
+
                 return (
-                  <div className="bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 rounded-xl p-3 space-y-2">
+                  <div className="bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 rounded-xl p-3 space-y-2.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-indigo-900 dark:text-indigo-300 flex items-center gap-1">
-                        <span>⚡</span> Rekomendasi Target Algoritma
-                      </span>
+                      <div>
+                        <span className="text-xs font-bold text-indigo-900 dark:text-indigo-300 flex items-center gap-1">
+                          <span>⚡</span> Rekomendasi Target Algoritma (Otomatis)
+                        </span>
+                        {autoDiff != null && (
+                          <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 block mt-0.5">
+                            Potensi Gain: +Rp {autoDiff.toLocaleString('id-ID')} (+{autoPct.toFixed(2)}%)
+                          </span>
+                        )}
+                      </div>
                       <button
                         type="button"
                         onClick={() => {
                           if (rec.targetBuy) setEditItemTargetBuy(rec.targetBuy.toString());
                           if (rec.targetSell) setEditItemTargetSell(rec.targetSell.toString());
+                          if (autoPct != null) setEditItemTargetPercent(autoPct.toFixed(2));
                         }}
-                        className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-black rounded-lg shadow-sm transition-all flex items-center gap-1 hover:scale-105 active:scale-95"
+                        className="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-black rounded-lg shadow-sm transition-all flex items-center gap-1 hover:scale-105 active:scale-95"
                       >
-                        <span>⚡ Auto-Fill</span>
+                        <span>⚡ Terapkan Otomatis</span>
                       </button>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 text-[11px]">
                       <button
                         type="button"
-                        onClick={() => rec.targetBuy && setEditItemTargetBuy(rec.targetBuy.toString())}
+                        onClick={() => {
+                          if (rec.targetBuy) handleEditBuyChange(rec.targetBuy.toString());
+                        }}
                         className="text-left p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-emerald-500 transition-all group"
                       >
                         <span className="text-slate-500 dark:text-slate-400 text-[10px] block truncate">Target Beli ({rec.buyLabel}):</span>
@@ -2992,7 +3188,9 @@ export default function StockExplorer({ user }) {
 
                       <button
                         type="button"
-                        onClick={() => rec.targetSell && setEditItemTargetSell(rec.targetSell.toString())}
+                        onClick={() => {
+                          if (rec.targetSell) handleEditSellChange(rec.targetSell.toString());
+                        }}
                         className="text-left p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-rose-500 transition-all group"
                       >
                         <span className="text-slate-500 dark:text-slate-400 text-[10px] block truncate">Target Jual ({rec.sellLabel}):</span>
@@ -3005,38 +3203,117 @@ export default function StockExplorer({ user }) {
                 );
               })()}
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    🎯 Target Beli (Rp)
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="Contoh: 10000"
-                    value={editItemTargetBuy}
-                    onChange={(e) => setEditItemTargetBuy(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-                  />
-                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-0.5 block font-semibold">
-                    Card Hijau jika harga ≤ target
-                  </span>
+              {/* Mode Input Target Beli & Jual Sendiri (Manual) */}
+              <div className="space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      🎯 Target Beli (Rp)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="Contoh: 10000"
+                      value={editItemTargetBuy}
+                      onChange={(e) => handleEditBuyChange(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-0.5 block font-semibold">
+                      Harga entry ideal
+                    </span>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      🚀 Target Jual (Rp)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="Contoh: 11500"
+                      value={editItemTargetSell}
+                      onChange={(e) => handleEditSellChange(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <span className="text-[10px] text-rose-600 dark:text-rose-400 mt-0.5 block font-semibold">
+                      Target Take Profit
+                    </span>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      📊 Target Gain (%)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="0.1"
+                        placeholder="Contoh: 15"
+                        value={editItemTargetPercent}
+                        onChange={(e) => handleEditPercentChange(e.target.value)}
+                        className="w-full px-3 py-2 pr-7 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                      />
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 mt-0.5 block">Kalkulasi otomatis</span>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    🚀 Target Jual (Rp)
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="Contoh: 11500"
-                    value={editItemTargetSell}
-                    onChange={(e) => setEditItemTargetSell(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-                  />
-                  <span className="text-[10px] text-rose-600 dark:text-rose-400 mt-0.5 block font-semibold">
-                    Card Merah jika harga ≥ target
-                  </span>
+
+                {/* Preset Persentase Keuntungan Cepat */}
+                <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                  <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 mr-0.5">Preset Gain:</span>
+                  {[3, 5, 7, 10, 15, 20, 25].map((pct) => (
+                    <button
+                      key={pct}
+                      type="button"
+                      onClick={() => handleEditPercentChange(pct.toString())}
+                      className={`px-2 py-0.5 text-[10px] font-bold rounded-lg border transition-all ${
+                        parseFloat(editItemTargetPercent) === pct
+                          ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs'
+                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400'
+                      }`}
+                    >
+                      +{pct}%
+                    </button>
+                  ))}
                 </div>
               </div>
+
+              {/* Kalkulasi Dinamis Selisih Keuntungan / Kerugian */}
+              {(() => {
+                const buy = parseFloat(editItemTargetBuy);
+                const sell = parseFloat(editItemTargetSell);
+                if (!isNaN(buy) && buy > 0 && !isNaN(sell) && sell > 0) {
+                  const diff = sell - buy;
+                  const pct = ((sell - buy) / buy) * 100;
+                  const isProfit = diff > 0;
+                  const isLoss = diff < 0;
+                  return (
+                    <div className={`p-2.5 rounded-xl border flex items-center justify-between text-xs transition-all duration-200 ${
+                      isProfit 
+                        ? 'bg-emerald-50/90 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/50 text-emerald-800 dark:text-emerald-300' 
+                        : isLoss 
+                        ? 'bg-rose-50/90 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/50 text-rose-800 dark:text-rose-300' 
+                        : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                    }`}>
+                      <div className="flex items-center gap-1.5 font-medium">
+                        <span>{isProfit ? '📈 Potensi Keuntungan:' : isLoss ? '📉 Potensi Kerugian:' : '⚖️ Impas (BEP):'}</span>
+                      </div>
+                      <div className="font-bold font-mono text-right flex items-center gap-1.5">
+                        <span>
+                          {isProfit ? '+' : isLoss ? '-' : ''}Rp {Math.abs(diff).toLocaleString('id-ID')}
+                        </span>
+                        <span className={`px-1.5 py-0.5 rounded text-[11px] font-semibold ${
+                          isProfit 
+                            ? 'bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300' 
+                            : isLoss 
+                            ? 'bg-rose-100 dark:bg-rose-900/60 text-rose-700 dark:text-rose-300' 
+                            : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                        }`}>
+                          {isProfit ? '+' : ''}{pct.toFixed(2)}%
+                        </span>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Catatan Analisis</label>
@@ -3388,6 +3665,25 @@ export default function StockExplorer({ user }) {
                     placeholder="Auto: +5%"
                     className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
                   />
+                  {/* Preset TP Cepat */}
+                  <div className="flex flex-wrap items-center gap-1 mt-1.5">
+                    <span className="text-[10px] text-slate-400 font-medium">Preset TP:</span>
+                    {[3, 5, 7, 10, 15].map((pct) => (
+                      <button
+                        key={pct}
+                        type="button"
+                        onClick={() => {
+                          const entry = parseFloat(String(monitorEntryPrice || '').replace(/[^\d.-]/g, ''));
+                          if (entry > 0) {
+                            setMonitorTargetPrice(roundToIDXTick(entry * (1 + pct / 100)).toString());
+                          }
+                        }}
+                        className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-slate-100 hover:bg-emerald-100 dark:bg-slate-800 dark:hover:bg-emerald-950/60 text-slate-700 hover:text-emerald-700 dark:text-slate-300 dark:hover:text-emerald-300 transition-colors"
+                      >
+                        +{pct}%
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
@@ -3400,8 +3696,92 @@ export default function StockExplorer({ user }) {
                     placeholder="Auto: -5%"
                     className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
                   />
+                  {/* Preset SL Cepat */}
+                  <div className="flex flex-wrap items-center gap-1 mt-1.5">
+                    <span className="text-[10px] text-slate-400 font-medium">Preset SL:</span>
+                    {[2, 3, 5, 7].map((pct) => (
+                      <button
+                        key={pct}
+                        type="button"
+                        onClick={() => {
+                          const entry = parseFloat(String(monitorEntryPrice || '').replace(/[^\d.-]/g, ''));
+                          if (entry > 0) {
+                            setMonitorStopLoss(roundToIDXTick(entry * (1 - pct / 100)).toString());
+                          }
+                        }}
+                        className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-slate-100 hover:bg-rose-100 dark:bg-slate-800 dark:hover:bg-rose-950/60 text-slate-700 hover:text-rose-700 dark:text-slate-300 dark:hover:text-rose-300 transition-colors"
+                      >
+                        -{pct}%
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
+
+              {/* Panel Kalkulasi Real-Time Potensi Untung & Risiko Rugi */}
+              {(() => {
+                const calc = calculateMonitorMetrics(monitorEntryPrice, monitorTargetPrice, monitorStopLoss);
+                if (!calc.validEntry) {
+                  return (
+                    <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 text-[11px] text-slate-500 dark:text-slate-400 text-center">
+                      💡 Masukkan harga entry untuk melihat kalkulasi keuntungan & risiko kerugian secara real-time
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-2 p-3 rounded-xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/70 text-xs">
+                    <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700/60 pb-1.5">
+                      <span>Kalkulasi Rencana Pantauan:</span>
+                      {calc.rrRatio != null && (
+                        <span className="px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 font-bold">
+                          Risk/Reward: 1 : {calc.rrRatio}x
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      {/* Potensi Untung */}
+                      <div className={`p-2 rounded-lg border transition-all ${
+                        calc.hasProfit && calc.profitNominal > 0
+                          ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300'
+                          : calc.hasProfit && calc.profitNominal < 0
+                          ? 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/40 text-rose-800 dark:text-rose-300'
+                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400'
+                      }`}>
+                        <div className="text-[10px] font-medium opacity-80 mb-0.5">Potensi Untung (TP)</div>
+                        <div className="font-mono font-black text-xs flex flex-col">
+                          <span>
+                            {calc.hasProfit ? (calc.profitNominal >= 0 ? '+' : '') + `Rp ${calc.profitNominal.toLocaleString('id-ID')}` : '-'}
+                          </span>
+                          <span className="text-[10px] font-bold">
+                            {calc.hasProfit ? `(${calc.profitNominal >= 0 ? '+' : ''}${calc.profitPercent.toFixed(2)}%)` : '-'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Risiko Kerugian */}
+                      <div className={`p-2 rounded-lg border transition-all ${
+                        calc.hasLoss && calc.lossNominal > 0
+                          ? 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/40 text-rose-800 dark:text-rose-300'
+                          : calc.hasLoss && calc.lossNominal < 0
+                          ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300'
+                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400'
+                      }`}>
+                        <div className="text-[10px] font-medium opacity-80 mb-0.5">Risiko Rugi (SL)</div>
+                        <div className="font-mono font-black text-xs flex flex-col">
+                          <span>
+                            {calc.hasLoss ? `-Rp ${Math.abs(calc.lossNominal).toLocaleString('id-ID')}` : '-'}
+                          </span>
+                          <span className="text-[10px] font-bold">
+                            {calc.hasLoss ? `(-${Math.abs(calc.lossPercent).toFixed(2)}%)` : '-'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
