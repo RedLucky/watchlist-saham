@@ -118,5 +118,25 @@ test('3. Trade Setup Constraints (calculateTradeSetup)', async (t) => {
     // Resistance adalah 2120. Step untuk 2120 adalah 10. Resisten target = 2120 - 10 = 2110 > raw target 2060.
     assert.ok(swingSetup.target >= 2110, `Target price (${swingSetup.target}) harus terjangkar pada swing high resistance 2120`);
   });
+
+  await t.test('Target Price dihitung berbasis avgEntry untuk menjamin rasio Risk/Reward simetris', () => {
+    const stock = {
+      price: 1000,
+      technicals: {
+        ma20: 1000,
+      }
+    };
+    const styleConfig = {
+      name: 'daily',
+      exit: { tp: 5.0, sl: 2.5 }
+    };
+    const setup = calculateTradeSetup(stock, { setup: 'momentum' }, styleConfig);
+    const avgEntry = (setup.entry.low + setup.entry.high) / 2;
+    
+    // Reward dihitung dari target - avgEntry
+    const expectedRawTarget = avgEntry * 1.05;
+    assert.ok(setup.target >= expectedRawTarget - 5, `Target (${setup.target}) harus sejalan dengan target gain dari avgEntry (${avgEntry})`);
+  });
 });
+
 

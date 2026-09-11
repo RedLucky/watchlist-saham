@@ -42,6 +42,8 @@ export function getMinTurnoverThreshold(modeName = 'balanced', styleName = 'swin
   return 150_000_000; // Rp 150 Juta
 }
 
+export const MIN_ROE_HARD_FILTER_PCT = 10; // Batas minimal ROE 10% (Cost of Equity IDX 11-13%)
+
 export function applyHardFilter(stocks, minTurnover = 30000000) {
   return stocks.filter(stock => {
     const fundamentals = stock?.fundamentals || {};
@@ -49,9 +51,9 @@ export function applyHardFilter(stocks, minTurnover = 30000000) {
     const txnAvg = Number(stock?.transactionAvg || 0);
     const sector = stock?.sector || '';
 
-    // 1. ROE ≥ 8% (Penyaringan awal profitabilitas minimum)
+    // 1. ROE ≥ 10% (Penyaringan awal profitabilitas minimum untuk menjamin value creation)
     const roe = fundamentals.roe;
-    if (Number.isFinite(roe) && roe < 8) {
+    if (Number.isFinite(roe) && roe < MIN_ROE_HARD_FILTER_PCT) {
       return false;
     }
     // Jika data ROE belum tersedia (null), loloskan agar dapat dinilai oleh scoring
@@ -89,8 +91,8 @@ export function getFilterReasons(stock, minTurnover = 30000000) {
   const fundamentals = stock?.fundamentals || {};
   const sector = stock?.sector || '';
 
-  if (Number.isFinite(fundamentals.roe) && fundamentals.roe < 8) {
-    reasons.push(`ROE ${fundamentals.roe.toFixed(1)}% is below minimum 8%`);
+  if (Number.isFinite(fundamentals.roe) && fundamentals.roe < MIN_ROE_HARD_FILTER_PCT) {
+    reasons.push(`ROE ${fundamentals.roe.toFixed(1)}% is below minimum ${MIN_ROE_HARD_FILTER_PCT}%`);
   }
 
   const profits = Array.isArray(fundamentals.netProfit) ? fundamentals.netProfit.filter(p => Number.isFinite(p)) : [];

@@ -17,8 +17,10 @@ export function calculateFundamentalScore(stock) {
 
   // ── 1. ROE Quality (25%) — Dikalibrasi dengan Cost of Equity Indonesia (11%–13%) ──
   // Perusahaan dengan ROE di atas Cost of Equity menciptakan nilai tambah (Economic Value Added).
+  // ── 1. ROE Quality (25%) — Dikalibrasi dengan Cost of Equity Indonesia (11%–13%) ──
+  // Perusahaan dengan ROE di atas Cost of Equity menciptakan nilai tambah (Economic Value Added).
   const safeROE = Number.isFinite(roe) ? roe : null;
-  let roeScore = 50; // default jika data kosong
+  let roeScore = 30; // default jika data kosong (penalti data tidak lengkap)
   if (safeROE !== null) {
     if (safeROE >= 20) {
       roeScore = 100;
@@ -44,7 +46,7 @@ export function calculateFundamentalScore(stock) {
   // ── 2. OPM & Operating Moat (20%) ───────────────────────────────────
   // Operating Profit Margin indicates pricing power and business durability
   const safeOPM = Number.isFinite(opm) ? opm : null;
-  let opmScore = 50;
+  let opmScore = 30; // default jika data kosong
   if (safeOPM !== null) {
     if (safeOPM >= 25) {
       opmScore = 100;
@@ -64,14 +66,14 @@ export function calculateFundamentalScore(stock) {
     }
   } else {
     // Fallback: estimate from ROE/sector if OPM not available
-    opmScore = safeROE !== null && safeROE >= 15 ? 70 : 50;
+    opmScore = safeROE !== null && safeROE >= 15 ? 60 : 30;
     details.push('Data OPM diestimasi dari profil operasional');
   }
   score += opmScore * 0.20;
 
   // ── 3. EPS Momentum & Profit Consistency (25%) ─────────────────────
   const profits = Array.isArray(netProfit) ? netProfit.filter(Number.isFinite) : [];
-  let profitScore = 40; // default if insufficient data
+  let profitScore = 30; // default jika data historis tidak mencukupi
   let cagr = null;
 
   if (profits.length >= 2) {
@@ -136,7 +138,7 @@ export function calculateFundamentalScore(stock) {
 
   // ── 4. Financial Health / DER (15%) ────────────────────────────────────
   const safeDER = Number.isFinite(der) ? der : null;
-  let derScore = 50;
+  let derScore = 30; // default jika data kosong
   const isFinance = isFinancialSector(sector);
 
   if (safeDER !== null) {
@@ -165,7 +167,7 @@ export function calculateFundamentalScore(stock) {
 
   // ── 5. Revenue Growth (15%) ───────────────────────────────────────────
   const safeRevGrowth = Number.isFinite(revenueGrowth) ? revenueGrowth : null;
-  let revScore = 50;
+  let revScore = 30; // default jika data kosong
   if (safeRevGrowth !== null) {
     if (safeRevGrowth >= 15) {
       revScore = 100;

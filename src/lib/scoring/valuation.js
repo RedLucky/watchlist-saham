@@ -43,7 +43,7 @@ export function calculateValuationScore(stock) {
   const details = [];
 
   // ── PER vs Sector Average (50%) ────────────────────────────────────
-  let perScore = 40; // default if no data
+  let perScore = 25; // default jika data PER kosong (penalti data tidak lengkap)
 
   if (safePER !== null && safePER > 0) {
     const perRatio = avg.per > 0 ? safePER / avg.per : 10;
@@ -73,7 +73,7 @@ export function calculateValuationScore(stock) {
   score += perScore * 0.35;
 
   // ── PBV vs Sector Average (50%) ────────────────────────────────────
-  let pbvScore = 40; // default if no data
+  let pbvScore = 25; // default jika data PBV kosong (penalti data tidak lengkap)
 
   if (safePBV !== null && safePBV > 0) {
     const pbvRatio = avg.pbv > 0 ? safePBV / avg.pbv : 10;
@@ -125,7 +125,7 @@ export function calculateValuationScore(stock) {
   score += eyScore * 0.20;
 
   // ── PEG Ratio Component (15%) ──────────────────────────────────────
-  let pegScore = 40;
+  let pegScore = 25; // default jika data PEG kosong (penalti data tidak lengkap)
   const pegRatio = stock.fundamentals?.pegRatio ?? null;
   
   if (pegRatio !== null) {

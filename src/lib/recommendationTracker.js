@@ -143,7 +143,7 @@ export async function updateExistingRecommendations(currentStocks) {
 
     // ── KASUS 1: STATUS WAITING_BUY (Antri Beli) ──────────────────
     if (rec.status === 'WAITING_BUY') {
-      const buyThreshold = rec.priceAtRecommend || rec.entryHigh || rec.entryLow;
+      const buyThreshold = rec.entryLow || rec.priceAtRecommend || rec.entryHigh;
       
       // Order Match: jika harga pasar turun menyentuh atau berada di bawah harga antre beli
       if (currentPrice <= buyThreshold) {
@@ -185,7 +185,7 @@ export async function updateExistingRecommendations(currentStocks) {
       } else if (ageInDays > maxDays) {
         // Solusi 1: Evaluasi P/L Riil saat batas waktu tercapai (Time Stop)
         exitPrice = currentPrice;
-        const entryPrice = Number(rec.priceAtRecommend || rec.entryLow || rec.entryHigh || currentPrice);
+        const entryPrice = Number(rec.entryLow || rec.priceAtRecommend || rec.entryHigh || currentPrice);
         const pnl = entryPrice > 0 ? ((currentPrice - entryPrice) / entryPrice) * 100 : 0;
         
         if (currentPrice >= entryPrice) {

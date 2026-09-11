@@ -12,9 +12,10 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateFundamentalScore } from '../src/lib/scoring/fundamental.js';
 import { calculateValuationScore } from '../src/lib/scoring/valuation.js';
-import { applyHardFilter, getMinTurnoverThreshold } from '../src/lib/scoring/hardFilter.js';
+import { applyHardFilter, getMinTurnoverThreshold, MIN_ROE_HARD_FILTER_PCT } from '../src/lib/scoring/hardFilter.js';
 import { calculateSmartMoneyScore } from '../src/lib/scoring/smartMoney.js';
 import { calculateTechnicalScore } from '../src/lib/scoring/technical.js';
+import { TRADING_STYLES } from '../src/lib/modes.js';
 
 describe('1. Skoring Fundamental (calculateFundamentalScore)', () => {
   test('Super Compounder (ROE >= 20%, OPM >= 20%, DER Rendah) mendapat skor >= 85', () => {
@@ -309,4 +310,49 @@ describe('5. Skoring Teknikal & Bollinger Squeeze (calculateTechnicalScore)', ()
     assert.ok(res.details.some(d => d.includes('Extreme Overbought')));
   });
 });
+
+describe('6. Kebijakan Anti-Mediocre & Perlindungan Portofolio Baru', () => {
+  test('Saham tanpa data fundamental lengkap dihukum dengan skor rendah (<= 35)', () => {
+    const emptyStock = {
+      price: 1000,
+      sector: 'Energy',
+      fundamentals: {}
+    };
+    const fundRes = calculateFundamentalScore(emptyStock);
+    assert.ok(fundRes.score <= 35, `Emiten tanpa data fundamental harus dihukum <= 35, didapat ${fundRes.score}`);
+
+    const valRes = calculateValuationScore(emptyStock);
+    assert.ok(valRes.score <= 30, `Emiten tanpa data valuasi harus dihukum <= 30, didapat ${valRes.score}`);
+  });
+
+  test('Hard Filter menolak emiten dengan ROE di bawah 10% (Cost of Equity IDX)', () => {
+    const lowRoeStock = [
+      {
+        ticker: 'SUBPAR',
+        sector: 'Basic Materials',
+        status: 'active',
+        transactionAvg: 500000000,
+        fundamentals: { roe: 8.5, der: 0.5, netProfit: [100, 120] } // ROE 8.5% < 10% -> DITOLAK
+      },
+      {
+        ticker: 'GOOD',
+        sector: 'Basic Materials',
+        status: 'active',
+        transactionAvg: 500000000,
+        fundamentals: { roe: 12.0, der: 0.5, netProfit: [100, 120] } // ROE 12% >= 10% -> LOLOS
+      }
+    ];
+    assert.equal(MIN_ROE_HARD_FILTER_PCT, 10);
+    const filtered = applyHardFilter(lowRoeStock, 250000000);
+    assert.equal(filtered.length, 1);
+    assert.equal(filtered[0].ticker, 'GOOD');
+  });
+
+  test('Gaya trading memiliki batas waktu simpan (maxHoldingDays) yang memadai', () => {
+    assert.equal(TRADING_STYLES.scalping.maxHoldingDays, 2, 'Scalping harus memiliki minimal 2 hari bursa');
+    assert.equal(TRADING_STYLES.daily.maxHoldingDays, 5, 'Daily trading harus memiliki 5 hari bursa (1 pekan kerja penuh)');
+    assert.equal(TRADING_STYLES.swing.maxHoldingDays, 12, 'Swing trading tetap 12 hari bursa');
+  });
+});
+
 

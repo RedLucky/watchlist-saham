@@ -59,7 +59,7 @@ export function evaluateAlphaLegends(stocks = []) {
     const revenueGrowth = typeof stock.revenueGrowth === 'number' ? stock.revenueGrowth : (typeof stock.salesGrowth === 'number' ? stock.salesGrowth : Number(stock.revenueGrowth || stock.salesGrowth) || 0);
     const profitGrowth = typeof stock.profitGrowth === 'number' ? stock.profitGrowth : (typeof stock.epsGrowth === 'number' ? stock.epsGrowth : Number(stock.profitGrowth || stock.epsGrowth) || 0);
     const fcf = typeof stock.fcf === 'number' ? stock.fcf : (typeof stock.freeCashflow === 'number' ? stock.freeCashflow : (typeof stock.freeCashFlow === 'number' ? stock.freeCashFlow : Number(stock.fcf || stock.freeCashflow) || 0));
-    const peg = profitGrowth > 0 ? Number((per / profitGrowth).toFixed(2)) : (per > 0 && per <= 15 ? 1.0 : 0);
+    const peg = (per > 0 && profitGrowth > 0) ? Number((per / profitGrowth).toFixed(2)) : (per > 0 && per <= 15 ? 1.0 : 0);
     const piotroskiFScore = typeof stock.piotroskiFScore === 'number' ? stock.piotroskiFScore : Number(stock.piotroskiFScore) || 5;
     const altmanZScore = typeof stock.altmanZScore === 'number' ? stock.altmanZScore : Number(stock.altmanZScore) || 2.5;
     const streakYears = Number(stock.dividendStreakYears || 0);

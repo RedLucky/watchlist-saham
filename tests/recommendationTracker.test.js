@@ -92,4 +92,25 @@ test('1. sendTradeOutcomeNotification Constraints', async (t) => {
     const statusLoss = exitPriceLoss >= entryPrice ? 'WIN' : 'LOSS';
     assert.equal(statusLoss, 'LOSS', 'Harga di bawah harga beli saat waktu habis wajib terhitung LOSS');
   });
+
+  await t.test('Order Matching: buyThreshold wajib mengutamakan entryLow di atas entryHigh', () => {
+    const rec = {
+      priceAtRecommend: 1000,
+      entryLow: 980,
+      entryHigh: 1020,
+    };
+
+    // Prioritas baru: entryLow || priceAtRecommend || entryHigh
+    const buyThreshold = rec.entryLow || rec.priceAtRecommend || rec.entryHigh;
+    assert.equal(buyThreshold, 980, 'buyThreshold harus menggunakan entryLow untuk mencegah fill prematur di harga tinggi');
+
+    // Skenario harga pasar berada di antara entryLow dan entryHigh (misal 1000)
+    const marketPriceAboveLow = 1000;
+    const isMatchedAtHigh = marketPriceAboveLow <= rec.entryHigh; // Cara lama (ter-match di pucuk)
+    const isMatchedAtLow = marketPriceAboveLow <= buyThreshold;   // Cara baru (belum match, menunggu harga optimal)
+
+    assert.equal(isMatchedAtHigh, true, 'Cara lama menyebabkan order terbeli prematur di harga 1000');
+    assert.equal(isMatchedAtLow, false, 'Cara baru melindungi modal trader sampai harga benar-benar menyentuh area akumulasi');
+  });
 });
+

@@ -108,7 +108,7 @@ export const TRADING_STYLES = {
     indicators: { rsiPeriod: 7, maShort: 9, maLong: 20, volSpike: 1.5 },
     weights: { technical: 40, trending: 25, smartMoney: 20, fundamental: 5, valuation: 5, liquidity: 3, dividend: 2 },
     exit: { tp: 3.0, sl: 1.5 },
-    maxHoldingDays: 1, // One Day Trade (ODT) di BEI
+    maxHoldingDays: 2, // Fleksibilitas 1-2 hari bursa untuk eksekusi target scalping
     qualityGate: { minTechnicalScore: 55, minRiskReward: 1.5, requireActionableSetup: true },
   },
   daily: {
@@ -123,7 +123,7 @@ export const TRADING_STYLES = {
     indicators: { rsiPeriod: 14, maShort: 20, maLong: 50, volSpike: 1.2 },
     weights: { technical: 30, smartMoney: 25, trending: 20, fundamental: 15, valuation: 5, liquidity: 3, dividend: 2 },
     exit: { tp: 5.0, sl: 2.5 },
-    maxHoldingDays: 3, // Sesuai siklus T+2 BEI
+    maxHoldingDays: 5, // 1 minggu bursa kerja penuh agar setup momentum dapat berkembang optimal
     qualityGate: { minTechnicalScore: 60, minRiskReward: 1.6, requireActionableSetup: true },
   },
   swing: {

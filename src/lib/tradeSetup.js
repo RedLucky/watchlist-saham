@@ -249,7 +249,8 @@ export function calculateTradeSetup(stock, technicalResult, styleConfig) {
   }
 
   // 2. Target Price (Take Profit): Padukan target persentase dengan Resisten Swing High terdekat
-  const rawTarget = price * (1 + targetPct / 100);
+  const avgEntry = (entryLow + entryHigh) / 2;
+  const rawTarget = avgEntry * (1 + targetPct / 100);
   let targetCandidate = rawTarget;
 
   // Periksa swing high 20 hari terakhir dari technicals.highs atau technicals.prices
@@ -304,7 +305,6 @@ export function calculateTradeSetup(stock, technicalResult, styleConfig) {
   stopLoss = Math.min(stopLoss, maxStopLoss);
 
   // 4. Rasio Risk/Reward
-  const avgEntry = (entryLow + entryHigh) / 2;
   const reward = target - avgEntry;
   const risk = avgEntry - stopLoss;
   const riskReward = (risk > 0 && reward > 0) ? Math.round((reward / risk) * 10) / 10 : 0;

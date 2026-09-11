@@ -48,10 +48,10 @@ To prevent premature Win/Loss calculations before a stock is actually bought, th
 ```
 
 ### 1. `WAITING_BUY` (Pending Limit Queue)
-* Assigned by default when a user clicks "Pantau" with the "Sudah Beli di Harga Ini" checkbox left **unchecked**.
+* Assigned by default when a user clicks "Pantau" with the "Sudah Beli di Harga Ini" checkbox left **unchecked**, or automatically by SYSTEM recommendation.
 * System does NOT evaluate Win or Loss during this state.
-* **Matching Trigger**: When daily market price dips to or below the entry price ($\text{currentPrice} \le \text{entryPrice}$), the order matches and moves to `OPEN`.
-* **Expiry Trigger**: If market price does not touch the entry level within the strategy's `maxHoldingDays` (2–14 days), status becomes `EXPIRED`. It is excluded from the Win Rate divisor.
+* **Matching Trigger**: When daily market price dips to or below the lower entry price threshold ($\text{currentPrice} \le \text{entryLow}$). Prioritizing $\text{entryLow}$ ensures traders obtain an optimal purchase price, eliminating premature entries at upper boundaries ($\text{entryHigh}$) that undermine Risk/Reward payoff ratios.
+* **Expiry Trigger**: If market price does not touch the entry level within the strategy's `maxHoldingDays` (Scalping: 2 days, Daily: 5 days, Swing: 12 days), status becomes `EXPIRED`. It is excluded from the Win Rate divisor.
 
 ### 2. `OPEN` (Active Position)
 * Assigned immediately if the user **checks** "Sudah Beli di Harga Ini", or automatically upon a `WAITING_BUY` match.
