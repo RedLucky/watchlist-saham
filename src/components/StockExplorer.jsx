@@ -540,13 +540,44 @@ export default function StockExplorer({ user }) {
       return;
     }
 
-    const newList = [...compareList, cleanTicker];
-    setCompareList(newList);
+    setCompareList(prev => prev.includes(cleanTicker) ? prev : [...prev, cleanTicker].slice(0, 6));
     setCompareSearchQuery('');
     setCompareSuggestions([]);
     
     setLoadingCompare(true);
     await fetchCompareStockData(cleanTicker);
+    setLoadingCompare(false);
+  };
+
+  const handleAddMultipleToCompare = async (tickers) => {
+    if (!Array.isArray(tickers) || tickers.length === 0) return;
+    const cleanTickers = tickers
+      .map(t => t.toUpperCase().replace(/\.JK$/, ''))
+      .filter(t => !compareList.includes(t));
+
+    if (cleanTickers.length === 0) return;
+
+    const availableSlots = Math.max(0, 6 - compareList.length);
+    const tickersToAdd = cleanTickers.slice(0, availableSlots);
+
+    if (tickersToAdd.length === 0) {
+      showToast('Maksimal 6 saham untuk dikomparasi secara bersamaan.', 'warning');
+      return;
+    }
+
+    setCompareList(prev => {
+      const merged = [...prev];
+      for (const t of tickersToAdd) {
+        if (!merged.includes(t)) merged.push(t);
+      }
+      return merged.slice(0, 6);
+    });
+
+    setCompareSearchQuery('');
+    setCompareSuggestions([]);
+
+    setLoadingCompare(true);
+    await Promise.all(tickersToAdd.map(t => fetchCompareStockData(t)));
     setLoadingCompare(false);
   };
 
@@ -2345,6 +2376,13 @@ export default function StockExplorer({ user }) {
             </div>
           </div>
 
+          {/* Quick Loading Indicator */}
+          {loadingCompare && (
+            <div className="flex items-center gap-2 p-3 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 rounded-xl text-xs text-indigo-700 dark:text-indigo-300 animate-pulse font-medium">
+              <span>⏳</span> Sedang memuat data perbandingan saham...
+            </div>
+          )}
+
           {/* Compare Content */}
           {compareList.length === 0 ? (
             <div className="text-center py-12 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-8 space-y-4">
@@ -2360,18 +2398,16 @@ export default function StockExplorer({ user }) {
               <div className="flex items-center justify-center gap-2 flex-wrap pt-2">
                 <span className="text-xs text-slate-400">Contoh Cepat:</span>
                 <button
-                  onClick={() => {
-                    ['BBCA', 'BBRI', 'BMRI', 'BBNI'].forEach(t => handleAddToCompare(t));
-                  }}
-                  className="px-3 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-lg border border-indigo-200 dark:border-indigo-800"
+                  type="button"
+                  onClick={() => handleAddMultipleToCompare(['BBCA', 'BBRI', 'BMRI', 'BBNI'])}
+                  className="px-3 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-lg border border-indigo-200 dark:border-indigo-800 transition-colors"
                 >
                   🏦 4 Bank Terbesar (Big 4)
                 </button>
                 <button
-                  onClick={() => {
-                    ['ADRO', 'PTBA', 'ITMG', 'UNTR'].forEach(t => handleAddToCompare(t));
-                  }}
-                  className="px-3 py-1 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 text-xs font-bold rounded-lg border border-amber-200 dark:border-amber-800"
+                  type="button"
+                  onClick={() => handleAddMultipleToCompare(['ADRO', 'PTBA', 'ITMG', 'UNTR'])}
+                  className="px-3 py-1 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 text-xs font-bold rounded-lg border border-amber-200 dark:border-amber-800 transition-colors"
                 >
                   ⛏️ Emiten Batubara & Dividen
                 </button>
@@ -2381,6 +2417,9 @@ export default function StockExplorer({ user }) {
             /* ── COMPARISON MATRIX TABLE (UP TO 6 COLUMNS) ────────────────── */
             <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
               {(() => {
+                // Ambil data detail seluruh saham yang sedang dikomparasi
+                const stockDetailsList = compareList.map(ticker => compareData[ticker] || {});
+
                 // Calculate Best in Class Values
                 // Best EPS: highest EPS
                 const epsList = stockDetailsList.map(s => s.fundamentals?.eps).filter(e => e != null && e > 0);
@@ -2415,13 +2454,15 @@ export default function StockExplorer({ user }) {
                 const bestFScore = fScores.length > 0 ? Math.max(...fScores) : null;
 
                 // Best Composite Score: highest
-                const compScores = stockDetailsList.map(s => {
-                  const fSc = s.scores?.fundamental ?? 50;
-                  const tSc = s.scores?.technical ?? 50;
-                  const trSc = s.scores?.trending ?? 50;
-                  const smSc = s.scores?.smartMoney ?? 50;
-                  return Math.round((fSc * 0.45) + (tSc * 0.35) + (trSc * 0.10) + (smSc * 0.10));
-                });
+                const compScores = stockDetailsList
+                  .filter(s => s && s.scores)
+                  .map(s => {
+                    const fSc = s.scores?.fundamental ?? 50;
+                    const tSc = s.scores?.technical ?? 50;
+                    const trSc = s.scores?.trending ?? 50;
+                    const smSc = s.scores?.smartMoney ?? 50;
+                    return Math.round((fSc * 0.45) + (tSc * 0.35) + (trSc * 0.10) + (smSc * 0.10));
+                  });
                 const bestCompScore = compScores.length > 0 ? Math.max(...compScores) : null;
 
                 return (
@@ -2487,7 +2528,7 @@ export default function StockExplorer({ user }) {
                           const trSc = s.scores?.trending ?? 50;
                           const smSc = s.scores?.smartMoney ?? 50;
                           const cScore = Math.round((fSc * 0.45) + (tSc * 0.35) + (trSc * 0.10) + (smSc * 0.10));
-                          const isWinner = cScore === bestCompScore && bestCompScore != null;
+                          const isWinner = Boolean(s.scores && cScore === bestCompScore && bestCompScore != null);
                           return (
                             <td key={ticker} className={`p-3 text-center border-l border-slate-100 dark:border-slate-800 font-bold ${isWinner ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300' : ''}`}>
                               <span className="text-sm">{cScore}/100</span> {isWinner && '🏆'}
