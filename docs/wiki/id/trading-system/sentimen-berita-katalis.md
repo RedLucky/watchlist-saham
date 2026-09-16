@@ -39,3 +39,4 @@ Filter regex mendeteksi katalis utama:
 - **Mesin Komputasi**: `src/lib/newsSentimentEngine.js`.
 - **Rute API**: Disajikan pada `GET /api/stocks/[ticker]` sebagai properti `newsSentiment`.
 - **Komponen UI**: Terpasang di `src/components/BloombergIntelligencePanel.jsx` pada tab Stock Explorer.
+

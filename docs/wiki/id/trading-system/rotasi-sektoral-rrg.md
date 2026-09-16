@@ -33,3 +33,4 @@ $$\text{RS-Momentum} = 100 + \Delta_{\text{momentum}}$$
 - **Mesin Komputasi**: `src/lib/sectorRrgEngine.js`.
 - **Rute API**: Terintegrasi pada `GET /api/sectors` sebagai properti `rrg`.
 - **Komponen UI**: `src/components/SectorRrgPanel.jsx` dengan tombol filter kuadran interaktif, tertaut pada bilah navigasi sektor `SectorBar.jsx`.
+

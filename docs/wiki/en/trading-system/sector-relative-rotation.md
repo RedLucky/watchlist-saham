@@ -42,3 +42,4 @@ Where:
 - **Engine**: `src/lib/sectorRrgEngine.js`.
 - **API Handler**: Integrated into `GET /api/sectors` as `rrg`.
 - **UI Matrix**: `src/components/SectorRrgPanel.jsx` with interactive quadrant filters and advice badges, embedded in `SectorBar.jsx`.
+

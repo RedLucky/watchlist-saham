@@ -39,3 +39,4 @@ Regex filters detect primary corporate event types:
 - **Engine**: `src/lib/newsSentimentEngine.js`.
 - **API Handler**: Integrated into `GET /api/stocks/[ticker]` as `newsSentiment`.
 - **UI Component**: Mounted inside `src/components/BloombergIntelligencePanel.jsx` in Stock Explorer.
+

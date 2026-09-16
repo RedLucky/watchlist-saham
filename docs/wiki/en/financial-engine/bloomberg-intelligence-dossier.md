@@ -23,3 +23,4 @@ Stored within PostgreSQL via Prisma (`model AiStockResearch`), each research rec
 - **Panel**: `src/components/BloombergIntelligencePanel.jsx`.
 - **Summary Cards**: At-a-glance view of consensus verdict, valuation commentary, and trend insights.
 - **Interactive Deep Dive**: One-click action button (`onOpenFullResearch`) instantly pops open the full `aiResearch` markdown dialog without leaving the Stock Explorer interface.
+

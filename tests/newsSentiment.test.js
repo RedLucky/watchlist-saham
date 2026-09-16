@@ -61,3 +61,4 @@ describe('Bloomberg NSENT: News Sentiment & Catalyst Tagging Suite', () => {
     assert.strictEqual(resNull.articlesCount, 0);
   });
 });
+

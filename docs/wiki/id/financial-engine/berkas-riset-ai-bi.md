@@ -23,3 +23,4 @@ Disimpan dalam database PostgreSQL melalui Prisma (`model AiStockResearch`), dat
 - **Komponen**: `src/components/BloombergIntelligencePanel.jsx`.
 - **Kartu Ringkasan**: Menampilkan konsensus, ulasan valuasi, dan tren secara instan.
 - **Eksplorasi Lengkap**: Tombol aksi langsung membuka modal riset AI komprehensif tanpa harus berpindah halaman.
+

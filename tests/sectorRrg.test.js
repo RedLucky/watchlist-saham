@@ -72,3 +72,4 @@ describe('Bloomberg RRG / SECT: Relative Rotation Graph Suite', () => {
     assert.deepStrictEqual(res2, []);
   });
 });
+
