@@ -23,14 +23,14 @@ export async function POST(request) {
     const sbnAvailable = body.sbnAvailable !== undefined ? body.sbnAvailable : true;
 
     // Equity budget ratio based on risk profile
-    let stockRatio = 0.35; // MODERATE default
-    if (riskProfile === 'CONSERVATIVE') stockRatio = 0.20;
-    if (riskProfile === 'AGGRESSIVE') stockRatio = 0.60;
+    const STOCK_RATIO_BY_RISK = { CONSERVATIVE: 0.20, MODERATE: 0.35, AGGRESSIVE: 0.60 };
+    const stockRatio = STOCK_RATIO_BY_RISK[riskProfile] ?? STOCK_RATIO_BY_RISK.MODERATE;
 
     const equityBudget = totalBudget * stockRatio;
 
     // 1. Fetch top candidates from database
     const rawStocks = await prisma.stockData.findMany({
+      where: { isDelisted: false },
       take: 200,
       orderBy: { turnover: 'desc' }
     });

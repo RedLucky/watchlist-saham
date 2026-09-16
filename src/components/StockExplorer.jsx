@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import StockChart from './StockChart';
+import RelativeValuationPeers from './RelativeValuationPeers';
 import {
   roundToIDXTick,
   calculateMonitorMetrics,
@@ -2563,6 +2564,19 @@ export default function StockExplorer({ user }) {
                     <StockChart key={stockDetail.ticker} ticker={stockDetail.ticker} />
                   </div>
                 </div>
+
+                {/* ── BLOOMBERG RV: RELATIVE VALUATION & PEER COMPARISON MATRIX ── */}
+                {stockDetail?.peers && stockDetail.peers.length > 0 && (
+                  <RelativeValuationPeers
+                    currentStock={stockDetail}
+                    peers={stockDetail.peers}
+                    onSelectTicker={(ticker) => handleSelectStock(ticker)}
+                    onAddAllToCompare={(tickers) => {
+                      tickers.forEach(t => handleAddToCompare(t));
+                      setActiveTab('compare');
+                    }}
+                  />
+                )}
               </div>
             ) : null}
           </div>

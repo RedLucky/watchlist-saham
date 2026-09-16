@@ -20,6 +20,7 @@
 * [Indikator & Sinyal Teknikal](./financial-engine/sinyal-teknikal.md) — Wilder's RSI 14, Supertrend + DEMA 20, MACD, Bollinger Bands, dan deteksi pola candlestick.
 * [Strategi Alpha Legends](./financial-engine/strategi-alpha-legend.md) — Kriteria kuantitatif para legenda investasi (Buffett, Lynch, Graham, Greenblatt) yang disesuaikan untuk BEI.
 * [Portofolio Pensiun & Lot Knapsack](./financial-engine/portofolio-pensiun.md) — Alokasi multi-aset FIRE pensiun dini, pemilihan saham AI, dan optimasi integer knapsack lot (efisiensi anggaran 98-99.9%).
+* [Valuasi Relatif Peers (RV)](./financial-engine/valuasi-relatif-peers.md) — Mesin komparasi peers Bloomberg RV, pemeringkatan sub-sektor, dan seleksi emiten terbaik di kelasnya (Best-in-Class).
 
 ---
 

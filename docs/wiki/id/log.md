@@ -4,6 +4,14 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-09-16] feat | Mesin Valuasi Relatif (RV) Bloomberg & Benchmarking Peers Sub-Sektor
+- Implementasi seleksi otomatis emiten pembanding pada `GET /api/stocks/[ticker]` berdasarkan kesesuaian `subSector` (atau `sector`) dengan urutan nilai transaksi harian (*turnover*).
+- Pembangunan komponen `RelativeValuationPeers.jsx` untuk komparasi metrik berdampingan (PER, PBV, ROE, NPM, DER, Dividend Yield, MoS Graham, skor komposit).
+- Penambahan penanda visual *Best-in-Class*, benchmarking terhadap median sektor, serta ringkasan komparasi berbasis bahasa alami.
+- Integrasi jembatan 1-klik menuju lembar kerja komparasi multi-saham (`Buka Komparasi Lengkap`).
+- Publikasi dokumentasi ilmiah pada `docs/wiki/id/financial-engine/valuasi-relatif-peers.md` dan cermin bahasa Inggris.
+- Penambahan test suite pengujian unit pada `tests/relativeValuation.test.js` (total 136/136 pengujian lulus 100%).
+
 ## [2026-09-16] feat | Generasi Portofolio Pensiun Berbasis AI & Knapsack Lot Optimizer
 - Pembangunan solver Bounded Integer Knapsack (`src/lib/lotOptimizer.js`) menjamin zero-overbudget dan penyerapan modal 98–99.9% ke satuan lot BEI.
 - Pembuatan endpoint `POST /api/pension/ai-generate` mengintegrasikan model `llama.cpp` lokal dengan peran CFP spesialis pensiun dan filter multi-faktor.

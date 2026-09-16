@@ -251,6 +251,120 @@ export async function GET(request, { params }) {
     const smartMoneyScore = typeof smartMoneyScoreObj === 'object' ? (smartMoneyScoreObj?.score ?? 50) : Number(smartMoneyScoreObj) || 50;
     const dividendScore = typeof dividendScoreObj === 'object' ? (dividendScoreObj?.score ?? 0) : Number(dividendScoreObj) || 0;
 
+    // Bloomberg RV: Relative Valuation & Peer Comparison Matrix
+    const MIN_PEER_PRICE = 50;
+    const MAX_PEERS = 4;
+    const MIN_PEERS_BEFORE_BACKFILL = 3;
+    const PEER_FUNDAMENTAL_WEIGHT = 0.55;
+    const PEER_TECHNICAL_WEIGHT = 0.45;
+    const GRAHAM_MULTIPLIER = 22.5;
+
+    let peers = [];
+    try {
+      if (stock.sector) {
+        let rawPeers = [];
+        if (stock.subSector) {
+          rawPeers = await prisma.stockData.findMany({
+            where: {
+              sector: stock.sector,
+              subSector: stock.subSector,
+              ticker: { not: ticker },
+              isDelisted: false,
+              price: { gt: MIN_PEER_PRICE }
+            },
+            take: MAX_PEERS,
+            orderBy: { turnover: 'desc' },
+            select: {
+              ticker: true,
+              name: true,
+              price: true,
+              changePercent: true,
+              sector: true,
+              subSector: true,
+              fundamentals: true,
+              technicals: true,
+            }
+          });
+        }
+
+        // If subSector has < 3 peers, complement with top peers from the broader sector
+        if (rawPeers.length < MIN_PEERS_BEFORE_BACKFILL) {
+          const existingTickers = [ticker, ...rawPeers.map(p => p.ticker)];
+          const morePeers = await prisma.stockData.findMany({
+            where: {
+              sector: stock.sector,
+              ticker: { notIn: existingTickers },
+              isDelisted: false,
+              price: { gt: MIN_PEER_PRICE }
+            },
+            take: MAX_PEERS - rawPeers.length,
+            orderBy: { turnover: 'desc' },
+            select: {
+              ticker: true,
+              name: true,
+              price: true,
+              changePercent: true,
+              sector: true,
+              subSector: true,
+              fundamentals: true,
+              technicals: true,
+            }
+          });
+          rawPeers = [...rawPeers, ...morePeers];
+        }
+
+        peers = rawPeers.map(p => {
+          const pf = parseJsonField(p.fundamentals) || {};
+          const pt = parseJsonField(p.technicals) || {};
+
+          let peerFScore = 50;
+          let peerTScore = 50;
+          try {
+            peerFScore = calculateFundamentalScore({ price: p.price, fundamentals: pf })?.score ?? 50;
+          } catch(e) {}
+          try {
+            peerTScore = calculateTechnicalScore({ price: p.price, technicals: pt })?.score ?? 50;
+          } catch(e) {}
+
+          const peerCompScore = Math.round((peerFScore * PEER_FUNDAMENTAL_WEIGHT) + (peerTScore * PEER_TECHNICAL_WEIGHT));
+
+          // Graham Fair Value for peer
+          const peerEps = pf.eps || 0;
+          const peerPbv = pf.pbv ?? 0;
+          const peerBvps = p.price > 0 && peerPbv > 0 ? p.price / peerPbv : 0;
+          let peerGraham = 0;
+          if (peerEps > 0 && peerBvps > 0) {
+            peerGraham = Math.round(Math.sqrt(GRAHAM_MULTIPLIER * peerEps * peerBvps));
+          }
+          const peerMoS = peerGraham > 0 && p.price > 0
+            ? Number((((peerGraham - p.price) / peerGraham) * 100).toFixed(1))
+            : null;
+
+          return {
+            ticker: p.ticker,
+            name: p.name,
+            price: p.price,
+            changePercent: p.changePercent,
+            sector: p.sector,
+            subSector: p.subSector,
+            marketCap: pf.marketCap || 0,
+            per: pf.per ?? null,
+            pbv: pf.pbv ?? null,
+            roe: pf.roe ?? null,
+            npm: pf.npm ?? null,
+            der: pf.der ?? null,
+            dividendYield: pf.dividendYield ?? 0,
+            fScore: pf.piotroskiFScore ?? null,
+            grahamNumber: peerGraham,
+            marginOfSafety: peerMoS,
+            score: peerCompScore
+          };
+        });
+      }
+    } catch (peerErr) {
+      console.warn('[RV] Error fetching relative valuation peers:', peerErr.message);
+    }
+
     const responseData = {
       ...enrichedStock,
       kseiLatest,
@@ -262,6 +376,7 @@ export async function GET(request, { params }) {
       volumeAnalysis,
       projections,
       bandarmologi,
+      peers,
       scores: {
         fundamental: fundamentalScore,
         technical: technicalScore,

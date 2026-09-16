@@ -4,6 +4,14 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-09-16] feat | Bloomberg Relative Valuation (RV) & Sub-Sector Peer Benchmarking
+- Implemented automated peer extraction in `GET /api/stocks/[ticker]` by matching `subSector` (or `sector`) and ordering by trading turnover.
+- Created `RelativeValuationPeers.jsx` component delivering side-by-side benchmarking (PER, PBV, ROE, NPM, DER, Dividend Yield, Graham MoS, composite score).
+- Added Best-in-Class visual highlights, sector median benchmarking, and automated natural language comparative insights.
+- Integrated seamless 1-click bridge to the multi-stock comparison workbench (`Buka Komparasi Lengkap`).
+- Published quantitative documentation in `docs/wiki/en/financial-engine/relative-valuation-peers.md` and Indonesian mirror.
+- Added comprehensive unit test suite in `tests/relativeValuation.test.js` (136/136 tests passing).
+
 ## [2026-09-16] feat | AI-Driven Pension Portfolio Generation & Knapsack Lot Optimizer
 - Developed Bounded Integer Knapsack Solver (`src/lib/lotOptimizer.js`) ensuring zero overbudget and 98–99.9% budget absorption into 100-share IDX lots.
 - Created `POST /api/pension/ai-generate` endpoint integrating local `llama.cpp` CFP persona with multi-factor fundamental candidate filtering.
