@@ -4,10 +4,6 @@ services:
     container_name: local-ai-llama
     restart: unless-stopped
     cpuset: "0-11" # Pinning eksklusif ke 6 P-Cores (CPU 0-11) Intel i5-14500 (8 E-Cores bebas untuk OS & apps)
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
     cap_add:
       - SYS_NICE # Diperlukan oleh --prio untuk prioritas thread
     ports:
@@ -23,7 +19,6 @@ services:
       - "6"    # 6 P-Cores (Performance Cores) untuk generasi token stabil tanpa hyperthreading penalty
       - "-tb"
       - "6"    # 6 threads untuk pemrosesan prompt cepat (prefill phase)
-      - "--mlock" # Kunci model di RAM fisik (mencegah swap paging ke SSD)
       - "--flash-attn"
       - "auto" # Nilai yang valid: 'on', 'off', atau 'auto'
       - "--prio"
