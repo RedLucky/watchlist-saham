@@ -59,10 +59,13 @@ The inference server runs using the official `ghcr.io/ggml-org/llama.cpp:server`
 ## 3. Asynchronous Queue Architecture
 
 ### Queue Table (`AiResearchQueue`)
-1. **Producer (`POST /api/ai/research`)**: Inserts or updates an entry for ticker `T` with status `PENDING`.
-2. **Consumer (`src/scripts/ai-worker.js`)**: Polls the queue every 3 seconds for records where `status = 'PENDING'`.
-3. **Processing Lock**: Transitions status to `PROCESSING` to prevent concurrent duplicate inference.
-4. **Completion**: Once inference succeeds, saves the generated analysis to `AiStockResearch`, logs telemetry to `AiAuditLog`, and marks the queue item `COMPLETED`. On error, marks `FAILED` with error details.
+1. **Producer (`POST /api/ai/research`)**: Inserts or updates an entry for ticker `T` with status `PENDING`. Checks 30-day cache validity (`CACHE_VALIDITY_DAYS = 30`), allowing immediate bypass when `{ force: true }` is supplied.
+2. **Consumer (`src/scripts/ai-worker.js`)**: Polls the queue every 3 seconds (`POLL_INTERVAL = 3000`) for records where `status = 'PENDING'`.
+3. **Stale Job Auto-Recovery**: Prior to polling, automatically identifies dead jobs stuck in `PROCESSING` for > 10 minutes (`STALE_JOB_TIMEOUT_MS = 600000`) and resets them to `FAILED` so tickers are never permanently locked.
+4. **Processing Lock**: Transitions status to `PROCESSING` to prevent concurrent duplicate inference.
+5. **Robust Parsing**: Extracts sections (valuation, trend) using resilient regex patterns that tolerate markdown heading variations.
+6. **Completion**: Once inference succeeds, saves the generated analysis to `AiStockResearch`, logs telemetry to `AiAuditLog`, and marks the queue item `COMPLETED`. On error, marks `FAILED` with error details.
+7. **Proxy Whitelist**: Public `GET /api/ai/research` endpoints are exempted in Edge proxy so unauthenticated guests can view published research dossiers.
 
 ---
 

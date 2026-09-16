@@ -4,16 +4,16 @@ const { fetchAiCompletion } = require('../lib/ai/client.js');
 const { buildResearchPrompt } = require('../lib/ai/prompter.js');
 const { fetchLatestStockNews } = require('../lib/ai/search.js');
 
-const POLL_INTERVAL = 60000; // 1 menit
+const POLL_INTERVAL = 3000; // 3 detik (responsif terhadap antrian baru)
+const STALE_JOB_TIMEOUT_MS = 10 * 60 * 1000; // 10 menit batas toleransi task PROCESSING
 
-// Ambil isi satu section jawaban AI berdasarkan header '## N. ...'
-// sampai header '## ' berikutnya (untuk kolom valuation & trend di DB).
-function extractSection(responseContent, headerStart) {
-  const startIndex = responseContent.indexOf(headerStart);
-  if (startIndex === -1) return null;
-  const nextSection = responseContent.indexOf('\n## ', startIndex + headerStart.length);
-  const endIndex = nextSection === -1 ? responseContent.length : nextSection;
-  return responseContent.slice(startIndex, endIndex).trim();
+// Ambil isi satu section jawaban AI berdasarkan nomor section (e.g. 2 untuk Valuasi, 3 untuk Tren)
+// Menggunakan regex fleksibel yang tahan terhadap variasi format markdown (## 2., ## 2:, ## 2, ### 2.)
+function extractSection(responseContent, sectionNum) {
+  if (!responseContent || !sectionNum) return null;
+  const regex = new RegExp(`(?:^|\\n)#{2,3}\\s*${sectionNum}[.:\\s][\\s\\S]*?(?=(?:\\n#{2,3}\\s*\\d|$))`, 'i');
+  const match = responseContent.match(regex);
+  return match ? match[0].trim() : null;
 }
 
 // Parsing kesimpulan rekomendasi AI dengan toleransi format markdown (*, _, [])
@@ -81,6 +81,27 @@ async function sendDiscordNotification(ticker, conclusion) {
 
 async function processQueue() {
   try {
+    // 0. Auto-Recovery: Pulihkan task yang macet di PROCESSING (> 10 menit) akibat worker crash
+    const staleCutoff = new Date(Date.now() - STALE_JOB_TIMEOUT_MS);
+    const staleTasks = await prisma.aiResearchQueue.findMany({
+      where: {
+        status: 'PROCESSING',
+        updatedAt: { lt: staleCutoff }
+      }
+    });
+
+    for (const stale of staleTasks) {
+      console.warn(`[AI-Worker] Mendeteksi task macet untuk ${stale.ticker} (id: ${stale.id}). Mereset ke FAILED agar dapat diproses ulang.`);
+      await prisma.aiResearchQueue.update({
+        where: { id: stale.id },
+        data: {
+          status: 'FAILED',
+          error: 'Task timed out in PROCESSING state (worker crash / timeout recovery)',
+          updatedAt: new Date()
+        }
+      });
+    }
+
     // Cari 1 antrian yang PENDING
     const task = await prisma.aiResearchQueue.findFirst({
       where: { status: 'PENDING' },
@@ -150,8 +171,8 @@ async function processQueue() {
           content: responseContent,
           buyHoldSell,
           score,
-          valuation: extractSection(responseContent, '## 2.'),
-          trend: extractSection(responseContent, '## 3.')
+          valuation: extractSection(responseContent, 2),
+          trend: extractSection(responseContent, 3)
         }
       });
 

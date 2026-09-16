@@ -58,10 +58,13 @@ Server inferensi berjalan menggunakan container resmi `ghcr.io/ggml-org/llama.cp
 
 ## 3. Alur Antrean Asinkron
 
-1. **Pengirim Tugas (`POST /api/ai/research`)**: Menambahkan tiket antrean saham terkait ke tabel `AiResearchQueue` dengan status `PENDING`.
-2. **Pemroses Latar Belakang (`src/scripts/ai-worker.js`)**: Polling tabel antrean setiap 3 detik mencari entri berstatus `PENDING`.
-3. **Kunci Proses**: Mengubah status menjadi `PROCESSING` guna menghindari inferensi ganda secara paralel.
-4. **Penyelesaian**: Setelah inferensi berhasil, menyimpan hasil analisis ke `AiStockResearch`, mencatat metrik kinerja ke `AiAuditLog`, dan menandai status antrean menjadi `COMPLETED`.
+1. **Pengirim Tugas (`POST /api/ai/research`)**: Menambahkan tiket antrean saham terkait ke tabel `AiResearchQueue` dengan status `PENDING`. Memeriksa batas kesegaran riset 30 hari (`CACHE_VALIDITY_DAYS = 30`), dengan dukungan bypass langsung menggunakan `{ force: true }`.
+2. **Pemroses Latar Belakang (`src/scripts/ai-worker.js`)**: Polling tabel antrean setiap 3 detik (`POLL_INTERVAL = 3000`) mencari entri berstatus `PENDING`.
+3. **Pemulihan Otomatis Antrean Macet (*Stale Recovery*)**: Sebelum polling, sistem otomatis mendeteksi task berstatus `PROCESSING` yang macet lebih dari 10 menit (`STALE_JOB_TIMEOUT_MS = 600000`) akibat worker mati/crash, dan meresetnya ke `FAILED` agar saham tidak terkunci permanen.
+4. **Kunci Proses**: Mengubah status menjadi `PROCESSING` guna menghindari inferensi ganda secara paralel.
+5. **Ekstraksi Regex Tangguh**: Memisahkan bagian valuasi dan tren menggunakan regex fleksibel yang toleran terhadap variasi heading markdown.
+6. **Penyelesaian**: Setelah inferensi berhasil, menyimpan hasil analisis ke `AiStockResearch`, mencatat metrik kinerja ke `AiAuditLog`, dan menandai status antrean menjadi `COMPLETED`.
+7. **Pengecualian Proksi**: Endpoint baca publik `GET /api/ai/research` dibuka pada Edge proxy agar pengguna umum tanpa login dapat membaca berkas riset yang telah terbit.
 
 ---
 

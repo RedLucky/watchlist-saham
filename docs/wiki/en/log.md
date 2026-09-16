@@ -4,6 +4,15 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-09-16] fix | Stock Explorer AI Research Engine Hardening & Queue Worker Optimization
+- Reduced worker polling interval from 60s to 3s (`POLL_INTERVAL = 3000`) in `src/scripts/ai-worker.js`, slashing queue pickup latency from ~75s to ~20s.
+- Implemented automated stale task recovery for jobs stuck in `PROCESSING` (> 10 minutes) across both worker and `POST /api/ai/research`, eliminating permanently locked tickers.
+- Upgraded `extractSection` to case-insensitive regex patterns supporting markdown heading variations (`## 2.`, `## 2:`, `### 2.`).
+- Replaced rigid quarterly lock with 30-day cache validity (`CACHE_VALIDITY_DAYS = 30`) and added `{ force: true }` parameter for on-demand re-analysis on earnings/price shocks.
+- Whitelisted `GET /api/ai/research` endpoints in Edge proxy (`src/proxy.js`) enabling unauthenticated guests to read generated research dossiers.
+- Enhanced `renderAiMarkdown` with responsive markdown table rendering (`| Col |`), formatted numbered lists, and added "Perbarui Riset" force button inside modal.
+- Added comprehensive unit test suite in `tests/aiResearchEngine.test.js` (142/142 tests passing).
+
 ## [2026-09-16] feat | Bloomberg Relative Valuation (RV) & Sub-Sector Peer Benchmarking
 - Implemented automated peer extraction in `GET /api/stocks/[ticker]` by matching `subSector` (or `sector`) and ordering by trading turnover.
 - Created `RelativeValuationPeers.jsx` component delivering side-by-side benchmarking (PER, PBV, ROE, NPM, DER, Dividend Yield, Graham MoS, composite score).

@@ -178,7 +178,7 @@ export function getRecommendedTargets(stockData) {
   return { targetBuy, targetSell, buyLabel, sellLabel, diff, gainPct };
 }
 
-// Renderer Markdown khusus untuk hasil riset AI (Heading, Bold, Italic, Callout, List)
+// Renderer Markdown khusus untuk hasil riset AI (Heading, Bold, Italic, Callout, List, Table)
 function renderAiMarkdown(content) {
   if (!content) return null;
 
@@ -263,11 +263,40 @@ function renderAiMarkdown(content) {
       );
     }
 
+    // Markdown Table Row (| col1 | col2 |)
+    if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+      // Ignore delimiter row (|---|---|)
+      if (/^\|[\s\-:|]+\|$/.test(trimmed)) return null;
+      const cells = trimmed.slice(1, -1).split('|').map(c => c.trim());
+      return (
+        <div key={idx} className="grid grid-cols-2 sm:grid-cols-4 gap-2 py-1 px-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-lg text-xs border border-slate-200/60 dark:border-slate-700/60 my-0.5">
+          {cells.map((cell, cIdx) => (
+            <div key={cIdx} className="truncate">
+              {renderInline(cell)}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // Numbered List Items (1. item, 2. item)
+    const numMatch = trimmed.match(/^(\d+)\.\s+(.*)/);
+    if (numMatch) {
+      return (
+        <div key={idx} className="flex items-start gap-2 pl-2 my-0.5">
+          <span className="text-indigo-600 dark:text-indigo-400 font-bold text-xs mt-0.5 min-w-[14px]">{numMatch[1]}.</span>
+          <span className="flex-1 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+            {renderInline(numMatch[2])}
+          </span>
+        </div>
+      );
+    }
+
     // Bullet List Items (- item or * item)
     if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
       const text = trimmed.replace(/^[-*]\s+/, '');
       return (
-        <div key={idx} className="flex items-start gap-2 pl-2">
+        <div key={idx} className="flex items-start gap-2 pl-2 my-0.5">
           <span className="text-indigo-500 dark:text-indigo-400 font-bold text-xs mt-0.5">•</span>
           <span className="flex-1 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
             {renderInline(text)}
@@ -668,14 +697,14 @@ export default function StockExplorer({ user }) {
     return () => clearInterval(pollInterval);
   }, [selectedStock, aiStatus]);
 
-  const handleAnalyzeAi = async () => {
+  const handleAnalyzeAi = async (force = false) => {
     if (!stockDetail || !stockDetail.ticker) return;
     setIsAiLoading(true);
     try {
       const res = await fetch('/api/ai/research', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ticker: stockDetail.ticker })
+        body: JSON.stringify({ ticker: stockDetail.ticker, force })
       });
       const data = await res.json();
       if (res.ok) {
@@ -686,7 +715,7 @@ export default function StockExplorer({ user }) {
           setAiResearch(data.research);
           setAiStatus('COMPLETED');
         }
-        showToast(res.status === 429 ? 'ℹ️ ' + (data.error || 'Sudah dianalisis kuartal ini') : '❌ ' + (data.error || 'Gagal antri AI'), res.status === 429 ? 'info' : 'error');
+        showToast(res.status === 429 ? 'ℹ️ ' + (data.error || 'Sudah dianalisis') : '❌ ' + (data.error || 'Gagal antri AI'), res.status === 429 ? 'info' : 'error');
       }
     } catch (err) {
       showToast('❌ Gagal menghubungi server', 'error');
@@ -4177,7 +4206,20 @@ export default function StockExplorer({ user }) {
                   );
                 })()}
               </div>
-              <button onClick={() => setShowAiModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg leading-none">✕</button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    handleAnalyzeAi(true);
+                    setShowAiModal(false);
+                  }}
+                  disabled={isAiLoading || aiStatus === 'PENDING' || aiStatus === 'PROCESSING'}
+                  className="px-2.5 py-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 rounded-lg border border-indigo-200 dark:border-indigo-800 transition-colors flex items-center gap-1"
+                  title="Paksa AI menganalisis ulang saham ini dengan data dan berita paling baru"
+                >
+                  <span>🔄</span> Perbarui Riset
+                </button>
+                <button onClick={() => setShowAiModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg leading-none p-1">✕</button>
+              </div>
             </div>
             <div className="px-6 py-5 overflow-y-auto text-xs leading-relaxed text-slate-700 dark:text-slate-300 space-y-2">
               {renderAiMarkdown(aiResearch.content)}

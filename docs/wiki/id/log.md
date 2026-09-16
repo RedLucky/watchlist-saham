@@ -4,6 +4,15 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-09-16] fix | Penguatan Mesin Riset AI Stock Explorer & Optimasi Antrean Worker
+- Memangkas interval polling worker dari 60 detik menjadi 3 detik (`POLL_INTERVAL = 3000`) pada `src/scripts/ai-worker.js`, mempercepat respon pengambilan tugas dari ~75 detik menjadi ~20 detik.
+- Menambahkan mekanisme pemulihan otomatis (*stale task recovery*) untuk tugas yang macet di status `PROCESSING` (> 10 menit) baik di worker maupun endpoint `POST /api/ai/research`, menghilangkan risiko saham terkunci permanen.
+- Menyempurnakan fungsi `extractSection` dengan regex fleksibel tanpa memedulikan variasi penulisan heading markdown (`## 2.`, `## 2:`, `### 2.`).
+- Mengganti batasan kuartal kalender dengan masa validitas 30 hari (`CACHE_VALIDITY_DAYS = 30`) serta menambahkan parameter `{ force: true }` untuk analisis instan saat ada rilis laporan keuangan atau fluktuasi harga drastis.
+- Menambahkan pengecualian baca publik `GET /api/ai/research` pada Edge proxy (`src/proxy.js`) sehingga pengunjung tanpa login dapat membaca berkas riset AI.
+- Meningkatkan fungsi `renderAiMarkdown` pada `StockExplorer.jsx` dengan render tabel markdown responsif (`| Kolom |`), list berangka, dan tombol aksi "Perbarui Riset" langsung di dalam modal.
+- Menambahkan rangkaian pengujian unit komprehensif pada `tests/aiResearchEngine.test.js` (total 142/142 pengujian lulus 100%).
+
 ## [2026-09-16] feat | Mesin Valuasi Relatif (RV) Bloomberg & Benchmarking Peers Sub-Sektor
 - Implementasi seleksi otomatis emiten pembanding pada `GET /api/stocks/[ticker]` berdasarkan kesesuaian `subSector` (atau `sector`) dengan urutan nilai transaksi harian (*turnover*).
 - Pembangunan komponen `RelativeValuationPeers.jsx` untuk komparasi metrik berdampingan (PER, PBV, ROE, NPM, DER, Dividend Yield, MoS Graham, skor komposit).

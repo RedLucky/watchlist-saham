@@ -3,17 +3,13 @@ import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
-// Helper: Cek apakah kuartal ini sudah ada riset untuk ticker tersebut
-function getStartOfCurrentQuarter() {
-  const now = new Date();
-  const quarter = Math.floor(now.getMonth() / 3);
-  return new Date(now.getFullYear(), quarter * 3, 1);
-}
+const CACHE_VALIDITY_DAYS = 30;
+const STALE_QUEUE_TIMEOUT_MS = 10 * 60 * 1000; // 10 menit
 
 export async function POST(req) {
   try {
-    const body = await req.json();
-    let { ticker } = body;
+    const body = await req.json().catch(() => ({}));
+    let { ticker, force } = body;
 
     if (!ticker) {
       return NextResponse.json({ error: 'Ticker is required' }, { status: 400 });
@@ -30,35 +26,50 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Stock not found' }, { status: 404 });
     }
 
-    // 2. Cek apakah batas kuartalan sudah tercapai
-    const startOfQuarter = getStartOfCurrentQuarter();
-    const existingResearch = await prisma.aiStockResearch.findFirst({
-      where: {
-        ticker,
-        createdAt: { gte: startOfQuarter }
-      }
-    });
+    // 2. Cek apakah batas usia riset (30 hari) masih berlaku, kecuali jika dipaksa (force: true)
+    if (!force) {
+      const freshnessCutoff = new Date(Date.now() - (CACHE_VALIDITY_DAYS * 24 * 60 * 60 * 1000));
+      const existingResearch = await prisma.aiStockResearch.findFirst({
+        where: {
+          ticker,
+          createdAt: { gte: freshnessCutoff }
+        },
+        orderBy: { createdAt: 'desc' }
+      });
 
-    if (existingResearch) {
-      return NextResponse.json({ 
-        error: 'Quarterly limit reached. Already analyzed this quarter.',
-        research: existingResearch
-      }, { status: 429 });
+      if (existingResearch) {
+        return NextResponse.json({ 
+          error: 'Riset AI untuk saham ini masih valid (< 30 hari). Gunakan opsi force untuk memperbarui.',
+          research: existingResearch
+        }, { status: 429 });
+      }
     }
 
-    // 3. Cek antrian yang masih aktif
+    // 3. Cek antrian yang masih aktif (dengan deteksi stale task)
     const activeQueue = await prisma.aiResearchQueue.findFirst({
       where: {
         ticker,
         status: { in: ['PENDING', 'PROCESSING'] }
-      }
+      },
+      orderBy: { createdAt: 'desc' }
     });
 
     if (activeQueue) {
-      return NextResponse.json({ 
-        message: 'Already in queue', 
-        queue: activeQueue 
-      }, { status: 200 });
+      // Jika task macet di PROCESSING lebih dari 10 menit, tandai FAILED agar antrian baru bisa dibuat
+      const isStale = activeQueue.status === 'PROCESSING' && 
+        (Date.now() - new Date(activeQueue.updatedAt).getTime() > STALE_QUEUE_TIMEOUT_MS);
+
+      if (isStale) {
+        await prisma.aiResearchQueue.update({
+          where: { id: activeQueue.id },
+          data: { status: 'FAILED', error: 'Stale task recovered on new request', updatedAt: new Date() }
+        });
+      } else {
+        return NextResponse.json({ 
+          message: 'Already in queue', 
+          queue: activeQueue 
+        }, { status: 200 });
+      }
     }
 
     // 4. Masukkan ke antrian
