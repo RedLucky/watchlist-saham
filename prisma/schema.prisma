@@ -171,3 +171,50 @@ model CollectionItem {
   @@index([collectionId])
   @@index([ticker])
 }
+
+model AiStockResearch {
+  id          Int      @id @default(autoincrement())
+  ticker      String
+  content     String   @db.Text
+  buyHoldSell String   @default("HOLD")
+  score       Int?     @default(50)
+  valuation   String?  @db.Text
+  trend       String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([ticker])
+  @@index([createdAt])
+}
+
+model AiResearchQueue {
+  id        Int      @id @default(autoincrement())
+  ticker    String
+  status    String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  error     String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ticker])
+  @@index([status])
+}
+
+model AiAuditLog {
+  id               Int      @id @default(autoincrement())
+  ticker           String
+  event            String   // e.g., "PROMPT_SENT", "SUCCESS", "FAILED"
+  modelName        String?  // Nama model yang digunakan
+  promptTokens     Int?     // Jumlah token input
+  completionTokens Int?     // Jumlah token output
+  totalTokens      Int?     // Total token input + output
+  latencyMs        Int?     // Durasi pengerjaan dalam milidetik
+  durationSec      Float?   // Durasi pengerjaan dalam detik
+  tokensPerSec     Float?   // Kecepatan rata-rata inferensi (tokens/detik)
+  prompt           String?  @db.Text
+  response         String?  @db.Text
+  error            String?  @db.Text
+  createdAt        DateTime @default(now())
+
+  @@index([ticker])
+  @@index([event])
+}

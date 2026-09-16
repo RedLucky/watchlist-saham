@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test tests/**/*.test.js"
+    "test": "node --test tests/**/*.test.js",
+    "discord:bot": "node src/scripts/discord-bot.js",
+    "worker:ai": "node src/scripts/ai-worker.js"
   },
   "dependencies": {
     "@next/third-parties": "^16.3.1",
@@ -15,6 +17,7 @@
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
     "adm-zip": "^0.6.0",
+    "discord.js": "^14.27.0",
     "lightweight-charts": "^5.1.0",
     "next": "^16.3.1",
     "next-themes": "^0.4.6",

@@ -177,6 +177,113 @@ export function getRecommendedTargets(stockData) {
   return { targetBuy, targetSell, buyLabel, sellLabel, diff, gainPct };
 }
 
+// Renderer Markdown khusus untuk hasil riset AI (Heading, Bold, Italic, Callout, List)
+function renderAiMarkdown(content) {
+  if (!content) return null;
+
+  const renderInline = (text) => {
+    if (!text) return null;
+    const parts = text.split(/(\*\*.*?\*\*|\*.*?\*)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
+        return (
+          <strong key={i} className="font-bold text-slate-900 dark:text-white">
+            {part.slice(2, -2)}
+          </strong>
+        );
+      }
+      if (part.startsWith('*') && part.endsWith('*') && part.length >= 2 && !part.startsWith('**')) {
+        return (
+          <em key={i} className="italic text-slate-800 dark:text-slate-200">
+            {part.slice(1, -1)}
+          </em>
+        );
+      }
+      return part;
+    });
+  };
+
+  const lines = content.split('\n');
+  return lines.map((line, idx) => {
+    const trimmed = line.trim();
+    if (!trimmed) return <div key={idx} className="h-2" />;
+
+    // H2 Headers (## 1. Kesimpulan...)
+    if (trimmed.startsWith('## ')) {
+      const title = trimmed.replace(/^##\s+/, '');
+      return (
+        <div key={idx} className="pt-3 pb-1 border-b border-slate-200 dark:border-slate-800">
+          <h4 className="text-xs sm:text-sm font-black text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5 uppercase tracking-wide">
+            {renderInline(title)}
+          </h4>
+        </div>
+      );
+    }
+
+    // H3 Headers (### ...)
+    if (trimmed.startsWith('### ')) {
+      const title = trimmed.replace(/^###\s+/, '');
+      return (
+        <h5 key={idx} className="text-xs font-bold text-slate-900 dark:text-slate-100 pt-2">
+          {renderInline(title)}
+        </h5>
+      );
+    }
+
+    // KESIMPULAN Callout
+    if (trimmed.toUpperCase().startsWith('KESIMPULAN:')) {
+      const isBuy = trimmed.toUpperCase().includes('BELI') || trimmed.toUpperCase().includes('BUY');
+      const isSell = trimmed.toUpperCase().includes('JUAL') || trimmed.toUpperCase().includes('SELL');
+      return (
+        <div
+          key={idx}
+          className={`p-3.5 my-2.5 rounded-2xl border flex items-center gap-2.5 shadow-sm ${
+            isBuy
+              ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/80 text-emerald-900 dark:text-emerald-100'
+              : isSell
+              ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/80 text-rose-900 dark:text-rose-100'
+              : 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/80 text-amber-900 dark:text-amber-100'
+          }`}
+        >
+          <span className="text-base">{isBuy ? '🚀' : isSell ? '⚠️' : '⚖️'}</span>
+          <div className="text-xs sm:text-sm font-extrabold tracking-wide">
+            {renderInline(trimmed)}
+          </div>
+        </div>
+      );
+    }
+
+    // ALASAN SINGKAT Callout
+    if (trimmed.toUpperCase().startsWith('ALASAN SINGKAT:')) {
+      return (
+        <div key={idx} className="p-3 my-1.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50 text-xs leading-relaxed text-indigo-950 dark:text-indigo-200 font-medium">
+          {renderInline(trimmed)}
+        </div>
+      );
+    }
+
+    // Bullet List Items (- item or * item)
+    if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+      const text = trimmed.replace(/^[-*]\s+/, '');
+      return (
+        <div key={idx} className="flex items-start gap-2 pl-2">
+          <span className="text-indigo-500 dark:text-indigo-400 font-bold text-xs mt-0.5">•</span>
+          <span className="flex-1 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+            {renderInline(text)}
+          </span>
+        </div>
+      );
+    }
+
+    // Standard Paragraph
+    return (
+      <p key={idx} className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+        {renderInline(trimmed)}
+      </p>
+    );
+  });
+}
+
 export default function StockExplorer({ user }) {
   // Navigation View State
   const [activeTab, setActiveTab] = useState('explorer'); // 'explorer' | 'compare'
@@ -212,6 +319,13 @@ export default function StockExplorer({ user }) {
   const [newCollectionDesc, setNewCollectionDesc] = useState('');
   const [isCollectionPublic, setIsCollectionPublic] = useState(false);
   const [editingCollection, setEditingCollection] = useState(null);
+
+
+  // AI Research State
+  const [aiStatus, setAiStatus] = useState(null); // PENDING, PROCESSING, COMPLETED
+  const [aiResearch, setAiResearch] = useState(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [showAiModal, setShowAiModal] = useState(false);
 
   // Modal State: Save Stock to Collection
   const [showSaveModal, setShowSaveModal] = useState(false);
@@ -479,6 +593,8 @@ export default function StockExplorer({ user }) {
     setLoadingDetail(true);
     setDetailError(null);
     setActiveTab('explorer');
+    setAiResearch(null);
+    setAiStatus(null);
 
     try {
       const res = await fetch(`/api/stocks/${cleanTicker}`);
@@ -488,6 +604,21 @@ export default function StockExplorer({ user }) {
       }
       const data = await res.json();
       setStockDetail(data);
+
+      // Fetch AI Status
+      try {
+        const aiRes = await fetch(`/api/ai/research/${cleanTicker}`);
+        if (aiRes.ok) {
+          const aiData = await aiRes.json();
+          setAiResearch(aiData.research || null);
+          setAiStatus(aiData.queue?.status || (aiData.research ? 'COMPLETED' : null));
+        } else {
+          setAiResearch(null);
+          setAiStatus(null);
+        }
+      } catch(e) { 
+        console.error('AI fetch err', e); 
+      }
 
       if (shouldScroll) {
         setTimeout(() => {
@@ -510,6 +641,58 @@ export default function StockExplorer({ user }) {
       handleSelectStock('BBCA', false);
     }
   }, [allTickers]);
+
+  // Auto-polling AI queue status if pending or processing
+  useEffect(() => {
+    if (!selectedStock || (aiStatus !== 'PENDING' && aiStatus !== 'PROCESSING')) return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const aiRes = await fetch(`/api/ai/research/${selectedStock}`);
+        if (aiRes.ok) {
+          const aiData = await aiRes.json();
+          if (aiData.research) {
+            setAiResearch(aiData.research);
+            setAiStatus('COMPLETED');
+            showToast(`✨ Riset AI untuk ${selectedStock} telah selesai!`, 'success');
+          } else if (aiData.queue?.status) {
+            setAiStatus(aiData.queue.status);
+          }
+        }
+      } catch (err) {
+        // silent polling error
+      }
+    }, 10000);
+
+    return () => clearInterval(pollInterval);
+  }, [selectedStock, aiStatus]);
+
+  const handleAnalyzeAi = async () => {
+    if (!stockDetail || !stockDetail.ticker) return;
+    setIsAiLoading(true);
+    try {
+      const res = await fetch('/api/ai/research', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticker: stockDetail.ticker })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAiStatus(data.queue?.status || 'PENDING');
+        showToast('✅ Berhasil ditambahkan ke antrian AI', 'success');
+      } else {
+        if (data.research) {
+          setAiResearch(data.research);
+          setAiStatus('COMPLETED');
+        }
+        showToast(res.status === 429 ? 'ℹ️ ' + (data.error || 'Sudah dianalisis kuartal ini') : '❌ ' + (data.error || 'Gagal antri AI'), res.status === 429 ? 'info' : 'error');
+      }
+    } catch (err) {
+      showToast('❌ Gagal menghubungi server', 'error');
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
 
   // ── MULTI-STOCK COMPARE FUNCTIONS ──────────────────────────────────────
   const fetchCompareStockData = async (ticker) => {
@@ -1703,6 +1886,26 @@ export default function StockExplorer({ user }) {
                         >
                           <span>⚖️</span> Bandingkan
                         </button>
+
+                        {aiStatus === 'COMPLETED' || aiResearch ? (
+                          <button
+                            onClick={() => setShowAiModal(true)}
+                            className="px-3.5 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 whitespace-nowrap"
+                          >
+                            <span>✨</span> Lihat Riset AI
+                          </button>
+                        ) : (
+                          <button
+                            onClick={handleAnalyzeAi}
+                            disabled={isAiLoading || aiStatus === 'PENDING' || aiStatus === 'PROCESSING'}
+                            className={`px-3.5 py-2 text-xs font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
+                              aiStatus ? 'bg-slate-300 text-slate-600 cursor-not-allowed dark:bg-slate-700 dark:text-slate-400' : 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white'
+                            }`}
+                          >
+                            <span>🤖</span> {isAiLoading ? 'Loading...' : aiStatus === 'PENDING' ? 'Antri AI...' : aiStatus === 'PROCESSING' ? 'AI Menganalisis...' : 'Analyze with AI'}
+                          </button>
+                        )}
+
                         <button
                           onClick={() => {
                             if (collections.length === 0) {
@@ -2277,6 +2480,37 @@ export default function StockExplorer({ user }) {
                                 <div className="bg-purple-500 h-1.5 rounded-full" style={{ width: `${smartMoneyScore}%` }}></div>
                               </div>
                             </div>
+
+                            <div>
+                              <div className="flex justify-between text-[11px] mb-0.5">
+                                <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                                  <span>🤖</span> Analisis AI {aiResearch ? (
+                                    <span className={`text-[10px] font-bold ${
+                                      (aiResearch.buyHoldSell === 'BELI' || aiResearch.buyHoldSell === 'BUY') ? 'text-emerald-600 dark:text-emerald-400' :
+                                      (aiResearch.buyHoldSell === 'JUAL' || aiResearch.buyHoldSell === 'SELL') ? 'text-rose-600 dark:text-rose-400' :
+                                      'text-amber-600 dark:text-amber-400'
+                                    }`}>({aiResearch.buyHoldSell === 'BUY' ? 'BELI' : aiResearch.buyHoldSell})</span>
+                                  ) : (
+                                    <span className="text-[10px] text-slate-400">(On-Demand)</span>
+                                  )}:
+                                </span>
+                                <span className={`font-bold ${aiResearch ? 'text-violet-600 dark:text-violet-400' : 'text-slate-400 dark:text-slate-500 text-[10px] italic'}`}>
+                                  {aiResearch
+                                    ? `${aiResearch.score ?? ((aiResearch.buyHoldSell === 'BELI' || aiResearch.buyHoldSell === 'BUY') ? 85 : (aiResearch.buyHoldSell === 'JUAL' || aiResearch.buyHoldSell === 'SELL') ? 30 : 50)}/100`
+                                    : 'Belum Dianalisis'}
+                                </span>
+                              </div>
+                              <div className="w-full bg-slate-200 dark:bg-slate-700/60 rounded-full h-1.5 overflow-hidden">
+                                <div
+                                  className={aiResearch ? "bg-gradient-to-r from-violet-500 to-indigo-500 h-1.5 rounded-full transition-all duration-500" : "bg-slate-300 dark:bg-slate-700 h-1.5 rounded-full"}
+                                  style={{
+                                    width: aiResearch
+                                      ? `${aiResearch.score ?? ((aiResearch.buyHoldSell === 'BELI' || aiResearch.buyHoldSell === 'BUY') ? 85 : (aiResearch.buyHoldSell === 'JUAL' || aiResearch.buyHoldSell === 'SELL') ? 30 : 50)}%`
+                                      : '0%'
+                                  }}
+                                ></div>
+                              </div>
+                            </div>
                           </div>
                         </div>
 
@@ -2287,6 +2521,22 @@ export default function StockExplorer({ user }) {
                               {rec.label}
                             </span>
                           </div>
+                          {aiResearch && (
+                            <div className="flex items-center justify-between text-[11px] pt-0.5">
+                              <span className="text-slate-600 dark:text-slate-400 font-medium flex items-center gap-1">
+                                <span>🤖</span> Rekomendasi AI:
+                              </span>
+                              <span className={`font-black px-2 py-0.5 rounded-md text-[10px] ${
+                                (aiResearch.buyHoldSell === 'BELI' || aiResearch.buyHoldSell === 'BUY')
+                                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300'
+                                  : (aiResearch.buyHoldSell === 'JUAL' || aiResearch.buyHoldSell === 'SELL')
+                                  ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300'
+                                  : 'bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300'
+                              }`}>
+                                {aiResearch.buyHoldSell === 'BUY' ? 'BELI' : aiResearch.buyHoldSell}
+                              </span>
+                            </div>
+                          )}
                           <p className="text-[10px] text-slate-600 dark:text-slate-400 leading-tight">
                             {rec.desc}
                           </p>
@@ -3886,6 +4136,38 @@ export default function StockExplorer({ user }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showAiModal && aiResearch && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/65 backdrop-blur-sm p-4 animate-in fade-in" onClick={() => setShowAiModal(false)}>
+          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-2xl max-h-[85vh] flex flex-col animate-in zoom-in-95" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                  <span>✨</span> Riset AI — {aiResearch.ticker}
+                </h3>
+                {(() => {
+                  const v = (aiResearch.buyHoldSell || '').toUpperCase();
+                  const isBuy = v === 'BELI' || v === 'BUY';
+                  const isSell = v === 'JUAL' || v === 'SELL';
+                  return (
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-black uppercase ${
+                      isBuy ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800' :
+                      isSell ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-300 dark:border-rose-800' :
+                      'bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
+                    }`}>
+                      {isBuy ? 'BELI' : isSell ? 'JUAL' : 'HOLD'}
+                    </span>
+                  );
+                })()}
+              </div>
+              <button onClick={() => setShowAiModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg leading-none">✕</button>
+            </div>
+            <div className="px-6 py-5 overflow-y-auto text-xs leading-relaxed text-slate-700 dark:text-slate-300 space-y-2">
+              {renderAiMarkdown(aiResearch.content)}
+            </div>
           </div>
         </div>
       )}

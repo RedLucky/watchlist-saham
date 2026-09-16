@@ -8,6 +8,7 @@ A smart web-based application designed to monitor, analyze, and screen stocks on
 - **💼 Portfolio & Transactions:** Track your asset values in real-time, calculate your Average Price, and monitor your portfolio growth performance.
 - **📈 Market Movers & Technicals:** Keep an eye on the IDX Composite (IHSG) index movements, top gainers, top losers, and industrial sector performance.
 - **🏖️ Pension Calculator (FIRE):** Simulate your retirement targets using a combination of Government Bonds (SBN) and Stocks, complete with a monthly stock lot purchasing guide.
+- **🤖 On-Demand AI Research:** Generate deep, comprehensive stock analysis locally using a standalone Llama.cpp Docker container (Qwen / GGUF) with an asynchronous queue worker to prevent UI blocking.
 - **🔐 High-Level Security:** Equipped with a custom Edge-compatible JWT authentication, Next.js Middleware route protection, and user data privacy compliance.
 
 ## 🛠️ Tech Stack
@@ -16,6 +17,7 @@ A smart web-based application designed to monitor, analyze, and screen stocks on
 - **Backend:** Next.js Route Handlers (API), Edge Middleware
 - **Database:** PostgreSQL
 - **ORM:** Prisma
+- **Local AI Engine:** Llama.cpp (Dockerized) + Local GGUF (Qwen 4B)
 - **Authentication:** JWT (JSON Web Tokens) using Web Crypto API
 - **Deployment:** Vercel & Neon.tech (Recommended)
 
@@ -70,6 +72,16 @@ npx prisma db push
 npm run dev
 ```
 The application can now be accessed via your browser at: [http://localhost:3000](http://localhost:3000)
+
+### 7. Running the AI Engine (Optional)
+If you want to use the "Analyze with AI" feature in the Stock Explorer, you must spin up the standalone AI server and the background queue worker:
+```bash
+# 1. Start the Llama.cpp Server via Docker
+docker-compose -f docker-compose.ai.yml up -d
+
+# 2. Run the asynchronous AI Queue Worker
+node src/scripts/ai-worker.js
+```
 
 ---
 

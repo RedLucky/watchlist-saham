@@ -1,0 +1,80 @@
+services:
+  local-ai-server:
+    image: ghcr.io/ggml-org/llama.cpp:server
+    container_name: local-ai-llama
+    restart: unless-stopped
+    cap_add:
+      - SYS_NICE # Diperlukan oleh --prio untuk prioritas thread
+    ports:
+      - "8080:8080"
+    volumes:
+      - ${LMSTUDIO_MODELS_PATH:-~/.lmstudio}:/models
+    command:
+      - "-m"
+      - "${AI_MODEL_PATH:-/models/models/empero-ai/Qwen3.8-4B-Distill-GGUF/Qwen3.8-4B-Q4_K_M.gguf}"
+      - "-c"
+      - "8192" # Optimal untuk prompt (~1.5k token) + respon (~4k token), hemat RAM & KV cache bandwidth
+      - "-t"
+      - "6"    # 6 P-Cores (Performance Cores) untuk generasi token stabil tanpa hyperthreading penalty
+      - "-tb"
+      - "12"   # 12 threads untuk pemrosesan prompt cepat (prefill phase)
+      - "--flash-attn"
+      - "auto" # Nilai yang valid: 'on', 'off', atau 'auto'
+      - "--prio"
+      - "2"    # Prioritas thread tinggi
+      - "-np"
+      - "1"    # 1 slot inferensi (mencegah bottleneck CPU thrashing)
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  ai-worker:
+    image: node:20-alpine
+    container_name: local-ai-worker
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - ./:/app
+    env_file:
+      - .env
+    environment:
+      - AI_API_URL=http://local-ai-server:8080/v1/chat/completions
+      # 'localhost' tidak berlaku di dalam container; DB berada di service 'db' compose utama
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-watchlist}?schema=public
+    depends_on:
+      local-ai-server:
+        condition: service_healthy
+    command: node src/scripts/ai-worker.js
+    networks:
+      - default      # untuk akses local-ai-server
+      - watchlist_net # untuk akses db (compose utama)
+
+  discord-bot:
+    image: node:20-alpine
+    container_name: local-discord-bot
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - ./:/app
+    env_file:
+      - .env
+    environment:
+      - AI_API_URL=http://local-ai-server:8080/v1/chat/completions
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-watchlist}?schema=public
+    depends_on:
+      local-ai-server:
+        condition: service_healthy
+    command: node src/scripts/discord-bot.js
+    networks:
+      - default      # untuk akses local-ai-server
+      - watchlist_net # untuk akses db (compose utama)
+
+networks:
+  watchlist_net:
+    # Network dari docker-compose.yml utama (harus external agar tidak dibuat ulang)
+    name: watchlist-saham_watchlist_net
+    external: true
+
