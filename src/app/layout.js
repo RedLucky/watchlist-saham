@@ -1,5 +1,6 @@
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
+import "katex/dist/katex.min.css";
 import { ThemeProvider } from "../components/ThemeProvider";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";

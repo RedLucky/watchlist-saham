@@ -1,6 +1,19 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import katex from 'katex';
+
+const renderLatexToHtml = (latex = '', displayMode = false) => {
+  try {
+    return katex.renderToString(latex, {
+      displayMode,
+      throwOnError: false,
+    });
+  } catch (err) {
+    console.error('KaTeX render error:', err);
+    return `<span class="font-mono text-xs text-amber-500">${latex}</span>`;
+  }
+};
 
 const STARTER_PROMPTS = [
   {
@@ -185,12 +198,46 @@ export default function AiConsultationPanel({ user = null, stocks = [] }) {
   const renderInlineMarkdown = (text = '', isUser = false) => {
     if (!text) return null;
 
-    // Pattern matches: `inline code`, **bold**, *italic*
-    const regex = /(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*)/g;
+    // Pattern matches:
+    // 1. Display math: $$...$$
+    // 2. Inline math: $...$ or \(...\)
+    // 3. Inline code: `...`
+    // 4. Bold: **...**
+    // 5. Italic: *...*
+    const regex = /(\$\$[\s\S]+?\$\$|\$[^\$\n]+?\$|\\\([\s\S]+?\\\)|\`[^\`]+\`|\*\*[^*]+\*\*|\*[^*]+\*)/g;
     const parts = text.split(regex);
 
     return parts.map((part, i) => {
       if (!part) return null;
+
+      // Display math ($$...$$)
+      if (part.startsWith('$$') && part.endsWith('$$') && part.length >= 4) {
+        const formula = part.slice(2, -2).trim();
+        return (
+          <span
+            key={i}
+            className="my-2.5 py-2 px-3 overflow-x-auto rounded-xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 block text-center text-slate-900 dark:text-slate-100 shadow-xs"
+            dangerouslySetInnerHTML={{ __html: renderLatexToHtml(formula, true) }}
+          />
+        );
+      }
+
+      // Inline math ($...$ or \(...\))
+      if (
+        (part.startsWith('$') && part.endsWith('$') && part.length >= 2 && !part.startsWith('$$')) ||
+        (part.startsWith('\\(') && part.endsWith('\\)'))
+      ) {
+        const formula = part.startsWith('$') ? part.slice(1, -1).trim() : part.slice(2, -2).trim();
+        return (
+          <span
+            key={i}
+            className="inline-block px-1 mx-0.5 align-middle text-indigo-700 dark:text-indigo-300 font-medium"
+            dangerouslySetInnerHTML={{ __html: renderLatexToHtml(formula, false) }}
+          />
+        );
+      }
+
+      // Inline code (`code`)
       if (part.startsWith('`') && part.endsWith('`') && part.length >= 2) {
         return (
           <code
@@ -205,6 +252,8 @@ export default function AiConsultationPanel({ user = null, stocks = [] }) {
           </code>
         );
       }
+
+      // Bold (**bold**)
       if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
         return (
           <strong
@@ -217,6 +266,8 @@ export default function AiConsultationPanel({ user = null, stocks = [] }) {
           </strong>
         );
       }
+
+      // Italic (*italic*)
       if (part.startsWith('*') && part.endsWith('*') && part.length >= 2 && !part.startsWith('**')) {
         return (
           <em
@@ -229,6 +280,7 @@ export default function AiConsultationPanel({ user = null, stocks = [] }) {
           </em>
         );
       }
+
       return part;
     });
   };
@@ -288,6 +340,7 @@ export default function AiConsultationPanel({ user = null, stocks = [] }) {
     let currentList = null; // { type: 'ul' | 'ol', items: [] }
     let currentTable = null; // string[]
     let currentCode = null; // { lang: string, lines: [] }
+    let currentMath = null; // string[]
 
     const flushList = () => {
       if (currentList) {
@@ -362,6 +415,22 @@ export default function AiConsultationPanel({ user = null, stocks = [] }) {
       }
     };
 
+    const flushMath = () => {
+      if (currentMath) {
+        const formula = currentMath.join('\n').trim();
+        if (formula) {
+          blocks.push(
+            <div
+              key={`math-${blocks.length}`}
+              className="my-3 py-2.5 px-4 overflow-x-auto rounded-xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 flex justify-center text-slate-900 dark:text-slate-100 shadow-xs"
+              dangerouslySetInnerHTML={{ __html: renderLatexToHtml(formula, true) }}
+            />
+          );
+        }
+        currentMath = null;
+      }
+    };
+
     for (let i = 0; i < lines.length; i++) {
       const rawLine = lines[i];
       const trimmed = rawLine.trim();
@@ -373,12 +442,54 @@ export default function AiConsultationPanel({ user = null, stocks = [] }) {
         } else {
           flushList();
           flushTable();
+          flushMath();
           currentCode = { lang: trimmed.slice(3).trim(), lines: [] };
         }
         continue;
       }
       if (currentCode) {
         currentCode.lines.push(rawLine);
+        continue;
+      }
+
+      // Check multi-line or standalone display math ($$)
+      if (trimmed.startsWith('$$') && trimmed.endsWith('$$') && trimmed.length > 2) {
+        flushList();
+        flushTable();
+        flushMath();
+        const formula = trimmed.slice(2, -2).trim();
+        blocks.push(
+          <div
+            key={`math-${blocks.length}`}
+            className="my-3 py-2.5 px-4 overflow-x-auto rounded-xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 flex justify-center text-slate-900 dark:text-slate-100 shadow-xs"
+            dangerouslySetInnerHTML={{ __html: renderLatexToHtml(formula, true) }}
+          />
+        );
+        continue;
+      }
+      if (trimmed === '$$') {
+        if (currentMath) {
+          flushMath();
+        } else {
+          flushList();
+          flushTable();
+          currentMath = [];
+        }
+        continue;
+      }
+      if (trimmed.startsWith('$$') && !trimmed.endsWith('$$')) {
+        flushList();
+        flushTable();
+        currentMath = [trimmed.slice(2)];
+        continue;
+      }
+      if (currentMath) {
+        if (trimmed.endsWith('$$')) {
+          currentMath.push(trimmed.slice(0, -2));
+          flushMath();
+        } else {
+          currentMath.push(rawLine);
+        }
         continue;
       }
 
@@ -506,6 +617,7 @@ export default function AiConsultationPanel({ user = null, stocks = [] }) {
     flushList();
     flushTable();
     flushCode();
+    flushMath();
 
     return blocks;
   };

@@ -218,6 +218,7 @@ Sebelum menyajikan jawaban akhir, lakukan proses pemikiran terstruktur di dalam 
 GAYA KOMUNIKASI & FORMATTING:
 - Bahasa: Bahasa Indonesia profesional, tegas, empatik terhadap kerugian, dan solutif.
 - Sajikan poin rekomendasi dalam bentuk bullet points atau tabel simulasi sederhana bila membahas perbandingan saham.
+- Untuk rumus perhitungan matematika atau keuangan (seperti persentase rugi, averaging, atau rasio), gunakan notasi LaTeX standar ($$ untuk rumus display math satu baris, atau $...$ untuk inline) agar ter-render presisi dan profesional.
 - Berikan disclaimer elegan di akhir: "Catatan: Analisis kuantitatif ini disusun untuk edukasi & pertimbangan risiko, bukan paksaan transaksi."
 
 ${dataBlock}`;
