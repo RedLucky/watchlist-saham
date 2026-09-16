@@ -55,3 +55,4 @@ $$Z = \frac{\text{Current Multiple} - \mu}{\sigma}$$
 - Mesin kalkulasi murni: `src/lib/valuationBands.js`.
 - Integrasi API: Disertakan pada rute `GET /api/stocks/[ticker]` sebagai `stockDetail.valuationBands`.
 - Komponen Antarmuka: `src/components/ValuationBandsPanel.jsx` terpasang di Stock Explorer dengan tombol alih antara P/E dan P/BV.
+

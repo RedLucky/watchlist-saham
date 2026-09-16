@@ -227,3 +227,4 @@ function calculateFxShockImpact(positions, totalValue) {
   });
   return Number(netImpactPct.toFixed(2));
 }
+

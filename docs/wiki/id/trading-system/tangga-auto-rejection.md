@@ -48,3 +48,4 @@ $$\text{Harga ARB} = \max\left(50, \text{roundToIDXTick}\left(P_{\text{prev}} \t
 - Integrasi API: Disematkan di `GET /api/stocks/[ticker]` sebagai `stockDetail.executionLimits`.
 - Komponen visual: `src/components/AutoRejectionLadderPanel.jsx`.
 - Pengujian otomatis: `tests/idxExecutionLimits.test.js`.
+

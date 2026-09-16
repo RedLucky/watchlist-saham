@@ -4,6 +4,15 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-09-16] feat | Bloomberg Terminal Fase 5: Rotasi Sektoral RRG, Sentimen Berita NSENT, dan Berkas Riset AI BI
+- Membangun `src/lib/sectorRrgEngine.js` (Bloomberg `RRG` / `SECT`): matriks rotasi 4-kuadran (Leading, Weakening, Lagging, Improving) menghitung RS-Ratio dan RS-Momentum terhadap IHSG acuan.
+- Membangun `src/lib/newsSentimentEngine.js` (Bloomberg `NSENT`): indeks kuantitatif sentimen berita (-100 s/d +100), pembobotan risiko defensif kata kunci, dan deteksi otomatis katalis korporasi.
+- Mengintegrasikan berkas riset ekuitas AI (Bloomberg `BI`) dan sentimen NSENT ke dalam respons `GET /api/stocks/[ticker]`.
+- Mengintegrasikan matriks rotasi sektor RRG ke dalam `GET /api/sectors` dan menambahkan tombol interaktif pada `SectorBar.jsx`.
+- Membangun komponen UI: `SectorRrgPanel.jsx` dan `BloombergIntelligencePanel.jsx` yang disematkan di Stock Explorer.
+- Menambahkan pengujian unit: `tests/sectorRrg.test.js` dan `tests/newsSentiment.test.js` (193/193 total pengujian lulus 100%).
+- Mempublikasikan dokumentasi ilmiah: `docs/wiki/id/trading-system/rotasi-sektoral-rrg.md`, `sentimen-berita-katalis.md`, dan `docs/wiki/id/financial-engine/berkas-riset-ai-bi.md`.
+
 ## [2026-09-16] feat | Bloomberg Terminal Fase 4: Peta KSEI OWN/HDS, Konsentrasi Broker BRKR, dan Volume Profile GP
 - Membangun `src/lib/kseiShiftEngine.js` (Bloomberg `OWN` & `HDS`): pergeseran kepemilikan institusi bulanan (MoM Shift), divergensi kepemilikan ritel vs institusi, serta rincian sub-kategori pemegang domestik (Dana Pensiun, Reksa Dana, Asuransi, Bank, Sekuritas).
 - Membangun `src/lib/brokerConcentrationEngine.js` (Bloomberg `BRKR`): rasio konsentrasi broker institusi (CR1, CR3, CR5) dan Bandarmologi Flow Index (BFI).

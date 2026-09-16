@@ -55,3 +55,4 @@ $$\sum_{j = \text{DownIdx}}^{\text{UpIdx}} \text{Volume}_j \ge 0.70 \times \text
 - API integration: Embedded in `GET /api/stocks/[ticker]` as `stockDetail.volumeProfile`.
 - UI presentation: Rendered in `src/components/SmartMoneyLiquidityPanel.jsx`.
 - Unit test suite: `tests/volumeProfile.test.js`.
+

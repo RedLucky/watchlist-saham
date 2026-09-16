@@ -65,3 +65,4 @@ $$\text{EVA} = \text{Invested Capital} \times \left(\frac{\text{Economic Spread}
 - Pure calculation engine: `src/lib/waccEngine.js`.
 - API integration: Embedded into `GET /api/stocks/[ticker]` as `stockDetail.wacc`.
 - Interactive UI component: `src/components/EconomicValuePanel.jsx` in Stock Explorer featuring capital structure weights ($W_e$ vs $W_d$) and economic spread indicators.
+

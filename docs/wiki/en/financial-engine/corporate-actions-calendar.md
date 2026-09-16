@@ -46,3 +46,4 @@ In financial markets, stock price re-ratings are overwhelmingly catalyzed by cor
 - API integration: Injected in `GET /api/stocks/[ticker]` as `stockDetail.corporateActions`.
 - UI component: `src/components/CorporateActionsPanel.jsx`.
 - Unit test suite: `tests/corporateAction.test.js`.
+

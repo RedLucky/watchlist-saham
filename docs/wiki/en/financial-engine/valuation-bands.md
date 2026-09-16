@@ -61,3 +61,4 @@ $$Z = \frac{\text{Current Multiple} - \mu}{\sigma}$$
 - Pure calculation engine: `src/lib/valuationBands.js`.
 - API integration: Embedded into `GET /api/stocks/[ticker]` as `stockDetail.valuationBands`.
 - Interactive UI component: `src/components/ValuationBandsPanel.jsx` in Stock Explorer with toggle between P/E and P/BV bands.
+

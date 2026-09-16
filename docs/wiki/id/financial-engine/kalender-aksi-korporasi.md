@@ -46,3 +46,4 @@ Pada pasar modal, pergerakan harga saham dan re-rating valuasi paling sering dip
 - Integrasi API: Disematkan di `GET /api/stocks/[ticker]` sebagai `stockDetail.corporateActions`.
 - Komponen visual: `src/components/CorporateActionsPanel.jsx`.
 - Pengujian otomatis: `tests/corporateAction.test.js`.
+

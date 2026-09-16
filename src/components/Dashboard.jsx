@@ -32,6 +32,7 @@ export default function Dashboard() {
  const [customWeights, setCustomWeights] = useState(null);
  const [stocks, setStocks] = useState([]);
  const [sectors, setSectors] = useState([]);
+ const [sectorRrg, setSectorRrg] = useState([]);
  const [market, setMarket] = useState(null);
  const [modeInfo, setModeInfo] = useState(null);
  const [styleInfo, setStyleInfo] = useState(null);
@@ -99,6 +100,7 @@ export default function Dashboard() {
  setModeInfo(stocksData.mode);
  setStyleInfo(stocksData.style);
  setSectors(sectorsData.sectors);
+ setSectorRrg(sectorsData.rrg || []);
  setMarket(marketData);
  setLastUpdated(new Date().toLocaleString('id-ID'));
 
@@ -243,8 +245,8 @@ export default function Dashboard() {
                 )}
               </div>
 
- {/* Sector Bar */}
- <SectorBar sectors={sectors} />
+  {/* Sector Bar & Bloomberg RRG */}
+  <SectorBar sectors={sectors} rrg={sectorRrg} />
 
  {/* Main Stock Ranking Table */}
  <StockTable stocks={stocks} loading={loading} />

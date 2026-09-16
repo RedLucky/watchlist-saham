@@ -68,3 +68,4 @@ $$\text{Harian / Lot} = \frac{\text{Tahunan / Lot}}{365}$$
 - Integrasi API: Disematkan di `GET /api/stocks/[ticker]` sebagai `stockDetail.dividendTrap`.
 - Komponen visual: `src/components/DividendTrapPanel.jsx`.
 - Pengujian otomatis: `tests/dividendTrap.test.js`.
+

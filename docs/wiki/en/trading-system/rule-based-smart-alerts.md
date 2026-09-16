@@ -40,3 +40,4 @@ The **Bloomberg ALRT (`ALRT <GO>`)** system synthesizes multi-factor conditions 
 - API integration: Returned in `GET /api/stocks/[ticker]` as `stockDetail.smartAlerts`.
 - Visual presentation: Live alert banners inside `src/components/AutoRejectionLadderPanel.jsx`.
 - Unit test suite: `tests/smartAlert.test.js`.
+

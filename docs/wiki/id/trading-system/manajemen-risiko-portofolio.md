@@ -47,3 +47,4 @@ $$\text{VaR}_{95\%} = 1.645 \times \sigma_{\text{harian}} \times \beta_{\text{po
 - Integrasi API: Disematkan di `GET /api/portfolio` sebagai `riskAnalytics`.
 - Komponen visual: Kokpit terpadu pada `src/components/PortfolioPanel.jsx`.
 - Pengujian otomatis: `tests/portfolioRisk.test.js`.
+

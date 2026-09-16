@@ -45,3 +45,4 @@ $$\Delta\text{Retail} = \text{Retail}\%_T - \text{Retail}\%_{T-1}$$
 - API integration: Returned inside `GET /api/stocks/[ticker]` as `stockDetail.kseiShift`.
 - UI presentation: Rendered in `src/components/SmartMoneyLiquidityPanel.jsx`.
 - Unit test suite: `tests/kseiShift.test.js`.
+

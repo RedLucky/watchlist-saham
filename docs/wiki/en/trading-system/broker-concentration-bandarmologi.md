@@ -34,3 +34,4 @@ $$\text{CR}_k = \sum_{j=1}^{k} \frac{\text{Turnover}_j}{\text{Total Turnover}} \
 - API integration: Embedded in `GET /api/stocks/[ticker]` as `stockDetail.brokerConcentration`.
 - UI presentation: Rendered in `src/components/SmartMoneyLiquidityPanel.jsx`.
 - Unit test suite: `tests/brokerConcentration.test.js`.
+

@@ -69,3 +69,4 @@ export function calculateBrokerConcentration({
       : `Transaksi terdistribusi merata di pasar (${cr3}%)`
   };
 }
+

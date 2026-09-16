@@ -92,3 +92,4 @@ describe('Bloomberg PBND: Historical Valuation Bands Suite', () => {
     assert.strictEqual(all.pbv.metricName, 'PBV');
   });
 });
+

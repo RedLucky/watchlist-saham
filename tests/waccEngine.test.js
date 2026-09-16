@@ -94,3 +94,4 @@ describe('Bloomberg WACC & EVA: Economic Value Added Suite', () => {
     assert.strictEqual(result, null, 'Harus null jika total capital <= 0');
   });
 });
+

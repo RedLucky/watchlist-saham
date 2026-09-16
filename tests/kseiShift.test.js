@@ -76,3 +76,4 @@ describe('Bloomberg OWN / HDS: KSEI Ownership Shift Suite', () => {
     assert.strictEqual(result, null);
   });
 });
+

@@ -65,3 +65,4 @@ $$\text{EVA} = \text{Invested Capital} \times \left(\frac{\text{Economic Spread}
 - Mesin kalkulasi murni: `src/lib/waccEngine.js`.
 - Integrasi API: Disertakan pada rute `GET /api/stocks/[ticker]` sebagai `stockDetail.wacc`.
 - Komponen Antarmuka: `src/components/EconomicValuePanel.jsx` terpasang di Stock Explorer dengan diagram bobot modal ($W_e$ vs $W_d$) dan status Economic Spread.
+

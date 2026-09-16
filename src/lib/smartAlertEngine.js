@@ -155,3 +155,4 @@ export function formatDiscordAlertEmbed(alert, ticker) {
     ]
   };
 }
+

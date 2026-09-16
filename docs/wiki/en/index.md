@@ -25,6 +25,7 @@
 * [ROIC vs WACC & EVA Engine](./financial-engine/wacc-economic-value.md) — Bloomberg WACC Cost of Capital, CAPM Ke, and Economic Value Added (Value Creator vs Destroyer).
 * [Dividend Trap & Cashflow Run-Rate (DTRP / DVD)](./financial-engine/dividend-trap-analyzer.md) — Dividend sustainability, FCF coverage, ex-date drop analysis, and 12-month passive income cashflow run-rate.
 * [Corporate Actions & Catalyst Calendar (CA)](./financial-engine/corporate-actions-calendar.md) — Real-time event diary and countdowns for dividends, RUPS (AGM/EGM), and seasonal financial reporting windows.
+* [Bloomberg Intelligence Dossier (BI)](./financial-engine/bloomberg-intelligence-dossier.md) — AI-driven institutional equity research synthesis, valuation perspectives, and consensus ratings.
 
 ---
 
@@ -39,3 +40,5 @@
 * [KSEI Smart Money Ownership Map & MoM Shift (OWN / HDS)](./trading-system/ksei-smart-money-shift.md) — Monthly institutional delta, retail vs institutional divergence, and scriptless registry analytics.
 * [Volume Profile & Value Area (GP: POC, VAH, VAL)](./trading-system/volume-profile-value-area.md) — Horizontal volume distribution, Point of Control (POC), 70% Value Area, and market auction context.
 * [Broker Concentration & Bandarmologi Flow (BRKR)](./trading-system/broker-concentration-bandarmologi.md) — Institutional concentration ratios (CR1, CR3, CR5) and Bandarmologi Flow Index (BFI).
+* [Sector Relative Rotation Graph (RRG / SECT)](./trading-system/sector-relative-rotation.md) — 4-quadrant sector rotation matrix (Leading, Weakening, Lagging, Improving) vs IHSG.
+* [News Sentiment & Catalyst Tagging (NSENT)](./trading-system/news-sentiment-catalyst.md) — Algorithmic news sentiment index (-100 to +100) and corporate catalyst detection.

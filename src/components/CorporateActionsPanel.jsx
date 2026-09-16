@@ -81,3 +81,4 @@ export default function CorporateActionsPanel({ corporateActions = [], ticker = 
     </div>
   );
 }
+

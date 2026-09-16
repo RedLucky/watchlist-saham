@@ -84,3 +84,4 @@ describe('Bloomberg DTRP & DVD: Dividend Trap & Run-Rate Engine', () => {
     assert.strictEqual(result.safetyScore, 50);
   });
 });
+

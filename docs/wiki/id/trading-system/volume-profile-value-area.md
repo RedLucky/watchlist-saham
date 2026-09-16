@@ -42,3 +42,4 @@ Dimulai dari bin dengan volume terbesar (POC), algoritma berekspansi ke atas dan
 - Integrasi API: Disematkan di `GET /api/stocks/[ticker]` sebagai `stockDetail.volumeProfile`.
 - Komponen visual: Panel terpadu pada `src/components/SmartMoneyLiquidityPanel.jsx`.
 - Pengujian otomatis: `tests/volumeProfile.test.js`.
+

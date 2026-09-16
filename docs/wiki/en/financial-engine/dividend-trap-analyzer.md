@@ -70,3 +70,4 @@ $$\text{Daily / Lot} = \frac{\text{Annual / Lot}}{365}$$
 - API integration: Injected in `GET /api/stocks/[ticker]` as `stockDetail.dividendTrap`.
 - UI component: `src/components/DividendTrapPanel.jsx`.
 - Unit test suite: `tests/dividendTrap.test.js`.
+

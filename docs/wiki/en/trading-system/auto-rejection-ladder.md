@@ -54,3 +54,4 @@ $$\text{Ticks}(P_1, P_2) = \sum_{p = P_1}^{P_2 - 1} 1 \quad \text{where each ste
 - API integration: Returned inside `GET /api/stocks/[ticker]` as `stockDetail.executionLimits`.
 - UI component: `src/components/AutoRejectionLadderPanel.jsx`.
 - Unit test suite: `tests/idxExecutionLimits.test.js`.
+

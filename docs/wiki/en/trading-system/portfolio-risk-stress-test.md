@@ -61,3 +61,4 @@ $$\Delta V_{\text{scenario}} = V_{\text{total}} \times \sum_{i=1}^{M} \left(w_i 
 - API integration: Embedded in `GET /api/portfolio` response as `riskAnalytics`.
 - UI cockpit: Interactive Bloomberg PORT/MARS dashboard integrated into `src/components/PortfolioPanel.jsx`.
 - Unit test suite: `tests/portfolioRisk.test.js`.
+

@@ -54,3 +54,4 @@ describe('Bloomberg CA: Corporate Actions & Catalyst Timeline Engine', () => {
     assert.ok(timeline.length > 0);
   });
 });
+

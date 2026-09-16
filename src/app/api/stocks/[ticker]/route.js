@@ -17,6 +17,7 @@ import { evaluateStockAlerts } from '@/lib/smartAlertEngine';
 import { calculateKseiOwnershipShift } from '@/lib/kseiShiftEngine';
 import { calculateBrokerConcentration } from '@/lib/brokerConcentrationEngine';
 import { calculateVolumeProfile } from '@/lib/volumeProfileEngine';
+import { analyzeNewsSentiment } from '@/lib/newsSentimentEngine';
 
 export const dynamic = 'force-dynamic';
 
@@ -521,6 +522,42 @@ export async function GET(request, { params }) {
       console.warn('[GP] Error calculating volume profile:', vpErr.message);
     }
 
+    // Bloomberg BI & NSENT: AI Research Dossier & News Sentiment
+    let aiResearch = null;
+    let newsSentiment = null;
+    try {
+      aiResearch = await prisma.aiStockResearch.findFirst({
+        where: { ticker },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          ticker: true,
+          content: true,
+          buyHoldSell: true,
+          score: true,
+          valuation: true,
+          trend: true,
+          createdAt: true
+        }
+      });
+
+      const articles = [];
+      if (aiResearch?.content) {
+        const lines = aiResearch.content
+          .split('\n')
+          .filter(l => l.trim().length > 15 && !l.startsWith('#'))
+          .slice(0, 10);
+
+        lines.forEach((line, idx) => {
+          articles.push({ id: idx, title: line, summary: '' });
+        });
+      }
+
+      newsSentiment = analyzeNewsSentiment(articles);
+    } catch (aiErr) {
+      console.warn('[BI] Error fetching AI research dossier:', aiErr.message);
+    }
+
     const responseData = {
       ...enrichedStock,
       kseiLatest,
@@ -542,6 +579,8 @@ export async function GET(request, { params }) {
       kseiShift,
       brokerConcentration,
       volumeProfile,
+      aiResearch,
+      newsSentiment,
       scores: {
         fundamental: fundamentalScore,
         technical: technicalScore,

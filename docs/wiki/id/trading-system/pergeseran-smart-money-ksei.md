@@ -43,3 +43,4 @@ $$\Delta\text{Ritel} = \text{Ritel}\%_T - \text{Ritel}\%_{T-1}$$
 - Integrasi API: Disematkan pada respons `GET /api/stocks/[ticker]` sebagai `stockDetail.kseiShift`.
 - Komponen visual: Panel terpadu pada `src/components/SmartMoneyLiquidityPanel.jsx`.
 - Pengujian otomatis: `tests/kseiShift.test.js`.
+

@@ -40,3 +40,4 @@ Modul **Bloomberg ALRT (`ALRT <GO>`)** mengevaluasi 4 kondisi krusial:
 - Integrasi API: Disematkan di `GET /api/stocks/[ticker]` sebagai `stockDetail.smartAlerts`.
 - Tampilan antarmuka: Banner notifikasi langsung pada `src/components/AutoRejectionLadderPanel.jsx`.
 - Pengujian otomatis: `tests/smartAlert.test.js`.
+

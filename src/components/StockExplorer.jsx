@@ -10,6 +10,7 @@ import DividendTrapPanel from './DividendTrapPanel';
 import CorporateActionsPanel from './CorporateActionsPanel';
 import AutoRejectionLadderPanel from './AutoRejectionLadderPanel';
 import SmartMoneyLiquidityPanel from './SmartMoneyLiquidityPanel';
+import BloombergIntelligencePanel from './BloombergIntelligencePanel';
 import {
   roundToIDXTick,
   calculateMonitorMetrics,
@@ -2659,6 +2660,16 @@ export default function StockExplorer({ user }) {
                     brokerConcentration={stockDetail.brokerConcentration}
                     volumeProfile={stockDetail.volumeProfile}
                     ticker={stockDetail.ticker}
+                  />
+                )}
+
+                {/* ── BLOOMBERG BI & NSENT: AI INTELLIGENCE DOSSIER & NEWS SENTIMENT ── */}
+                {(stockDetail?.aiResearch || stockDetail?.newsSentiment) && (
+                  <BloombergIntelligencePanel
+                    aiResearch={stockDetail.aiResearch}
+                    newsSentiment={stockDetail.newsSentiment}
+                    ticker={stockDetail.ticker}
+                    onOpenFullResearch={() => setShowAiModal(true)}
                   />
                 )}
               </div>

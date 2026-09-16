@@ -1,24 +1,28 @@
 'use client';
 
+import { useState } from 'react';
+import SectorRrgPanel from './SectorRrgPanel';
+
 // IDX-IC sector labels (Indonesian)
 const sectorNameID = {
- Financials: 'Keuangan',
- Energy: 'Energi',
- 'Basic Materials': 'Barang Baku',
- Industrials: 'Perindustrian',
- 'Consumer Non-Cyclicals': 'Konsumen Primer',
- 'Consumer Cyclicals': 'Konsumen Non-Primer',
- Healthcare: 'Kesehatan',
- 'Properties & Real Estate': 'Properti & Real Estat',
- Technology: 'Teknologi',
- Infrastructures: 'Infrastruktur',
- 'Transportation & Logistics': 'Transportasi & Logistik',
- General: 'Lainnya',
- INDEX: 'Indeks',
+  Financials: 'Keuangan',
+  Energy: 'Energi',
+  'Basic Materials': 'Barang Baku',
+  Industrials: 'Perindustrian',
+  'Consumer Non-Cyclicals': 'Konsumen Primer',
+  'Consumer Cyclicals': 'Konsumen Non-Primer',
+  Healthcare: 'Kesehatan',
+  'Properties & Real Estate': 'Properti & Real Estat',
+  Technology: 'Teknologi',
+  Infrastructures: 'Infrastruktur',
+  'Transportation & Logistics': 'Transportasi & Logistik',
+  General: 'Lainnya',
+  INDEX: 'Indeks',
 };
 
-export default function SectorBar({ sectors }) {
- if (!sectors || sectors.length === 0) return null;
+export default function SectorBar({ sectors, rrg = [] }) {
+  const [showRrg, setShowRrg] = useState(false);
+  if (!sectors || sectors.length === 0) return null;
 
   const getTrendColor = (trend, index) => {
     if (index < 2) {
@@ -46,9 +50,21 @@ export default function SectorBar({ sectors }) {
             Rotasi & Kekuatan Sektor BEI
           </h2>
         </div>
-        <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
-          Performa 5 Hari Terakhir
-        </span>
+        <div className="flex items-center gap-2">
+          {rrg && rrg.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowRrg(!showRrg)}
+              className="px-2.5 py-1 text-[11px] font-bold rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50/80 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-all flex items-center gap-1 shadow-xs"
+            >
+              <span>🧭</span>
+              <span>{showRrg ? 'Tutup RRG' : 'Bloomberg RRG'}</span>
+            </button>
+          )}
+          <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
+            Performa 5 Hari Terakhir
+          </span>
+        </div>
       </div>
 
       <div className="flex gap-2.5 overflow-x-auto pb-1.5 -mx-1 px-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden snap-x">
@@ -78,6 +94,12 @@ export default function SectorBar({ sectors }) {
           </div>
         ))}
       </div>
+
+      {showRrg && rrg && rrg.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800 animate-in fade-in duration-300">
+          <SectorRrgPanel rrg={rrg} />
+        </div>
+      )}
     </div>
   );
 }

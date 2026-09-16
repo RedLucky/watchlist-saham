@@ -25,6 +25,7 @@
 * [Kalkulator WACC & Nilai Tambah EVA](./financial-engine/wacc-nilai-ekonomi.md) — Mesin biaya modal Bloomberg WACC, CAPM Ke, dan Economic Value Added (Value Creator vs Destroyer).
 * [Analisis Jebakan Dividen & Run-Rate Pasif (DTRP / DVD)](./financial-engine/jebakan-dividen-dtrp.md) — Evaluasi keamanan dividen, kecukupan FCF, risiko ex-date drop, dan proyeksi arus kas 12 bulan.
 * [Kalender Aksi Korporasi & Katalis Pasar (CA)](./financial-engine/kalender-aksi-korporasi.md) — Jadwal dan hitung mundur dividen tunai, RUPS (RUPST/RUPSLB), dan jendela musim rilis laporan keuangan.
+* [Berkas Riset Ekuitas AI (Bloomberg Intelligence / BI)](./financial-engine/berkas-riset-ai-bi.md) — Sintesis laporan riset institusional bertenaga AI lokal, konsensus rekomendasi, dan ulasan valuasi wajar.
 
 ---
 
@@ -39,3 +40,5 @@
 * [Peta Kepemilikan Smart Money KSEI & Pergeseran MoM (OWN / HDS)](./trading-system/pergeseran-smart-money-ksei.md) — Delta kepemilikan institusi bulanan, divergensi ritel vs institusi, dan registri KSEI.
 * [Volume Profile & Value Area (GP: POC, VAH, VAL)](./trading-system/volume-profile-value-area.md) — Pemetaan volume horizontal, Point of Control (POC), 70% Value Area, dan teori lelang pasar.
 * [Konsentrasi Broker & Aliran Bandarmologi (BRKR)](./trading-system/konsentrasi-broker-bandarmologi.md) — Rasio konsentrasi broker institusi (CR1, CR3, CR5) dan Bandarmologi Flow Index (BFI).
+* [Rotasi Sektoral Relatif RRG (RRG / SECT)](./trading-system/rotasi-sektoral-rrg.md) — Matriks 4-kuadran siklus rotasi sektor (Leading, Weakening, Lagging, Improving) terhadap IHSG.
+* [Skor Sentimen Berita & Katalis Pasar (NSENT)](./trading-system/sentimen-berita-katalis.md) — Indeks sentimen berita kuantitatif (-100 s/d +100) dan deteksi otomatis katalis korporasi.

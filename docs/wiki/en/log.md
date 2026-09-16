@@ -4,6 +4,15 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-09-16] feat | Bloomberg Terminal Phase 5: RRG Sector Relative Rotation, NSENT News Sentiment, and BI AI Dossier
+- Implemented `src/lib/sectorRrgEngine.js` (Bloomberg `RRG` / `SECT`): 4-quadrant relative rotation graph (Leading, Weakening, Lagging, Improving) calculating RS-Ratio and RS-Momentum vs IHSG benchmark.
+- Implemented `src/lib/newsSentimentEngine.js` (Bloomberg `NSENT`): algorithmic news sentiment score (-100 to +100), risk-weighted keyword aggregation, and automated corporate catalyst tagging.
+- Integrated Bloomberg Intelligence (Bloomberg `BI`) AI research dossier and NSENT sentiment into `GET /api/stocks/[ticker]`.
+- Integrated RRG sector rotation matrix into `GET /api/sectors` and added interactive toggle inside `SectorBar.jsx`.
+- Built UI components: `SectorRrgPanel.jsx` and `BloombergIntelligencePanel.jsx` mounted in Stock Explorer.
+- Added unit tests: `tests/sectorRrg.test.js` and `tests/newsSentiment.test.js` (193/193 total tests passing).
+- Published quantitative documentation: `docs/wiki/en/trading-system/sector-relative-rotation.md`, `news-sentiment-catalyst.md`, and `docs/wiki/en/financial-engine/bloomberg-intelligence-dossier.md`.
+
 ## [2026-09-16] feat | Bloomberg Terminal Phase 4: OWN/HDS KSEI Shift, BRKR Broker Concentration, and GP Volume Profile
 - Implemented `src/lib/kseiShiftEngine.js` (Bloomberg `OWN` & `HDS`): Month-over-Month (MoM) institutional ownership shifts, retail vs institutional divergence, and domestic sub-category breakdown (PF, MF, IS, IB, SC).
 - Implemented `src/lib/brokerConcentrationEngine.js` (Bloomberg `BRKR`): broker concentration ratios (CR1, CR3, CR5) and Bandarmologi Flow Index (BFI).

@@ -34,3 +34,4 @@ $$\text{CR}_k = \sum_{j=1}^{k} \frac{\text{Nilai Transaksi}_j}{\text{Total Nilai
 - Integrasi API: Disematkan di `GET /api/stocks/[ticker]` sebagai `stockDetail.brokerConcentration`.
 - Komponen visual: Panel terpadu pada `src/components/SmartMoneyLiquidityPanel.jsx`.
 - Pengujian otomatis: `tests/brokerConcentration.test.js`.
+
