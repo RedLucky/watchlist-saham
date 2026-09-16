@@ -4,6 +4,15 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-09-16] feat | Bloomberg Terminal Phase 4: OWN/HDS KSEI Shift, BRKR Broker Concentration, and GP Volume Profile
+- Implemented `src/lib/kseiShiftEngine.js` (Bloomberg `OWN` & `HDS`): Month-over-Month (MoM) institutional ownership shifts, retail vs institutional divergence, and domestic sub-category breakdown (PF, MF, IS, IB, SC).
+- Implemented `src/lib/brokerConcentrationEngine.js` (Bloomberg `BRKR`): broker concentration ratios (CR1, CR3, CR5) and Bandarmologi Flow Index (BFI).
+- Implemented `src/lib/volumeProfileEngine.js` (Bloomberg `GP`): horizontal volume profile bins, Point of Control (POC), 70% Value Area (VAH & VAL), and auction context.
+- Integrated KSEI shift, broker concentration, and volume profile into `GET /api/stocks/[ticker]`.
+- Built UI component: `SmartMoneyLiquidityPanel.jsx` mounted in `StockExplorer.jsx`.
+- Added unit tests: `tests/kseiShift.test.js`, `tests/brokerConcentration.test.js`, and `tests/volumeProfile.test.js` (186/186 tests passing).
+- Published quantitative documentation: `docs/wiki/en/trading-system/ksei-smart-money-shift.md`, `volume-profile-value-area.md`, and `broker-concentration-bandarmologi.md`.
+
 ## [2026-09-16] feat | Bloomberg Terminal Phase 3: ARA/ARB Limits & Tick Ladder, PORT/MARS Risk Cockpit, and ALRT Engine
 - Implemented `src/lib/idxExecutionLimits.js` (Bloomberg `ARA` / `ARB`): exact daily price limits (35%, 25%, 20%, 10%), precision tick counting via `countTicksBetween`, and 7-step execution ladder.
 - Implemented `src/lib/portfolioRiskEngine.js` (Bloomberg `PORT` & `MARS`): Weighted Portfolio Beta ($\beta_{\text{port}}$), Parametric 1-Day VaR 95%, concentration checks, and 4 macro stress testing shock scenarios.

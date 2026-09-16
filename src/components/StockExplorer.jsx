@@ -9,6 +9,7 @@ import ScenarioForecaster from './ScenarioForecaster';
 import DividendTrapPanel from './DividendTrapPanel';
 import CorporateActionsPanel from './CorporateActionsPanel';
 import AutoRejectionLadderPanel from './AutoRejectionLadderPanel';
+import SmartMoneyLiquidityPanel from './SmartMoneyLiquidityPanel';
 import {
   roundToIDXTick,
   calculateMonitorMetrics,
@@ -2647,6 +2648,16 @@ export default function StockExplorer({ user }) {
                   <AutoRejectionLadderPanel
                     executionLimits={stockDetail.executionLimits}
                     smartAlerts={stockDetail.smartAlerts || []}
+                    ticker={stockDetail.ticker}
+                  />
+                )}
+
+                {/* ── BLOOMBERG OWN, BRKR, & GP: SMART MONEY & LIQUIDITY ── */}
+                {(stockDetail?.kseiShift || stockDetail?.brokerConcentration || stockDetail?.volumeProfile) && (
+                  <SmartMoneyLiquidityPanel
+                    kseiShift={stockDetail.kseiShift}
+                    brokerConcentration={stockDetail.brokerConcentration}
+                    volumeProfile={stockDetail.volumeProfile}
                     ticker={stockDetail.ticker}
                   />
                 )}

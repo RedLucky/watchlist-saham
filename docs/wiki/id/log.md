@@ -4,6 +4,15 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-09-16] feat | Bloomberg Terminal Fase 4: Peta KSEI OWN/HDS, Konsentrasi Broker BRKR, dan Volume Profile GP
+- Membangun `src/lib/kseiShiftEngine.js` (Bloomberg `OWN` & `HDS`): pergeseran kepemilikan institusi bulanan (MoM Shift), divergensi kepemilikan ritel vs institusi, serta rincian sub-kategori pemegang domestik (Dana Pensiun, Reksa Dana, Asuransi, Bank, Sekuritas).
+- Membangun `src/lib/brokerConcentrationEngine.js` (Bloomberg `BRKR`): rasio konsentrasi broker institusi (CR1, CR3, CR5) dan Bandarmologi Flow Index (BFI).
+- Membangun `src/lib/volumeProfileEngine.js` (Bloomberg `GP`): pemetaan horizontal volume bins, Point of Control (POC), 70% Value Area (VAH & VAL), dan status lelang harga pasar.
+- Mengintegrasikan hasil kalkulasi KSEI shift, konsentrasi broker, dan volume profile ke respons `GET /api/stocks/[ticker]`.
+- Membangun komponen antarmuka visual: `SmartMoneyLiquidityPanel.jsx` yang disematkan di `StockExplorer.jsx`.
+- Menambahkan pengujian unit komprehensif pada `tests/kseiShift.test.js`, `tests/brokerConcentration.test.js`, dan `tests/volumeProfile.test.js` (186/186 pengujian lulus 100%).
+- Mempublikasikan dokumentasi ilmiah pada `docs/wiki/id/trading-system/pergeseran-smart-money-ksei.md`, `volume-profile-value-area.md`, dan `konsentrasi-broker-bandarmologi.md`.
+
 ## [2026-09-16] feat | Bloomberg Terminal Fase 3: Batas Regulasi ARA/ARB, Tangga Fraksi, Manajemen Risiko PORT/MARS, dan Mesin ALRT
 - Membangun `src/lib/idxExecutionLimits.js` (Bloomberg `ARA` / `ARB`): batas persentase simetris BEI (35%, 25%, 20%, 10%), perhitungan presisi jarak fraksi (`countTicksBetween`), dan tangga eksekusi 7 tingkat.
 - Membangun `src/lib/portfolioRiskEngine.js` (Bloomberg `PORT` & `MARS`): Weighted Portfolio Beta ($\beta_{\text{port}}$), Value at Risk 1-hari (VaR 95%), deteksi konsentrasi emiten/sektor, serta 4 skenario uji ketahanan makro (IHSG crash, BI rate hike, komoditas, pelemahan rupiah).

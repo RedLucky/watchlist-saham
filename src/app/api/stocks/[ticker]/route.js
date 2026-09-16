@@ -14,6 +14,9 @@ import { analyzeDividendTrap } from '@/lib/dividendTrapEngine';
 import { buildCorporateActionsTimeline } from '@/lib/corporateActionEngine';
 import { calculateExecutionLimits } from '@/lib/idxExecutionLimits';
 import { evaluateStockAlerts } from '@/lib/smartAlertEngine';
+import { calculateKseiOwnershipShift } from '@/lib/kseiShiftEngine';
+import { calculateBrokerConcentration } from '@/lib/brokerConcentrationEngine';
+import { calculateVolumeProfile } from '@/lib/volumeProfileEngine';
 
 export const dynamic = 'force-dynamic';
 
@@ -484,6 +487,40 @@ export async function GET(request, { params }) {
       console.warn('[ALRT] Error evaluating alerts:', alertErr.message);
     }
 
+    // Bloomberg OWN / HDS: KSEI Smart Money Ownership MoM Shift
+    let kseiShift = null;
+    try {
+      kseiShift = calculateKseiOwnershipShift({
+        kseiLatest,
+        kseiHistory
+      });
+    } catch (kseiErr) {
+      console.warn('[KSEI] Error calculating ownership shift:', kseiErr.message);
+    }
+
+    // Bloomberg BRKR: Broker Concentration Ratios
+    let brokerConcentration = null;
+    try {
+      brokerConcentration = calculateBrokerConcentration({
+        bandarmologi,
+        technicals
+      });
+    } catch (brkrErr) {
+      console.warn('[BRKR] Error calculating broker concentration:', brkrErr.message);
+    }
+
+    // Bloomberg GP: Volume Profile (POC, VAH, VAL)
+    let volumeProfile = null;
+    try {
+      volumeProfile = calculateVolumeProfile({
+        prices: technicals?.prices,
+        volumes: technicals?.volumes,
+        currentPrice: stock.price
+      });
+    } catch (vpErr) {
+      console.warn('[GP] Error calculating volume profile:', vpErr.message);
+    }
+
     const responseData = {
       ...enrichedStock,
       kseiLatest,
@@ -502,6 +539,9 @@ export async function GET(request, { params }) {
       corporateActions,
       executionLimits,
       smartAlerts,
+      kseiShift,
+      brokerConcentration,
+      volumeProfile,
       scores: {
         fundamental: fundamentalScore,
         technical: technicalScore,

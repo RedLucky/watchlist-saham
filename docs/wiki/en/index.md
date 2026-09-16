@@ -36,3 +36,6 @@
 * [Auto-Rejection Limits & Tick Ladder (ARA / ARB)](./trading-system/auto-rejection-ladder.md) — BEI official price limits, precision tick distance counting, and 7-step execution ladder.
 * [Portfolio Risk & Macro Stress Testing (PORT / MARS)](./trading-system/portfolio-risk-stress-test.md) — Weighted Portfolio Beta, 1-Day VaR 95%, and multi-scenario macro shock testing.
 * [Rule-Based Smart Alerts & Webhooks (ALRT)](./trading-system/rule-based-smart-alerts.md) — Real-time signal triggers for ARA/ARB proximity, deep valuation discount, dividend trap, and volume spikes.
+* [KSEI Smart Money Ownership Map & MoM Shift (OWN / HDS)](./trading-system/ksei-smart-money-shift.md) — Monthly institutional delta, retail vs institutional divergence, and scriptless registry analytics.
+* [Volume Profile & Value Area (GP: POC, VAH, VAL)](./trading-system/volume-profile-value-area.md) — Horizontal volume distribution, Point of Control (POC), 70% Value Area, and market auction context.
+* [Broker Concentration & Bandarmologi Flow (BRKR)](./trading-system/broker-concentration-bandarmologi.md) — Institutional concentration ratios (CR1, CR3, CR5) and Bandarmologi Flow Index (BFI).

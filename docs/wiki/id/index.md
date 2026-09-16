@@ -36,3 +36,6 @@
 * [Batas Auto-Rejection & Tangga Fraksi (ARA / ARB)](./trading-system/tangga-auto-rejection.md) — Batas harga regulasi BEI, perhitungan presisi jarak fraksi, dan tangga harga 7 tingkat.
 * [Manajemen Risiko Portofolio & Stress Testing (PORT / MARS)](./trading-system/manajemen-risiko-portofolio.md) — Weighted Beta portofolio, VaR 95% 1-hari, dan uji ketahanan skenario guncangan makro.
 * [Peringatan Pintar Berbasis Aturan (ALRT)](./trading-system/peringatan-pintar-alrt.md) — Sinyal otomatis kedekatan ARA/ARB, diskon valuasi ekstrem, jebakan dividen, dan lonjakan volume transaksi.
+* [Peta Kepemilikan Smart Money KSEI & Pergeseran MoM (OWN / HDS)](./trading-system/pergeseran-smart-money-ksei.md) — Delta kepemilikan institusi bulanan, divergensi ritel vs institusi, dan registri KSEI.
+* [Volume Profile & Value Area (GP: POC, VAH, VAL)](./trading-system/volume-profile-value-area.md) — Pemetaan volume horizontal, Point of Control (POC), 70% Value Area, dan teori lelang pasar.
+* [Konsentrasi Broker & Aliran Bandarmologi (BRKR)](./trading-system/konsentrasi-broker-bandarmologi.md) — Rasio konsentrasi broker institusi (CR1, CR3, CR5) dan Bandarmologi Flow Index (BFI).
