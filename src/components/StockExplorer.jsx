@@ -6,6 +6,8 @@ import RelativeValuationPeers from './RelativeValuationPeers';
 import ValuationBandsPanel from './ValuationBandsPanel';
 import EconomicValuePanel from './EconomicValuePanel';
 import ScenarioForecaster from './ScenarioForecaster';
+import DividendTrapPanel from './DividendTrapPanel';
+import CorporateActionsPanel from './CorporateActionsPanel';
 import {
   roundToIDXTick,
   calculateMonitorMetrics,
@@ -2625,6 +2627,19 @@ export default function StockExplorer({ user }) {
 
                 {/* ── BLOOMBERG SCEN: INTERACTIVE WHAT-IF FORECASTER ── */}
                 <ScenarioForecaster stockDetail={stockDetail} />
+
+                {/* ── BLOOMBERG DTRP & DVD: DIVIDEND TRAP & RUN-RATE ── */}
+                {stockDetail?.dividendTrap && (
+                  <DividendTrapPanel dividendTrap={stockDetail.dividendTrap} />
+                )}
+
+                {/* ── BLOOMBERG CA: CORPORATE ACTIONS & CATALYST TIMELINE ── */}
+                {stockDetail?.corporateActions?.length > 0 && (
+                  <CorporateActionsPanel
+                    corporateActions={stockDetail.corporateActions}
+                    ticker={stockDetail.ticker}
+                  />
+                )}
               </div>
             ) : null}
           </div>

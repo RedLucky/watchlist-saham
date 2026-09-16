@@ -4,6 +4,14 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-09-16] feat | Bloomberg Terminal Fase 2: Analisis Jebakan Dividen DTRP, Run-Rate DVD, dan Kalender Aksi Korporasi CA
+- Membangun `src/lib/dividendTrapEngine.js` (Bloomberg `DTRP` & `DVD`): menganalisis jebakan dividen (*dividend trap*), kecukupan FCF, batasan DPR, risiko utang, serta konsistensi dividen aristokrat BEI; menghitung *run-rate* dividen pasif 12 bulan per lot (harian, bulanan, tahunan).
+- Membangun `src/lib/corporateActionEngine.js` (Bloomberg `CA`): menyusun kalender dan hitung mundur dividen tunai, RUPS (RUPST/RUPSLB), serta jendela resmi musim rilis laporan keuangan berkala BEI/OJK.
+- Mengintegrasikan hasil kalkulasi DTRP, DVD run-rate, dan kalender CA ke dalam payload respons `GET /api/stocks/[ticker]`.
+- Membangun komponen antarmuka interaktif: `DividendTrapPanel.jsx` dan `CorporateActionsPanel.jsx` yang disematkan di bawah simulator skenario pada `StockExplorer.jsx`.
+- Menambahkan pengujian unit komprehensif pada `tests/dividendTrap.test.js` dan `tests/corporateAction.test.js` (160/160 pengujian lulus 100%).
+- Mempublikasikan dokumentasi ilmiah pada `docs/wiki/id/financial-engine/jebakan-dividen-dtrp.md` dan `kalender-aksi-korporasi.md`.
+
 ## [2026-09-16] feat | Bloomberg Terminal Fase 1: Pita Valuasi PBND, WACC/EVA, dan Simulator SCEN
 - Membangun `src/lib/valuationBands.js` (Bloomberg `PBND`): menghitung Mean historis, Standar Deviasi, pita +/-1 SD, +/-2 SD untuk PER & PBV, target harga fraksi BEI, serta zona valuasi statistik.
 - Membangun `src/lib/waccEngine.js` (Bloomberg `WACC`): menghitung biaya modal rata-rata tertimbang, biaya ekuitas CAPM ($R_f=6.5\%$), biaya utang setelah pajak, ROIC, dan Economic Spread (klasifikasi Value Creator vs Destroyer).

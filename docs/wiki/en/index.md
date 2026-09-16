@@ -23,6 +23,8 @@
 * [Relative Valuation Peers (RV)](./financial-engine/relative-valuation-peers.md) — Bloomberg RV peer comparison engine, sub-sector benchmarking, and best-in-class financial ranking.
 * [Historical Valuation Bands (PBND)](./financial-engine/valuation-bands.md) — Bloomberg PBND P/E and P/BV standard deviation bands (Mean, +/-1 SD, +/-2 SD) and statistical price targets.
 * [ROIC vs WACC & EVA Engine](./financial-engine/wacc-economic-value.md) — Bloomberg WACC Cost of Capital, CAPM Ke, and Economic Value Added (Value Creator vs Destroyer).
+* [Dividend Trap & Cashflow Run-Rate (DTRP / DVD)](./financial-engine/dividend-trap-analyzer.md) — Dividend sustainability, FCF coverage, ex-date drop analysis, and 12-month passive income cashflow run-rate.
+* [Corporate Actions & Catalyst Calendar (CA)](./financial-engine/corporate-actions-calendar.md) — Real-time event diary and countdowns for dividends, RUPS (AGM/EGM), and seasonal financial reporting windows.
 
 ---
 

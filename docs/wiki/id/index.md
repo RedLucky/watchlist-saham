@@ -23,6 +23,8 @@
 * [Valuasi Relatif Peers (RV)](./financial-engine/valuasi-relatif-peers.md) — Mesin komparasi peers Bloomberg RV, pemeringkatan sub-sektor, dan seleksi emiten terbaik di kelasnya (Best-in-Class).
 * [Pita Valuasi Historis (PBND)](./financial-engine/pita-valuasi-pbnd.md) — Pita deviasi standar PE & PBV Bloomberg PBND (Mean, +/-1 SD, +/-2 SD) serta target harga diskon ekstrem.
 * [Kalkulator WACC & Nilai Tambah EVA](./financial-engine/wacc-nilai-ekonomi.md) — Mesin biaya modal Bloomberg WACC, CAPM Ke, dan Economic Value Added (Value Creator vs Destroyer).
+* [Analisis Jebakan Dividen & Run-Rate Pasif (DTRP / DVD)](./financial-engine/jebakan-dividen-dtrp.md) — Evaluasi keamanan dividen, kecukupan FCF, risiko ex-date drop, dan proyeksi arus kas 12 bulan.
+* [Kalender Aksi Korporasi & Katalis Pasar (CA)](./financial-engine/kalender-aksi-korporasi.md) — Jadwal dan hitung mundur dividen tunai, RUPS (RUPST/RUPSLB), dan jendela musim rilis laporan keuangan.
 
 ---
 

@@ -4,6 +4,14 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-09-16] feat | Bloomberg Terminal Phase 2: DTRP Dividend Trap Analyzer, DVD Run-Rate, and CA Catalyst Calendar
+- Implemented `src/lib/dividendTrapEngine.js` (Bloomberg `DTRP` & `DVD`): detects dividend trap risks, evaluates FCF coverage, DPR guardrails, debt burden, and dividend aristocrat streaks; computes 12-month passive income cashflow run-rate per lot.
+- Implemented `src/lib/corporateActionEngine.js` (Bloomberg `CA`): compiles timeline of cash dividends, general shareholder meetings (RUPS/AGM), and regulatory earnings release windows.
+- Integrated DTRP, DVD run-rate, and CA calendar into `GET /api/stocks/[ticker]`.
+- Built UI panels: `DividendTrapPanel.jsx` and `CorporateActionsPanel.jsx` mounted below scenario forecaster in `StockExplorer.jsx`.
+- Added unit tests: `tests/dividendTrap.test.js` and `tests/corporateAction.test.js` (160/160 tests passing).
+- Published quantitative documentation: `docs/wiki/en/financial-engine/dividend-trap-analyzer.md` and `corporate-actions-calendar.md`.
+
 ## [2026-09-16] feat | Bloomberg Terminal Phase 1: PBND Valuation Bands, WACC/EVA, and SCEN Forecaster
 - Implemented `src/lib/valuationBands.js` (Bloomberg `PBND`): calculates Mean, Standard Deviation, +/-1 SD, +/-2 SD for P/E & P/BV, with target prices and statistical valuation zones.
 - Implemented `src/lib/waccEngine.js` (Bloomberg `WACC`): computes Weighted Average Cost of Capital, CAPM Cost of Equity ($R_f=6.5\%$), after-tax Cost of Debt, ROIC, and Economic Spread (Value Creator vs Destroyer).

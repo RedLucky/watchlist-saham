@@ -10,6 +10,8 @@ import { calculateDividendScore } from '@/lib/scoring/dividend';
 import { calculatePiotroskiFScore, calculateAltmanZScore, calculateGrahamValuation } from '@/lib/scoring/financialHealth';
 import { calculateAllValuationBands } from '@/lib/valuationBands';
 import { calculateWaccAndEconomicValue } from '@/lib/waccEngine';
+import { analyzeDividendTrap } from '@/lib/dividendTrapEngine';
+import { buildCorporateActionsTimeline } from '@/lib/corporateActionEngine';
 
 export const dynamic = 'force-dynamic';
 
@@ -413,6 +415,40 @@ export async function GET(request, { params }) {
       console.warn('[WACC] Error calculating WACC & EVA:', waccErr.message);
     }
 
+    // Bloomberg DTRP: Dividend Trap & Ex-Date Drop Analyzer + DVD Run-Rate
+    let dividendTrap = null;
+    try {
+      const netProfitList = Array.isArray(fundamentals?.netProfit) ? fundamentals.netProfit : [];
+      const latestProfit = Number(fundamentals?.netIncome) || (netProfitList.length > 0 ? netProfitList[netProfitList.length - 1] : null);
+
+      dividendTrap = analyzeDividendTrap({
+        dividendYield: fundamentals?.dividendYield,
+        payoutRatio: fundamentals?.payoutRatio,
+        fcf: fundamentals?.freeCashflow,
+        netProfit: latestProfit,
+        totalDividendsPaid: null,
+        der: fundamentals?.der,
+        dividendStreakYears: fundamentals?.dividendStreakYears,
+        dividendHistory,
+        price: stock.price,
+        sector: stock.sector
+      });
+    } catch (dtrpErr) {
+      console.warn('[DTRP] Error analyzing dividend trap:', dtrpErr.message);
+    }
+
+    // Bloomberg CA: Live Corporate Actions & Catalyst Calendar
+    let corporateActions = [];
+    try {
+      corporateActions = buildCorporateActionsTimeline({
+        dividendHistory,
+        fundamentals,
+        ticker
+      });
+    } catch (caErr) {
+      console.warn('[CA] Error building corporate actions timeline:', caErr.message);
+    }
+
     const responseData = {
       ...enrichedStock,
       kseiLatest,
@@ -427,6 +463,8 @@ export async function GET(request, { params }) {
       peers,
       valuationBands,
       wacc: waccData,
+      dividendTrap,
+      corporateActions,
       scores: {
         fundamental: fundamentalScore,
         technical: technicalScore,
