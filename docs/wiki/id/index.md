@@ -43,3 +43,4 @@
 * [Rotasi Sektoral Relatif RRG (RRG / SECT)](./trading-system/rotasi-sektoral-rrg.md) — Matriks 4-kuadran siklus rotasi sektor (Leading, Weakening, Lagging, Improving) terhadap IHSG.
 * [Skor Sentimen Berita & Katalis Pasar (NSENT)](./trading-system/sentimen-berita-katalis.md) — Indeks sentimen berita kuantitatif (-100 s/d +100) dan deteksi otomatis katalis korporasi.
 * [Stock Screener Bertenaga AI](./trading-system/stock-screener-ai.md) — Penyaringan berbasis bahasa alami, ekstraksi kriteria multi-faktor, dan inferensi LLM offline.
+* [Konsultasi & Penasihat Saham AI](./trading-system/konsultasi-keuangan-ai.md) — Penasihat ekuitas percakapan multi-sesi, matematika finansial deterministik, proteksi anti-halusinasi, dan mutex prioritas CPU.

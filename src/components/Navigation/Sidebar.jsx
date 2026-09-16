@@ -10,6 +10,7 @@ export const NAVIGATION_MENU = [
       { id: 'movers', label: 'Market Movers', icon: '🔥' },
       { id: 'screener', label: 'Stock Screener', icon: '🔍' },
       { id: 'alpha-legend', label: 'Alpha Legends Screener', icon: '👑' },
+      { id: 'ai-chat', label: 'Konsultasi AI', icon: '🤖' },
     ]
   },
   {

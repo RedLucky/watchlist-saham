@@ -4,6 +4,17 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-09-16] feat | Konsultasi AI Pasar Modal: Penasihat Multi-Sesi, Proteksi Anti-Halusinasi, & Mutex Prioritas CPU
+- Membangun `src/lib/ai/aiPriorityMutex.js`: gerbang konkurensi slot-tunggal (konkurensi 1) dengan pembagian prioritas (HIGH untuk konsultasi chat/screener vs LOW untuk worker antrean latar belakang) guna mengeliminasi perebutan core CPU pada Intel i5.
+- Membangun `src/lib/ai/chatAdvisorEngine.js`: ekstraksi ticker deterministik dengan filter stopword percakapan Indonesia, komputasi matematika finansial di backend (persentase PnL riil, simulasi average down), prompt tertutup anti-halusinasi, serta protokol penalaran 3-tahap (`<think>`).
+- Meningkatkan `src/lib/ai/client.js`: integrasi AI Priority Mutex, mode penalaran selektif (`enableThinking: true`), penalaan suhu (`temperature: 0.4`, `topP: 0.85`), dan pelebaran konteks hingga 8.192 token.
+- Menambahkan model data di `prisma/schema.prisma`: tabel `ChatSession` dan `ChatMessage` dengan relasi kaskade.
+- Membangun rute API pada `src/app/api/ai/chat/route.js`: operasi CRUD sesi lengkap, injeksi data pasar terverifikasi, lampiran data portofolio, dan pemisahan blok pemikiran.
+- Membangun antarmuka interaktif pada `src/components/AiConsultationPanel.jsx`: tata letak 2 kolom, akordeon pemikiran lipat, pemformat tabel markdown, badge saham interaktif, dan kartu panduan awal.
+- Mengintegrasikan ke `Sidebar.jsx` dan `Dashboard.jsx` di bawah `activeTab === 'ai-chat'`.
+- Menambahkan rangkaian pengujian unit pada `tests/aiChatAdvisor.test.js` (203/203 total pengujian lulus 100%).
+- Mempublikasikan dokumentasi ilmiah pada `docs/wiki/id/trading-system/konsultasi-keuangan-ai.md`.
+
 ## [2026-09-16] feat | Stock Screener Bertenaga AI: Penyaringan Bahasa Alami & Sintesis Strategi
 - Membangun `src/lib/ai/screenerPrompt.js`: fungsi prompt engineering murni (`buildScreenerAiMessages`, `parseScreenerAiResponse`, dan `filterStocksByAiCriteria`) untuk ekstraksi kriteria keuangan terstruktur dari kueri bahasa alami.
 - Membangun `src/app/api/screener/ai/route.js`: endpoint `POST /api/screener/ai` yang menjalankan inferensi LLM lokal dengan fallback heuristik defensif (`buildHeuristicFallbackCriteria`) untuk ketahanan terhadap timeout/koneksi offline.

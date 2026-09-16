@@ -19,6 +19,7 @@ import AlphaLegendScreeners from './AlphaLegend/AlphaLegendScreeners';
 import PensionCalculator from './PensionCalculator';
 import KseiUploadPanel from './KseiUploadPanel';
 import StockExplorer from './StockExplorer';
+import AiConsultationPanel from './AiConsultationPanel';
 import AuthModal from './AuthModal';
 import { ThemeToggle } from './ThemeToggle';
 
@@ -281,6 +282,13 @@ export default function Dashboard() {
  <AlphaLegendScreeners />
  </div>
  )}
+
+  {/* TAB 3.6: KONSULTASI AI */}
+  {activeTab === 'ai-chat' && (
+    <div className="animate-in fade-in duration-300">
+      <AiConsultationPanel user={user} stocks={stocks} />
+    </div>
+  )}
 
  {/* TAB 4: PORTOFOLIO SAYA */}
  {activeTab === 'portfolio' && (

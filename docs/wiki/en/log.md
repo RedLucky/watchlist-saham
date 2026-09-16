@@ -4,6 +4,17 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-09-16] feat | AI-Powered Financial Consultation: Multi-Turn Advisory, Anti-Hallucination Grounding, & CPU Priority Mutex
+- Implemented `src/lib/ai/aiPriorityMutex.js`: single-slot concurrency gate (concurrency 1) with priority arbitration (HIGH for interactive chat/screener vs LOW for background queue worker) to eliminate CPU thrashing on Intel i5.
+- Implemented `src/lib/ai/chatAdvisorEngine.js`: deterministic ticker extraction with Indonesian trading stopword filters, pre-calculated financial math (exact PnL %, averaging down scenarios), strict closed-world grounding prompt, and 3-step constrained reasoning protocol (`<think>`).
+- Enhanced `src/lib/ai/client.js`: integrated AI Priority Mutex, selective thinking mode (`enableThinking: true`), temperature tuning (`temperature: 0.4`, `topP: 0.85`), and context window scaling up to 8,192 tokens.
+- Added database models in `prisma/schema.prisma`: `ChatSession` and `ChatMessage` with cascade relations.
+- Implemented API handler in `src/app/api/ai/chat/route.js`: full CRUD for sessions, verified market data injection, portfolio context attachment, and reasoning separation.
+- Built interactive UI in `src/components/AiConsultationPanel.jsx`: dual-pane chat interface, collapsible thinking accordion, markdown table formatter, clickable stock chips, and quick starter prompts.
+- Integrated into `Sidebar.jsx` and `Dashboard.jsx` under `activeTab === 'ai-chat'`.
+- Added unit test suite in `tests/aiChatAdvisor.test.js` (203/203 total test suites passing).
+- Published quantitative documentation in `docs/wiki/en/trading-system/ai-financial-consultation.md`.
+
 ## [2026-09-16] feat | AI-Powered Stock Screener: Natural Language Filtering & Criteria Synthesis
 - Implemented `src/lib/ai/screenerPrompt.js`: pure prompt engineering routines (`buildScreenerAiMessages`, `parseScreenerAiResponse`, and `filterStocksByAiCriteria`) extracting structured financial criteria from natural language queries.
 - Implemented `src/app/api/screener/ai/route.js`: `POST /api/screener/ai` endpoint running local LLM inference with resilient heuristic fallback (`buildHeuristicFallbackCriteria`) for offline/timeout fault-tolerance.

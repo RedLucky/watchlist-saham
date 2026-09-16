@@ -43,3 +43,4 @@
 * [Sector Relative Rotation Graph (RRG / SECT)](./trading-system/sector-relative-rotation.md) — 4-quadrant sector rotation matrix (Leading, Weakening, Lagging, Improving) vs IHSG.
 * [News Sentiment & Catalyst Tagging (NSENT)](./trading-system/news-sentiment-catalyst.md) — Algorithmic news sentiment index (-100 to +100) and corporate catalyst detection.
 * [AI-Powered Stock Screener](./trading-system/ai-stock-screener.md) — Conversational natural language screening, multi-factor criteria extraction, and offline LLM inference.
+* [AI-Powered Financial Consultation & Advisory](./trading-system/ai-financial-consultation.md) — Multi-turn conversational equity advisor, pre-calculated financial math, strict zero-hallucination grounding, and CPU priority mutex.
