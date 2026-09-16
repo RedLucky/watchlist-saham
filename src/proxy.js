@@ -61,8 +61,15 @@ export async function proxy(request) {
     // I will strictly follow user instructions: except login and register.
   }
 
-  // Exempt login and register and test
-  if (pathname === '/api/auth/login' || pathname === '/api/auth/register' || pathname === '/api/test' || pathname === '/api/alpha-legend') {
+  // Exempt public endpoints (auth, test, alpha-legend, and pension calculator generators)
+  if (
+    pathname === '/api/auth/login' || 
+    pathname === '/api/auth/register' || 
+    pathname === '/api/test' || 
+    pathname === '/api/alpha-legend' ||
+    pathname === '/api/pension/preset' ||
+    pathname === '/api/pension/ai-generate'
+  ) {
     return NextResponse.next();
   }
 

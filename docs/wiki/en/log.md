@@ -4,6 +4,15 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-09-16] feat | AI-Driven Pension Portfolio Generation & Knapsack Lot Optimizer
+- Developed Bounded Integer Knapsack Solver (`src/lib/lotOptimizer.js`) ensuring zero overbudget and 98–99.9% budget absorption into 100-share IDX lots.
+- Created `POST /api/pension/ai-generate` endpoint integrating local `llama.cpp` CFP persona with multi-factor fundamental candidate filtering.
+- Whitelisted `/api/pension/preset` and `/api/pension/ai-generate` in Edge proxy (`src/proxy.js`) to allow public unauthenticated retirement simulations.
+- Calibrated Qwen token budget (`maxTokens: 850`, strict no `<think>` tags) to generate concise, un-truncated JSON in ~40-70 seconds on CPU.
+- Upgraded `PensionCalculator.jsx` with `✨ Optimasi AI` gradient action button, interactive loading animation, and expandable AI Portfolio Thesis & Advice Card.
+- Published architectural and quantitative knowledge pages: `docs/wiki/en/financial-engine/pension-portfolio.md` and Indonesian mirror.
+- Added comprehensive unit tests in `tests/pensionAi.test.js` (132 passing tests total).
+
 ## [2026-09-16] feat | Local AI Research Engine, Interactive Discord Bot & Knowledge Wiki Ingest
 - Integrated local `llama.cpp` inference engine (`docker-compose.ai.yml`, Qwen 4B GGUF) with hardware optimization for Intel 14th Gen P-Cores (6 threads, flash attention).
 - Built asynchronous queue worker (`src/scripts/ai-worker.js`) utilizing `AiResearchQueue`, `AiStockResearch`, and telemetry audit logs in `AiAuditLog`.

@@ -30,6 +30,9 @@ services:
       timeout: 5s
       retries: 5
       start_period: 15s
+    networks:
+      - default
+      - watchlist_net
 
   ai-worker:
     image: node:20-alpine

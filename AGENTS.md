@@ -21,13 +21,20 @@ NEVER execute raw shell commands without `rtk` to minimize token consumption.
 
 # Mandatory Project Knowledge Base (LLM Wiki Ground Truth)
 
-BEFORE proposing architectural decisions, modifying formulas, changing database schemas, or writing trading logic in any new session, you MUST read the Wiki Index at `docs/wiki/en/index.md` (and the specific linked pages for the task at hand).
+## 1. Pre-Task Protocol (Read First)
+BEFORE proposing architectural decisions, modifying formulas, changing database schemas, writing trading logic, or adding features in any new session, you MUST read the Wiki Index at `docs/wiki/en/index.md` (and the specific linked pages for the task at hand).
 The `docs/wiki/en/` directory is the persistent, compiled ground truth of this project:
 - System Architecture (`docs/wiki/en/architecture/`)
 - Financial Engine, Graham Valuation, Scoring Weights (`docs/wiki/en/financial-engine/`)
 - Order Lifecycle, Waiting Buy, Win Rate (`docs/wiki/en/trading-system/`)
 
-DO NOT re-derive financial formulas or guess database behaviors from scratch. Consult the wiki first to prevent context loss, token waste, and hallucination. Keep the wiki updated when adding or revising features.
+DO NOT re-derive financial formulas or guess database behaviors from scratch. Consult the wiki first to prevent context loss, token waste, and hallucination.
+
+## 2. Post-Task Protocol & Definition of Done (Mandatory Wiki Update)
+EVERY task that introduces new features, endpoints, algorithms, quantitative models, database schemas, or external integrations **IS NOT COMPLETE** until the wiki is updated. The agent MUST proactively execute these 3 steps before concluding work, WITHOUT WAITING for user reminders:
+1. **Topic Pages**: Create or update the corresponding topic documentation in BOTH `docs/wiki/en/` (primary ground truth) and `docs/wiki/id/` (Indonesian mirror).
+2. **Index Catalog**: Register any newly created documentation pages in BOTH `docs/wiki/en/index.md` and `docs/wiki/id/index.md`.
+3. **Chronological Log**: Append a new dated entry describing the additions or revisions in BOTH `docs/wiki/en/log.md` and `docs/wiki/id/log.md`.
 
 <!-- END:llm-wiki-rules -->
 
@@ -64,6 +71,11 @@ Derived from Andrej Karpathy's core observations on LLM coding pitfalls to elimi
   - Instead of "Add validation" -> "Write test reproducing invalid case, then make it pass".
   - Instead of "Fix the bug" -> "Reproduce issue, apply fix, run `rtk npm test` and `rtk npm run build`".
 - Verify results independently through commands before claiming task completion.
+- **Definition of Done (DoD) Mandatory Checklist**:
+  1. Code logic implemented cleanly according to project conventions.
+  2. All automated test suites pass without regression (`rtk npm test`).
+  3. Production build succeeds cleanly (`rtk npm run build`).
+  4. LLM Wiki updated in BOTH `docs/wiki/en/` and `docs/wiki/id/` including `index.md` and `log.md`.
 
 <!-- END:karpathy-coding-guidelines -->
 

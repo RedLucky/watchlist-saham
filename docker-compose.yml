@@ -16,6 +16,9 @@ services:
       - TZ=Asia/Jakarta
       - NODE_OPTIONS=--max-old-space-size=896
       - DISABLE_APP_WORKER=true
+      - AI_API_URL=${AI_API_URL:-http://local-ai-server:8080/v1/chat/completions}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       db:
         condition: service_healthy

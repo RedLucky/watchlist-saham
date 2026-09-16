@@ -1,6 +1,12 @@
 async function fetchAiCompletion(messages, options = {}) {
-  // Llama.cpp server default address
-  const url = process.env.AI_API_URL || 'http://localhost:8080/v1/chat/completions';
+  // Llama.cpp server endpoints to attempt (supports local dev, container networks, and host-gateway)
+  const candidateUrls = Array.from(new Set([
+    process.env.AI_API_URL,
+    'http://localhost:8080/v1/chat/completions',
+    'http://local-ai-server:8080/v1/chat/completions',
+    'http://host.docker.internal:8080/v1/chat/completions',
+    'http://127.0.0.1:8080/v1/chat/completions'
+  ].filter(Boolean)));
 
   const payload = {
     model: 'local-model',
@@ -14,17 +20,32 @@ async function fetchAiCompletion(messages, options = {}) {
     ...options
   };
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-  });
+  let response = null;
+  let activeUrl = null;
+  let lastError = null;
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`AI API Error ${response.status}: ${errorText}`);
+  for (const url of candidateUrls) {
+    try {
+      response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        activeUrl = url;
+        break;
+      }
+      lastError = new Error(`AI API Error ${response.status} from ${url}`);
+    } catch (err) {
+      lastError = err;
+    }
+  }
+
+  if (!response || !response.ok) {
+    throw new Error(`Failed to connect to AI server. Attempted [${candidateUrls.join(', ')}]. Last error: ${lastError?.message}`);
   }
 
   const data = await response.json();
@@ -38,9 +59,9 @@ async function fetchAiCompletion(messages, options = {}) {
   if (!rawModelName && process.env.AI_MODEL_NAME) {
     rawModelName = process.env.AI_MODEL_NAME;
   }
-  if (!rawModelName) {
+  if (!rawModelName && activeUrl) {
     try {
-      const modelsUrl = url.replace(/\/chat\/completions$/, '/models');
+      const modelsUrl = activeUrl.replace(/\/chat\/completions$/, '/models');
       const modelsRes = await fetch(modelsUrl);
       if (modelsRes.ok) {
         const modelsJson = await modelsRes.json();

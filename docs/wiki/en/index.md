@@ -19,6 +19,7 @@
 * [Valuation Models & Fair Value](./financial-engine/valuation-models.md) — Benjamin Graham Number, Intrinsic Fair Value with dynamic bond yield, Altman Z-Score, Piotroski F-Score, and CAGR formulas.
 * [Technical Indicators & Signals](./financial-engine/technical-signals.md) — Wilder's RSI 14, Supertrend + DEMA 20, MACD, Bollinger Bands, and Candlestick pattern detection.
 * [Alpha Legends Strategies](./financial-engine/alpha-legends.md) — Quantitative strategy filters adapted for the Indonesia Stock Exchange (Warren Buffett, Peter Lynch, Ben Graham, Joel Greenblatt).
+* [Pension Portfolio & Knapsack Lots](./financial-engine/pension-portfolio.md) — Multi-asset FIRE retirement allocation, AI stock selection, and integer knapsack lot optimization (98-99.9% budget efficiency).
 
 ---
 

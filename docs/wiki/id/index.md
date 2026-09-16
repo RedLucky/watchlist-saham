@@ -19,6 +19,7 @@
 * [Model Valuasi & Nilai Wajar](./financial-engine/model-valuasi.md) — Nilai Wajar Benjamin Graham, imbal hasil SUN 10 tahun, Altman Z-Score, Piotroski F-Score, dan pembatasan CAGR 25%.
 * [Indikator & Sinyal Teknikal](./financial-engine/sinyal-teknikal.md) — Wilder's RSI 14, Supertrend + DEMA 20, MACD, Bollinger Bands, dan deteksi pola candlestick.
 * [Strategi Alpha Legends](./financial-engine/strategi-alpha-legend.md) — Kriteria kuantitatif para legenda investasi (Buffett, Lynch, Graham, Greenblatt) yang disesuaikan untuk BEI.
+* [Portofolio Pensiun & Lot Knapsack](./financial-engine/portofolio-pensiun.md) — Alokasi multi-aset FIRE pensiun dini, pemilihan saham AI, dan optimasi integer knapsack lot (efisiensi anggaran 98-99.9%).
 
 ---
 
