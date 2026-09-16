@@ -21,6 +21,8 @@
 * [Alpha Legends Strategies](./financial-engine/alpha-legends.md) — Quantitative strategy filters adapted for the Indonesia Stock Exchange (Warren Buffett, Peter Lynch, Ben Graham, Joel Greenblatt).
 * [Pension Portfolio & Knapsack Lots](./financial-engine/pension-portfolio.md) — Multi-asset FIRE retirement allocation, AI stock selection, and integer knapsack lot optimization (98-99.9% budget efficiency).
 * [Relative Valuation Peers (RV)](./financial-engine/relative-valuation-peers.md) — Bloomberg RV peer comparison engine, sub-sector benchmarking, and best-in-class financial ranking.
+* [Historical Valuation Bands (PBND)](./financial-engine/valuation-bands.md) — Bloomberg PBND P/E and P/BV standard deviation bands (Mean, +/-1 SD, +/-2 SD) and statistical price targets.
+* [ROIC vs WACC & EVA Engine](./financial-engine/wacc-economic-value.md) — Bloomberg WACC Cost of Capital, CAPM Ke, and Economic Value Added (Value Creator vs Destroyer).
 
 ---
 

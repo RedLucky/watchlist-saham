@@ -4,6 +4,15 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-09-16] feat | Bloomberg Terminal Phase 1: PBND Valuation Bands, WACC/EVA, and SCEN Forecaster
+- Implemented `src/lib/valuationBands.js` (Bloomberg `PBND`): calculates Mean, Standard Deviation, +/-1 SD, +/-2 SD for P/E & P/BV, with target prices and statistical valuation zones.
+- Implemented `src/lib/waccEngine.js` (Bloomberg `WACC`): computes Weighted Average Cost of Capital, CAPM Cost of Equity ($R_f=6.5\%$), after-tax Cost of Debt, ROIC, and Economic Spread (Value Creator vs Destroyer).
+- Integrated PBND and WACC calculations into `GET /api/stocks/[ticker]` response data.
+- Built interactive UI components: `ValuationBandsPanel.jsx` (P/E & P/BV bands), `EconomicValuePanel.jsx` (capital structure & EVA), and `ScenarioForecaster.jsx` (Bloomberg `SCEN` What-If sensitivity slider forecaster).
+- Mounted all 3 components below the Candlestick Chart in `StockExplorer.jsx`.
+- Added unit tests in `tests/valuationBands.test.js` and `tests/waccEngine.test.js` (152/152 tests passing).
+- Published quantitative documentation in `docs/wiki/en/financial-engine/valuation-bands.md` and `wacc-economic-value.md`.
+
 ## [2026-09-16] fix | Stock Explorer AI Research Engine Hardening & Queue Worker Optimization
 - Reduced worker polling interval from 60s to 3s (`POLL_INTERVAL = 3000`) in `src/scripts/ai-worker.js`, slashing queue pickup latency from ~75s to ~20s.
 - Implemented automated stale task recovery for jobs stuck in `PROCESSING` (> 10 minutes) across both worker and `POST /api/ai/research`, eliminating permanently locked tickers.

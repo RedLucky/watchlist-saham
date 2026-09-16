@@ -8,6 +8,8 @@ import { calculateTrendingScore } from '@/lib/scoring/trending';
 import { calculateSmartMoneyScore, getBandarmologiVerdict } from '@/lib/scoring/smartMoney';
 import { calculateDividendScore } from '@/lib/scoring/dividend';
 import { calculatePiotroskiFScore, calculateAltmanZScore, calculateGrahamValuation } from '@/lib/scoring/financialHealth';
+import { calculateAllValuationBands } from '@/lib/valuationBands';
+import { calculateWaccAndEconomicValue } from '@/lib/waccEngine';
 
 export const dynamic = 'force-dynamic';
 
@@ -365,6 +367,52 @@ export async function GET(request, { params }) {
       console.warn('[RV] Error fetching relative valuation peers:', peerErr.message);
     }
 
+    // Bloomberg PBND: Historical PE & PBV Valuation Bands
+    let valuationBands = null;
+    try {
+      const historicalCloses = Array.isArray(technicals?.closes) && technicals.closes.length >= 10
+        ? technicals.closes
+        : (parseJsonField(stock.historicalRaw) || []);
+
+      const currentEps = fundamentals?.eps || (fundamentals?.per > 0 ? stock.price / fundamentals.per : 0);
+      const currentBvps = fundamentals?.bookValue || (fundamentals?.pbv > 0 ? stock.price / fundamentals.pbv : 0);
+
+      valuationBands = calculateAllValuationBands({
+        historicalPrices: historicalCloses,
+        currentPrice: stock.price,
+        eps: currentEps,
+        bvps: currentBvps
+      });
+    } catch (bandErr) {
+      console.warn('[PBND] Error calculating valuation bands:', bandErr.message);
+    }
+
+    // Bloomberg WACC & ROIC Economic Value Added Engine
+    let waccData = null;
+    try {
+      const mCap = Number(fundamentals?.marketCap) || (stock.price * Number(stock.sharesOutstanding || 0));
+      const tDebt = Number(fundamentals?.totalDebt) || 0;
+      const tEquity = Number(fundamentals?.totalEquity) || (fundamentals?.pbv > 0 && stock.price > 0 ? (stock.price / fundamentals.pbv) * Number(stock.sharesOutstanding || 0) : mCap * 0.4);
+      const tRevenue = Number(fundamentals?.totalRevenue) || 0;
+      const netProfitList = Array.isArray(fundamentals?.netProfit) ? fundamentals.netProfit : [];
+      const netInc = Number(fundamentals?.netIncome) || (netProfitList.length > 0 ? netProfitList[netProfitList.length - 1] : 0);
+
+      waccData = calculateWaccAndEconomicValue({
+        marketCap: mCap,
+        totalDebt: tDebt,
+        totalEquity: tEquity,
+        totalRevenue: tRevenue,
+        operatingIncome: fundamentals?.operatingIncome,
+        opm: fundamentals?.opm,
+        netIncome: netInc,
+        cash: fundamentals?.cash || 0,
+        beta: technicals?.beta || 1.0,
+        riskFreeRate: bondYield
+      });
+    } catch (waccErr) {
+      console.warn('[WACC] Error calculating WACC & EVA:', waccErr.message);
+    }
+
     const responseData = {
       ...enrichedStock,
       kseiLatest,
@@ -377,6 +425,8 @@ export async function GET(request, { params }) {
       projections,
       bandarmologi,
       peers,
+      valuationBands,
+      wacc: waccData,
       scores: {
         fundamental: fundamentalScore,
         technical: technicalScore,

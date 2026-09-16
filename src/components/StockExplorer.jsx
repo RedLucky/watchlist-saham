@@ -3,6 +3,9 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import StockChart from './StockChart';
 import RelativeValuationPeers from './RelativeValuationPeers';
+import ValuationBandsPanel from './ValuationBandsPanel';
+import EconomicValuePanel from './EconomicValuePanel';
+import ScenarioForecaster from './ScenarioForecaster';
 import {
   roundToIDXTick,
   calculateMonitorMetrics,
@@ -2606,6 +2609,22 @@ export default function StockExplorer({ user }) {
                     }}
                   />
                 )}
+
+                {/* ── BLOOMBERG PBND: HISTORICAL VALUATION BANDS ── */}
+                {stockDetail?.valuationBands && (
+                  <ValuationBandsPanel
+                    valuationBands={stockDetail.valuationBands}
+                    currentPrice={stockDetail.price}
+                  />
+                )}
+
+                {/* ── BLOOMBERG WACC & EVA: ECONOMIC VALUE ADDED ── */}
+                {stockDetail?.wacc && (
+                  <EconomicValuePanel waccData={stockDetail.wacc} />
+                )}
+
+                {/* ── BLOOMBERG SCEN: INTERACTIVE WHAT-IF FORECASTER ── */}
+                <ScenarioForecaster stockDetail={stockDetail} />
               </div>
             ) : null}
           </div>

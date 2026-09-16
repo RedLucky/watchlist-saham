@@ -21,6 +21,8 @@
 * [Strategi Alpha Legends](./financial-engine/strategi-alpha-legend.md) — Kriteria kuantitatif para legenda investasi (Buffett, Lynch, Graham, Greenblatt) yang disesuaikan untuk BEI.
 * [Portofolio Pensiun & Lot Knapsack](./financial-engine/portofolio-pensiun.md) — Alokasi multi-aset FIRE pensiun dini, pemilihan saham AI, dan optimasi integer knapsack lot (efisiensi anggaran 98-99.9%).
 * [Valuasi Relatif Peers (RV)](./financial-engine/valuasi-relatif-peers.md) — Mesin komparasi peers Bloomberg RV, pemeringkatan sub-sektor, dan seleksi emiten terbaik di kelasnya (Best-in-Class).
+* [Pita Valuasi Historis (PBND)](./financial-engine/pita-valuasi-pbnd.md) — Pita deviasi standar PE & PBV Bloomberg PBND (Mean, +/-1 SD, +/-2 SD) serta target harga diskon ekstrem.
+* [Kalkulator WACC & Nilai Tambah EVA](./financial-engine/wacc-nilai-ekonomi.md) — Mesin biaya modal Bloomberg WACC, CAPM Ke, dan Economic Value Added (Value Creator vs Destroyer).
 
 ---
 

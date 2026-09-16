@@ -4,6 +4,15 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-09-16] feat | Bloomberg Terminal Fase 1: Pita Valuasi PBND, WACC/EVA, dan Simulator SCEN
+- Membangun `src/lib/valuationBands.js` (Bloomberg `PBND`): menghitung Mean historis, Standar Deviasi, pita +/-1 SD, +/-2 SD untuk PER & PBV, target harga fraksi BEI, serta zona valuasi statistik.
+- Membangun `src/lib/waccEngine.js` (Bloomberg `WACC`): menghitung biaya modal rata-rata tertimbang, biaya ekuitas CAPM ($R_f=6.5\%$), biaya utang setelah pajak, ROIC, dan Economic Spread (klasifikasi Value Creator vs Destroyer).
+- Mengintegrasikan hasil kalkulasi PBND dan WACC ke dalam payload respons `GET /api/stocks/[ticker]`.
+- Membangun komponen antarmuka interaktif: `ValuationBandsPanel.jsx` (tombol alih PER/PBV), `EconomicValuePanel.jsx` (struktur modal & EVA), dan `ScenarioForecaster.jsx` (slider simulasi What-If Bloomberg `SCEN`).
+- Menyematkan ketiga komponen tersebut di bawah Grafik Interaktif pada `StockExplorer.jsx`.
+- Menambahkan pengujian unit komprehensif pada `tests/valuationBands.test.js` dan `tests/waccEngine.test.js` (152/152 pengujian lulus 100%).
+- Mempublikasikan dokumentasi ilmiah pada `docs/wiki/id/financial-engine/pita-valuasi-pbnd.md` dan `wacc-nilai-ekonomi.md`.
+
 ## [2026-09-16] fix | Penguatan Mesin Riset AI Stock Explorer & Optimasi Antrean Worker
 - Memangkas interval polling worker dari 60 detik menjadi 3 detik (`POLL_INTERVAL = 3000`) pada `src/scripts/ai-worker.js`, mempercepat respon pengambilan tugas dari ~75 detik menjadi ~20 detik.
 - Menambahkan mekanisme pemulihan otomatis (*stale task recovery*) untuk tugas yang macet di status `PROCESSING` (> 10 menit) baik di worker maupun endpoint `POST /api/ai/research`, menghilangkan risiko saham terkunci permanen.
