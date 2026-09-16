@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getActiveProvider } from '@/lib/dataService';
 import { getUserIdFromRequest } from '@/lib/auth';
+import { calculatePortfolioRisk } from '@/lib/portfolioRiskEngine';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,8 +44,17 @@ export async function GET(request) {
       totalInvested += pos.investedValue;
       totalCurrentValue += currentValue;
 
+      const sector = liveData?.sector || 'Others';
+      const fundamentals = liveData?.fundamentals || {};
+      const beta = Number(fundamentals.beta) || 1.0;
+      const der = Number(fundamentals.der) || 1.0;
+
       return {
         ...pos,
+        name: liveData?.name || pos.ticker,
+        sector,
+        beta,
+        der,
         currentPrice,
         currentValue,
         floatingPnL,
@@ -69,6 +79,16 @@ export async function GET(request) {
       console.warn("Could not query sell transactions:", e.message);
     }
 
+    // Bloomberg PORT & MARS: Risk Analytics & Stress Testing Cockpit
+    let riskAnalytics = null;
+    try {
+      riskAnalytics = calculatePortfolioRisk({
+        positions: enrichedPositions
+      });
+    } catch (riskErr) {
+      console.warn("Could not calculate portfolio risk:", riskErr.message);
+    }
+
     return NextResponse.json({
       summary: {
         totalInvested,
@@ -79,7 +99,8 @@ export async function GET(request) {
         totalPnLPercent: totalReturnPercent,
         realizedPnL
       },
-      positions: enrichedPositions
+      positions: enrichedPositions,
+      riskAnalytics
     });
 
   } catch (error) {

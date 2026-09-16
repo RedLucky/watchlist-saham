@@ -56,6 +56,7 @@ export default function PortfolioPanel() {
 
   const summary = portfolioData?.summary || {};
   const positions = portfolioData?.positions || [];
+  const riskAnalytics = portfolioData?.riskAnalytics;
 
   return (
   <div className="space-y-6 animate-fade-in">
@@ -95,6 +96,135 @@ export default function PortfolioPanel() {
   Jumlah Saham Aktif: <strong className="text-slate-800 dark:text-slate-200">{positions.length}</strong>
   </div>
   </div>
+
+  {/* ── BLOOMBERG PORT & MARS: PORTFOLIO RISK & STRESS TESTING COCKPIT ── */}
+  {riskAnalytics && (
+    <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm space-y-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-3.5">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-xl">🛡️</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="font-bold text-slate-900 dark:text-white text-sm md:text-base">
+                Portfolio Risk, Beta & Macro Stress Testing (PORT/MARS)
+              </h3>
+              <span className="px-2 py-0.5 text-[10px] font-black rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 uppercase tracking-wider">
+                Bloomberg PORT
+              </span>
+            </div>
+          </div>
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+            Kalkulasi sensitivitas pasar (Weighted Beta), Value at Risk (VaR 95%), serta simulasi skenario makroekonomi.
+          </p>
+        </div>
+
+        <span className={`px-3 py-1 rounded-xl text-xs font-black self-start sm:self-auto uppercase tracking-wide border ${
+          riskAnalytics.badgeColor === 'emerald'
+            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
+            : riskAnalytics.badgeColor === 'amber'
+            ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border-amber-300 dark:border-amber-800'
+            : 'bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300 border-blue-300 dark:border-blue-800'
+        }`}>
+          {riskAnalytics.riskProfile}
+        </span>
+      </div>
+
+      {/* Risk Metrics Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/60">
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+            Weighted Beta (Sensitivitas IHSG)
+          </span>
+          <span className="text-lg font-black font-mono text-slate-900 dark:text-white mt-0.5 block">
+            {riskAnalytics.weightedBeta}x
+          </span>
+          <span className="text-[10px] text-slate-500">
+            {riskAnalytics.weightedBeta > 1 ? 'Lebih fluktuatif dari IHSG' : 'Lebih stabil dari indeks umum'}
+          </span>
+        </div>
+
+        <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/60">
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+            Value at Risk (VaR 95% 1-Day)
+          </span>
+          <span className="text-lg font-black font-mono text-rose-600 dark:text-rose-400 mt-0.5 block">
+            -{formatCurrency(riskAnalytics.var95.nominal)} ({riskAnalytics.var95.pct}%)
+          </span>
+          <span className="text-[10px] text-slate-500">
+            Estimasi potensi risiko harian normal
+          </span>
+        </div>
+
+        <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/60">
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+            Konsentrasi Portofolio Terbesar
+          </span>
+          <span className="text-lg font-black font-mono text-indigo-600 dark:text-indigo-400 mt-0.5 block">
+            {riskAnalytics.topHolding} ({riskAnalytics.topConcentrationPct}%)
+          </span>
+          <span className="text-[10px] text-slate-500">
+            Porsi aset terbesar saat ini
+          </span>
+        </div>
+      </div>
+
+      {/* Warnings if any */}
+      {riskAnalytics.warnings?.length > 0 && (
+        <div className="space-y-1.5">
+          {riskAnalytics.warnings.map((w, idx) => (
+            <div key={idx} className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-700 dark:text-amber-300 flex items-center gap-2">
+              <span>⚠️</span>
+              <span>{w}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Bloomberg MARS: Macro Stress Testing Scenarios */}
+      <div className="space-y-2.5 pt-1">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+            <span>⚡</span> Simulasi Skenario Guncangan Makro (Stress Testing):
+          </span>
+          <span className="text-[11px] text-slate-500 font-mono">
+            Bloomberg MARS Engine
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {riskAnalytics.stressScenarios?.map(s => (
+            <div key={s.id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/30 border border-slate-200/80 dark:border-slate-700/60 flex flex-col justify-between space-y-2">
+              <div>
+                <div className="flex items-center justify-between gap-1">
+                  <span className="text-base">{s.icon}</span>
+                  <span className={`text-xs font-mono font-black ${
+                    s.impactPct >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                  }`}>
+                    {s.impactPct >= 0 ? `+${s.impactPct}%` : `${s.impactPct}%`}
+                  </span>
+                </div>
+                <div className="font-bold text-xs text-slate-900 dark:text-white mt-1.5">
+                  {s.name}
+                </div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
+                  {s.description}
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/50 flex items-center justify-between text-[11px]">
+                <span className="text-slate-500 font-sans">Estimasi Dampak:</span>
+                <span className={`font-bold font-mono ${
+                  s.nominalImpact >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                }`}>
+                  {s.nominalImpact >= 0 ? `+${formatCurrency(s.nominalImpact)}` : formatCurrency(s.nominalImpact)}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )}
 
   {/* Positions Table */}
   <div className="rounded-xl border border-slate-200 dark:border-white/[0.04] overflow-hidden bg-slate-50 dark:bg-white/[0.02]">

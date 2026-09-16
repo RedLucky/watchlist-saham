@@ -8,6 +8,7 @@ import EconomicValuePanel from './EconomicValuePanel';
 import ScenarioForecaster from './ScenarioForecaster';
 import DividendTrapPanel from './DividendTrapPanel';
 import CorporateActionsPanel from './CorporateActionsPanel';
+import AutoRejectionLadderPanel from './AutoRejectionLadderPanel';
 import {
   roundToIDXTick,
   calculateMonitorMetrics,
@@ -2637,6 +2638,15 @@ export default function StockExplorer({ user }) {
                 {stockDetail?.corporateActions?.length > 0 && (
                   <CorporateActionsPanel
                     corporateActions={stockDetail.corporateActions}
+                    ticker={stockDetail.ticker}
+                  />
+                )}
+
+                {/* ── BLOOMBERG ARA / ARB & ALRT: EXECUTION LIMITS & ALERTS ── */}
+                {stockDetail?.executionLimits && (
+                  <AutoRejectionLadderPanel
+                    executionLimits={stockDetail.executionLimits}
+                    smartAlerts={stockDetail.smartAlerts || []}
                     ticker={stockDetail.ticker}
                   />
                 )}

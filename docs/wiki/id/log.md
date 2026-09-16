@@ -4,6 +4,15 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-09-16] feat | Bloomberg Terminal Fase 3: Batas Regulasi ARA/ARB, Tangga Fraksi, Manajemen Risiko PORT/MARS, dan Mesin ALRT
+- Membangun `src/lib/idxExecutionLimits.js` (Bloomberg `ARA` / `ARB`): batas persentase simetris BEI (35%, 25%, 20%, 10%), perhitungan presisi jarak fraksi (`countTicksBetween`), dan tangga eksekusi 7 tingkat.
+- Membangun `src/lib/portfolioRiskEngine.js` (Bloomberg `PORT` & `MARS`): Weighted Portfolio Beta ($\beta_{\text{port}}$), Value at Risk 1-hari (VaR 95%), deteksi konsentrasi emiten/sektor, serta 4 skenario uji ketahanan makro (IHSG crash, BI rate hike, komoditas, pelemahan rupiah).
+- Membangun `src/lib/smartAlertEngine.js` (Bloomberg `ALRT`): evaluasi sinyal otomatis berbasis aturan (kedekatan ARA/ARB $\le 2$ fraksi, diskon valuasi PBND $\le -1.5\text{SD}$, jebakan dividen, lonjakan volume) serta generator embed Discord.
+- Mengintegrasikan modul ARA/ARB dan ALRT pada `GET /api/stocks/[ticker]`, dan PORT/MARS pada `GET /api/portfolio`.
+- Membangun komponen visual: `AutoRejectionLadderPanel.jsx` di Stock Explorer dan Kokpit Risiko & Uji Ketahanan Makro di `PortfolioPanel.jsx`.
+- Menambahkan pengujian unit komprehensif pada `tests/idxExecutionLimits.test.js`, `tests/portfolioRisk.test.js`, dan `tests/smartAlert.test.js` (176/176 pengujian lulus 100%).
+- Mempublikasikan dokumentasi ilmiah pada `docs/wiki/id/trading-system/tangga-auto-rejection.md`, `manajemen-risiko-portofolio.md`, dan `peringatan-pintar-alrt.md`.
+
 ## [2026-09-16] feat | Bloomberg Terminal Fase 2: Analisis Jebakan Dividen DTRP, Run-Rate DVD, dan Kalender Aksi Korporasi CA
 - Membangun `src/lib/dividendTrapEngine.js` (Bloomberg `DTRP` & `DVD`): menganalisis jebakan dividen (*dividend trap*), kecukupan FCF, batasan DPR, risiko utang, serta konsistensi dividen aristokrat BEI; menghitung *run-rate* dividen pasif 12 bulan per lot (harian, bulanan, tahunan).
 - Membangun `src/lib/corporateActionEngine.js` (Bloomberg `CA`): menyusun kalender dan hitung mundur dividen tunai, RUPS (RUPST/RUPSLB), serta jendela resmi musim rilis laporan keuangan berkala BEI/OJK.

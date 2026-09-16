@@ -4,6 +4,15 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-09-16] feat | Bloomberg Terminal Phase 3: ARA/ARB Limits & Tick Ladder, PORT/MARS Risk Cockpit, and ALRT Engine
+- Implemented `src/lib/idxExecutionLimits.js` (Bloomberg `ARA` / `ARB`): exact daily price limits (35%, 25%, 20%, 10%), precision tick counting via `countTicksBetween`, and 7-step execution ladder.
+- Implemented `src/lib/portfolioRiskEngine.js` (Bloomberg `PORT` & `MARS`): Weighted Portfolio Beta ($\beta_{\text{port}}$), Parametric 1-Day VaR 95%, concentration checks, and 4 macro stress testing shock scenarios.
+- Implemented `src/lib/smartAlertEngine.js` (Bloomberg `ALRT`): multi-factor alert rules (ARA/ARB proximity $\le 2$ ticks, PBND Z-Score $\le -1.5\text{SD}$, dividend traps, volume spikes) and Discord rich embed formatting.
+- Integrated ARA/ARB and ALRT into `GET /api/stocks/[ticker]`, and PORT/MARS into `GET /api/portfolio`.
+- Built UI components: `AutoRejectionLadderPanel.jsx` in Stock Explorer and Macro Stress Testing Cockpit in `PortfolioPanel.jsx`.
+- Added unit tests: `tests/idxExecutionLimits.test.js`, `tests/portfolioRisk.test.js`, and `tests/smartAlert.test.js` (176/176 tests passing).
+- Published quantitative documentation: `docs/wiki/en/trading-system/auto-rejection-ladder.md`, `portfolio-risk-stress-test.md`, and `rule-based-smart-alerts.md`.
+
 ## [2026-09-16] feat | Bloomberg Terminal Phase 2: DTRP Dividend Trap Analyzer, DVD Run-Rate, and CA Catalyst Calendar
 - Implemented `src/lib/dividendTrapEngine.js` (Bloomberg `DTRP` & `DVD`): detects dividend trap risks, evaluates FCF coverage, DPR guardrails, debt burden, and dividend aristocrat streaks; computes 12-month passive income cashflow run-rate per lot.
 - Implemented `src/lib/corporateActionEngine.js` (Bloomberg `CA`): compiles timeline of cash dividends, general shareholder meetings (RUPS/AGM), and regulatory earnings release windows.

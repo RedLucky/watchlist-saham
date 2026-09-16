@@ -12,6 +12,8 @@ import { calculateAllValuationBands } from '@/lib/valuationBands';
 import { calculateWaccAndEconomicValue } from '@/lib/waccEngine';
 import { analyzeDividendTrap } from '@/lib/dividendTrapEngine';
 import { buildCorporateActionsTimeline } from '@/lib/corporateActionEngine';
+import { calculateExecutionLimits } from '@/lib/idxExecutionLimits';
+import { evaluateStockAlerts } from '@/lib/smartAlertEngine';
 
 export const dynamic = 'force-dynamic';
 
@@ -449,6 +451,39 @@ export async function GET(request, { params }) {
       console.warn('[CA] Error building corporate actions timeline:', caErr.message);
     }
 
+    // Bloomberg ARA / ARB: Auto-Rejection Limits & Tick Distance Ladder
+    let executionLimits = null;
+    try {
+      const prevClose = stock.price && Number.isFinite(stock.changePercent)
+        ? (stock.price / (1 + (stock.changePercent / 100)))
+        : stock.price;
+
+      executionLimits = calculateExecutionLimits({
+        price: stock.price,
+        prevClose,
+        isAccelerationBoard: false
+      });
+    } catch (limitErr) {
+      console.warn('[ARA] Error calculating execution limits:', limitErr.message);
+    }
+
+    // Bloomberg ALRT: Rule-Based Smart Alerts
+    let smartAlerts = [];
+    try {
+      smartAlerts = evaluateStockAlerts({
+        ticker,
+        name: stock.name,
+        price: stock.price,
+        prevClose: executionLimits?.prevClose,
+        executionLimits,
+        valuationBands,
+        dividendTrap,
+        technicals
+      });
+    } catch (alertErr) {
+      console.warn('[ALRT] Error evaluating alerts:', alertErr.message);
+    }
+
     const responseData = {
       ...enrichedStock,
       kseiLatest,
@@ -465,6 +500,8 @@ export async function GET(request, { params }) {
       wacc: waccData,
       dividendTrap,
       corporateActions,
+      executionLimits,
+      smartAlerts,
       scores: {
         fundamental: fundamentalScore,
         technical: technicalScore,
