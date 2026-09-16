@@ -14,7 +14,7 @@ services:
       - "-m"
       - "${AI_MODEL_PATH:-/models/models/empero-ai/Qwen3.8-4B-Distill-GGUF/Qwen3.8-4B-Q4_K_M.gguf}"
       - "-c"
-      - "4096" # 4k context window: hemat 50% memory bandwidth KV cache
+      - "8192" # 8k context window: memuat riwayat panjang dan analisis multi-emiten
       - "-t"
       - "6"    # 6 P-Cores (Performance Cores) untuk generasi token stabil tanpa hyperthreading penalty
       - "-tb"
