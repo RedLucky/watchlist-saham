@@ -35,9 +35,22 @@ export default function AiConsultationPanel({ user = null, stocks = [] }) {
   const [sessionsLoading, setSessionsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expandedThinking, setExpandedThinking] = useState({});
+  const [copiedId, setCopiedId] = useState(null);
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+
+  const handleCopyMessage = (msgId, text) => {
+    if (!text) return;
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        setCopiedId(msgId);
+        setTimeout(() => setCopiedId(null), 2000);
+      }).catch((err) => {
+        console.error('Failed to copy to clipboard:', err);
+      });
+    }
+  };
 
   // 1. Fetch all user sessions on mount
   const fetchSessions = async () => {
@@ -169,93 +182,93 @@ export default function AiConsultationPanel({ user = null, stocks = [] }) {
     }));
   };
 
-  // Simple Markdown & Table Formatter
-  const renderFormattedContent = (content = '') => {
-    if (!content) return null;
+  const renderInlineMarkdown = (text = '', isUser = false) => {
+    if (!text) return null;
 
-    // Check for markdown tables
-    if (content.includes('|') && content.includes('\n')) {
-      const lines = content.split('\n');
-      const elements = [];
-      let tableLines = [];
-      let inTable = false;
+    // Pattern matches: `inline code`, **bold**, *italic*
+    const regex = /(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*)/g;
+    const parts = text.split(regex);
 
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (line.startsWith('|') && line.endsWith('|')) {
-          inTable = true;
-          tableLines.push(line);
-        } else {
-          if (inTable && tableLines.length >= 2) {
-            elements.push(renderTableBlock(tableLines, `tbl-${i}`));
-            tableLines = [];
-            inTable = false;
-          }
-          if (line) elements.push(<p key={`p-${i}`} className="my-1.5 leading-relaxed">{renderInlineMarkdown(line)}</p>);
-        }
-      }
-
-      if (inTable && tableLines.length >= 2) {
-        elements.push(renderTableBlock(tableLines, `tbl-end`));
-      }
-
-      return elements;
-    }
-
-    return content.split('\n').map((line, idx) => {
-      const trimmed = line.trim();
-      if (!trimmed) return <div key={idx} className="h-2" />;
-      if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-        return (
-          <li key={idx} className="ml-4 list-disc my-1 leading-relaxed">
-            {renderInlineMarkdown(trimmed.substring(2))}
-          </li>
-        );
-      }
-      if (/^\d+\.\s/.test(trimmed)) {
-        return (
-          <li key={idx} className="ml-4 list-decimal my-1 leading-relaxed">
-            {renderInlineMarkdown(trimmed.replace(/^\d+\.\s*/, ''))}
-          </li>
-        );
-      }
-      return <p key={idx} className="my-1.5 leading-relaxed">{renderInlineMarkdown(trimmed)}</p>;
-    });
-  };
-
-  const renderInlineMarkdown = (text = '') => {
-    // Bold **text**
-    const parts = text.split(/(\*\*.*?\*\*)/g);
     return parts.map((part, i) => {
-      if (part.startsWith('**') && part.endsWith('**')) {
-        return <strong key={i} className="font-extrabold text-slate-900 dark:text-white">{part.slice(2, -2)}</strong>;
+      if (!part) return null;
+      if (part.startsWith('`') && part.endsWith('`') && part.length >= 2) {
+        return (
+          <code
+            key={i}
+            className={`px-1.5 py-0.5 rounded font-mono text-[11px] sm:text-xs font-semibold ${
+              isUser
+                ? 'bg-blue-800/60 text-white'
+                : 'bg-slate-200/90 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400'
+            }`}
+          >
+            {part.slice(1, -1)}
+          </code>
+        );
+      }
+      if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
+        return (
+          <strong
+            key={i}
+            className={`font-extrabold ${
+              isUser ? 'text-white' : 'text-slate-900 dark:text-white'
+            }`}
+          >
+            {part.slice(2, -2)}
+          </strong>
+        );
+      }
+      if (part.startsWith('*') && part.endsWith('*') && part.length >= 2 && !part.startsWith('**')) {
+        return (
+          <em
+            key={i}
+            className={`italic ${
+              isUser ? 'text-blue-100' : 'text-slate-800 dark:text-slate-200'
+            }`}
+          >
+            {part.slice(1, -1)}
+          </em>
+        );
       }
       return part;
     });
   };
 
   const renderTableBlock = (tableLines, key) => {
+    if (!tableLines || tableLines.length < 2) return null;
+
+    const parseCells = (line) => {
+      const parts = line.split('|');
+      if (line.startsWith('|')) parts.shift();
+      if (line.endsWith('|')) parts.pop();
+      return parts.map(s => s.trim());
+    };
+
     const headerLine = tableLines[0];
-    const headers = headerLine.split('|').map(s => s.trim()).filter(Boolean);
-    const bodyLines = tableLines.slice(2); // skip separator
+    const headers = parseCells(headerLine);
+    // Skip separator lines like |---|---| or |:---|---:|
+    const dataLines = tableLines.slice(1).filter(line => !/^\|?[\s\-:|]+\|?$/.test(line.trim()));
 
     return (
-      <div key={key} className="my-3 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+      <div key={key} className="my-3 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
         <table className="w-full text-left text-xs border-collapse">
-          <thead className="bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 font-bold">
+          <thead className="bg-slate-100 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 font-bold">
             <tr>
               {headers.map((h, idx) => (
-                <th key={idx} className="px-3 py-2 border-b border-slate-200 dark:border-slate-700">{h}</th>
+                <th key={idx} className="px-3 py-2 border-b border-slate-200 dark:border-slate-700">
+                  {renderInlineMarkdown(h)}
+                </th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-800 dark:text-slate-200">
-            {bodyLines.map((row, rIdx) => {
-              const cells = row.split('|').map(s => s.trim()).filter(Boolean);
+            {dataLines.map((row, rIdx) => {
+              const cells = parseCells(row);
               return (
-                <tr key={rIdx} className="hover:bg-slate-50 dark:hover:bg-slate-800/30">
+                <tr key={rIdx} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
                   {cells.map((c, cIdx) => (
-                    <td key={cIdx} className="px-3 py-2 font-medium">{renderInlineMarkdown(c)}</td>
+                    <td key={cIdx} className="px-3 py-2 font-medium">
+                      {renderInlineMarkdown(c)}
+                    </td>
                   ))}
                 </tr>
               );
@@ -264,6 +277,237 @@ export default function AiConsultationPanel({ user = null, stocks = [] }) {
         </table>
       </div>
     );
+  };
+
+  // Robust Markdown Formatter (Headers, Lists, Blockquotes, Tables, Code)
+  const renderFormattedContent = (content = '', isUser = false) => {
+    if (!content) return null;
+
+    const lines = content.split('\n');
+    const blocks = [];
+    let currentList = null; // { type: 'ul' | 'ol', items: [] }
+    let currentTable = null; // string[]
+    let currentCode = null; // { lang: string, lines: [] }
+
+    const flushList = () => {
+      if (currentList) {
+        if (currentList.type === 'ul') {
+          blocks.push(
+            <ul
+              key={`ul-${blocks.length}`}
+              className={`my-2 space-y-1.5 ml-5 list-disc ${
+                isUser ? 'text-white' : 'text-slate-800 dark:text-slate-200'
+              }`}
+            >
+              {currentList.items.map((item, idx) => (
+                <li key={idx} className="leading-relaxed">
+                  {renderInlineMarkdown(item, isUser)}
+                </li>
+              ))}
+            </ul>
+          );
+        } else {
+          blocks.push(
+            <ol
+              key={`ol-${blocks.length}`}
+              className={`my-2 space-y-1.5 ml-5 list-decimal ${
+                isUser ? 'text-white' : 'text-slate-800 dark:text-slate-200'
+              }`}
+            >
+              {currentList.items.map((item, idx) => (
+                <li key={idx} className="leading-relaxed">
+                  {renderInlineMarkdown(item, isUser)}
+                </li>
+              ))}
+            </ol>
+          );
+        }
+        currentList = null;
+      }
+    };
+
+    const flushTable = () => {
+      if (currentTable) {
+        if (currentTable.length >= 2) {
+          blocks.push(renderTableBlock(currentTable, `tbl-${blocks.length}`));
+        } else {
+          currentTable.forEach((tblLine, idx) => {
+            blocks.push(
+              <p
+                key={`tbl-p-${blocks.length}-${idx}`}
+                className={`my-1.5 leading-relaxed ${
+                  isUser ? 'text-white font-medium' : 'text-slate-800 dark:text-slate-200'
+                }`}
+              >
+                {renderInlineMarkdown(tblLine, isUser)}
+              </p>
+            );
+          });
+        }
+        currentTable = null;
+      }
+    };
+
+    const flushCode = () => {
+      if (currentCode) {
+        blocks.push(
+          <pre
+            key={`code-${blocks.length}`}
+            className="my-2.5 p-3 rounded-xl bg-slate-900 text-emerald-400 dark:bg-black/90 font-mono text-xs overflow-x-auto border border-slate-800"
+          >
+            <code>{currentCode.lines.join('\n')}</code>
+          </pre>
+        );
+        currentCode = null;
+      }
+    };
+
+    for (let i = 0; i < lines.length; i++) {
+      const rawLine = lines[i];
+      const trimmed = rawLine.trim();
+
+      // Check code fence (```)
+      if (trimmed.startsWith('```')) {
+        if (currentCode) {
+          flushCode();
+        } else {
+          flushList();
+          flushTable();
+          currentCode = { lang: trimmed.slice(3).trim(), lines: [] };
+        }
+        continue;
+      }
+      if (currentCode) {
+        currentCode.lines.push(rawLine);
+        continue;
+      }
+
+      // Check table lines (starts with |)
+      if (trimmed.startsWith('|')) {
+        flushList();
+        if (!currentTable) currentTable = [];
+        currentTable.push(trimmed);
+        continue;
+      } else if (currentTable) {
+        flushTable();
+      }
+
+      // Check bullet list items (- or * followed by space)
+      if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+        const itemText = trimmed.substring(2).trim();
+        if (!currentList || currentList.type !== 'ul') {
+          flushList();
+          currentList = { type: 'ul', items: [] };
+        }
+        currentList.items.push(itemText);
+        continue;
+      }
+
+      // Check numbered list items (e.g. 1. 2.)
+      const numMatch = trimmed.match(/^(\d+)\.\s+(.*)$/);
+      if (numMatch) {
+        const itemText = numMatch[2].trim();
+        if (!currentList || currentList.type !== 'ol') {
+          flushList();
+          currentList = { type: 'ol', items: [] };
+        }
+        currentList.items.push(itemText);
+        continue;
+      }
+
+      // Not list item -> flush active list
+      flushList();
+
+      // Empty line spacer
+      if (!trimmed) {
+        blocks.push(<div key={`sp-${i}`} className="h-2" />);
+        continue;
+      }
+
+      // Horizontal separator
+      if (trimmed === '---' || trimmed === '***' || trimmed === '___') {
+        blocks.push(<hr key={`hr-${i}`} className="my-3 border-t border-slate-200 dark:border-slate-800" />);
+        continue;
+      }
+
+      // Headers (#, ##, ###, ####)
+      if (trimmed.startsWith('# ')) {
+        blocks.push(
+          <h3
+            key={`h1-${i}`}
+            className="text-base sm:text-lg font-black text-slate-900 dark:text-white mt-3 mb-1 border-b border-slate-200/80 dark:border-slate-800 pb-1"
+          >
+            {renderInlineMarkdown(trimmed.substring(2), isUser)}
+          </h3>
+        );
+        continue;
+      }
+      if (trimmed.startsWith('## ')) {
+        blocks.push(
+          <h4
+            key={`h2-${i}`}
+            className="text-sm sm:text-base font-extrabold text-indigo-600 dark:text-indigo-400 mt-3 mb-1 flex items-center gap-1.5"
+          >
+            {renderInlineMarkdown(trimmed.substring(3), isUser)}
+          </h4>
+        );
+        continue;
+      }
+      if (trimmed.startsWith('### ')) {
+        blocks.push(
+          <h5
+            key={`h3-${i}`}
+            className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white mt-2.5 mb-1"
+          >
+            {renderInlineMarkdown(trimmed.substring(4), isUser)}
+          </h5>
+        );
+        continue;
+      }
+      if (trimmed.startsWith('#### ')) {
+        blocks.push(
+          <h6
+            key={`h4-${i}`}
+            className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mt-2 mb-0.5"
+          >
+            {renderInlineMarkdown(trimmed.substring(5), isUser)}
+          </h6>
+        );
+        continue;
+      }
+
+      // Blockquotes (> ...)
+      if (trimmed.startsWith('>')) {
+        const quoteText = trimmed.replace(/^>\s*/, '');
+        blocks.push(
+          <blockquote
+            key={`bq-${i}`}
+            className="p-2.5 my-2 rounded-r-xl border-l-4 border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/30 text-xs sm:text-sm italic text-slate-700 dark:text-slate-300"
+          >
+            {renderInlineMarkdown(quoteText, isUser)}
+          </blockquote>
+        );
+        continue;
+      }
+
+      // Standard paragraph
+      blocks.push(
+        <p
+          key={`p-${i}`}
+          className={`my-1.5 leading-relaxed ${
+            isUser ? 'text-white font-medium' : 'text-slate-800 dark:text-slate-200'
+          }`}
+        >
+          {renderInlineMarkdown(trimmed, isUser)}
+        </p>
+      );
+    }
+
+    flushList();
+    flushTable();
+    flushCode();
+
+    return blocks;
   };
 
   return (
@@ -445,29 +689,51 @@ export default function AiConsultationPanel({ user = null, stocks = [] }) {
                     ? 'bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 text-white font-medium rounded-tr-xs'
                     : 'bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/70 text-slate-800 dark:text-slate-200 rounded-tl-xs'
                 }`}>
-                  {/* Collapsible Reasoning Block for Assistant */}
-                  {!isUser && msg.thinking && (
-                    <div className="mb-3">
-                      <button
-                        onClick={() => toggleThinking(msg.id || idx)}
-                        className="flex items-center gap-1.5 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 bg-indigo-50 dark:bg-indigo-950/40 px-2.5 py-1 rounded-lg border border-indigo-200 dark:border-indigo-800/50 transition-colors cursor-pointer"
-                      >
-                        <span>🧠</span>
-                        <span>{expandedThinking[msg.id || idx] ? 'Sembunyikan' : 'Lihat'} Alur Penalaran & Analisis Risiko</span>
-                        <span className="text-[10px]">{expandedThinking[msg.id || idx] ? '▲' : '▼'}</span>
-                      </button>
+                  {/* Assistant Header Actions: Reasoning Toggle & Copy Button */}
+                  {!isUser && (
+                    <div className="flex items-center justify-between gap-2 mb-3 pb-2 border-b border-slate-200/80 dark:border-slate-700/60">
+                      <div className="flex items-center gap-2">
+                        {msg.thinking ? (
+                          <button
+                            onClick={() => toggleThinking(msg.id || idx)}
+                            className="flex items-center gap-1.5 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 bg-indigo-50 dark:bg-indigo-950/40 px-2.5 py-1 rounded-lg border border-indigo-200 dark:border-indigo-800/50 transition-colors cursor-pointer"
+                          >
+                            <span>🧠</span>
+                            <span>{expandedThinking[msg.id || idx] ? 'Sembunyikan' : 'Lihat'} Alur Penalaran</span>
+                            <span className="text-[10px]">{expandedThinking[msg.id || idx] ? '▲' : '▼'}</span>
+                          </button>
+                        ) : (
+                          <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                            <span>🤖</span> Asisten Analisis Saham
+                          </span>
+                        )}
+                      </div>
 
-                      {expandedThinking[msg.id || idx] && (
-                        <div className="mt-2 p-3 rounded-xl bg-indigo-950/20 border border-indigo-800/30 text-[11px] font-mono text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
-                          {msg.thinking}
-                        </div>
-                      )}
+                      <button
+                        onClick={() => handleCopyMessage(msg.id || idx, msg.content)}
+                        title="Salin jawaban AI ke clipboard"
+                        className={`flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                          copiedId === (msg.id || idx)
+                            ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 font-bold shadow-xs'
+                            : 'bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
+                        }`}
+                      >
+                        <span>{copiedId === (msg.id || idx) ? '✅' : '📋'}</span>
+                        <span>{copiedId === (msg.id || idx) ? 'Tersalin!' : 'Salin'}</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Collapsible Reasoning Block for Assistant */}
+                  {!isUser && msg.thinking && expandedThinking[msg.id || idx] && (
+                    <div className="mb-3 p-3 rounded-xl bg-indigo-950/20 border border-indigo-800/30 text-[11px] font-mono text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
+                      {msg.thinking}
                     </div>
                   )}
 
                   {/* Main Message Content */}
                   <div className="space-y-1">
-                    {renderFormattedContent(msg.content)}
+                    {renderFormattedContent(msg.content, isUser)}
                   </div>
 
                   {/* Ticker Badges */}
