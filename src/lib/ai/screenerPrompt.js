@@ -78,14 +78,29 @@ export function parseScreenerAiResponse(rawContent) {
 
     const parsed = JSON.parse(cleaned);
 
+    const parseNullableNumber = (val) => {
+      if (val === null || val === undefined || val === '') return null;
+      const num = Number(val);
+      return Number.isFinite(num) ? num : null;
+    };
+
+    let sector = null;
+    if (typeof parsed.sector === 'string' && parsed.sector.trim().length > 0) {
+      const trimmed = parsed.sector.trim();
+      const lower = trimmed.toLowerCase();
+      if (lower !== 'null' && lower !== 'all' && lower !== 'semua' && lower !== 'none' && lower !== 'any') {
+        sector = trimmed;
+      }
+    }
+
     return {
-      sector: typeof parsed.sector === 'string' && parsed.sector.trim().length > 0 ? parsed.sector.trim() : null,
-      minDividendYield: Number.isFinite(Number(parsed.minDividendYield)) ? Number(parsed.minDividendYield) : null,
-      minRoe: Number.isFinite(Number(parsed.minRoe)) ? Number(parsed.minRoe) : null,
-      minOpm: Number.isFinite(Number(parsed.minOpm)) ? Number(parsed.minOpm) : null,
-      maxPer: Number.isFinite(Number(parsed.maxPer)) ? Number(parsed.maxPer) : null,
-      maxPbv: Number.isFinite(Number(parsed.maxPbv)) ? Number(parsed.maxPbv) : null,
-      maxDer: Number.isFinite(Number(parsed.maxDer)) ? Number(parsed.maxDer) : null,
+      sector,
+      minDividendYield: parseNullableNumber(parsed.minDividendYield),
+      minRoe: parseNullableNumber(parsed.minRoe),
+      minOpm: parseNullableNumber(parsed.minOpm),
+      maxPer: parseNullableNumber(parsed.maxPer),
+      maxPbv: parseNullableNumber(parsed.maxPbv),
+      maxDer: parseNullableNumber(parsed.maxDer),
       smartMoneyOnly: Boolean(parsed.smartMoneyOnly),
       syariahOnly: Boolean(parsed.syariahOnly),
       explanation: typeof parsed.explanation === 'string' && parsed.explanation.trim().length > 0
@@ -142,7 +157,7 @@ export function filterStocksByAiCriteria(stocks = [], criteria = {}) {
     }
 
     // 3. Dividend Yield Check
-    const divYield = Number(f.dividendYield) || 0;
+    const divYield = Number(f.dividendYield ?? s.dividendYield ?? s.metrics?.dividendYield ?? 0) || 0;
     if (criteria.minDividendYield !== null && divYield < criteria.minDividendYield) {
       continue;
     }
@@ -224,3 +239,4 @@ export function filterStocksByAiCriteria(stocks = [], criteria = {}) {
   // Sort descending by match score
   return matched.sort((a, b) => b.matchScore - a.matchScore);
 }
+

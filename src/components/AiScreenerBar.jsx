@@ -209,3 +209,4 @@ export default function AiScreenerBar({ onSearch, loading, aiResult, onClear }) 
     </div>
   );
 }
+

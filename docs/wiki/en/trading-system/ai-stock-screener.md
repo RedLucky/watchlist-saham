@@ -47,3 +47,4 @@ Filtered stocks are scored via a composite match algorithm ($0 - 99$):
 - **API Handler**: `POST /api/screener/ai`.
 - **UI Component**: `src/components/AiScreenerBar.jsx` mounted within `src/components/StockScreener.jsx`.
 - **Automated Tests**: `tests/aiScreener.test.js` (198/198 total suite tests passing).
+

@@ -27,10 +27,45 @@ function buildHeuristicFallbackCriteria(promptText) {
   else if (p.includes('sehat') || p.includes('farmasi') || p.includes('rs')) sector = 'Healthcare';
   else if (p.includes('properti') || p.includes('gedung')) sector = 'Properties & Real Estate';
 
-  const minYield = p.includes('dividen') || p.includes('yield') ? 4.0 : null;
-  const minRoe = p.includes('kualitas') || p.includes('profit') || p.includes('untung') ? 12.0 : null;
-  const maxPer = p.includes('murah') || p.includes('diskon') || p.includes('undervalue') ? 15.0 : null;
-  const maxPbv = p.includes('murah') || p.includes('diskon') || p.includes('undervalue') ? 1.5 : null;
+  let minYield = null;
+  const yieldMatch = p.match(/(?:deviden|dividen|dividend|yield)\s*(?:yield\s*)?(?:>|>=|di atas|minimal|min)?\s*([0-9]+(?:\.[0-9]+)?)/i);
+  if (yieldMatch) {
+    minYield = parseFloat(yieldMatch[1]);
+  } else if (p.includes('dividen') || p.includes('deviden') || p.includes('yield')) {
+    minYield = 4.0;
+  }
+
+  let minRoe = null;
+  const roeMatch = p.match(/roe\s*(?:>|>=|di atas|minimal|min)?\s*([0-9]+(?:\.[0-9]+)?)/i);
+  if (roeMatch) {
+    minRoe = parseFloat(roeMatch[1]);
+  } else if (p.includes('kualitas') || p.includes('profit') || p.includes('untung')) {
+    minRoe = 12.0;
+  }
+
+  let maxPer = null;
+  const perMatch = p.match(/per\s*(?:<|<=|di bawah|maksimal|max)?\s*([0-9]+(?:\.[0-9]+)?)/i);
+  if (perMatch) {
+    maxPer = parseFloat(perMatch[1]);
+  } else if (p.includes('murah') || p.includes('diskon') || p.includes('undervalue')) {
+    maxPer = 15.0;
+  }
+
+  let maxPbv = null;
+  const pbvMatch = p.match(/pbv\s*(?:<|<=|di bawah|maksimal|max)?\s*([0-9]+(?:\.[0-9]+)?)/i);
+  if (pbvMatch) {
+    maxPbv = parseFloat(pbvMatch[1]);
+  } else if (p.includes('murah') || p.includes('diskon') || p.includes('undervalue')) {
+    maxPbv = 1.5;
+  }
+
+  let maxDer = null;
+  const hasDerRequest = p.includes('der') || p.includes('utang') || p.includes('debt');
+  if (hasDerRequest) {
+    const derMatch = p.match(/der\s*(?:<|<=|di bawah|maksimal|max)?\s*([0-9]+(?:\.[0-9]+)?)/i);
+    maxDer = derMatch ? parseFloat(derMatch[1]) : 1.5;
+  }
+
   const smartMoneyOnly = p.includes('bandar') || p.includes('asing') || p.includes('institusi') || p.includes('akumulasi');
   const syariahOnly = p.includes('syariah') || p.includes('issi') || p.includes('jii');
 
@@ -41,7 +76,7 @@ function buildHeuristicFallbackCriteria(promptText) {
     minOpm: null,
     maxPer,
     maxPbv,
-    maxDer: sector === 'Financials' ? null : 1.5,
+    maxDer: sector === 'Financials' ? null : maxDer,
     smartMoneyOnly,
     syariahOnly,
     explanation: 'Filter kuantitatif diekstrak menggunakan pencocokan heuristik kata kunci.'
@@ -123,3 +158,4 @@ export async function POST(request) {
     );
   }
 }
+

@@ -36,6 +36,15 @@ describe('AI Stock Screener Suite', () => {
     const parsedMarkdown = parseScreenerAiResponse(markdownWrapped);
     assert.strictEqual(parsedMarkdown.sector, 'Energy');
     assert.strictEqual(parsedMarkdown.minDividendYield, 6);
+
+    // Null preservation test: Ensure explicit null in JSON is preserved as null (never converted to 0)
+    const nullJson = '{"sector": null, "minDividendYield": 6, "minRoe": null, "minOpm": null, "maxPer": null, "maxPbv": null, "maxDer": null, "smartMoneyOnly": false, "syariahOnly": false}';
+    const parsedNull = parseScreenerAiResponse(nullJson);
+    assert.strictEqual(parsedNull.minDividendYield, 6);
+    assert.strictEqual(parsedNull.minRoe, null);
+    assert.strictEqual(parsedNull.maxPer, null);
+    assert.strictEqual(parsedNull.maxPbv, null);
+    assert.strictEqual(parsedNull.maxDer, null);
   });
 
   it('3. parseScreenerAiResponse menangani string rusak dengan fallback aman', () => {
@@ -114,3 +123,4 @@ describe('AI Stock Screener Suite', () => {
     assert.deepStrictEqual(res2, []);
   });
 });
+

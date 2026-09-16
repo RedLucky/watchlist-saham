@@ -47,3 +47,4 @@ Saham yang lolos kriteria diurutkan berdasarkan skor kecocokan komposit ($0 - 99
 - **Rute API**: `POST /api/screener/ai`.
 - **Antarmuka UI**: `src/components/AiScreenerBar.jsx` yang terpasang di atas tabel pada `src/components/StockScreener.jsx`.
 - **Pengujian Unit**: `tests/aiScreener.test.js` (198/198 pengujian lulus 100%).
+
