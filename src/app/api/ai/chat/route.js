@@ -169,7 +169,7 @@ export async function POST(request) {
         enableThinking: true,
         temperature: 0.4,
         topP: 0.85,
-        maxTokens: 3500,
+        maxTokens: 2500,
         priority: AI_PRIORITY.HIGH,
         taskName: `chat-session-${sessionId}`
       });
