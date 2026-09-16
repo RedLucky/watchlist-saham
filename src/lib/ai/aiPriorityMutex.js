@@ -104,3 +104,4 @@ export const aiPriorityMutex = globalMutex;
 export async function runWithAiLock(taskFn, priority = AI_PRIORITY.NORMAL, taskName = 'ai-task') {
   return globalMutex.runWithAiLock(taskFn, priority, taskName);
 }
+

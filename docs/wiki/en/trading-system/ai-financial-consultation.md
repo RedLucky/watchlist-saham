@@ -112,3 +112,4 @@ model ChatMessage {
 - **API Endpoint**: `src/app/api/ai/chat/route.js`.
 - **UI Component**: `src/components/AiConsultationPanel.jsx` mounted in `Dashboard.jsx`.
 - **Automated Tests**: `tests/aiChatAdvisor.test.js` (5 unit tests, 203/203 suite tests passing).
+

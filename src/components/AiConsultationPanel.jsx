@@ -552,3 +552,4 @@ export default function AiConsultationPanel({ user = null, stocks = [] }) {
     </div>
   );
 }
+

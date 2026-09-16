@@ -9,7 +9,12 @@
     "lint": "eslint",
     "test": "node --test tests/**/*.test.js",
     "discord:bot": "node src/scripts/discord-bot.js",
-    "worker:ai": "node src/scripts/ai-worker.js"
+    "worker:ai": "node src/scripts/ai-worker.js",
+    "docker:up": "docker compose up -d && docker compose -f docker-compose.ai.yml up -d",
+    "docker:down": "docker compose -f docker-compose.ai.yml down && docker compose down",
+    "docker:build": "docker compose build",
+    "docker:logs": "docker compose logs -f app",
+    "docker:status": "docker compose ps && docker compose -f docker-compose.ai.yml ps"
   },
   "dependencies": {
     "@next/third-parties": "^16.3.1",

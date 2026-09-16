@@ -112,3 +112,4 @@ model ChatMessage {
 - **Endpoint API**: `src/app/api/ai/chat/route.js`.
 - **Komponen UI**: `src/components/AiConsultationPanel.jsx` yang terpasang di `Dashboard.jsx`.
 - **Pengujian Unit**: `tests/aiChatAdvisor.test.js` (5 pengujian unit, 203/203 pengujian lulus 100%).
+
