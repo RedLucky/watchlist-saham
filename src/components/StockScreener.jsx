@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, Fragment } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, Fragment } from 'react';
 import ScoreBadge from './ScoreBadge';
 import StockOwnershipModal from './StockOwnershipModal';
+import AiScreenerBar from './AiScreenerBar';
 
 export default function StockScreener() {
   const [activeTab, setActiveTab] = useState('pick');
@@ -19,6 +20,8 @@ export default function StockScreener() {
   const [dividendStreakOnly, setDividendStreakOnly] = useState(false);
   const [highScoreOnly, setHighScoreOnly] = useState(false);
   const [copiedTicker, setCopiedTicker] = useState(null);
+  const [aiResult, setAiResult] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
 
   const tabs = [
     { 
@@ -65,25 +68,52 @@ export default function StockScreener() {
     },
   ];
 
-  useEffect(() => {
-    async function fetchScreenerData() {
-      setLoading(true);
-      setError(null);
-      setSortConfig({ key: null, direction: 'desc' });
-      try {
-        const res = await fetch(`/api/screener?type=${activeTab}&_t=${Date.now()}`);
-        if (!res.ok) throw new Error('Gagal mengambil data screener');
-        const json = await res.json();
-        setData(json.results || []);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
+  const fetchScreenerData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    setSortConfig({ key: null, direction: 'desc' });
+    try {
+      const res = await fetch(`/api/screener?type=${activeTab}&_t=${Date.now()}`);
+      if (!res.ok) throw new Error('Gagal mengambil data screener');
+      const json = await res.json();
+      setData(json.results || []);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-    
-    fetchScreenerData();
   }, [activeTab]);
+
+  useEffect(() => {
+    if (!aiResult) {
+      fetchScreenerData();
+    }
+  }, [activeTab, fetchScreenerData, aiResult]);
+
+  const handleAiSearch = async (prompt) => {
+    setAiLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/screener/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt })
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Gagal mencari dengan AI');
+      setAiResult(json);
+      setData(json.results || []);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleClearAi = () => {
+    setAiResult(null);
+    fetchScreenerData();
+  };
 
   const toggleRow = (ticker) => {
     setExpandedRow(expandedRow === ticker ? null : ticker);
@@ -122,6 +152,7 @@ export default function StockScreener() {
       case 'changePercent': return Number(item.changePercent ?? 0);
       case 'volume': return Number(item.volume ?? 0);
       case 'matchCount': return Number(item.matchCount ?? 0);
+      case 'bfi': return Number(item.metrics?.bfi ?? 0);
       default: return 0;
     }
   };
@@ -264,6 +295,19 @@ export default function StockScreener() {
   };
 
   const renderTableHeaders = () => {
+    if (aiResult) {
+      return (
+        <>
+          {renderSortHeader('Harga', 'price', 'right')}
+          {renderSortHeader('Div Yield', 'dividendYield', 'right')}
+          {renderSortHeader('Valuasi (PER / PBV)', 'per', 'right')}
+          {renderSortHeader('Profit (ROE / OPM)', 'roe', 'right', 'hidden sm:table-cell')}
+          {renderSortHeader('Smart Money', 'bfi', 'center', 'hidden md:table-cell')}
+          {renderSortHeader('AI Match', 'score', 'center')}
+        </>
+      );
+    }
+
     switch (activeTab) {
       case 'pick':
         return (
@@ -334,6 +378,54 @@ export default function StockScreener() {
     const safeChangePercent = Number.isFinite(item.changePercent) ? item.changePercent : 0;
     const cagrVal = item.metrics?.cagr;
     
+    if (aiResult) {
+      const perVal = item.metrics?.per;
+      const pbvVal = item.metrics?.pbv;
+      const roeVal = item.metrics?.roe;
+      const opmVal = item.metrics?.opm;
+      const bfiVal = item.metrics?.bfi;
+
+      return (
+        <>
+          <td className="px-4 py-3.5 whitespace-nowrap text-right font-mono tabular-nums font-black text-slate-900 dark:text-white">
+            Rp {(item.price ?? 0).toLocaleString('id-ID')}
+          </td>
+          <td className="px-4 py-3.5 whitespace-nowrap text-right">
+            {item.metrics?.dividendYield > 0 ? (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-mono font-black text-xs bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
+                {item.metrics.dividendYield.toFixed(1)}%
+              </span>
+            ) : (
+              <span className="text-slate-400 font-mono text-xs">-</span>
+            )}
+          </td>
+          <td className="px-4 py-3.5 whitespace-nowrap text-right font-mono text-xs text-slate-700 dark:text-slate-300">
+            {perVal != null ? `${perVal.toFixed(1)}x` : '-'} / {pbvVal != null ? `${pbvVal.toFixed(2)}x` : '-'}
+          </td>
+          <td className="px-4 py-3.5 whitespace-nowrap text-right hidden sm:table-cell font-mono text-xs">
+            <span className={roeVal >= 15 ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-slate-600 dark:text-slate-400'}>
+              {roeVal != null ? `${roeVal.toFixed(1)}%` : '-'}
+            </span>
+            {opmVal != null && (
+              <span className="text-slate-400 text-[10px] ml-1">
+                ({opmVal.toFixed(0)}%)
+              </span>
+            )}
+          </td>
+          <td className="px-4 py-3.5 whitespace-nowrap text-center hidden md:table-cell">
+            <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+              bfiVal > 0 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+            }`}>
+              {bfiVal > 0 ? `Akumulasi (+${bfiVal})` : 'Netral'}
+            </span>
+          </td>
+          <td className="px-4 py-3.5 whitespace-nowrap text-center">
+            <ScoreBadge score={item.matchScore ?? item.score} />
+          </td>
+        </>
+      );
+    }
+
     switch (activeTab) {
       case 'pick':
         return (
@@ -794,16 +886,25 @@ export default function StockScreener() {
 
   return (
     <div className="space-y-6">
+      {/* ── AI NATURAL LANGUAGE SCREENER BAR ── */}
+      <AiScreenerBar
+        onSearch={handleAiSearch}
+        loading={aiLoading}
+        aiResult={aiResult}
+        onClear={handleClearAi}
+      />
+
       {/* ── 1. HERO CATEGORY SELECTOR ────────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
         {tabs.map((tab) => {
-          const isActive = activeTab === tab.id;
+          const isActive = !aiResult && activeTab === tab.id;
           return (
             <button
               key={tab.id}
               onClick={() => {
                 setActiveTab(tab.id);
                 setExpandedRow(null);
+                setAiResult(null);
               }}
               className={`p-3.5 rounded-2xl text-left transition-all duration-200 cursor-pointer border flex flex-col justify-between relative overflow-hidden group ${
                 isActive

@@ -4,6 +4,14 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-09-16] feat | AI-Powered Stock Screener: Natural Language Filtering & Criteria Synthesis
+- Implemented `src/lib/ai/screenerPrompt.js`: pure prompt engineering routines (`buildScreenerAiMessages`, `parseScreenerAiResponse`, and `filterStocksByAiCriteria`) extracting structured financial criteria from natural language queries.
+- Implemented `src/app/api/screener/ai/route.js`: `POST /api/screener/ai` endpoint running local LLM inference with resilient heuristic fallback (`buildHeuristicFallbackCriteria`) for offline/timeout fault-tolerance.
+- Implemented `src/components/AiScreenerBar.jsx`: conversational search bar with 1-click strategy presets (Deep Value, Momentum, Big Bank ROE, Economic Moat, Syariah Growth) and active criteria badge inspector.
+- Updated `src/components/StockScreener.jsx`: integrated AI search bar, smart money BFI sort key, and dynamic AI result badge rendering.
+- Added unit test suite in `tests/aiScreener.test.js` (5 unit tests covering prompt generation, markdown JSON extraction, broken JSON recovery, criteria filtering, and empty safety).
+- Published quantitative documentation: `docs/wiki/en/trading-system/ai-stock-screener.md`.
+
 ## [2026-09-16] feat | Bloomberg Terminal Phase 5: RRG Sector Relative Rotation, NSENT News Sentiment, and BI AI Dossier
 - Implemented `src/lib/sectorRrgEngine.js` (Bloomberg `RRG` / `SECT`): 4-quadrant relative rotation graph (Leading, Weakening, Lagging, Improving) calculating RS-Ratio and RS-Momentum vs IHSG benchmark.
 - Implemented `src/lib/newsSentimentEngine.js` (Bloomberg `NSENT`): algorithmic news sentiment score (-100 to +100), risk-weighted keyword aggregation, and automated corporate catalyst tagging.

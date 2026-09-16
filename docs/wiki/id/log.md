@@ -4,6 +4,14 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-09-16] feat | Stock Screener Bertenaga AI: Penyaringan Bahasa Alami & Sintesis Strategi
+- Membangun `src/lib/ai/screenerPrompt.js`: fungsi prompt engineering murni (`buildScreenerAiMessages`, `parseScreenerAiResponse`, dan `filterStocksByAiCriteria`) untuk ekstraksi kriteria keuangan terstruktur dari kueri bahasa alami.
+- Membangun `src/app/api/screener/ai/route.js`: endpoint `POST /api/screener/ai` yang menjalankan inferensi LLM lokal dengan fallback heuristik defensif (`buildHeuristicFallbackCriteria`) untuk ketahanan terhadap timeout/koneksi offline.
+- Membangun `src/components/AiScreenerBar.jsx`: bilah pencarian percakapan dengan preset strategi 1-klik (Deep Value, Momentum, ROE Bank Jumbo, Economic Moat, Syariah Growth) serta inspektur badge kriteria aktif.
+- Memperbarui `src/components/StockScreener.jsx`: integrasi bilah pencarian AI, kunci pengurutan smart money BFI, dan perenderan badge dinamis hasil penyaringan AI.
+- Menambahkan rangkaian pengujian unit pada `tests/aiScreener.test.js` (5 pengujian unit mencakup pembentukan prompt, ekstraksi JSON markdown, pemulihan JSON rusak, penyaringan kriteria, dan penanganan kasus kosong).
+- Mempublikasikan dokumentasi kuantitatif: `docs/wiki/id/trading-system/stock-screener-ai.md`.
+
 ## [2026-09-16] feat | Bloomberg Terminal Fase 5: Rotasi Sektoral RRG, Sentimen Berita NSENT, dan Berkas Riset AI BI
 - Membangun `src/lib/sectorRrgEngine.js` (Bloomberg `RRG` / `SECT`): matriks rotasi 4-kuadran (Leading, Weakening, Lagging, Improving) menghitung RS-Ratio dan RS-Momentum terhadap IHSG acuan.
 - Membangun `src/lib/newsSentimentEngine.js` (Bloomberg `NSENT`): indeks kuantitatif sentimen berita (-100 s/d +100), pembobotan risiko defensif kata kunci, dan deteksi otomatis katalis korporasi.

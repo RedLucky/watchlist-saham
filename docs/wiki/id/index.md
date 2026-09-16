@@ -42,3 +42,4 @@
 * [Konsentrasi Broker & Aliran Bandarmologi (BRKR)](./trading-system/konsentrasi-broker-bandarmologi.md) — Rasio konsentrasi broker institusi (CR1, CR3, CR5) dan Bandarmologi Flow Index (BFI).
 * [Rotasi Sektoral Relatif RRG (RRG / SECT)](./trading-system/rotasi-sektoral-rrg.md) — Matriks 4-kuadran siklus rotasi sektor (Leading, Weakening, Lagging, Improving) terhadap IHSG.
 * [Skor Sentimen Berita & Katalis Pasar (NSENT)](./trading-system/sentimen-berita-katalis.md) — Indeks sentimen berita kuantitatif (-100 s/d +100) dan deteksi otomatis katalis korporasi.
+* [Stock Screener Bertenaga AI](./trading-system/stock-screener-ai.md) — Penyaringan berbasis bahasa alami, ekstraksi kriteria multi-faktor, dan inferensi LLM offline.
