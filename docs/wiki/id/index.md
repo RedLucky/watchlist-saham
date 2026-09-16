@@ -9,6 +9,7 @@
 * [Ringkasan Sistem](./architecture/ringkasan-sistem.md) — Gambaran arsitektur teknologi (Next.js 16, Turbopack, Tailwind CSS, PostgreSQL, Prisma, Plus Jakarta Sans).
 * [Pipeline & Sinkronisasi Data](./architecture/pipeline-data.md) — Sinkronisasi harga kilat, deep sync fundamental, integrasi Yahoo Finance, dan antrean round-robin.
 * [Model & Skema Database](./architecture/model-database.md) — Definisi skema Prisma, serialisasi BigInt, integritas relasi, dan indexing.
+* [Mesin Riset AI Lokal & Antrean](./architecture/mesin-ai.md) — Inferensi mandiri GGUF (llama.cpp), optimasi thread CPU multi-core, pencarian berita, dan antrean pekerja asinkron.
 
 ---
 
@@ -25,3 +26,4 @@
 
 * [Siklus Hidup Order & Pelacakan Win Rate](./trading-system/siklus-hidup-order.md) — Simulasi order antre beli: WAITING_BUY -> OPEN -> WIN / LOSS / EXPIRED, dan rumus Win Rate riil.
 * [Aliran Smart Money & KSEI](./trading-system/aliran-smart-money.md) — Pelacakan kepemilikan institusi KSEI, foreign flow, dan deteksi akumulasi bandarmologi.
+* [Bot Interaktif Discord & Notifikasi](./trading-system/bot-discord.md) — Ekstraksi kode saham alami (NLP), cache pintar 30 hari, format rich embed, dan peringatan webhook transaksi otomatis.

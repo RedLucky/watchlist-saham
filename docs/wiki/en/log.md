@@ -4,6 +4,13 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-09-16] feat | Local AI Research Engine, Interactive Discord Bot & Knowledge Wiki Ingest
+- Integrated local `llama.cpp` inference engine (`docker-compose.ai.yml`, Qwen 4B GGUF) with hardware optimization for Intel 14th Gen P-Cores (6 threads, flash attention).
+- Built asynchronous queue worker (`src/scripts/ai-worker.js`) utilizing `AiResearchQueue`, `AiStockResearch`, and telemetry audit logs in `AiAuditLog`.
+- Implemented real-time dual-engine financial news aggregation (`src/lib/ai/search.js`: Bing News RSS + Google News RSS) with 90-day freshness filters.
+- Launched two-way interactive Discord Bot (`src/scripts/discord-bot.js`) featuring natural language ticker extraction (NLP), 30-day smart research caching, and rich embed summaries.
+- Published architectural knowledge pages: `docs/wiki/en/architecture/ai-engine.md` and `docs/wiki/en/trading-system/discord-bot.md`.
+
 ## [2026-09-08] feat | Fresh MACD Golden/Dead Cross & RSI Extreme Overbought Guard
 - Enhanced `calculateMACD` in `src/lib/indicators.js` to compute `prevHistogram`, `isGoldenCross`, and `isDeadCross`.
 - Integrated Fresh MACD Golden Cross (+10 setup bonus) and Dead Cross (-15 setup penalty) in `src/lib/scoring/technical.js`.

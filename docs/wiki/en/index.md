@@ -9,6 +9,7 @@
 * [System Overview](./architecture/system-overview.md) — High-level stack overview (Next.js 16, Turbopack, Tailwind CSS, PostgreSQL, Prisma, Plus Jakarta Sans).
 * [Data Pipeline & Sync](./architecture/data-pipeline.md) — Fast price synchronization, deep financial statement sync, Yahoo Finance integration, and round-robin queues.
 * [Database Models & Schemas](./architecture/database-models.md) — Complete Prisma schema definitions, BigInt serialization rules, relational integrity, and indices.
+* [Local AI Engine & Queue](./architecture/ai-engine.md) — Self-hosted GGUF inference (llama.cpp), multi-core CPU tuning, live news aggregation, and async queue worker.
 
 ---
 
@@ -25,3 +26,4 @@
 
 * [Order Lifecycle & Win Rate Tracking](./trading-system/order-lifecycle.md) — Real-world order simulation: WAITING_BUY (queue/limit) -> OPEN (matched) -> WIN/LOSS/EXPIRED, and win rate calculation.
 * [Smart Money Flow & KSEI](./trading-system/smart-money-flow.md) — Institutional distribution tracking, foreign flow estimation, scriptless shareholder analysis from KSEI.
+* [Interactive Discord Bot & Alerts](./trading-system/discord-bot.md) — Two-way NLP conversational ticker queries, 30-day cache policy, rich embeds, and automated trade notification webhooks.
