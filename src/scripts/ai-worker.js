@@ -7,11 +7,20 @@ const { fetchLatestStockNews } = require('../lib/ai/search.js');
 const POLL_INTERVAL = 3000; // 3 detik (responsif terhadap antrian baru)
 const STALE_JOB_TIMEOUT_MS = 10 * 60 * 1000; // 10 menit batas toleransi task PROCESSING
 
-// Ambil isi satu section jawaban AI berdasarkan nomor section (e.g. 2 untuk Valuasi, 3 untuk Tren)
-// Menggunakan regex fleksibel yang tahan terhadap variasi format markdown (## 2., ## 2:, ## 2, ### 2.)
+// Ambil isi satu section jawaban AI berdasarkan nomor section (e.g. 4 untuk Valuasi, 5 untuk Tren)
+// Menggunakan regex fleksibel yang tahan terhadap variasi format markdown (## 4., ## 4:, ## 4, ### 4.)
 function extractSection(responseContent, sectionNum) {
   if (!responseContent || !sectionNum) return null;
   const regex = new RegExp(`(?:^|\\n)#{2,3}\\s*${sectionNum}[.:\\s][\\s\\S]*?(?=(?:\\n#{2,3}\\s*\\d|$))`, 'i');
+  const match = responseContent.match(regex);
+  return match ? match[0].trim() : null;
+}
+
+// Fallback ekstraksi berbasis kata kunci judul jika penomoran section bervariasi
+function extractSectionByTitle(responseContent, keywords = []) {
+  if (!responseContent || !keywords || keywords.length === 0) return null;
+  const pattern = keywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+  const regex = new RegExp(`(?:^|\\n)#{2,3}\\s*(?:\\d+[.:\\s]+)?(?:[^\n]*?(?:${pattern})[^\n]*)[\\s\\S]*?(?=(?:\\n#{2,3}\\s*(?:\\d|[A-Z])|$))`, 'i');
   const match = responseContent.match(regex);
   return match ? match[0].trim() : null;
 }
@@ -132,7 +141,7 @@ async function processQueue() {
       console.log(`[AI-Worker] Mengambil berita internet terkini untuk ${task.ticker}...`);
       let searchContext = '';
       try {
-        searchContext = await fetchLatestStockNews(task.ticker, stockData.name);
+        searchContext = await fetchLatestStockNews(task.ticker, stockData.name, stockData.sector, stockData.subSector);
         console.log(`[AI-Worker] Konteks berita internet berhasil dimuat untuk ${task.ticker}`);
       } catch (newsErr) {
         console.warn(`[AI-Worker] Peringatan: gagal memuat berita untuk ${task.ticker}:`, newsErr.message);
@@ -164,15 +173,23 @@ async function processQueue() {
       const buyHoldSell = parseBuyHoldSell(responseContent);
       const score = parseAiScore(responseContent, buyHoldSell);
 
-      // 4. Simpan hasil (content penuh + section valuasi & tren terpisah + skor)
+      // 4. Ekstraksi section valuasi & tren yang tahan format 7-babak baru maupun legacy
+      const valuationText = extractSection(responseContent, 4) ||
+                            extractSection(responseContent, 2) ||
+                            extractSectionByTitle(responseContent, ['Valuasi', 'Harga Wajar']);
+      const trendText = extractSection(responseContent, 5) ||
+                        extractSection(responseContent, 3) ||
+                        extractSectionByTitle(responseContent, ['Tren', 'Teknikal', 'Momentum']);
+
+      // Simpan hasil (content penuh + section valuasi & tren terpisah + skor)
       await prisma.aiStockResearch.create({
         data: {
           ticker: task.ticker,
           content: responseContent,
           buyHoldSell,
           score,
-          valuation: extractSection(responseContent, 2),
-          trend: extractSection(responseContent, 3)
+          valuation: valuationText,
+          trend: trendText
         }
       });
 

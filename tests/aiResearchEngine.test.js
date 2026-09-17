@@ -9,6 +9,14 @@ function extractSection(responseContent, sectionNum) {
   return match ? match[0].trim() : null;
 }
 
+function extractSectionByTitle(responseContent, keywords = []) {
+  if (!responseContent || !keywords || keywords.length === 0) return null;
+  const pattern = keywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+  const regex = new RegExp(`(?:^|\\n)#{2,3}\\s*(?:\\d+[.:\\s]+)?(?:[^\n]*?(?:${pattern})[^\n]*)[\\s\\S]*?(?=(?:\\n#{2,3}\\s*(?:\\d|[A-Z])|$))`, 'i');
+  const match = responseContent.match(regex);
+  return match ? match[0].trim() : null;
+}
+
 // Parser rekomendasi (ai-worker.js)
 function parseBuyHoldSell(content) {
   if (!content) return 'HOLD';
@@ -132,4 +140,49 @@ Tren bullish jangka menengah.
     assert.strictEqual(is20Valid, true, 'Riset 20 hari lalu masih dalam masa validitas');
     assert.strictEqual(is40Valid, false, 'Riset 40 hari lalu sudah kedaluwarsa dan boleh dianalisis ulang');
   });
+
+  it('7. Ekstraksi format 7-babak baru (Unit Bisnis, Market-Fit, Moat, Valuasi, Tren, Berita, Prospek)', () => {
+    const sampleReport7Section = `
+## 1. Bedah Unit Bisnis & Rencana Strategis Perusahaan
+AUTO berfokus pada manufaktur komponen OEM dan jaringan ritel Aftermarket (Shop&Drive).
+
+## 2. Analisis Kebutuhan Pasar, Siklus Industri & Market-Fit
+Penjualan mobil nasional 3 tahun lalu menciptakan gelombang aging fleet yang mendongkrak permintaan suku cadang pengganti. Kesiapan terhadap EV didukung portofolio suspensi dan rem.
+
+## 3. Keunggulan Bersaing (Moat) & Posisi vs Kompetitor
+Jaringan distribusi luas dan sinergi Astra Group menjadi parit pertahanan kokoh membendung produk impor.
+
+## 4. Analisis Fundamental & Valuasi Saham
+PER tercatat 5.8x dengan PBV 0.85x, mengindikasikan Margin of Safety lebih dari 25% terhadap nilai wajar.
+
+## 5. Arah Tren & Momentum Teknikal
+MA20 melandai di atas MA50 dengan RSI pada level netral 48.
+
+## 6. Analisis Sentimen Berita & Katalis Terkini
+Rencana belanja modal Rp 500 miliar memperkuat modernisasi pabrik.
+
+## 7. Prospek 1–2 Tahun ke Depan & Rekomendasi Akhir
+Kombinasi kas kuat dan dividen yield menarik menjadi katalis positif.
+SKOR AI: 87
+KESIMPULAN: BELI
+ALASAN SINGKAT: Valuasi terdiskon dengan parit distribusi aftermarket tak tertandingi.
+`;
+
+    // Uji ekstraksi berbasis nomor 4 (Valuasi) dan 5 (Tren)
+    const valByNum = extractSection(sampleReport7Section, 4);
+    const trendByNum = extractSection(sampleReport7Section, 5);
+    assert.ok(valByNum?.includes('Margin of Safety'), 'Section 4 harus mengekstrak valuasi');
+    assert.ok(trendByNum?.includes('MA20 melandai'), 'Section 5 harus mengekstrak tren');
+
+    // Uji ekstraksi berbasis kata kunci judul
+    const valByTitle = extractSectionByTitle(sampleReport7Section, ['Valuasi', 'Harga Wajar']);
+    const trendByTitle = extractSectionByTitle(sampleReport7Section, ['Tren', 'Teknikal', 'Momentum']);
+    assert.ok(valByTitle?.includes('Margin of Safety'), 'Section valuasi harus ditemukan via kata kunci');
+    assert.ok(trendByTitle?.includes('MA20 melandai'), 'Section tren harus ditemukan via kata kunci');
+
+    // Uji parsing kesimpulan & skor
+    assert.strictEqual(parseBuyHoldSell(sampleReport7Section), 'BELI');
+    assert.strictEqual(parseAiScore(sampleReport7Section, 'BELI'), 87);
+  });
 });
+

@@ -217,13 +217,24 @@ function renderAiMarkdown(content) {
     const trimmed = line.trim();
     if (!trimmed) return <div key={idx} className="h-2" />;
 
-    // H2 Headers (## 1. Kesimpulan...)
+    // H2 Headers (## 1. Bedah Unit Bisnis...)
     if (trimmed.startsWith('## ')) {
       const title = trimmed.replace(/^##\s+/, '');
+      const lower = title.toLowerCase();
+      let icon = '📌';
+      if (lower.includes('unit bisnis') || lower.includes('strategis')) icon = '🏢';
+      else if (lower.includes('pasar') || lower.includes('siklus') || lower.includes('market-fit')) icon = '🔄';
+      else if (lower.includes('moat') || lower.includes('kompetitor') || lower.includes('keunggulan')) icon = '🛡️';
+      else if (lower.includes('valuasi') || lower.includes('fundamental')) icon = '📊';
+      else if (lower.includes('tren') || lower.includes('teknikal') || lower.includes('momentum')) icon = '📈';
+      else if (lower.includes('berita') || lower.includes('sentimen') || lower.includes('katalis')) icon = '📰';
+      else if (lower.includes('prospek') || lower.includes('rekomendasi')) icon = '🎯';
+
       return (
-        <div key={idx} className="pt-3 pb-1 border-b border-slate-200 dark:border-slate-800">
-          <h4 className="text-xs sm:text-sm font-black text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5 uppercase tracking-wide">
-            {renderInline(title)}
+        <div key={idx} className="pt-4 pb-1.5 border-b border-slate-200 dark:border-slate-800">
+          <h4 className="text-xs sm:text-sm font-black text-indigo-600 dark:text-indigo-400 flex items-center gap-2 uppercase tracking-wide">
+            <span className="text-sm">{icon}</span>
+            <span>{renderInline(title)}</span>
           </h4>
         </div>
       );

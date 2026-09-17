@@ -4,6 +4,21 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-09-17] feat | Deep Sector & Business Unit Industry Analysis Framework (Stock Explorer)
+- Upgraded `src/lib/ai/prompter.js`: implemented `detectSectorFramework(sector, subSector, ticker)` injecting tailored industry relational models:
+  - Automotive & Components (`AUTO`, `SMSM`, `GJTL`): Aging vehicle fleet replacement demand (GAIKINDO 2-5 year sales lag), ICE vs EV/Hybrid powertrain resilience, and OEM vs Aftermarket retail split.
+  - Banking & Financials (`BBCA`, `BBRI`, `BMRI`): CASA franchise, Cost of Funds (CoF), NIM, loan segment exposure, NPL/LAR provisioning coverage, and digital CIR/BOPO.
+  - Energy & Coal/Oil (`ADRO`, `PTBA`): Cash cost curve position, stripping ratio, mine life, DMO, and green transition/smelter capex.
+  - Critical Minerals (`ANTM`, `INCO`): EV battery supply chain (HPAL MHP vs RKEF NPI), RKAB quotas, and downstream smelting.
+  - Agribusiness & CPO (`TAPG`, `DSNG`): Domestic Biodiesel B35/B40 mandate floor, plantation age profile, FFB yield, and OER extraction rates.
+  - Telco, Construction, Real Estate, and Consumer Staples industry models.
+- Mandated 7-section institutional report format: (1) Unit Bisnis & Rencana Strategis, (2) Kebutuhan Pasar, Siklus Industri & Market-Fit, (3) Keunggulan Bersaing (Moat) & Kompetitor, (4) Fundamental & Valuasi, (5) Tren Teknikal & Momentum, (6) Sentimen Berita, (7) Prospek 1-2 Tahun & Rekomendasi Akhir (`SKOR AI: [0-100]`, `KESIMPULAN`, `ALASAN SINGKAT`).
+- Enhanced `src/lib/ai/search.js`: implemented `buildSectorThematicQueries` executing parallel thematic web searches for corporate capex, sector EV/Gaikindo/biodiesel/CASA dynamics, and competitor market share.
+- Enhanced `src/scripts/ai-worker.js`: added `extractSectionByTitle` and multi-parameter news search (`sector`, `subSector`) for resilient database storage in `AiStockResearch`.
+- Enhanced `src/components/StockExplorer.jsx`: upgraded `renderAiMarkdown` with contextual section header icons (🏢, 🔄, 🛡️, 📊, 📈, 📰, 🎯).
+- Added comprehensive unit test suite in `tests/aiSectorPrompter.test.js` (211/211 tests passing).
+- Updated quantitative documentation in `docs/wiki/en/financial-engine/bloomberg-intelligence-dossier.md`.
+
 ## [2026-09-16] feat | AI-Powered Financial Consultation: Multi-Turn Advisory, Anti-Hallucination Grounding, & CPU Priority Mutex
 - Implemented `src/lib/ai/aiPriorityMutex.js`: single-slot concurrency gate (concurrency 1) with priority arbitration (HIGH for interactive chat/screener vs LOW for background queue worker) to eliminate CPU thrashing on Intel i5.
 - Implemented `src/lib/ai/chatAdvisorEngine.js`: deterministic ticker extraction with Indonesian trading stopword filters, pre-calculated financial math (exact PnL %, averaging down scenarios), strict closed-world grounding prompt, and 3-step constrained reasoning protocol (`<think>`).

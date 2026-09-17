@@ -4,6 +4,21 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-09-17] feat | Kerangka Kerja Analisis Sektoral & Unit Bisnis Mendalam (Stock Explorer)
+- Memperbarui `src/lib/ai/prompter.js`: mengimplementasikan `detectSectorFramework(sector, subSector, ticker)` yang menyuntikkan model relasional industri spesifik:
+  - Otomotif & Komponen (`AUTO`, `SMSM`, `GJTL`): Model penuaan armada kendaraan (*aging fleet*) dari penjualan mobil historis (data GAIKINDO 2-5 tahun lalu), daya tahan portofolio ICE vs EV/Hybrid, serta rasio OEM vs Aftermarket ritel.
+  - Perbankan & Finansial (`BBCA`, `BBRI`, `BMRI`): Rasio dana murah CASA, Cost of Funds (CoF), NIM, segmen kredit, rasio pencadangan NPL/LAR, dan rasio efisiensi BOPO/CIR.
+  - Energi & Batubara/Migas (`ADRO`, `PTBA`): Kurva biaya kas (*cash cost curve*), rasio kupas (stripping ratio), umur cadangan, DMO, dan belanja modal hilirisasi/transisi hijau.
+  - Mineral Kritis & Logam (`ANTM`, `INCO`): Rantai pasok baterai EV (smelter HPAL MHP vs RKEF NPI), kuota RKAB, dan hilirisasi bernilai tambah.
+  - Agribisnis & Perkebunan CPO (`TAPG`, `DSNG`): Penyerapan mandat domestik Biodiesel B35/B40, profil usia tanaman sawit, yield TBS/FFB, dan rendemen OER.
+  - Model industri spesifik untuk Telekomunikasi, Konstruksi, Properti, dan Konsumer Primer.
+- Menstandarisasi format laporan riset menjadi 7 babak terstruktur: (1) Bedah Unit Bisnis & Rencana Strategis, (2) Kebutuhan Pasar, Siklus Industri & Market-Fit, (3) Keunggulan Bersaing (Moat) & Posisi vs Kompetitor, (4) Analisis Fundamental & Valuasi, (5) Arah Tren & Momentum Teknikal, (6) Analisis Sentimen Berita & Katalis Terkini, (7) Prospek 1-2 Tahun ke Depan & Rekomendasi Akhir (`SKOR AI: [0-100]`, `KESIMPULAN: [BELI/HOLD/JUAL]`, `ALASAN SINGKAT`).
+- Meningkatkan `src/lib/ai/search.js`: menambahkan fungsi `buildSectorThematicQueries` untuk pencarian berita tematik paralel (rencana capex, dinamika sektor EV/Gaikindo/CASA, pangsa pasar kompetitor).
+- Memperbarui `src/scripts/ai-worker.js`: menambahkan fungsi `extractSectionByTitle` dan pengiriman parameter sektor ke pencarian berita untuk ketahanan penyimpanan database pada tabel `AiStockResearch`.
+- Memperbarui `src/components/StockExplorer.jsx`: mempercantik `renderAiMarkdown` dengan ikon judul babak tematik (🏢, 🔄, 🛡️, 📊, 📈, 📰, 🎯).
+- Menambahkan rangkaian pengujian unit pada `tests/aiSectorPrompter.test.js` (211/211 seluruh pengujian lulus 100%).
+- Memperbarui dokumentasi ilmiah pada `docs/wiki/id/financial-engine/berkas-riset-ai-bi.md`.
+
 ## [2026-09-16] feat | Konsultasi AI Pasar Modal: Penasihat Multi-Sesi, Proteksi Anti-Halusinasi, & Mutex Prioritas CPU
 - Membangun `src/lib/ai/aiPriorityMutex.js`: gerbang konkurensi slot-tunggal (konkurensi 1) dengan pembagian prioritas (HIGH untuk konsultasi chat/screener vs LOW untuk worker antrean latar belakang) guna mengeliminasi perebutan core CPU pada Intel i5.
 - Membangun `src/lib/ai/chatAdvisorEngine.js`: ekstraksi ticker deterministik dengan filter stopword percakapan Indonesia, komputasi matematika finansial di backend (persentase PnL riil, simulasi average down), prompt tertutup anti-halusinasi, serta protokol penalaran 3-tahap (`<think>`).
