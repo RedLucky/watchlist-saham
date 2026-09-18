@@ -4,6 +4,50 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-09-18] feat | Peningkatan Win Rate, Perombakan Eksekusi & Mesin Rekomendasi Bot Discord
+- Diagnosis Penurunan Win Rate Sistem: Mengidentifikasi akar masalah di balik performa kumulatif bot sistem (-10.76% vs portofolio pantauan manual +38.95%), meliputi penutupan Time Stop prematur saat koreksi wajar (< 1.5%), target TP swing yang terlalu tinggi untuk gaya scalping, dan penumpukan rekomendasi duplikat pada saham yang sedang turun.
+- Active Position Lockout (Anti-Duplikasi): Memperbarui `src/scripts/discord-notifier.js` untuk memeriksa status aktif emiten (`OPEN` atau `WAITING_BUY`) sebelum menerbitkan sinyal baru. Mencegah akumulasi kerugian ganda pada emiten yang sedang terkoreksi.
+- Batas Maksimum Target Profit (TP Cap) Sesuai Gaya Trading: Menambahkan batas realistis di `src/lib/tradeSetup.js` (`SCALP_MAX_TARGET_PCT = 5.0%`, `DAILY_MAX_TARGET_PCT = 8.0%`, `SWING_MAX_TARGET_PCT = 18.0%`). Mencegah target scalping berdurasi 2 hari dipatok ke resistensi swing 20 hari (+15% s.d. +25%).
+- Buffer Grace Period Time Stop: Memperbarui `src/lib/recommendationTracker.js` dengan toleransi `TIME_STOP_GRACE_DAYS = 3` dan `TIME_STOP_TOLERANCE_LOSS_PCT = 1.5%`. Posisi yang melewati batas hari namun hanya floating loss ringan (< 1.5%) diberi perpanjangan 3 hari alih-alih langsung di-cut loss prematur.
+- Circuit Breaker Rezim Pasar IHSG: Menambahkan proteksi otomatis pada `src/scripts/discord-notifier.js`. Saat IHSG berada dalam rezim *defensive* / bearish, sinyal Growth dinonaktifkan dan kuota rekomendasi dibatasi maksimal 2 saham, serta menghapus relaksasi ambang skor Pass 2.
+- Pengujian & Verifikasi: Menambahkan unit test pada `tests/tradeSetup.test.js` untuk menguji batas target profit. Seluruh 219 unit test lulus 100% dan build Turbopack sukses bersih. Terdokumentasi pada `docs/wiki/id/trading-system/siklus-hidup-order.md` dan arsip utama bahasa Inggris.
+
+## [2026-09-17] fix | Perbaikan Kebocoran Serialisasi Circular SyntheticEvent & Diferensiasi Error Jaringan
+- Mengatasi Kebocoran Objek React SyntheticEvent pada `handleAnalyzeAi`:
+  - Memperbaiki deklarasi tombol `onClick={handleAnalyzeAi}` yang secara tidak sengaja meneruskan objek `SyntheticBaseEvent` React ke dalam parameter `force`. Hal ini menyebabkan pemanggilan `JSON.stringify({ ticker, force })` melempar `TypeError: Converting circular structure to JSON` (akibat referensi sirkular DOM `event.target`/`window`).
+  - Mensterilkan variabel `isForce` di dalam `handleAnalyzeAi` agar secara ketat hanya menerima boolean: `typeof force === 'boolean' ? force : false`.
+  - Mengubah pemanggilan tombol JSX menjadi *arrow function*: `onClick={() => handleAnalyzeAi(false)}`.
+  - Menyaring deteksi error jaringan pada `catch (err)`: Menghilangkan pemeriksaan umum `err.name === 'TypeError'` dan menggantinya dengan verifikasi pesan error jaringan eksplisit (`failed to fetch`, `network`, `load failed`) guna mencegah kesalahan runtime JS diidentifikasi keliru sebagai error jaringan.
+- Pengujian Lulus 100%: Seluruh 217 pengujian unit lulus tanpa celah dan build Turbopack Next.js berhasil bersih.
+
+## [2026-09-17] fix | Parser Markdown Komprehensif & Sanitasi Cuplikan Berkas Riset AI pada UI
+- Perbaikan Format Markdown Rusak di UI: Menulis ulang `renderAiMarkdown` pada `src/components/StockExplorer.jsx` dengan kepatuhan standar CommonMark penuh:
+  - Mengonversi simbol `#` mentah menjadi tipografi judul H1–H5 terstruktur lengkap dengan ikon babak tematik dinamis.
+  - Mengonversi simbol `---`, `***`, `___` mentah menjadi garis pemisah visual `<hr />`.
+  - Memperbaiki kotak panggilan (`SKOR AI:`, `KESIMPULAN:`, `ALASAN SINGKAT:`), kini otomatis diterjemahkan menjadi kartu ringkasan visual meskipun diawali format tebal `**`.
+  - Memperbaiki rendering tabel grid yang pecah dengan mem-parsing baris tabel markdown (`| kolom1 | kolom2 |`) menjadi elemen tabel HTML asli (`<table>`, `<thead>`, baris zebra, dan geser horizontal).
+  - Memperbaiki tokenisasi penekanan teks miring/tebal dengan batas spasi, sehingga persamaan aritmatika finansial (contoh: `Harga = 500 * 22,5`) tidak lagi salah terdeteksi sebagai tanda bintang miring (*italic*).
+  - Menambahkan dukungan untuk kode inline (`` `kode` ``), rumus matematika inline (`$rumus$`), coret (*strikethrough*), dan tautan eksternal (`[label](url)`).
+- Sanitasi Kartu Pratinjau Bloomberg Intelligence: Mengimplementasikan `formatPreviewSnippet` pada `src/components/BloombergIntelligencePanel.jsx` untuk membersihkan tag judul babak (`## ...`), garis pemisah, dan karakter markdown mentah pada kartu ringkasan 2 baris.
+- Pengujian Lulus 100%: Seluruh 217 pengujian unit lulus tanpa celah dan build produksi Next.js berhasil bersih.
+- Pemutakhiran Dokumentasi: Dicatat pada `docs/wiki/id/financial-engine/berkas-riset-ai-bi.md` dan arsip utama bahasa Inggris.
+
+## [2026-09-17] feat | Filtrasi Berita Anti-Clickbait, Pemeringkatan Sinyal Finansial & Ekstraksi Ringkasan Artikel
+- Implementasi `isClickbaitTitle` pada `src/lib/ai/search.js`: Secara otomatis membersihkan judul-judul clickbait, rekomendasi harian spekulatif, dan listicle broker ("rekomendasi saham", "menu saham", "target harga", "potensi cuan", "saatnya beli?") dengan tetap melindungi pengumuman aksi korporasi riil (laba bersih, dividen, capex, akuisisi, nominal miliar/triliun).
+- Implementasi `calculateSignalScore` pada `src/lib/ai/search.js`: Menghitung skor kualitas sinyal 0-100 yang memprioritaskan artikel dengan deskripsi cuplikan kaya (>40 karakter) dari Bing RSS, angka metrik terukur (Rp, %, miliar, triliun), media bisnis kredibel (Kontan, Bisnis.com, CNBC Indonesia, Katadata, Investor Daily, Bloomberg Technoz, IDNFinancials), dan mendepresiasi listicle kompilasi pasar dengan banyak kode saham.
+- Arsitektur Kueri Boolean Terarah: Mengalihkan kueri penelusuran ke ekspresi boolean berdensitas tinggi `"${cleanName}" (laba OR pendapatan OR kinerja OR dividen OR capex OR ekspansi)` yang menghasilkan 3x lipat artikel relevan dengan ringkasan lengkap.
+- Penegasan Mandat Prompt Anti-Clickbait: Menyuntikkan `[ANTI-CLICKBAIT FILTER]` pada Bagian 4 dan `[ANTI-CLICKBAIT & STRICT FACT-FILTERING MANDATE]` pada Bagian 6 di `src/lib/ai/prompter.js`, memastikan AI mengabaikan rumor harian dan bersandar murni pada data keuangan kuartalan dan aksi korporasi nyata.
+- Penambahan Pengujian Unit: Menambahkan suite pengujian komprehensif pada `tests/aiSectorPrompter.test.js` (total 217/217 pengujian lulus 100%).
+- Pemutakhiran Dokumentasi: Dicatat pada `docs/wiki/id/financial-engine/berkas-riset-ai-bi.md` dan arsip utama bahasa Inggris.
+
+## [2026-09-17] feat | Perluasan Kata Kunci Semantik, Multi-Kueri Berita & Rubrik Institusional 35 Sektor
+- Perluasan Taksonomi Kata Kunci: Memperbanyak dan memperlebar sinonim kata kunci industri di `src/lib/ai/sectorIntelligence.js` dalam Bahasa Indonesia dan Inggris serta klasifikasi subsektor untuk seluruh 35 sektor Alpha Legend.
+- Perluasan Template Kueri Tematik: Meningkatkan jumlah kueri pencarian per sektor menjadi 3 template terarah (Dinamika Permintaan & Siklus Makro, Pangsa Pasar & Parit Kompetitor, serta Regulasi & Prospek 1-2 Tahun).
+- Peningkatan Volume Pengambilan Berita: Meningkatkan kuota pengambilan di `src/lib/ai/search.js` menjadi 4 cuplikan berita per kueri (menghasilkan hingga 16 cuplikan berita komprehensif per emiten dengan fallback Google News).
+- Pendalaman Rubrik Analisis: Menyusun mandat penalaran komprehensif untuk seluruh 35 sektor yang membedah unit bisnis inti, model relasional lag makro, indikator kinerja utama (KPI) Alpha Legend, daya saing kompetitor, dan katalis ke depan.
+- Pengujian Lulus 100%: Seluruh 214 pengujian unit lulus tanpa celah dan build produksi Next.js berjalan mulus.
+
+
 ## [2026-09-17] feat | Kerangka Kerja Analisis Sektoral & Unit Bisnis Mendalam (Stock Explorer)
 - Memperbarui `src/lib/ai/prompter.js`: mengimplementasikan `detectSectorFramework(sector, subSector, ticker)` yang menyuntikkan model relasional industri spesifik:
   - Otomotif & Komponen (`AUTO`, `SMSM`, `GJTL`): Model penuaan armada kendaraan (*aging fleet*) dari penjualan mobil historis (data GAIKINDO 2-5 tahun lalu), daya tahan portofolio ICE vs EV/Hybrid, serta rasio OEM vs Aftermarket ritel.

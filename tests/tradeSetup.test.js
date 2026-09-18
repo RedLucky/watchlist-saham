@@ -1,6 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getIDXPriceStep, roundToIDXTick, calculateTradeSetup } from '../src/lib/tradeSetup.js';
+import { 
+  getIDXPriceStep, 
+  roundToIDXTick, 
+  calculateTradeSetup,
+  SCALP_MAX_TARGET_PCT,
+  DAILY_MAX_TARGET_PCT,
+  SWING_MAX_TARGET_PCT 
+} from '../src/lib/tradeSetup.js';
 
 test('1. IDX Tick Sizes (getIDXPriceStep)', async (t) => {
   await t.test('Harga < 200 menggunakan fraksi Rp 1', () => {
@@ -136,6 +143,45 @@ test('3. Trade Setup Constraints (calculateTradeSetup)', async (t) => {
     // Reward dihitung dari target - avgEntry
     const expectedRawTarget = avgEntry * 1.05;
     assert.ok(setup.target >= expectedRawTarget - 5, `Target (${setup.target}) harus sejalan dengan target gain dari avgEntry (${avgEntry})`);
+  });
+
+  await t.test('Target Scalping tidak boleh membengkak oleh resisten 20 hari yang jauh (dibatasi SCALP_MAX_TARGET_PCT)', () => {
+    const distantResistanceStock = {
+      price: 1000,
+      technicals: {
+        ma9: 1000,
+        highs: [980, 1000, 1150, 1180, 1160], // swing high +18%
+      }
+    };
+    const scalpConfig = {
+      name: 'scalping',
+      exit: { tp: 3.0, sl: 1.5 }
+    };
+    const scalpSetup = calculateTradeSetup(distantResistanceStock, { setup: 'scalp' }, scalpConfig);
+    const avgEntry = (scalpSetup.entry.low + scalpSetup.entry.high) / 2;
+    const gainPct = ((scalpSetup.target - avgEntry) / avgEntry) * 100;
+    
+    // Target harus dibatasi oleh SCALP_MAX_TARGET_PCT (+5.0%) plus toleransi tick rounding
+    assert.ok(gainPct <= SCALP_MAX_TARGET_PCT + 1.0, `Gain Scalping (${gainPct.toFixed(2)}%) harus dibatasi oleh plafon Scalping (+${SCALP_MAX_TARGET_PCT}%)`);
+  });
+
+  await t.test('Target Daily dibatasi oleh DAILY_MAX_TARGET_PCT (+8.0%)', () => {
+    const distantResistanceStock = {
+      price: 1000,
+      technicals: {
+        ma20: 1000,
+        highs: [980, 1000, 1200, 1250, 1220], // swing high +25%
+      }
+    };
+    const dailyConfig = {
+      name: 'daily',
+      exit: { tp: 5.0, sl: 2.5 }
+    };
+    const dailySetup = calculateTradeSetup(distantResistanceStock, { setup: 'momentum' }, dailyConfig);
+    const avgEntry = (dailySetup.entry.low + dailySetup.entry.high) / 2;
+    const gainPct = ((dailySetup.target - avgEntry) / avgEntry) * 100;
+    
+    assert.ok(gainPct <= DAILY_MAX_TARGET_PCT + 1.0, `Gain Daily (${gainPct.toFixed(2)}%) harus dibatasi oleh plafon Daily (+${DAILY_MAX_TARGET_PCT}%)`);
   });
 });
 

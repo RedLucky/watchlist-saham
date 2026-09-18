@@ -186,77 +186,264 @@ export function getRecommendedTargets(stockData) {
   return { targetBuy, targetSell, buyLabel, sellLabel, diff, gainPct };
 }
 
-// Renderer Markdown khusus untuk hasil riset AI (Heading, Bold, Italic, Callout, List, Table)
+// Renderer Markdown komprehensif untuk hasil riset AI
+// Mendukung H1-H5, divider (---, ***, ___), blockquote, table, code block, inline code, bold, italic, strikethrough, links, nested lists, dan callouts (SKOR AI, KESIMPULAN, ALASAN SINGKAT)
 function renderAiMarkdown(content) {
   if (!content) return null;
 
   const renderInline = (text) => {
     if (!text) return null;
-    const parts = text.split(/(\*\*.*?\*\*|\*.*?\*)/g);
+
+    // Tokenize inline markdown:
+    // 1. Links: [label](url)
+    // 2. Inline code: `code`
+    // 3. Inline math: $...$ or \(...\)
+    // 4. Bold-italic: ***text*** or ___text___
+    // 5. Bold: **text** or __text__
+    // 6. Italic: *text* or _text_ (CommonMark: non-whitespace boundary prevents breaking on multiplication 500 * 22.5)
+    // 7. Strikethrough: ~~text~~
+    const inlineRegex = /(\[[^\]]+\]\([^\)]+\)|`[^`]+`|\$[^$\n]+?\$|\\\([\s\S]+?\\\)|(?:\*\*\*|___)(?!\s)[^*\n]+?(?<!\s)(?:\*\*\*|___)|(?:\*\*|__)(?!\s)[^*\n]+?(?<!\s)(?:\*\*|__)|(?<!\*)\*(?!\s)[^*\n]+?(?<!\s)\*(?!\*)|(?<!_)_(?!\s)[^_\n]+?(?<!\s)_(?!_)|~~[^~\n]+?~~)/g;
+    const parts = text.split(inlineRegex);
+
     return parts.map((part, i) => {
-      if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
+      if (!part) return null;
+
+      // 1. Links: [Text](URL)
+      const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+      if (linkMatch) {
+        return (
+          <a
+            key={i}
+            href={linkMatch[2]}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-indigo-600 dark:text-indigo-400 hover:underline font-medium inline-flex items-center gap-0.5"
+          >
+            <span>{linkMatch[1]}</span>
+            <span className="text-[10px]">↗</span>
+          </a>
+        );
+      }
+
+      // 2. Inline code: `code`
+      if (part.startsWith('`') && part.endsWith('`') && part.length >= 2) {
+        return (
+          <code
+            key={i}
+            className="px-1.5 py-0.5 rounded font-mono text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 border border-slate-200/60 dark:border-slate-700/60"
+          >
+            {part.slice(1, -1)}
+          </code>
+        );
+      }
+
+      // 3. Inline math ($...$ or \(...\))
+      const mathMatch = part.match(/^\$([^$\n]+)\$$/) || part.match(/^\\\(([\s\S]+)\\\)$/);
+      if (mathMatch) {
+        return (
+          <span
+            key={i}
+            className="font-mono px-1 py-0.5 rounded bg-indigo-50/70 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-[11px] font-medium"
+          >
+            {mathMatch[1]}
+          </span>
+        );
+      }
+
+      // 4. Bold-Italic: ***text*** or ___text___
+      if (
+        (part.startsWith('***') && part.endsWith('***') && part.length >= 6) ||
+        (part.startsWith('___') && part.endsWith('___') && part.length >= 6)
+      ) {
+        return (
+          <strong key={i} className="font-black italic text-slate-900 dark:text-white">
+            {part.slice(3, -3)}
+          </strong>
+        );
+      }
+
+      // 5. Bold: **text** or __text__
+      if (
+        (part.startsWith('**') && part.endsWith('**') && part.length >= 4) ||
+        (part.startsWith('__') && part.endsWith('__') && part.length >= 4)
+      ) {
         return (
           <strong key={i} className="font-bold text-slate-900 dark:text-white">
             {part.slice(2, -2)}
           </strong>
         );
       }
-      if (part.startsWith('*') && part.endsWith('*') && part.length >= 2 && !part.startsWith('**')) {
+
+      // 6. Italic: *text* or _text_
+      if (
+        (part.startsWith('*') && part.endsWith('*') && part.length >= 2) ||
+        (part.startsWith('_') && part.endsWith('_') && part.length >= 2)
+      ) {
         return (
           <em key={i} className="italic text-slate-800 dark:text-slate-200">
             {part.slice(1, -1)}
           </em>
         );
       }
+
+      // 7. Strikethrough: ~~text~~
+      if (part.startsWith('~~') && part.endsWith('~~') && part.length >= 4) {
+        return (
+          <del key={i} className="line-through text-slate-400 dark:text-slate-500">
+            {part.slice(2, -2)}
+          </del>
+        );
+      }
+
+      // 8. Defensive unclosed bold at end of text
+      if (part.startsWith('**') && !part.endsWith('**') && part.length > 2) {
+        return (
+          <strong key={i} className="font-bold text-slate-900 dark:text-white">
+            {part.slice(2)}
+          </strong>
+        );
+      }
+
       return part;
     });
   };
 
   const lines = content.split('\n');
-  return lines.map((line, idx) => {
-    const trimmed = line.trim();
-    if (!trimmed) return <div key={idx} className="h-2" />;
+  const elements = [];
+  let currentCode = null;
+  let currentTable = null;
 
-    // H2 Headers (## 1. Bedah Unit Bisnis...)
-    if (trimmed.startsWith('## ')) {
-      const title = trimmed.replace(/^##\s+/, '');
-      const lower = title.toLowerCase();
-      let icon = '📌';
-      if (lower.includes('unit bisnis') || lower.includes('strategis')) icon = '🏢';
-      else if (lower.includes('pasar') || lower.includes('siklus') || lower.includes('market-fit')) icon = '🔄';
-      else if (lower.includes('moat') || lower.includes('kompetitor') || lower.includes('keunggulan')) icon = '🛡️';
-      else if (lower.includes('valuasi') || lower.includes('fundamental')) icon = '📊';
-      else if (lower.includes('tren') || lower.includes('teknikal') || lower.includes('momentum')) icon = '📈';
-      else if (lower.includes('berita') || lower.includes('sentimen') || lower.includes('katalis')) icon = '📰';
-      else if (lower.includes('prospek') || lower.includes('rekomendasi')) icon = '🎯';
+  const flushTable = () => {
+    if (!currentTable || currentTable.length === 0) return;
+    const tableLines = currentTable;
+    currentTable = null;
 
-      return (
-        <div key={idx} className="pt-4 pb-1.5 border-b border-slate-200 dark:border-slate-800">
-          <h4 className="text-xs sm:text-sm font-black text-indigo-600 dark:text-indigo-400 flex items-center gap-2 uppercase tracking-wide">
-            <span className="text-sm">{icon}</span>
-            <span>{renderInline(title)}</span>
-          </h4>
-        </div>
-      );
+    const parseCells = (line) => {
+      const parts = line.split('|');
+      if (line.startsWith('|')) parts.shift();
+      if (line.endsWith('|')) parts.pop();
+      return parts.map((s) => s.trim());
+    };
+
+    const headerLine = tableLines[0];
+    const headers = parseCells(headerLine);
+    const dataLines = tableLines.slice(1).filter((l) => !/^\|?[\s\-:|]+\|?$/.test(l.trim()));
+
+    elements.push(
+      <div key={`table-${elements.length}`} className="my-3 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+        <table className="w-full text-left text-xs border-collapse">
+          <thead className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold">
+            <tr>
+              {headers.map((h, hIdx) => (
+                <th key={hIdx} className="px-3 py-2 border-b border-slate-200 dark:border-slate-700">
+                  {renderInline(h)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
+            {dataLines.map((row, rIdx) => {
+              const cells = parseCells(row);
+              return (
+                <tr key={rIdx} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                  {cells.map((c, cIdx) => (
+                    <td key={cIdx} className="px-3 py-2 font-medium">
+                      {renderInline(c)}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  const flushCode = () => {
+    if (!currentCode) return;
+    const codeObj = currentCode;
+    currentCode = null;
+    elements.push(
+      <pre
+        key={`code-${elements.length}`}
+        className="my-3 p-3 rounded-xl bg-slate-900 text-emerald-400 font-mono text-xs overflow-x-auto border border-slate-800"
+      >
+        <code>{codeObj.lines.join('\n')}</code>
+      </pre>
+    );
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i];
+    const trimmed = rawLine.trim();
+
+    // 1. Code Fence (```)
+    if (trimmed.startsWith('```')) {
+      if (currentCode) {
+        flushCode();
+      } else {
+        flushTable();
+        currentCode = { lang: trimmed.slice(3).trim(), lines: [] };
+      }
+      continue;
+    }
+    if (currentCode) {
+      currentCode.lines.push(rawLine);
+      continue;
     }
 
-    // H3 Headers (### ...)
-    if (trimmed.startsWith('### ')) {
-      const title = trimmed.replace(/^###\s+/, '');
-      return (
-        <h5 key={idx} className="text-xs font-bold text-slate-900 dark:text-slate-100 pt-2">
-          {renderInline(title)}
-        </h5>
+    // 2. Table rows (| col1 | col2 |)
+    if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+      if (!currentTable) currentTable = [];
+      currentTable.push(trimmed);
+      continue;
+    } else if (currentTable) {
+      flushTable();
+    }
+
+    // 3. Empty line spacer
+    if (!trimmed) {
+      elements.push(<div key={`sp-${i}`} className="h-2" />);
+      continue;
+    }
+
+    // 4. Horizontal Separators (---, ***, ___)
+    if (/^(\-{3,}|\*{3,}|_{3,})$/.test(trimmed)) {
+      elements.push(<hr key={`hr-${i}`} className="my-3.5 border-t border-slate-200 dark:border-slate-800" />);
+      continue;
+    }
+
+    // 5. Normalisasi untuk memeriksa callout khusus (meskipun terbungkus **bold**)
+    const unbolded = trimmed.replace(/^\*+|\*+$/g, '').trim();
+    const upperLead = unbolded.toUpperCase();
+
+    // SKOR AI Callout
+    if (upperLead.startsWith('SKOR AI:')) {
+      elements.push(
+        <div
+          key={`skor-${i}`}
+          className="p-3 my-2.5 rounded-2xl bg-gradient-to-r from-violet-500/10 via-indigo-500/10 to-purple-500/10 border border-violet-200 dark:border-violet-800/70 flex items-center justify-between shadow-xs"
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-base">⭐</span>
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Rating Konsensus AI</span>
+          </div>
+          <div className="text-xs sm:text-sm font-black text-violet-700 dark:text-violet-300 font-mono tracking-wide">
+            {renderInline(unbolded)}
+          </div>
+        </div>
       );
+      continue;
     }
 
     // KESIMPULAN Callout
-    if (trimmed.toUpperCase().startsWith('KESIMPULAN:')) {
-      const isBuy = trimmed.toUpperCase().includes('BELI') || trimmed.toUpperCase().includes('BUY');
-      const isSell = trimmed.toUpperCase().includes('JUAL') || trimmed.toUpperCase().includes('SELL');
-      return (
+    if (upperLead.startsWith('KESIMPULAN:')) {
+      const isBuy = upperLead.includes('BELI') || upperLead.includes('BUY');
+      const isSell = upperLead.includes('JUAL') || upperLead.includes('SELL');
+      elements.push(
         <div
-          key={idx}
+          key={`kesimpulan-${i}`}
           className={`p-3.5 my-2.5 rounded-2xl border flex items-center gap-2.5 shadow-sm ${
             isBuy
               ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/80 text-emerald-900 dark:text-emerald-100'
@@ -267,70 +454,142 @@ function renderAiMarkdown(content) {
         >
           <span className="text-base">{isBuy ? '🚀' : isSell ? '⚠️' : '⚖️'}</span>
           <div className="text-xs sm:text-sm font-extrabold tracking-wide">
-            {renderInline(trimmed)}
+            {renderInline(unbolded)}
           </div>
         </div>
       );
+      continue;
     }
 
     // ALASAN SINGKAT Callout
-    if (trimmed.toUpperCase().startsWith('ALASAN SINGKAT:')) {
-      return (
-        <div key={idx} className="p-3 my-1.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50 text-xs leading-relaxed text-indigo-950 dark:text-indigo-200 font-medium">
-          {renderInline(trimmed)}
+    if (upperLead.startsWith('ALASAN SINGKAT:')) {
+      elements.push(
+        <div
+          key={`alasan-${i}`}
+          className="p-3 my-1.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50 text-xs leading-relaxed text-indigo-950 dark:text-indigo-200 font-medium"
+        >
+          {renderInline(unbolded)}
         </div>
       );
+      continue;
     }
 
-    // Markdown Table Row (| col1 | col2 |)
-    if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
-      // Ignore delimiter row (|---|---|)
-      if (/^\|[\s\-:|]+\|$/.test(trimmed)) return null;
-      const cells = trimmed.slice(1, -1).split('|').map(c => c.trim());
-      return (
-        <div key={idx} className="grid grid-cols-2 sm:grid-cols-4 gap-2 py-1 px-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-lg text-xs border border-slate-200/60 dark:border-slate-700/60 my-0.5">
-          {cells.map((cell, cIdx) => (
-            <div key={cIdx} className="truncate">
-              {renderInline(cell)}
-            </div>
-          ))}
+    // 6. Headers (# H1, ## H2, ### H3, #### H4, ##### H5)
+    if (trimmed.startsWith('# ')) {
+      elements.push(
+        <div key={`h1-${i}`} className="pt-2 pb-2 mb-2 border-b-2 border-indigo-500/30">
+          <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white flex items-center gap-2 tracking-tight">
+            <span>📑</span>
+            <span>{renderInline(trimmed.replace(/^#\s+/, ''))}</span>
+          </h3>
         </div>
       );
+      continue;
     }
 
-    // Numbered List Items (1. item, 2. item)
-    const numMatch = trimmed.match(/^(\d+)\.\s+(.*)/);
+    if (trimmed.startsWith('## ')) {
+      const title = trimmed.replace(/^##\s+/, '');
+      const lower = title.toLowerCase();
+      let icon = '📌';
+      if (lower.includes('unit bisnis') || lower.includes('strategis')) icon = '🏢';
+      else if (lower.includes('pasar') || lower.includes('siklus') || lower.includes('market-fit')) icon = '🔄';
+      else if (lower.includes('moat') || lower.includes('kompetitor') || lower.includes('keunggulan')) icon = '🛡️';
+      else if (lower.includes('valuasi') || lower.includes('fundamental') || lower.includes('harga wajar')) icon = '📊';
+      else if (lower.includes('tren') || lower.includes('teknikal') || lower.includes('momentum')) icon = '📈';
+      else if (lower.includes('berita') || lower.includes('sentimen') || lower.includes('katalis')) icon = '📰';
+      else if (lower.includes('prospek') || lower.includes('rekomendasi') || lower.includes('kesimpulan')) icon = '🎯';
+
+      elements.push(
+        <div key={`h2-${i}`} className="pt-4 pb-1.5 border-b border-slate-200 dark:border-slate-800">
+          <h4 className="text-xs sm:text-sm font-black text-indigo-600 dark:text-indigo-400 flex items-center gap-2 uppercase tracking-wide">
+            <span className="text-sm">{icon}</span>
+            <span>{renderInline(title)}</span>
+          </h4>
+        </div>
+      );
+      continue;
+    }
+
+    if (trimmed.startsWith('### ')) {
+      elements.push(
+        <h5 key={`h3-${i}`} className="text-xs font-bold text-slate-900 dark:text-slate-100 pt-2 pb-0.5">
+          {renderInline(trimmed.replace(/^###\s+/, ''))}
+        </h5>
+      );
+      continue;
+    }
+
+    if (trimmed.startsWith('#### ') || trimmed.startsWith('##### ')) {
+      elements.push(
+        <h6 key={`h4-${i}`} className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 pt-1.5 pb-0.5">
+          {renderInline(trimmed.replace(/^#+\s+/, ''))}
+        </h6>
+      );
+      continue;
+    }
+
+    // 7. Blockquotes (> ...)
+    if (trimmed.startsWith('>')) {
+      elements.push(
+        <blockquote
+          key={`bq-${i}`}
+          className="p-2.5 my-2 rounded-r-xl border-l-4 border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/30 text-xs italic text-slate-700 dark:text-slate-300"
+        >
+          {renderInline(trimmed.replace(/^>\s*/, ''))}
+        </blockquote>
+      );
+      continue;
+    }
+
+    // 8. Numbered / Ordered List Items (1. item, 2. item, a) item, (1) item)
+    const numMatch = trimmed.match(/^(\d+[\.\)]|[a-zA-Z][\.\)]|\(\d+\))\s+(.*)/);
     if (numMatch) {
-      return (
-        <div key={idx} className="flex items-start gap-2 pl-2 my-0.5">
-          <span className="text-indigo-600 dark:text-indigo-400 font-bold text-xs mt-0.5 min-w-[14px]">{numMatch[1]}.</span>
+      const indent = rawLine.search(/\S/);
+      const isSub = indent >= 2;
+      elements.push(
+        <div key={`num-${i}`} className={`flex items-start gap-2 my-0.5 ${isSub ? 'pl-6' : 'pl-2'}`}>
+          <span className="text-indigo-600 dark:text-indigo-400 font-bold text-xs mt-0.5 min-w-[16px]">
+            {numMatch[1]}
+          </span>
           <span className="flex-1 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
             {renderInline(numMatch[2])}
           </span>
         </div>
       );
+      continue;
     }
 
-    // Bullet List Items (- item or * item)
-    if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-      const text = trimmed.replace(/^[-*]\s+/, '');
-      return (
-        <div key={idx} className="flex items-start gap-2 pl-2 my-0.5">
-          <span className="text-indigo-500 dark:text-indigo-400 font-bold text-xs mt-0.5">•</span>
+    // 9. Bullet List Items (- item, * item, • item)
+    const bulletMatch = trimmed.match(/^([-*•])\s+(.*)/);
+    if (bulletMatch) {
+      const indent = rawLine.search(/\S/);
+      const isSub = indent >= 2;
+      elements.push(
+        <div key={`bullet-${i}`} className={`flex items-start gap-2 my-0.5 ${isSub ? 'pl-6' : 'pl-2'}`}>
+          <span className={`text-xs mt-0.5 font-bold ${isSub ? 'text-slate-400 dark:text-slate-500' : 'text-indigo-500 dark:text-indigo-400'}`}>
+            {isSub ? '◦' : '•'}
+          </span>
           <span className="flex-1 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
-            {renderInline(text)}
+            {renderInline(bulletMatch[2])}
           </span>
         </div>
       );
+      continue;
     }
 
-    // Standard Paragraph
-    return (
-      <p key={idx} className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+    // 10. Standard Paragraph
+    elements.push(
+      <p key={`p-${i}`} className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
         {renderInline(trimmed)}
       </p>
     );
-  });
+  }
+
+  // Flush any pending multi-line blocks at end
+  flushCode();
+  flushTable();
+
+  return elements;
 }
 
 export default function StockExplorer({ user }) {
@@ -718,14 +977,15 @@ export default function StockExplorer({ user }) {
 
   const handleAnalyzeAi = async (force = false) => {
     if (!stockDetail || !stockDetail.ticker) return;
+    const isForce = typeof force === 'boolean' ? force : false;
     setIsAiLoading(true);
     try {
       const res = await fetch('/api/ai/research', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ticker: stockDetail.ticker, force })
+        body: JSON.stringify({ ticker: stockDetail.ticker, force: isForce })
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
         setAiStatus(data.queue?.status || 'PENDING');
         showToast('✅ Berhasil ditambahkan ke antrian AI', 'success');
@@ -734,10 +994,24 @@ export default function StockExplorer({ user }) {
           setAiResearch(data.research);
           setAiStatus('COMPLETED');
         }
-        showToast(res.status === 429 ? 'ℹ️ ' + (data.error || 'Sudah dianalisis') : '❌ ' + (data.error || 'Gagal antri AI'), res.status === 429 ? 'info' : 'error');
+        if (res.status === 401) {
+          showToast('🔒 Sesi telah kedaluwarsa atau Anda belum login. Silakan login terlebih dahulu.', 'error');
+        } else if (res.status === 429) {
+          showToast('ℹ️ ' + (data.error || 'Riset AI masih valid (< 30 hari)'), 'info');
+        } else {
+          showToast('❌ ' + (data.error || `Gagal antri AI (Status HTTP ${res.status})`), 'error');
+        }
       }
     } catch (err) {
-      showToast('❌ Gagal menghubungi server', 'error');
+      console.error('AI Research trigger error:', err);
+      const msg = err.message?.toLowerCase() || '';
+      const isNetworkError = msg.includes('failed to fetch') || msg.includes('network') || msg.includes('load failed');
+      showToast(
+        isNetworkError
+          ? '❌ Gagal menghubungi server web. Pastikan server lokal (port 3050) atau container Docker (port 3010) aktif.'
+          : `❌ Terjadi kesalahan: ${err.message}`,
+        'error'
+      );
     } finally {
       setIsAiLoading(false);
     }
@@ -1945,7 +2219,7 @@ export default function StockExplorer({ user }) {
                           </button>
                         ) : (
                           <button
-                            onClick={handleAnalyzeAi}
+                            onClick={() => handleAnalyzeAi(false)}
                             disabled={isAiLoading || aiStatus === 'PENDING' || aiStatus === 'PROCESSING'}
                             className={`px-3.5 py-2 text-xs font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
                               aiStatus ? 'bg-slate-300 text-slate-600 cursor-not-allowed dark:bg-slate-700 dark:text-slate-400' : 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white'

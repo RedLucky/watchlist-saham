@@ -49,6 +49,11 @@ export const ATR_VOLATILITY_STOP_LOSS_MULTIPLIER = 1.5;
 // Batas risiko maksimal drawdown portofolio (maksimal risiko -8% dari entryLow)
 export const MAX_STOP_LOSS_DRAWDOWN_RATIO = 0.92;
 
+// Plafon persentase target gain maksimal per gaya trading (mencegah target tidak realistis terhadap durasi simpan)
+export const SCALP_MAX_TARGET_PCT = 5.0; // Maksimal +5.0% untuk Scalping (durasi 1-2 hari)
+export const DAILY_MAX_TARGET_PCT = 8.0; // Maksimal +8.0% untuk Daily Trading (durasi 3-5 hari)
+export const SWING_MAX_TARGET_PCT = 18.0; // Maksimal +18.0% untuk Swing Trading (durasi 1-3 minggu)
+
 /**
  * Mengembalikan besaran fraksi harga resmi BEI (IDX Tick Size):
  * - Harga < Rp 200        : Fraksi Rp 1
@@ -270,6 +275,13 @@ export function calculateTradeSetup(stock, technicalResult, styleConfig) {
       }
     }
   }
+
+  // Batasi targetCandidate agar selaras dengan ekspektasi durasi simpan gaya trading
+  const styleName = (styleConfig?.name || 'swing').toLowerCase();
+  const maxTargetPct = styleName === 'scalping' ? SCALP_MAX_TARGET_PCT :
+                       styleName === 'daily' ? DAILY_MAX_TARGET_PCT : SWING_MAX_TARGET_PCT;
+  const styleCeilingTarget = avgEntry * (1 + maxTargetPct / 100);
+  targetCandidate = Math.min(targetCandidate, styleCeilingTarget);
 
   let target = roundToIDXTick(targetCandidate, 'up');
   const minTarget = entryHigh + (getIDXPriceStep(entryHigh) * 2);

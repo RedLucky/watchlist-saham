@@ -2,6 +2,26 @@
 
 import React from 'react';
 
+function formatPreviewSnippet(rawText) {
+  if (!rawText) return '';
+  const lines = rawText
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l && !l.startsWith('#') && !/^(\-{3,}|\*{3,}|_{3,})$/.test(l));
+
+  if (lines.length === 0) return '';
+
+  return lines
+    .join(' ')
+    .replace(/^[-*•]\s+/, '')
+    .replace(/\s+[-*•]\s+/g, '; ')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
+    .replace(/__([^_]+)__/g, '$1')
+    .replace(/_([^_]+)_/g, '$1')
+    .replace(/`([^`]+)`/g, '$1');
+}
+
 /**
  * Bloomberg BI & NSENT:
  * Bloomberg Intelligence AI Research Integration & News Sentiment Analysis
@@ -141,7 +161,7 @@ export default function BloombergIntelligencePanel({
                     Valuasi & Proyeksi AI:
                   </span>
                   <p className="text-slate-700 dark:text-slate-300 mt-0.5 line-clamp-2 leading-relaxed">
-                    {aiResearch.valuation || 'Analisis valuasi konsensus fundamental emiten.'}
+                    {formatPreviewSnippet(aiResearch.valuation) || 'Analisis valuasi konsensus fundamental emiten.'}
                   </p>
                 </div>
 
@@ -150,7 +170,7 @@ export default function BloombergIntelligencePanel({
                     Tren & Momentum:
                   </span>
                   <p className="text-slate-700 dark:text-slate-300 mt-0.5 line-clamp-2 leading-relaxed">
-                    {aiResearch.trend || 'Tren akumulasi dan arah aliran dana emiten.'}
+                    {formatPreviewSnippet(aiResearch.trend) || 'Tren akumulasi dan arah aliran dana emiten.'}
                   </p>
                 </div>
               </div>

@@ -5,6 +5,7 @@
  */
 
 const MAX_NEWS_AGE_DAYS = 90; // Hanya sertakan berita dalam 90 hari terakhir
+const { matchAlphaLegendSector } = require('./sectorIntelligence.js');
 
 function cleanCompanyName(companyName) {
   if (!companyName) return '';
@@ -42,9 +43,117 @@ function isRecent(dateStr) {
 }
 
 /**
+ * Filter mendeteksi judul berita clickbait, rumor harian, rekomendasi trading broker, atau kompilasi listicle spekulatif.
+ * Memastikan AI hanya memproses berita aksi korporasi nyata, realisasi belanja modal, dan kinerja bisnis fundamental.
+ */
+function isClickbaitTitle(title) {
+  if (!title || typeof title !== 'string') return true;
+  const t = title.trim();
+
+  // Pola judul clickbait, listicle harian, atau rekomendasi spekulatif
+  const clickbaitPatterns = [
+    /\brekomendasi saham\b/i,
+    /\bsaham pilihan\b/i,
+    /\bmenu saham\b/i,
+    /\bsaham jagoan\b/i,
+    /\bide trading\b/i,
+    /\btrading plan\b/i,
+    /\bsimak target harga\b/i,
+    /\btarget harga potensial\b/i,
+    /\bpotensi cuan\b/i,
+    /\bberpotensi cuan\b/i,
+    /\blayak beli\b/i,
+    /\bintip saham\b/i,
+    /\bkoleksi saham\b/i,
+    /\bpantau saham\b/i,
+    /\bcermati saham\b/i,
+    /\bcek saham\b/i,
+    /\bsaham-saham ini berpotensi\b/i,
+    /\bsaatnya beli\?/i,
+    /\bsaatnya serok/i,
+    /\brekomendasi analis\b/i,
+    /\bkonsensus analis\b/i,
+    /\btop (gainers|losers)\b/i,
+    /\bdaftar saham cuan\b/i,
+    /\bihsg.*(melemah|menguat|anjlok|merah|hijau).*?(simak|cek|intip|rekomendasi)/i
+  ];
+
+  const hasClickbaitPattern = clickbaitPatterns.some((pat) => pat.test(t));
+  if (!hasClickbaitPattern) return false;
+
+  // Pengecualian (whitelist): jika judul memuat metrik angka / aksi korporasi riil
+  const concreteSignalRegex = /\b(laba bersih|dividen interim|bagikan dividen|kinerja kuartal|pendapatan melonjak|akuisisi|merger|capex|right issue|buyback|rupiah|triliun|miliar)\b/i;
+  const hasConcreteSignal = concreteSignalRegex.test(t);
+
+  // Jika judul diawali dengan format rekomendasi/menu broker harian, tetap buang
+  const pureRecommendationPrefix = /^(rekomendasi saham|menu saham|ide trading|cek saham|intip saham|ihsg)/i.test(t);
+  if (pureRecommendationPrefix) return true;
+
+  return !hasConcreteSignal;
+}
+
+/**
+ * Menghitung skor sinyal informasi berita (0 - 100).
+ * Memberikan bobot prioritas tinggi kepada:
+ * 1. Keberadaan ringkasan/cuplikan substansial (>40 karakter)
+ * 2. Angka & metrik finansial riil (Rp, %, triliun, miliar, laba, dividen, capex)
+ * 3. Media bisnis & ekonomi kredibel (Bisnis.com, Kontan, CNBC, Katadata, Investor Daily, Bloomberg Technoz, IDNFinancials)
+ * Mengurangi bobot untuk kompilasi listicle dengan terlalu banyak kode saham.
+ */
+function calculateSignalScore(title = '', desc = '', source = '') {
+  let score = 0;
+  const fullText = `${title} ${desc}`.toLowerCase();
+
+  // 1. Kualitas ringkasan / deskripsi artikel
+  if (desc && desc.length > 40 && desc.trim().toLowerCase() !== title.trim().toLowerCase()) {
+    score += 25;
+    if (desc.length > 100) score += 10;
+  }
+
+  // 2. Metrik moneter & finansial konkret
+  if (/(\brp|\$|triliun|miliar|juta|persen|%|\bton\b|\bbarel\b)/i.test(fullText)) {
+    score += 20;
+  }
+  if (/\b(laba|rugi|pendapatan|omset|omzet|penjualan|ebitda|margin|kinerja|dividen|capex)\b/i.test(fullText)) {
+    score += 15;
+  }
+  if (/\b(kuartal|semester|q[1-4]|h[1-2]|tahunan|yoy|mom|qoq)\b/i.test(fullText)) {
+    score += 10;
+  }
+  if (/\b(akuisisi|merger|ekspansi|pabrik|kontrak|proyek|investasi|smelter|tender|ekspor)\b/i.test(fullText)) {
+    score += 15;
+  }
+
+  // 3. Kredibilitas media bisnis & ekonomi resmi
+  const s = (source || '').toLowerCase();
+  if (
+    s.includes('kontan') ||
+    s.includes('bisnis.com') ||
+    s.includes('cnbc') ||
+    s.includes('katadata') ||
+    s.includes('investor') ||
+    s.includes('bloomberg') ||
+    s.includes('reuters') ||
+    s.includes('idnfinancials') ||
+    s.includes('emitennews') ||
+    s.includes('jakarta globe')
+  ) {
+    score += 15;
+  }
+
+  // 4. Penalti jika artikel berupa listicle kompilasi pasar (banyak kode saham)
+  const tickerMatches = title.match(/\b[A-Z]{4}\b/g) || [];
+  if (tickerMatches.length >= 3) {
+    score -= 20;
+  }
+
+  return Math.max(0, score);
+}
+
+/**
  * 1. Ambil berita dari Bing News RSS (menyertakan teks cuplikan / deskripsi artikel)
  */
-async function fetchFromBingNews(query, maxItems = 5) {
+async function fetchFromBingNews(query, maxItems = 6) {
   try {
     const url = `https://www.bing.com/news/search?q=${encodeURIComponent(query)}&format=rss`;
     const res = await fetch(url, {
@@ -78,6 +187,9 @@ async function fetchFromBingNews(query, maxItems = 5) {
         .replace(/<[^>]+>/g, '')
         .trim();
 
+      // Saring judul clickbait harian / rumor non-fundamental
+      if (isClickbaitTitle(title)) continue;
+
       const desc = (descMatch ? descMatch[1] : '')
         .replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1')
         .replace(/<[^>]+>/g, '')
@@ -94,12 +206,21 @@ async function fetchFromBingNews(query, maxItems = 5) {
 
       let itemText = `- ${datePrefix}${title}${sourceSuffix}`;
       if (desc && desc.length > 25 && desc !== title) {
-        // Bersihkan jika deskripsi memotong kalimat
+        // Bersihkan spasi berlebih
         const cleanDesc = desc.replace(/\s+/g, ' ');
         itemText += `\n  Ringkasan: "${cleanDesc}"`;
       }
 
-      items.push(itemText);
+      const signalScore = calculateSignalScore(title, desc, source);
+
+      items.push({
+        title,
+        desc,
+        source,
+        dateFmt,
+        itemText,
+        signalScore
+      });
     }
 
     return items;
@@ -111,7 +232,7 @@ async function fetchFromBingNews(query, maxItems = 5) {
 /**
  * 2. Fallback Google News RSS jika Bing News tidak memberikan hasil
  */
-async function fetchFromGoogleNews(query, maxItems = 5) {
+async function fetchFromGoogleNews(query, maxItems = 4) {
   try {
     const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=id&gl=ID&ceid=ID:id`;
     const res = await fetch(url, {
@@ -143,10 +264,23 @@ async function fetchFromGoogleNews(query, maxItems = 5) {
         .replace(/<[^>]+>/g, '')
         .trim();
 
+      // Saring judul clickbait
+      if (isClickbaitTitle(cleanTitle)) continue;
+
       const dateFmt = formatDate(rawDate);
       const datePrefix = dateFmt ? `[${dateFmt}] ` : '';
 
-      items.push(`- ${datePrefix}${cleanTitle}`);
+      const itemText = `- ${datePrefix}${cleanTitle}`;
+      const signalScore = calculateSignalScore(cleanTitle, '', '');
+
+      items.push({
+        title: cleanTitle,
+        desc: '',
+        source: '',
+        dateFmt,
+        itemText,
+        signalScore
+      });
     }
 
     return items;
@@ -157,166 +291,30 @@ async function fetchFromGoogleNews(query, maxItems = 5) {
 
 /**
  * Helper to build sector-specific search queries using general and specific industry keywords.
- * Avoids hardcoded emiten ticker checks; dynamically classifies based on sector, subsector,
- * and corporate domain terminology.
+ * Leverages the 35 Alpha Legend sector intelligence catalog with structured query templates.
  */
 function buildSectorThematicQueries(cleanTicker, cleanName, sector = '', subSector = '') {
-  const metaText = `${sector} ${subSector} ${cleanName}`.toLowerCase();
-  const queries = [];
+  const matched = matchAlphaLegendSector(sector, subSector, cleanName);
+  const queries = [
+    {
+      category: 'Rencana Bisnis & Capex',
+      query: `${cleanName} rencana bisnis belanja modal capex ekspansi target`
+    }
+  ];
 
-  // Query 1: Strategi umum perusahaan, belanja modal (capex), dan target pertumbuhan
-  queries.push({
-    category: 'Rencana Bisnis & Capex',
-    query: `${cleanName} rencana bisnis belanja modal capex ekspansi target`
-  });
-
-  // Query 2 & 3: Pencarian tematik berbasis kata kunci industri umum & spesifik
-  if (
-    metaText.includes('auto') ||
-    metaText.includes('component') ||
-    metaText.includes('komponen') ||
-    metaText.includes('spare part') ||
-    metaText.includes('suku cadang') ||
-    metaText.includes('otomotif') ||
-    metaText.includes('ban ') ||
-    metaText.includes('kendaraan')
-  ) {
-    queries.push({
-      category: 'Siklus Industri & Kebutuhan Pasar',
-      query: `${cleanName} suku cadang spare part otomotif mobil listrik EV Gaikindo`
-    });
-    queries.push({
-      category: 'Pangsa Pasar & Kompetitor',
-      query: `${cleanName} pangsa pasar persaingan industri aftermarket OEM`
-    });
-  } else if (
-    metaText.includes('bank') ||
-    metaText.includes('financ') ||
-    metaText.includes('keuangan') ||
-    metaText.includes('pembiayaan') ||
-    metaText.includes('asuransi')
-  ) {
-    queries.push({
-      category: 'Kredit, CASA & Kualitas Aset',
-      query: `${cleanName} pertumbuhan kredit dana murah CASA NPL margin bunga`
-    });
-    queries.push({
-      category: 'Kompetisi & Transformasi Digital',
-      query: `${cleanName} perbankan digital efisiensi BOPO pangsa pasar`
-    });
-  } else if (
-    metaText.includes('batu bara') ||
-    metaText.includes('batubara') ||
-    metaText.includes('coal') ||
-    metaText.includes('oil') ||
-    metaText.includes('gas') ||
-    metaText.includes('minyak') ||
-    metaText.includes('energy') ||
-    metaText.includes('energi')
-  ) {
-    queries.push({
-      category: 'Siklus Komoditas & Regulasi',
-      query: `${cleanName} batubara komoditas energi DMO ekspor royalti`
-    });
-    queries.push({
-      category: 'Hilirisasi & Diversifikasi',
-      query: `${cleanName} hilirisasi energi hijau transisi smelter capex`
-    });
-  } else if (
-    metaText.includes('sawit') ||
-    metaText.includes('cpo') ||
-    metaText.includes('perkebunan') ||
-    metaText.includes('plantation') ||
-    metaText.includes('palma')
-  ) {
-    queries.push({
-      category: 'Mandat Biodiesel & Harga CPO',
-      query: `${cleanName} kelapa sawit CPO mandat biodiesel B40 B35 ekspor`
-    });
-    queries.push({
-      category: 'Produktivitas & Tanaman',
-      query: `${cleanName} produksi tandan buah segar yield replanting perkebunan`
-    });
-  } else if (
-    metaText.includes('nikel') ||
-    metaText.includes('nickel') ||
-    metaText.includes('tembaga') ||
-    metaText.includes('copper') ||
-    metaText.includes('emas') ||
-    metaText.includes('gold') ||
-    metaText.includes('mineral') ||
-    metaText.includes('metal') ||
-    metaText.includes('tambang')
-  ) {
-    queries.push({
-      category: 'Smelter & Rantai Pasok Baterai EV',
-      query: `${cleanName} tambang mineral smelter nikel tembaga baterai EV RKAB`
-    });
-    queries.push({
-      category: 'Pasar & Regulasi Ekspor',
-      query: `${cleanName} cadangan tambang hilirisasi ekspor kuota produksi`
-    });
-  } else if (
-    metaText.includes('telecom') ||
-    metaText.includes('telko') ||
-    metaText.includes('telekomunikasi') ||
-    metaText.includes('menara') ||
-    metaText.includes('tower') ||
-    metaText.includes('data center') ||
-    metaText.includes('fiber')
-  ) {
-    queries.push({
-      category: 'Trafik Data & ARPU',
-      query: `${cleanName} trafik data ARPU seluler internet broadband FMC`
-    });
-    queries.push({
-      category: 'Infrastruktur & Kompetisi',
-      query: `${cleanName} fiber optik data center menara telekomunikasi`
-    });
-  } else if (
-    metaText.includes('propert') ||
-    metaText.includes('real estate') ||
-    metaText.includes('konstruksi') ||
-    metaText.includes('construct') ||
-    metaText.includes('infrastruktur') ||
-    metaText.includes('semen')
-  ) {
-    queries.push({
-      category: 'Pasar Properti & Suku Bunga',
-      query: `${cleanName} marketing sales properti KPR suku bunga kontrak baru`
-    });
-    queries.push({
-      category: 'Arus Kas & Backlog Proyek',
-      query: `${cleanName} backlog kontrak recurring income pendapatan berulang`
-    });
-  } else if (
-    metaText.includes('makan') ||
-    metaText.includes('minum') ||
-    metaText.includes('food') ||
-    metaText.includes('beverage') ||
-    metaText.includes('farmasi') ||
-    metaText.includes('pharma') ||
-    metaText.includes('kesehatan') ||
-    metaText.includes('health') ||
-    metaText.includes('consumer')
-  ) {
-    queries.push({
-      category: 'Daya Beli & Inovasi Produk',
-      query: `${cleanName} daya beli konsumsi bahan baku harga jual margin`
-    });
-    queries.push({
-      category: 'Distribusi & Pangsa Pasar',
-      query: `${cleanName} pangsa pasar jaringan distribusi ritel penjualan`
-    });
-  } else {
-    // Sektor umum / komersial lainnya
-    queries.push({
-      category: 'Dinamika Industri & Pasar',
-      query: `${cleanName} prospek industri permintaan pasar produk jasa`
-    });
-    queries.push({
-      category: 'Pangsa Pasar & Posisi Kompetitif',
-      query: `${cleanName} pangsa pasar posisi kompetitor keunggulan bisnis`
+  if (matched.searchQueries && matched.searchQueries.length > 0) {
+    matched.searchQueries.forEach((item, idx) => {
+      if (typeof item === 'function') {
+        queries.push({
+          category: idx === 0 ? 'Siklus Industri & Kebutuhan Pasar' : 'Pangsa Pasar & Kompetitor',
+          query: item(cleanName)
+        });
+      } else if (item && typeof item.query === 'function') {
+        queries.push({
+          category: item.category || (idx === 0 ? 'Siklus Industri & Kebutuhan Pasar' : 'Pangsa Pasar & Kompetitor'),
+          query: item.query(cleanName)
+        });
+      }
     });
   }
 
@@ -326,6 +324,7 @@ function buildSectorThematicQueries(cleanTicker, cleanName, sector = '', subSect
 /**
  * Fungsi utama: Agregator berita & riset tematik internet cerdas
  * Mengambil berita umum, rencana capex, serta dinamika sektor & kompetitor secara paralel
+ * Dilengkapi dengan filter clickbait dan peringkat skor sinyal (signal-to-noise ranking).
  */
 async function fetchLatestStockNews(ticker, companyName = '', sector = '', subSector = '') {
   try {
@@ -335,8 +334,11 @@ async function fetchLatestStockNews(ticker, companyName = '', sector = '', subSe
     // Kumpulan query tematik yang akan dijalankan secara paralel
     const thematicQueries = buildSectorThematicQueries(cleanTicker, cleanName, sector, subSector);
 
-    // Tambahkan pencarian berita korporasi utama
-    const primaryQuery = cleanName ? `${cleanTicker} ${cleanName} saham` : `${cleanTicker} saham`;
+    // Tambahkan pencarian berita korporasi utama berfokus fundamental (kinerja, laba, dividen, capex)
+    const primaryQuery = cleanName
+      ? `"${cleanName}" (laba OR pendapatan OR kinerja OR dividen OR capex OR ekspansi)`
+      : `${cleanTicker} (laba OR pendapatan OR kinerja OR dividen OR capex)`;
+
     const allSearchTasks = [
       { category: 'Berita & Sentimen Utama', query: primaryQuery },
       ...thematicQueries
@@ -344,43 +346,55 @@ async function fetchLatestStockNews(ticker, companyName = '', sector = '', subSe
 
     // Eksekusi semua pencarian Bing News secara paralel dengan timeout aman
     const searchPromises = allSearchTasks.map(async (task) => {
-      let results = await fetchFromBingNews(task.query, 3);
+      let results = await fetchFromBingNews(task.query, 6);
       if (!results || results.length === 0) {
-        results = await fetchFromGoogleNews(task.query, 2);
+        results = await fetchFromGoogleNews(task.query, 4);
       }
       return { category: task.category, items: results || [] };
     });
 
     const settled = await Promise.allSettled(searchPromises);
 
-    // Gabungkan & deduplikasi artikel berdasarkan judul
+    // Gabungkan & deduplikasi artikel berdasarkan judul dengan urutan skor sinyal tertinggi
     const seenTitles = new Set();
     const formattedSections = [];
 
     for (const res of settled) {
       if (res.status !== 'fulfilled') continue;
       const { category, items } = res.value;
-      const uniqueItems = [];
+      if (!items || items.length === 0) continue;
 
+      // Urutkan artikel dari skor sinyal tertinggi ke terendah
+      items.sort((a, b) => b.signalScore - a.signalScore);
+
+      const uniqueFormattedItems = [];
       for (const item of items) {
-        // Ambil baris pertama judul untuk deduplikasi
-        const firstLine = item.split('\n')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
-        if (firstLine && !seenTitles.has(firstLine)) {
-          seenTitles.add(firstLine);
-          uniqueItems.push(item);
+        const normTitle = (item.title || item.itemText || '')
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, '');
+
+        if (normTitle && !seenTitles.has(normTitle)) {
+          seenTitles.add(normTitle);
+          uniqueFormattedItems.push(item.itemText);
         }
+
+        // Ambil maksimal 3-4 artikel berkepadatan informasi tertinggi per kategori
+        if (uniqueFormattedItems.length >= 3) break;
       }
 
-      if (uniqueItems.length > 0) {
-        formattedSections.push(`[${category}]\n${uniqueItems.join('\n')}`);
+      if (uniqueFormattedItems.length > 0) {
+        formattedSections.push(`[${category}]\n${uniqueFormattedItems.join('\n')}`);
       }
     }
 
     if (formattedSections.length === 0) {
-      // Fallback ke pencarian ticker tunggal sederhana jika query kompleks tidak membuahkan hasil
-      const fallbackItems = await fetchFromBingNews(`saham ${cleanTicker}`, 4);
-      if (fallbackItems.length > 0) {
-        return `[Berita Terkini Saham]\n${fallbackItems.join('\n')}`;
+      // Fallback ke pencarian ticker tunggal sederhana jika query boolean tidak membuahkan hasil
+      const fallbackQuery = cleanName ? `"${cleanName}" saham` : `${cleanTicker} saham`;
+      const fallbackItems = await fetchFromBingNews(fallbackQuery, 4);
+      if (fallbackItems && fallbackItems.length > 0) {
+        fallbackItems.sort((a, b) => b.signalScore - a.signalScore);
+        const formatted = fallbackItems.map((it) => it.itemText);
+        return `[Berita Terkini Saham]\n${formatted.join('\n')}`;
       }
       return `Tidak ada berita spesifik terkini yang terindeks untuk ${cleanTicker} dalam 90 hari terakhir. Analis harus mengacu pada fundamental historis dan dinamika sektor.`;
     }
@@ -392,4 +406,10 @@ async function fetchLatestStockNews(ticker, companyName = '', sector = '', subSe
   }
 }
 
-module.exports = { fetchLatestStockNews, cleanCompanyName, buildSectorThematicQueries };
+module.exports = {
+  fetchLatestStockNews,
+  cleanCompanyName,
+  buildSectorThematicQueries,
+  isClickbaitTitle,
+  calculateSignalScore
+};

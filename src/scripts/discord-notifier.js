@@ -70,6 +70,10 @@ async function generateRecommendations() {
         else if (isBull && !isAboveDema) badge = '🟡 PULLBACK';
         else if (!isBull && isAboveDema) badge = '🔵 TEST BO';
 
+        // Hanya loloskan emiten dengan sinyal beli atau pullback sehat (bukan SELL atau WAIT)
+        const isBullishSignal = badge.includes('BUY') || badge.includes('PULLBACK');
+        if (!isBullishSignal) continue;
+
         let smartMoneyBadge = '';
         if (s.rawData?.kseiLatest) {
           if (s.rawData.kseiLatest.deltaSmartMoney > 0) smartMoneyBadge = ' 🟢 Akumulasi';
@@ -95,63 +99,8 @@ async function generateRecommendations() {
       }
     }
 
-    // Pass 2: Jika kandidat kurang dari limit, lakukan seleksi relaksasi (minRR >= 1.2, techScore >= 45)
-    if (candidates.length < limit) {
-      for (const style of styles) {
-        const scored = scoreAllStocks(stocks, modeConfig.weights, style, sectorMap, modeKey);
-        for (const s of scored) {
-          if (usedTickers.has(s.ticker) || seenInThisMode.has(s.ticker)) continue;
-
-          const tradeSetup = calculateTradeSetup(s.rawData, s.subScores.technical, style);
-          const actionable = String(tradeSetup.setup || '').toLowerCase() !== 'none';
-          const techScore = Number(s.subScores.technical?.score || 0);
-
-          if (!actionable || tradeSetup.riskReward < 1.2 || techScore < 45) {
-            continue;
-          }
-
-          const rawTech = s.rawData?.technicals || {};
-          const prices = Array.isArray(rawTech.prices) && rawTech.prices.length > 0 ? rawTech.prices : [s.price];
-          const highs = Array.isArray(rawTech.highs) && rawTech.highs.length > 0 ? rawTech.highs : prices;
-          const lows = Array.isArray(rawTech.lows) && rawTech.lows.length > 0 ? rawTech.lows : prices;
-          const candleData = prices.map((p, idx) => ({ high: highs[idx] ?? p, low: lows[idx] ?? p, close: p }));
-
-          const dema20 = calculateDEMA(prices, 20);
-          const supertrend = calculateSupertrend(candleData, 10, 3.0);
-          const isBull = supertrend.trend === 'bullish';
-          const isAboveDema = s.price >= dema20;
-
-          let badge = '⚪ WAIT';
-          if (isBull && isAboveDema) badge = supertrend.isReversal ? '🚀 S.BUY' : '🟢 BUY';
-          else if (!isBull && !isAboveDema) badge = '🔴 SELL';
-          else if (isBull && !isAboveDema) badge = '🟡 PULLBACK';
-          else if (!isBull && isAboveDema) badge = '🔵 TEST BO';
-
-          let smartMoneyBadge = '';
-          if (s.rawData?.kseiLatest) {
-            if (s.rawData.kseiLatest.deltaSmartMoney > 0) smartMoneyBadge = ' 🟢 Akumulasi';
-            else if (s.rawData.kseiLatest.deltaSmartMoney < 0) smartMoneyBadge = ' 🔴 Distribusi';
-          }
-
-          candidates.push({
-            ticker: s.ticker,
-            name: s.name,
-            price: s.price,
-            score: s.score,
-            style: style.name,
-            styleLabel: style.label,
-            entry: tradeSetup.entry,
-            target: tradeSetup.target,
-            stopLoss: tradeSetup.stopLoss,
-            riskReward: tradeSetup.riskReward,
-            setup: tradeSetup.setup,
-            badge,
-            smartMoneyBadge
-          });
-          seenInThisMode.add(s.ticker);
-        }
-      }
-    }
+    // Catatan: Pass 2 relaksasi skor rendah (<45) dieliminasi agar bot tidak merekomendasikan saham lemah demi memenuhi kuota.
+    // Jika pasar tidak memiliki kandidat berkualitas tinggi, bot mengirim lebih sedikit saham (Preservasi Modal).
 
     // Urutkan kandidat berdasarkan skor tertinggi
     candidates.sort((a, b) => b.score - a.score);
@@ -198,8 +147,8 @@ async function generateRecommendations() {
     });
   }
 
-  // 3. Mode Pertumbuhan (Growth) — hanya ditambahkan jika Mode Otomatis bukan Pertumbuhan
-  if (detectedMode !== 'growth') {
+  // 3. Mode Pertumbuhan (Growth) — hanya ditambahkan jika pasar BUKAN defensif dan Mode Otomatis bukan Pertumbuhan
+  if (detectedMode !== 'growth' && detectedMode !== 'defensive') {
     const orderNum = modeConfigsToRun.length + 1;
     modeConfigsToRun.push({
       id: 'growth',
@@ -211,9 +160,12 @@ async function generateRecommendations() {
     });
   }
 
+  // Batasi kuota saham saat pasar defensif untuk meminimalkan paparan risiko sistemik
+  const maxStocksPerMode = detectedMode === 'defensive' ? 2 : 3;
+
   // Ambil saham untuk tiap mode tanpa overlap
   const categories = modeConfigsToRun.map((cfg) => {
-    const stocks = getActionableStocksForMode(providerStocks, cfg.modeKey, sectorMap, usedTickers, 3);
+    const stocks = getActionableStocksForMode(providerStocks, cfg.modeKey, sectorMap, usedTickers, maxStocksPerMode);
     return {
       ...cfg,
       stocks,
@@ -362,7 +314,21 @@ async function recordSystemRecommendations(categories) {
   for (const cat of categories) {
     for (const s of cat.stocks) {
       try {
-        // Prevent duplicate system recommendations for same ticker and style on the same day
+        // 1. Cegah penumpukan posisi rugi (Deduplikasi): Jangan rekomendasikan jika emiten masih aktif
+        const activeExisting = await prisma.recommendation.findFirst({
+          where: {
+            source: 'SYSTEM',
+            ticker: s.ticker,
+            status: { in: ['OPEN', 'WAITING_BUY'] }
+          }
+        });
+
+        if (activeExisting) {
+          console.log(`[DISCORD-RECORD] Dilewati: Saham ${s.ticker} masih memiliki posisi aktif (${activeExisting.status}) di database.`);
+          continue;
+        }
+
+        // 2. Cegah duplikasi rekomendasi saham pada hari yang sama
         const existing = await prisma.recommendation.findFirst({
           where: {
             source: 'SYSTEM',

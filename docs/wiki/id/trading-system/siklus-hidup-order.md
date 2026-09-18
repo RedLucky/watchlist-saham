@@ -100,3 +100,24 @@ Status posisi diperbarui secara otomatis menggunakan modul terpadu `src/lib/reco
 $$\text{Win Rate} = \frac{\text{Jumlah Transaksi WIN}}{\text{Jumlah Transaksi WIN} + \text{Jumlah Transaksi LOSS}} \times 100\%$$
 
 *Antrean yang belum match (`WAITING_BUY`) dan antrean yang kedaluwarsa (`EXPIRED`) tidak merusak rasio akurasi win rate.*
+
+---
+
+## 🛡️ Proteksi Win Rate & Kalibrasi Eksekusi (Standar Sistem 2026)
+
+Guna mengeliminasi kerugian sistemik dan melindungi modal portofolio, 4 mekanisme kuantitatif ditegakkan:
+
+### 1. Kunci Posisi Aktif (*Active Position Lockout / Deduplikasi*)
+Bot Discord (`src/scripts/discord-notifier.js`) menolak membuat rekomendasi baru bagi emiten yang saat ini masih memiliki posisi aktif `OPEN` atau `WAITING_BUY`. Hal ini mencegah penumpukan posisi rugi berturut-turut pada saham yang sedang mengalami koreksi (contoh kasus: `DSSA` yang sebelumnya terduplikasi 5 kali).
+
+### 2. Plafon Target Take Profit Selaras Gaya Trading
+Level resisten *swing high* 20 hari tidak lagi menggelembungkan target harga jangka pendek. Target Take Profit di `src/lib/tradeSetup.js` secara ketat dibatasi oleh durasi simpan:
+* **Scalping (1–2 hari)**: Dibatasi maksimal **+5.0%** (`SCALP_MAX_TARGET_PCT`). Target realistis: +2.5% s/d +4.0%.
+* **Daily Trading (3–5 hari)**: Dibatasi maksimal **+8.0%** (`DAILY_MAX_TARGET_PCT`). Target realistis: +4.0% s/d +7.0%.
+* **Swing Trading (1–3 minggu)**: Dibatasi maksimal **+18.0%** (`SWING_MAX_TARGET_PCT`). Target terjangkar resisten: +8.0% s/d +16.0%.
+
+### 3. Grace Period Buffer pada Time Stop
+Pada `src/lib/recommendationTracker.js`, ketika posisi melewati `maxHoldingDays`, posisi **tidak** langsung dipotong rugi jika defisit masih tergolong fluktuasi minor ($\text{PnL} > -1.5\%$, `TIME_STOP_TOLERANCE_LOSS_PCT`). Posisi diberikan **tambahan waktu 3 hari bursa** (`TIME_STOP_GRACE_DAYS`) untuk memberi ruang napas bagi pembalikan arah menuju Take Profit.
+
+### 4. Circuit Breaker Rezim Pasar IHSG
+Saat IHSG terdeteksi dalam tren melemah (`detectedMode === 'defensive'`), bot otomatis menangguhkan setup agresif Mode Pertumbuhan, menghapus relaksasi kuota Pass 2 (tidak meloloskan saham ber-skor $< 60$), dan membatasi rekomendasi maksimal 2 emiten defensif terbaik.

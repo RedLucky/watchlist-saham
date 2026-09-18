@@ -4,6 +4,50 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-09-18] feat | Win Rate Protection, Execution Overhaul & Discord Bot Recommendation Engine
+- Diagnosed Win Rate Divergence: Identified root causes behind the -10.76% system cumulative return (vs +38.95% user manual return), including premature Time Stop closures during shallow pullbacks (< 1.5%), unrealistic swing TP targets applied to short-duration scalping trades, and ticker loss duplication.
+- Active Position Lockout (Deduplication): Updated `src/scripts/discord-notifier.js` to query database for active recommendations (`OPEN` or `WAITING_BUY`). Prevents re-recommending tickers that are already active, eliminating duplicate loss stacking on drifting assets.
+- Style-Conforming Take Profit Caps: Enhanced `src/lib/tradeSetup.js` with style ceilings (`SCALP_MAX_TARGET_PCT = 5.0`, `DAILY_MAX_TARGET_PCT = 8.0`, `SWING_MAX_TARGET_PCT = 18.0`). Scalping targets are now properly aligned with their 2-day holding window instead of stretching to 20-day swing resistance levels.
+- Time Stop Grace Period Buffer: Upgraded `src/lib/recommendationTracker.js` with `TIME_STOP_GRACE_DAYS = 3` and `TIME_STOP_TOLERANCE_LOSS_PCT = 1.5`. Trades that exceed standard duration but are within a shallow drawdown (< 1.5%) are granted 3 extra days before being forcibly closed, eliminating premature noise stopouts.
+- IHSG Defensive Regime Circuit Breaker: Enforced market regime controls in `src/scripts/discord-notifier.js`. During bearish/defensive market regimes, suppresses Growth mode and caps category recommendations to 2. Eliminated Pass 2 threshold degradation.
+- Verification & Test Coverage: Added unit tests in `tests/tradeSetup.test.js` validating scalping and daily target price ceilings. Verified 100% test pass rate (219/219 tests) and clean Turbopack build. Documented in `docs/wiki/en/trading-system/order-lifecycle.md` and Indonesian mirror.
+
+## [2026-09-17] fix | SyntheticEvent Circular Serialization Fix & Network Error Differentiation
+- Resolved React SyntheticEvent Leakage in `handleAnalyzeAi`:
+  - Fixed `onClick={handleAnalyzeAi}` passing the React `SyntheticBaseEvent` object into the `force` parameter, which caused `JSON.stringify({ ticker, force })` to throw a `TypeError: Converting circular structure to JSON` (due to circular DOM `event.target`/`window` references).
+  - Sanitized `isForce` inside `handleAnalyzeAi` to strictly enforce `typeof force === 'boolean' ? force : false`.
+  - Wrapped JSX button handler with an explicit arrow function `onClick={() => handleAnalyzeAi(false)}`.
+  - Refined network error detection in `catch (err)`: Replaced blanket `err.name === 'TypeError'` with targeted string inspection (`failed to fetch`, `network`, `load failed`) to avoid misidentifying internal JavaScript runtime TypeErrors as network dropouts.
+- Verified 100% test passing (217/217 tests passing) and clean Turbopack production build.
+
+## [2026-09-17] fix | Comprehensive Markdown Parser & UI Research Dossier Snippet Sanitization
+- Fixed Broken Markdown Rendering in UI: Completely refactored `renderAiMarkdown` in `src/components/StockExplorer.jsx` with full CommonMark compliance:
+  - Eliminated raw `#` symbols by adding full H1–H5 heading typography with custom section icons.
+  - Eliminated raw `---`, `***`, `___` symbols by parsing them into proper `<hr />` dividers.
+  - Resolved raw callout text (`SKOR AI:`, `KESIMPULAN:`, `ALASAN SINGKAT:`), now converting them into rich visual badge cards even when wrapped in markdown bold asterisks.
+  - Fixed broken grid table rendering by parsing markdown table rows (`| col1 | col2 |`) into full semantic HTML `<table>` elements with `<thead>`, alternating zebra rows, and horizontal scroll.
+  - Repaired inline emphasis tokenization with non-whitespace boundary guards so financial equations (e.g. `Price = 500 * 22.5`) are never falsely matched as italic tags.
+  - Added support for inline code (`` `code` ``), inline math (`$formula$`), strikethrough (`~~text~~`), and external links (`[label](url)`).
+- Sanitized Bloomberg Intelligence Preview Cards: Implemented `formatPreviewSnippet` in `src/components/BloombergIntelligencePanel.jsx` to strip leading section headers (`## ...`), divider lines, and markdown characters, ensuring the 2-line summary cards render clean text without raw markup.
+- Verified 100% test passing (217/217 tests passing) and clean Turbopack build.
+- Documented in `docs/wiki/en/financial-engine/bloomberg-intelligence-dossier.md` and Indonesian mirror.
+
+## [2026-09-17] feat | Anti-Clickbait News Filtering, Signal-to-Noise Scoring & Detail Extraction
+- Implemented `isClickbaitTitle` in `src/lib/ai/search.js`: Automatically purges speculative daily trading notes, listicles, and sensationalist headlines ("rekomendasi saham", "menu saham", "target harga", "potensi cuan", "saatnya beli?") while strictly preserving verifiable corporate releases and financial disclosures (laba, dividen, capex, akuisisi, miliar, triliun).
+- Implemented `calculateSignalScore` in `src/lib/ai/search.js`: Computes a 0-100 informational signal score prioritizing detailed article body descriptions (>40 chars) from Bing RSS, concrete monetary/operational figures, verified business news publishers (Kontan, Bisnis.com, CNBC, Katadata, Investor Daily, Bloomberg Technoz, IDNFinancials), and penalizing noisy multi-ticker listicles.
+- Targeted Boolean Query Architecture: Shifted web search queries to high-yield boolean expressions `"${cleanName}" (laba OR pendapatan OR kinerja OR dividen OR capex OR ekspansi)` ensuring 3x higher relevant result density and substantive snippet summaries.
+- Hardened LLM Anti-Clickbait Directives: Added `[ANTI-CLICKBAIT FILTER]` in Section 4 and `[ANTI-CLICKBAIT & STRICT FACT-FILTERING MANDATE]` in Section 6 of `src/lib/ai/prompter.js`, enforcing reliance strictly on audited financial disclosures and official corporate actions.
+- Added comprehensive unit tests in `tests/aiSectorPrompter.test.js` (total 217/217 test suites passing).
+- Documented in `docs/wiki/en/financial-engine/bloomberg-intelligence-dossier.md` and Indonesian mirror.
+
+## [2026-09-17] feat | Widened Semantic Keywords, Expanded Multi-Query Search & Institutional Rubrics across 35 Sectors
+- Broadened Semantic Keyword Taxonomy: Expanded keywords in `src/lib/ai/sectorIntelligence.js` across all 35 Alpha Legend sectors to encompass Indonesian and English synonyms, industry product lines, and subsector classifications.
+- Expanded Search Queries: Upgraded each sector to 3 distinct high-yield thematic query templates (Industry Demand & Macro Lag, Market Share & Peer Moat Benchmarking, Regulatory Catalysts & Forward Outlook).
+- Increased Retrieval Volume: Increased news fetch quotas in `src/lib/ai/search.js` to 4 items per query task (bringing up to 16 rich news snippets per ticker with Bing News and Google News fallback).
+- Deepened Institutional Rubrics: Enhanced analytical mandates across all 35 sectors to explicitly dissect Core Business Unit Mechanics, Relational Macro Lag Models, Porter's 5 Forces / Moats, Alpha Legend KPIs, and 1-2 Year Forward Catalysts.
+- Verified 100% test passing (214/214 tests passing) and clean Turbopack production build.
+
+
 ## [2026-09-17] feat | Deep Sector & Business Unit Industry Analysis Framework (Stock Explorer)
 - Upgraded `src/lib/ai/prompter.js`: implemented `detectSectorFramework(sector, subSector, ticker)` injecting tailored industry relational models:
   - Automotive & Components (`AUTO`, `SMSM`, `GJTL`): Aging vehicle fleet replacement demand (GAIKINDO 2-5 year sales lag), ICE vs EV/Hybrid powertrain resilience, and OEM vs Aftermarket retail split.

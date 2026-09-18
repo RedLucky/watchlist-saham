@@ -1,6 +1,10 @@
 import { prisma } from './prisma.js';
 import { getStyleConfig } from './modes.js';
 
+// Konstanta batas evaluasi Time Stop & toleransi fluktuasi wajar
+export const TIME_STOP_GRACE_DAYS = 3; // Tambahan toleransi hari kerja bursa sebelum memotong posisi sehat
+export const TIME_STOP_TOLERANCE_LOSS_PCT = 1.5; // Batas defisit minor (< 1.5%) yang ditoleransi selama grace period
+
 /**
  * Menghitung jumlah hari kerja bursa aktif (Senin s/d Jumat) yang telah lewat.
  * Mengecualikan hari Sabtu dan Minggu agar order tidak kedaluwarsa prematur saat libur bursa.
@@ -183,17 +187,27 @@ export async function updateExistingRecommendations(currentStocks) {
         exitPrice = currentPrice;
         exitReason = `Batas Cut Loss (SL) tersentuh pada Rp ${currentPrice}`;
       } else if (ageInDays > maxDays) {
-        // Solusi 1: Evaluasi P/L Riil saat batas waktu tercapai (Time Stop)
-        exitPrice = currentPrice;
+        // Evaluasi P/L Riil saat batas waktu tercapai (Time Stop)
         const entryPrice = Number(rec.entryLow || rec.priceAtRecommend || rec.entryHigh || currentPrice);
         const pnl = entryPrice > 0 ? ((currentPrice - entryPrice) / entryPrice) * 100 : 0;
         
         if (currentPrice >= entryPrice) {
           newStatus = 'WIN';
+          exitPrice = currentPrice;
           exitReason = `Time Stop (${maxDays} hari bursa) — Ditutup dengan keuntungan ${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}% pada Rp ${currentPrice}`;
         } else {
+          // Grace Buffer: Jika defisit masih merupakan noise minor (< 1.5%) dan belum melampaui toleransi perpanjangan (+3 hari bursa)
+          const maxAllowedDays = maxDays + TIME_STOP_GRACE_DAYS;
+          const isMinorNoise = pnl > -TIME_STOP_TOLERANCE_LOSS_PCT;
+          
+          if (ageInDays <= maxAllowedDays && isMinorNoise) {
+            // Posisi masih sehat dan jauh dari Stop Loss; beri ruang napas untuk berkembang
+            continue;
+          }
+
           newStatus = 'LOSS';
-          exitReason = `Time Stop (${maxDays} hari bursa) — Ditutup dengan defisit ${pnl.toFixed(2)}% pada Rp ${currentPrice}`;
+          exitPrice = currentPrice;
+          exitReason = `Time Stop (${ageInDays} hari bursa) — Ditutup dengan defisit ${pnl.toFixed(2)}% pada Rp ${currentPrice}`;
         }
       }
 
