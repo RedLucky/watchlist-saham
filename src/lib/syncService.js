@@ -82,10 +82,39 @@ export async function getTargetTickers() {
 }
 
 /**
+ * Mengecek apakah saat ini berada dalam jam perdagangan resmi Bursa Efek Indonesia (BEI/IDX).
+ * Jam perdagangan: Senin - Jumat, 08:45 WIB s/d 16:20 WIB (termasuk pre-opening & post-closing).
+ */
+export function isIDXMarketHours(date = new Date()) {
+  const utc = date.getTime() + (date.getTimezoneOffset() * 60000);
+  const wibDate = new Date(utc + (3600000 * 7)); // WIB = UTC+7
+  const day = wibDate.getDay(); // 0 is Sunday, 6 is Saturday
+  if (day === 0 || day === 6) return false;
+
+  const hours = wibDate.getHours();
+  const minutes = wibDate.getMinutes();
+  const timeInMinutes = hours * 60 + minutes;
+
+  // 08:45 WIB (525 min) s/d 16:20 WIB (980 min)
+  return timeInMinutes >= 525 && timeInMinutes <= 980;
+}
+
+/**
  * Fast Sync: Updates price, volume, and changePercent for all tracked stocks.
  * Runs every SYNC_INTERVAL_MINS.
  */
-export async function fastSyncPrices(limit = 250) {
+export async function fastSyncPrices(limit = 250, force = false) {
+  if (typeof limit === 'object' && limit !== null) {
+    force = limit.force || false;
+    limit = limit.limit || 250;
+  }
+
+  // Hemat kuota & resource server di luar jam perdagangan aktif BEI
+  if (!force && !isIDXMarketHours()) {
+    console.log(`[FastSync] Di luar jam perdagangan aktif BEI (09:00 - 16:00 WIB). Melewati polling harga.`);
+    return { updated: 0, reason: 'MARKET_CLOSED' };
+  }
+
   console.log(`[FastSync] Memulai sinkronisasi harga & volume (Round-Robin Queue, limit: ${limit || 'ALL'})...`);
   
   // Refresh kurs valas real-time (USD, SGD, EUR, AUD, dll.)
@@ -115,7 +144,7 @@ export async function fastSyncPrices(limit = 250) {
 
   console.log(`[FastSync] Memproses ${tickersToSync.length} saham...`);
   
-  const chunkSize = 50;
+  const chunkSize = 25; // Menggunakan chunk 25 untuk mencegah silent drop oleh Yahoo Finance
   let updatedCount = 0;
 
   for (let i = 0; i < tickersToSync.length; i += chunkSize) {
@@ -327,7 +356,16 @@ async function deepSyncStockOnce(fullTicker) {
       ),
       withTimeout(
         yahooFinance.quoteSummary(fullTicker, {
-          modules: ['price', 'financialData', 'earnings', 'defaultKeyStatistics', 'summaryDetail', 'incomeStatementHistory']
+          modules: [
+            'price', 
+            'financialData', 
+            'earnings', 
+            'defaultKeyStatistics', 
+            'summaryDetail', 
+            'incomeStatementHistory',
+            'balanceSheetHistory',
+            'cashflowStatementHistory'
+          ]
         }, { validateResult: false }),
         20000,
         `QuoteSummary timeout for ${fullTicker}`
@@ -473,6 +511,10 @@ async function deepSyncStockOnce(fullTicker) {
   let resolvedOperatingCashflow = safeNumber(operatingCashflowRaw, null);
   let resolvedFreeCashflow = safeNumber(freeCashflowRaw, null);
 
+  const latestBS = summary?.balanceSheetHistory?.balanceSheetStatements?.[0] || {};
+  let resolvedTotalAssets = safeNumber(latestBS.totalAssets, null);
+  let resolvedTotalLiabilities = safeNumber(latestBS.totalLiab, null);
+
   if (isUSDReporting) {
     if (resolvedBookValue != null) {
       resolvedBookValue = Number((resolvedBookValue * usdRate).toFixed(2));
@@ -500,6 +542,12 @@ async function deepSyncStockOnce(fullTicker) {
     }
     if (resolvedFreeCashflow != null) {
       resolvedFreeCashflow = Math.round(resolvedFreeCashflow * usdRate);
+    }
+    if (resolvedTotalAssets != null) {
+      resolvedTotalAssets = Math.round(resolvedTotalAssets * usdRate);
+    }
+    if (resolvedTotalLiabilities != null) {
+      resolvedTotalLiabilities = Math.round(resolvedTotalLiabilities * usdRate);
     }
   }
 
@@ -531,6 +579,8 @@ async function deepSyncStockOnce(fullTicker) {
     enterpriseValue: safeNumber(enterpriseValueRaw, null),
     cash: resolvedCash,
     totalDebt: resolvedTotalDebt,
+    totalAssets: resolvedTotalAssets,
+    totalLiabilities: resolvedTotalLiabilities,
     operatingCashflow: resolvedOperatingCashflow,
     currentRatio: safeNumber(currentRatioRaw, null),
     freeCashflow: resolvedFreeCashflow,

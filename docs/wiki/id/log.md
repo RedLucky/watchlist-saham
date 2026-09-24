@@ -4,31 +4,6 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
-## [2026-09-24] feat | Remidiasi Audit Komprehensif Full-Stack & Penguatan Produksi
-- Koreksi Finansial & Kalkulasi Realized PnL:
-  - Memperbaiki perhitungan Realized PnL pada `src/app/api/portfolio/route.js` agar mengurangkan harga modal beli (*cost basis*) dari hasil penjualan kotor, mencegah penggelembungan laba bersih portofolio.
-  - Menambahkan validasi satuan perdagangan resmi BEI (1 lot = 100 lembar) pada endpoint `/api/portfolio/buy` dan `/api/portfolio/sell`.
-  - Menangani penutupan posisi penuh (*full position sell*) dengan mereset nilai posisi secara bersih ketika `totalShares === 0`.
-  - Memasang pengaman batas bawah harga pasar reguler BEI (`IDX_REGULAR_BOARD_MIN_PRICE = 50`) pada kalkulasi stop loss di `src/lib/tradeSetup.js`.
-  - Memutakhirkan proyeksi target harga di `src/components/ScenarioForecaster.jsx` menggunakan model valuasi kelipatan EPS × P/E institusional alih-alih asumsi linear 1:1 pendapatan.
-- Penguatan Keamanan & Kontrol Akses:
-  - Mengeliminasi celah *privilege escalation* admin pada `src/lib/auth.js` (`verifyAdminAccess`) dengan membatasi otoritas administrasi hanya pada API key `ADMIN_SECRET_KEY`, user berstatus `ADMIN`, atau email yang terdaftar di `ADMIN_EMAIL`.
-  - Menambahkan validasi masa berlaku token JWT (`exp`) pada Edge runtime proxy (`src/proxy.js`).
-  - Menutup celah IDOR pada endpoint konsultasi AI `src/app/api/ai/chat/route.js` dengan memverifikasi kepemilikan sesi terhadap `userId` login sebelum membaca atau menghapus sesi.
-- Kinerja Database & Infrastruktur:
-  - Menambahkan B-tree index untuk `lastPriceSync` dan `lastDeepSync` pada tabel `StockData`, serta kolom `role` pada model `User` di `prisma/schema.prisma`.
-  - Menerapkan In-Memory TTL Cache (30 detik) pada `src/lib/providers/DatabaseProvider.js` untuk mengeliminasi ribuan operasi `JSON.parse` yang membebani event loop Node.js pada setiap request.
-  - Menambahkan pengunci *concurrency mutex* (`isPriceSyncRunning`, `isDailyScraperRunning`, `isProcessingQueue`) pada `scraper-cron.js` dan `ai-worker.js` untuk mencegah penumpukan proses dan crash OOM container.
-  - Memperbaiki crash browser Chromium Puppeteer di Docker Alpine (`src/scripts/sync-ownership.js`) dengan menginjeksikan `PUPPETEER_EXECUTABLE_PATH` dan flag kontainer.
-- Penyempurnaan UI/UX & Responsivitas Mobile:
-  - Mengatasi gap tata letak pada tablet (`md`) di `src/components/DetailPanel.jsx` dengan dukungan grid `grid-cols-1 md:grid-cols-2 lg:grid-cols-3` serta `md:col-span-2` pada kolom penjelasan.
-  - Mengotomatiskan mode tampilan `StockScreener.jsx` ke format *Cards* saat dibuka di layar ponsel (< 768px) untuk mencegah scroll tabel horizontal.
-  - Membangun komponen grafik visual **Kurva Pertumbuhan Ekuitas (Equity Curve)** interaktif berbasis SVG lengkap dengan analisis *peak capital* dan *max drawdown* pada `src/components/BacktestPanel.jsx`.
-  - Memasang atribut aksesibilitas ARIA `role="dialog"` dan `aria-modal="true"` pada modal dialog kustom di `DetailPanel.jsx`.
-- Verifikasi:
-  - Seluruh 242 pengujian unit test lulus 100%.
-  - Build produksi Turbopack berhasil tanpa error.
-
 ## [2026-09-24] feat | Engine Pengurutan Koleksi Saham: 7 Strategi Otomatis & Modal Panduan Strategi
 - Modul Engine Pengurutan Murni (`src/lib/collectionSorter.js`):
   - Membangun fungsi pengurutan independen (*pure function*) yang mengimplementasikan 7 algoritma kuantitatif:

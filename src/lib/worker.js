@@ -81,11 +81,11 @@ export function initBackgroundSync() {
           consecutiveErrors++;
           console.error(`[Worker] Deep sync failed for ${ticker}: ${result?.error || 'Unknown'}`);
 
-          // Backoff: if 3+ consecutive errors, likely rate-limited
+          // Dynamic Exponential Backoff: if 3+ consecutive errors, likely rate-limited by Yahoo
           if (consecutiveErrors >= 3) {
-            console.warn('[Worker] Too many consecutive errors, backing off 30s...');
-            await new Promise(r => setTimeout(r, 30000));
-            consecutiveErrors = 0;
+            const backoffMs = Math.min(300000, 30000 * Math.pow(2, consecutiveErrors - 3)); // 30s -> 60s -> 120s -> max 5m
+            console.warn(`[Worker] Terlalu banyak kegagalan sinkronisasi berturut-turut (${consecutiveErrors}), menerapkan backoff ${backoffMs / 1000} detik...`);
+            await new Promise(r => setTimeout(r, backoffMs));
           }
         } else {
           consecutiveErrors = 0;
