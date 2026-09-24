@@ -1589,9 +1589,9 @@ export default function StockExplorer({ user }) {
   }, [dynamicFairValue, stockDetail?.price, proj.marginOfSafety]);
 
   return (
-    <div className="space-y-6 pb-12">
-      {/* ── TOP HEADER & MODE NAVIGATION TABS ──────────────────────────── */}
-      <div className="bg-white dark:bg-slate-900/90 backdrop-blur border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm">
+    <div className="space-y-6 pb-12 w-full">
+      {/* ── TOP HEADER & MODE NAVIGATION TABS (STICKY / FIXED) ─────────── */}
+      <div className="sticky top-0 z-30 bg-white/95 dark:bg-[#070b14]/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-5 shadow-md transition-all">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
@@ -1638,10 +1638,10 @@ export default function StockExplorer({ user }) {
 
       {/* ── 2. VIEW SELECTION: EXPLORER VS COMPARE ──────────────────────── */}
       {activeTab === 'explorer' ? (
-        <div className="flex flex-col lg:flex-row gap-5 items-start">
+        <div className="flex flex-col lg:flex-row gap-5 items-start w-full">
           {/* ── LEFT PANE: KOLEKSI SAYA (SIDEBAR) ─────────────────────────── */}
           {isSidebarOpen && (
-            <aside className="w-full lg:w-80 xl:w-96 shrink-0 bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-4 lg:sticky lg:top-20">
+            <aside className="w-full lg:w-80 xl:w-96 2xl:w-[400px] shrink-0 bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-4 lg:sticky lg:top-[94px]">
               {/* Sidebar Header */}
               <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
                 <div className="flex items-center gap-2">

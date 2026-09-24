@@ -4,6 +4,15 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-09-24] feat | Perluasan Lebar Layar Ultra-Wide Stock Explorer & Header Tetap (Sticky Fixed)
+- Perluasan Lebar Layar Penuh (Fit Width):
+  - Memperbarui kontainer `<main>` pada `src/components/Dashboard.jsx` agar secara dinamis beralih dari batas standar `max-w-7xl` ke ultra-wide `max-w-[1920px] 2xl:px-8` saat tab aktif berada di `explorer`, menghilangkan area kosong di sisi kiri dan kanan layar monitor lebar (1080p, 1440p, 4K).
+  - Menyesuaikan lebar maksimum sidebar koleksi (`2xl:w-[400px]`), memberikan ruang baca yang lebih lega untuk nama emiten dan catatan target harga, sekaligus memperluas kanvas analisis kanan untuk grafik teknikal dan tabel indikator.
+- Header Tetap Tidak Ikut Tergulir (Sticky / Fixed Top Header):
+  - Menjadikan header utama Stock Explorer (judul `Stock Explorer`, deskripsi, serta tab pemilih `Eksplorasi Saham` vs `Komparasi Saham`) tetap menempel di posisi atas (`sticky top-0 z-30 bg-white/95 dark:bg-[#070b14]/95 backdrop-blur-md shadow-md`), sehingga tidak lagi hilang saat pengguna menggulir ke bawah (*scroll*).
+  - Menyelaraskan jangkar lekat sidebar koleksi ke `lg:sticky lg:top-[94px]` agar menempel tepat di bawah header tanpa saling tumpang tindih (*overlap*).
+  - Memverifikasi kelulusan 16/16 unit test otomatis serta keberhasilan kompilasi produksi Next.js Turbopack.
+
 ## [2026-09-24] fix | Navigasi Bulan & Tahun Kalender Aksi Korporasi & Opsi Jendela Bergulir
 - Perbaikan Tombol Next & Prev Macet (Stuck):
   - Mendiagnosis ketidakcocokan opsi HTML `<select>` pada `src/components/CorporateCalendar.jsx`: sebelumnya, opsi dropdown bulan hanya merender `calendarData.monthsAvailable` (bulan yang memiliki agenda aksi korporasi di database). Ketika pengguna mengklik tombol `◀` atau `▶` untuk melihat bulan yang belum memiliki agenda (atau sebelum data dimuat), elemen `<select>` DOM tidak menemukan `<option>` yang cocok dan otomatis kembali menampilkan opsi pertama (September 2026), sehingga tampilan bulan/tahun terlihat macet.

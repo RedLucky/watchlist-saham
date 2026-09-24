@@ -4,6 +4,15 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-09-24] feat | Stock Explorer Ultra-Wide Screen Expansion & Sticky Fixed Top Header
+- Ultra-Wide Layout Expansion:
+  - Upgraded `<main>` container in `src/components/Dashboard.jsx` to dynamically switch from standard `max-w-7xl` to ultra-wide `max-w-[1920px] 2xl:px-8` when on `activeTab === 'explorer'`, eliminating wasted side margins on widescreen displays (1080p, 1440p, 4K).
+  - Expanded Stock Explorer Left Sidebar max width (`2xl:w-[400px]`), allowing more breathing room for collection tickers and notes while granting the Right Canvas ample horizontal real estate for technical charts and indicator tables.
+- Sticky / Fixed Top Header:
+  - Made the Stock Explorer master header (`Stock Explorer` title, subtitle, and mode switcher tabs) sticky (`sticky top-0 z-30 bg-white/95 dark:bg-[#070b14]/95 backdrop-blur-md shadow-md`). The header now stays pinned at the top during deep vertical scrolling across the analytical canvas.
+  - Aligned the Left Sidebar sticky anchor to `lg:sticky lg:top-[94px]`, keeping the collection explorer pinned directly below the sticky navigation bar without overlapping.
+  - Verified with 16/16 passing unit tests and clean Next.js Turbopack production build.
+
 ## [2026-09-24] fix | Corporate Actions Calendar Month Navigation & Rolling Window Options
 - Fixed Month & Year Stuck on Next/Prev Click:
   - Diagnosed HTML `<select>` option mismatch in `src/components/CorporateCalendar.jsx`: previously, the month dropdown options only rendered `calendarData.monthsAvailable` (months with recorded events). When users clicked `◀` or `▶` to browse to a month without active events (or not yet loaded), the DOM select had no matching option and automatically fell back to displaying the first option (September 2026), making the controls appear frozen.

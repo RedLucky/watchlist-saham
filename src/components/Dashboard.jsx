@@ -208,7 +208,9 @@ export default function Dashboard() {
         <TopHeader user={user} handleLogout={handleLogout} />
         
         {/* Main Content */}
-        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-5">
+        <main className={`flex-1 w-full mx-auto px-4 sm:px-6 py-6 space-y-5 transition-all duration-300 ${
+          activeTab === 'explorer' ? 'max-w-[1920px] 2xl:px-8' : 'max-w-7xl'
+        }`}>
           {error && (
             <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs sm:text-sm font-semibold">
               ⚠️ Gagal memuat data: {error}. Silakan coba segarkan halaman.
