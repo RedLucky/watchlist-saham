@@ -5,6 +5,9 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 ---
 
 ## [2026-09-24] feat | Comprehensive Full-Stack Audit Remediation & Bloomberg Financial Matrix (FA)
+- Client-Side Runtime Stability & Vercel Guardrails:
+  - Fixed `ReferenceError: stock is not defined` inside `useMemo` in `src/components/ScenarioForecaster.jsx` by correctly referencing destructured `f.eps` and `f.per`.
+  - Guarded `<Analytics />` and `<SpeedInsights />` in `src/app/layout.js` to only execute when running in a Vercel environment (`process.env.VERCEL || process.env.NEXT_PUBLIC_VERCEL_ENV`), resolving the strict MIME type error (`/_vercel/speed-insights/script.js` 404/plain text) on self-hosted Docker / `localhost:3010`.
 - Portfolio API Hardening & Lot Validation (`/api/portfolio/buy` & `/api/portfolio/sell`):
   - Fixed request payload parsing and variable destructuring in buy/sell routes.
   - Enforced strict IDX 1-lot (100 shares) modulo validation (`shares % 100 === 0`) with descriptive Indonesian validation messages.

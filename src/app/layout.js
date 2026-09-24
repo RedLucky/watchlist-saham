@@ -38,8 +38,8 @@ export default function RootLayout({ children }) {
       <body className={`${plusJakartaSans.variable} min-h-screen bg-[#f8fafc] dark:bg-[#070b14] text-slate-900 dark:text-slate-100 font-sans antialiased selection:bg-cyan-500 selection:text-white`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           {children}
-          <Analytics />
-          <SpeedInsights />
+          {(process.env.VERCEL || process.env.NEXT_PUBLIC_VERCEL_ENV) && <Analytics />}
+          {(process.env.VERCEL || process.env.NEXT_PUBLIC_VERCEL_ENV) && <SpeedInsights />}
           {process.env.NEXT_PUBLIC_GA_ID && <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />}
           {process.env.NEXT_PUBLIC_GTM_ID && <GoogleTagManager gtmId={process.env.NEXT_PUBLIC_GTM_ID} />}
         </ThemeProvider>

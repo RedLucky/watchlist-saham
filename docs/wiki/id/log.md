@@ -5,6 +5,9 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 ---
 
 ## [2026-09-24] feat | Remediasi Audit Komprehensif Full-Stack & Matriks Finansial Bloomberg (FA)
+- Stabilitas Runtime Client & Guardrail Vercel:
+  - Memperbaiki `ReferenceError: stock is not defined` di dalam hook `useMemo` pada `src/components/ScenarioForecaster.jsx` dengan menggunakan destrukturisasi `f.eps` dan `f.per`.
+  - Memberi pembungkus proteksi lingkungan pada `<Analytics />` dan `<SpeedInsights />` di `src/app/layout.js` agar hanya dijalankan saat berada di ekosistem Vercel (`process.env.VERCEL || process.env.NEXT_PUBLIC_VERCEL_ENV`), menuntaskan error strict MIME type (`/_vercel/speed-insights/script.js` 404/plain text) pada self-hosted Docker / `localhost:3010`.
 - Penguatan API Portofolio & Validasi Lot BEI (`/api/portfolio/buy` & `/api/portfolio/sell`):
   - Memperbaiki parsing payload JSON dan destrukturisasi variabel pada rute beli/jual portofolio.
   - Menerapkan validasi modulo 100 lembar (1 Lot IDX) yang ketat (`shares % 100 === 0`) dengan pesan validasi ramah pengguna berbahasa Indonesia.

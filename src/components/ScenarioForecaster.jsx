@@ -39,9 +39,9 @@ export default function ScenarioForecaster({ stockDetail }) {
     const projFairValue = roundToIDXTick(rawFairVal);
 
     // 5. Projected 12-Month Target Price (Institutional Valuation Multiple: Proj EPS * P/E)
-    const historicalPer = (currentPrice > 0 && stock?.fundamentals?.eps > 0)
-      ? (currentPrice / stock.fundamentals.eps)
-      : (Number(stock?.fundamentals?.per) || 12);
+    const historicalPer = (currentPrice > 0 && f.eps > 0)
+      ? (currentPrice / f.eps)
+      : (Number(f.per) || 12);
     const boundedPer = Math.min(30, Math.max(5, historicalPer));
     const multipleTarget = projEps > 0 ? (projEps * boundedPer) : (currentPrice * (1 + revenueGrowth / 100));
     const rawTarget = multipleTarget > 0 ? multipleTarget : currentPrice;
