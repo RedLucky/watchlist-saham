@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateMonthlySeasonality } from '../src/lib/monthlySeasonalityEngine.js';
+import { calculateMonthlySeasonality, aggregateSeasonalityStats } from '../src/lib/monthlySeasonalityEngine.js';
 
 test('Monthly Seasonality Engine Suite', async (t) => {
   await t.test('1. Menghitung return bulanan, harga rata-rata, dan swing high/low dengan benar', () => {
@@ -88,5 +88,24 @@ test('Monthly Seasonality Engine Suite', async (t) => {
     assert.ok(Number.isFinite(marCell.maxHighPercent));
     assert.notEqual(marCell.low, Infinity);
     assert.notEqual(marCell.high, -Infinity);
+  });
+
+  await t.test('5. aggregateSeasonalityStats menghitung ulang statistik saat beralih timeframe 3Y vs 5Y', () => {
+    const rows = [
+      { date: '2024-01-02', open: 100, high: 110, low: 95, close: 90 }, // 2024: MINUS (-10%)
+      { date: '2025-01-02', open: 100, high: 120, low: 95, close: 110 }, // 2025: PLUS (+10%)
+      { date: '2026-01-02', open: 100, high: 130, low: 95, close: 120 }, // 2026: PLUS (+20%)
+    ];
+    const res = calculateMonthlySeasonality(rows, 10);
+
+    // Evaluasi 3 tahun (2024, 2025, 2026): 2 plus dari 3 = 66.7% win rate di Jan
+    const stats3Y = aggregateSeasonalityStats(res.matrix, [2026, 2025, 2024]);
+    assert.equal(stats3Y.monthStats[1].winRatePercent, 66.7);
+    assert.equal(stats3Y.monthStats[1].totalYearsEvaluated, 3);
+
+    // Evaluasi 2 tahun (2025, 2026): 2 plus dari 2 = 100% win rate di Jan
+    const stats2Y = aggregateSeasonalityStats(res.matrix, [2026, 2025]);
+    assert.equal(stats2Y.monthStats[1].winRatePercent, 100);
+    assert.equal(stats2Y.monthStats[1].totalYearsEvaluated, 2);
   });
 });

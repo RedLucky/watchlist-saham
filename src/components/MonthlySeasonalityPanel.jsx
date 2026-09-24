@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { aggregateSeasonalityStats } from '@/lib/monthlySeasonalityEngine';
 
 const MONTH_NAMES = [
   'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
@@ -14,49 +15,102 @@ const FULL_MONTH_NAMES = [
 
 export default function MonthlySeasonalityPanel({ data, ticker }) {
   const [selectedCell, setSelectedCell] = useState(null);
+  const [timeframe, setTimeframe] = useState('5Y'); // '3Y' | '5Y' | '10Y'
 
   if (!data || !data.years || data.years.length === 0) {
     return (
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 text-center text-slate-500 dark:text-slate-400">
-        <p className="text-sm">Data histori seasonality 5 tahun belum tersedia untuk {ticker || 'emiten ini'}.</p>
+        <p className="text-sm">Data histori seasonality belum tersedia untuk {ticker || 'emiten ini'}.</p>
       </div>
     );
   }
 
-  const { years, matrix, monthStats, overallWinRate, bestMonth, worstMonth } = data;
+  const { years: allYears, matrix } = data;
+
+  // Determine active slice of years based on selected timeframe
+  const yearLimit = timeframe === '3Y' ? 3 : timeframe === '10Y' ? 10 : 5;
+  const activeYears = useMemo(() => {
+    return allYears.slice(0, yearLimit);
+  }, [allYears, yearLimit]);
+
+  // Recalculate dynamic statistics for active years
+  const { monthStats, overallWinRate, bestMonth, worstMonth } = useMemo(() => {
+    return aggregateSeasonalityStats(matrix, activeYears);
+  }, [matrix, activeYears]);
 
   return (
     <div className="bg-white dark:bg-slate-900/90 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 md:p-6 shadow-sm space-y-6">
-      {/* Header Title */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+      {/* Header Title & Timeframe Selector */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
         <div>
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xl md:text-2xl">🗓️</span>
             <h3 className="text-base md:text-lg font-black text-slate-900 dark:text-white tracking-tight">
-              Kalender Seasonality & Performa Bulanan 5 Tahun
+              Kalender Seasonality & Performa Bulanan ({timeframe})
             </h3>
-            <span className="px-2 py-0.5 text-[10px] font-bold rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 uppercase">
-              5-Year Seasonality Matrix
+            <span className="px-2 py-0.5 text-[10px] font-bold rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 uppercase font-mono">
+              {activeYears.length} Tahun Aktif
             </span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Matriks histori persentase kenaikan/penurunan harga ({ticker || 'Emiten'}) per bulan, rata-rata harga transaksi, dan potensi ayunan puncak (swing).
           </p>
         </div>
-        <div className="flex items-center gap-2 text-xs font-semibold self-start sm:self-auto">
-          <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-            🟢 Plus / Gain
-          </span>
-          <span className="px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
-            🔴 Minus / Loss
-          </span>
+
+        {/* Timeframe Selector & Status Legend */}
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* 3Y / 5Y / 10Y Pill Switcher */}
+          <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200/80 dark:border-slate-700/80">
+            <button
+              onClick={() => { setTimeframe('3Y'); setSelectedCell(null); }}
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                timeframe === '3Y'
+                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+              title="Analisis 3 Tahun Terakhir (Siklus Terkini)"
+            >
+              3 Thn
+            </button>
+            <button
+              onClick={() => { setTimeframe('5Y'); setSelectedCell(null); }}
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                timeframe === '5Y'
+                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+              title="Analisis 5 Tahun Terakhir (Standar Optimal)"
+            >
+              5 Thn
+            </button>
+            <button
+              onClick={() => { setTimeframe('10Y'); setSelectedCell(null); }}
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                timeframe === '10Y'
+                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+              title="Analisis 10 Tahun Terakhir (Institutional View)"
+            >
+              10 Thn
+            </button>
+          </div>
+
+          <div className="flex items-center gap-1.5 text-xs font-semibold">
+            <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[11px]">
+              🟢 Plus
+            </span>
+            <span className="px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-[11px]">
+              🔴 Minus
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Top 4 Stat Cards */}
+      {/* Top 4 Dynamic Stat Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 rounded-xl p-3.5">
-          <span className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">Bulan Terkuat 🌟</span>
+          <span className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">Bulan Terkuat ({timeframe}) 🌟</span>
           <div className="text-lg font-bold text-emerald-800 dark:text-emerald-300 mt-1">
             {bestMonth ? bestMonth.name : '-'}
           </div>
@@ -66,7 +120,7 @@ export default function MonthlySeasonalityPanel({ data, ticker }) {
         </div>
 
         <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 rounded-xl p-3.5">
-          <span className="text-xs text-rose-700 dark:text-rose-400 font-medium">Bulan Terlemah ⚠️</span>
+          <span className="text-xs text-rose-700 dark:text-rose-400 font-medium">Bulan Terlemah ({timeframe}) ⚠️</span>
           <div className="text-lg font-bold text-rose-800 dark:text-rose-300 mt-1">
             {worstMonth ? worstMonth.name : '-'}
           </div>
@@ -76,12 +130,12 @@ export default function MonthlySeasonalityPanel({ data, ticker }) {
         </div>
 
         <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 rounded-xl p-3.5">
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Win Rate Bulanan Total 📈</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Win Rate Total ({timeframe}) 📈</span>
           <div className="text-lg font-bold text-slate-900 dark:text-slate-100 mt-1">
             {overallWinRate}% Hijau
           </div>
           <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-            Dari seluruh bulan transaksi
+            Dari {activeYears.length} tahun periode terpilih
           </p>
         </div>
 
@@ -113,7 +167,7 @@ export default function MonthlySeasonalityPanel({ data, ticker }) {
             </tr>
           </thead>
           <tbody>
-            {years.map((yr) => {
+            {activeYears.map((yr) => {
               const yrData = matrix[yr] || {};
               const yrSummary = yrData.yearSummary || {};
               const retYr = yrSummary.returnPercent;
@@ -167,7 +221,7 @@ export default function MonthlySeasonalityPanel({ data, ticker }) {
               );
             })}
 
-            {/* Aggregated 5-Year Win Rate Row */}
+            {/* Aggregated Win Rate Row */}
             <tr className="bg-slate-100/80 dark:bg-slate-800/80 font-semibold border-t-2 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200">
               <td className="py-2.5 px-2 text-left border-r border-slate-200 dark:border-slate-700 font-bold">
                 Win Rate
@@ -186,7 +240,7 @@ export default function MonthlySeasonalityPanel({ data, ticker }) {
               </td>
             </tr>
 
-            {/* Aggregated 5-Year Average Return Row */}
+            {/* Aggregated Average Return Row */}
             <tr className="bg-slate-50 dark:bg-slate-900/80 text-[11px] border-t border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400">
               <td className="py-2 px-2 text-left border-r border-slate-200 dark:border-slate-800 font-medium">
                 Avg Return
@@ -205,7 +259,7 @@ export default function MonthlySeasonalityPanel({ data, ticker }) {
               </td>
             </tr>
 
-            {/* Aggregated 5-Year Average Swing High % Row */}
+            {/* Aggregated Average Swing High % Row */}
             <tr className="bg-emerald-50/30 dark:bg-emerald-950/20 text-[10px] border-t border-slate-200/80 dark:border-slate-800/80 text-emerald-700 dark:text-emerald-400">
               <td className="py-1.5 px-2 text-left border-r border-slate-200 dark:border-slate-800 font-medium">
                 Avg Peak 🚀
@@ -224,7 +278,7 @@ export default function MonthlySeasonalityPanel({ data, ticker }) {
               </td>
             </tr>
 
-            {/* Aggregated 5-Year Average Traded Price Row */}
+            {/* Aggregated Average Traded Price Row */}
             <tr className="bg-slate-100/50 dark:bg-slate-800/50 text-[10px] border-t border-slate-200/80 dark:border-slate-800/80 text-slate-700 dark:text-slate-300 font-mono">
               <td className="py-1.5 px-2 text-left border-r border-slate-200 dark:border-slate-800 font-sans font-medium">
                 Avg Harga 💵

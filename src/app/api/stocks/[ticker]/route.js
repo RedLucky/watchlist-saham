@@ -560,14 +560,14 @@ export async function GET(request, { params }) {
       console.warn('[BI] Error fetching AI research dossier:', aiErr.message);
     }
 
-    // 5-Year Monthly Seasonality & Performance Matrix
+    // Multi-Year (3Y/5Y/10Y) Monthly Seasonality & Performance Matrix
     let monthlySeasonality = null;
     try {
       let historicalRows = parseJsonField(stock.historicalRaw) || [];
       if (!Array.isArray(historicalRows) || historicalRows.length < 100) {
         try {
           const p1 = new Date();
-          p1.setFullYear(p1.getFullYear() - 5);
+          p1.setFullYear(p1.getFullYear() - 10);
           const p2 = new Date();
           p2.setDate(p2.getDate() + 1);
           const yHist = await yahooFinance.historical(`${ticker}.JK`, {
@@ -580,10 +580,10 @@ export async function GET(request, { params }) {
             historicalRows = yHist;
           }
         } catch (yErr) {
-          console.warn(`[Seasonality] Yahoo 5y fetch fallback for ${ticker}:`, yErr.message);
+          console.warn(`[Seasonality] Yahoo 10y fetch fallback for ${ticker}:`, yErr.message);
         }
       }
-      monthlySeasonality = calculateMonthlySeasonality(historicalRows);
+      monthlySeasonality = calculateMonthlySeasonality(historicalRows, 10);
     } catch (seasErr) {
       console.warn('[Seasonality] Error calculating monthly seasonality:', seasErr.message);
     }

@@ -1,10 +1,11 @@
 /**
  * Monthly Seasonality & Performance Engine
- * Calculates 5-year monthly return matrix, intra-month highs/lows, average traded prices,
+ * Calculates multi-year monthly return matrix, intra-month highs/lows, average traded prices,
  * win rates, and best/worst month indicators for Indonesian stocks (IDX).
+ * Supports dynamic 3Y / 5Y / 10Y timeframe selection.
  */
 
-function parseDateComponents(dateVal) {
+export function parseDateComponents(dateVal) {
   if (!dateVal) return null;
 
   // If string, parse YYYY-MM-DD directly to prevent timezone skew (WIB vs UTC)
@@ -32,7 +33,108 @@ function parseDateComponents(dateVal) {
   };
 }
 
-export function calculateMonthlySeasonality(historicalRows = []) {
+export function aggregateSeasonalityStats(matrix, targetYears = []) {
+  const monthNames = [
+    '', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  ];
+
+  const monthStats = {};
+  for (let m = 1; m <= 12; m++) {
+    monthStats[m] = {
+      month: m,
+      monthName: monthNames[m],
+      plusCount: 0,
+      minusCount: 0,
+      flatCount: 0,
+      totalYearsEvaluated: 0,
+      winRatePercent: 0,
+      avgReturnPercent: 0,
+      avgHighPercent: 0,
+      avgLowPercent: 0,
+      avgMonthlyPrice: 0,
+      returnsList: [],
+      highsList: [],
+      lowsList: [],
+      pricesList: []
+    };
+  }
+
+  targetYears.forEach(yr => {
+    const yrData = matrix[yr] || {};
+    for (let m = 1; m <= 12; m++) {
+      const cell = yrData[m];
+      if (!cell || cell.status === 'FUTURE' || cell.status === 'NO_DATA') continue;
+
+      const stats = monthStats[m];
+      stats.totalYearsEvaluated += 1;
+      stats.returnsList.push(cell.returnPercent || 0);
+      stats.highsList.push(cell.maxHighPercent || 0);
+      stats.lowsList.push(cell.maxLowPercent || 0);
+      if (cell.avgPrice > 0) stats.pricesList.push(cell.avgPrice);
+
+      if (cell.status === 'PLUS') stats.plusCount += 1;
+      else if (cell.status === 'MINUS') stats.minusCount += 1;
+      else stats.flatCount += 1;
+    }
+  });
+
+  const evaluatedMonthList = [];
+
+  for (let m = 1; m <= 12; m++) {
+    const stats = monthStats[m];
+    const n = stats.totalYearsEvaluated;
+    if (n > 0) {
+      stats.winRatePercent = Number(((stats.plusCount / n) * 100).toFixed(1));
+      stats.avgReturnPercent = Number((stats.returnsList.reduce((a, b) => a + b, 0) / n).toFixed(2));
+      stats.avgHighPercent = Number((stats.highsList.reduce((a, b) => a + b, 0) / n).toFixed(2));
+      stats.avgLowPercent = Number((stats.lowsList.reduce((a, b) => a + b, 0) / n).toFixed(2));
+      stats.avgMonthlyPrice = stats.pricesList.length > 0 
+        ? Math.round(stats.pricesList.reduce((a, b) => a + b, 0) / stats.pricesList.length)
+        : 0;
+
+      const compositeScore = stats.winRatePercent * 100 + stats.avgReturnPercent;
+      evaluatedMonthList.push({
+        month: m,
+        name: monthNames[m],
+        winRatePercent: stats.winRatePercent,
+        avgReturnPercent: stats.avgReturnPercent,
+        avgHighPercent: stats.avgHighPercent,
+        avgLowPercent: stats.avgLowPercent,
+        avgMonthlyPrice: stats.avgMonthlyPrice,
+        score: compositeScore
+      });
+    }
+  }
+
+  evaluatedMonthList.sort((a, b) => b.score - a.score);
+
+  const bestMonth = evaluatedMonthList.length > 0 ? evaluatedMonthList[0] : null;
+  const worstMonth = evaluatedMonthList.length > 1 
+    ? evaluatedMonthList[evaluatedMonthList.length - 1] 
+    : (evaluatedMonthList.length === 1 ? evaluatedMonthList[0] : null);
+
+  let totalEvaluatedCells = 0;
+  let totalPlusCells = 0;
+  for (let m = 1; m <= 12; m++) {
+    totalEvaluatedCells += monthStats[m].totalYearsEvaluated;
+    totalPlusCells += monthStats[m].plusCount;
+  }
+  const overallWinRate = totalEvaluatedCells > 0
+    ? Number(((totalPlusCells / totalEvaluatedCells) * 100).toFixed(1))
+    : 0;
+
+  return {
+    monthStats,
+    overallWinRate,
+    bestMonth,
+    worstMonth,
+    totalEvaluatedCells,
+    totalPlusCells
+  };
+}
+
+export function calculateMonthlySeasonality(historicalRows = [], maxYears = 10) {
   if (!Array.isArray(historicalRows) || historicalRows.length === 0) {
     return createEmptySeasonalityResponse();
   }
@@ -75,10 +177,10 @@ export function calculateMonthlySeasonality(historicalRows = []) {
   const currentYear = currentDate.getUTCFullYear();
   const currentMonth = currentDate.getUTCMonth() + 1;
 
-  // Generate list of target years (past 5 years up to current year, e.g. 2026, 2025, 2024, 2023, 2022)
+  // Generate list of target years (up to maxYears, default 10 years, descending)
   const yearSet = new Set(validRows.map(r => r.year));
   yearSet.add(currentYear);
-  const years = Array.from(yearSet).sort((a, b) => b - a).slice(0, 5);
+  const years = Array.from(yearSet).sort((a, b) => b - a).slice(0, maxYears);
 
   // Group rows by year and month
   const grouped = {};
@@ -89,25 +191,6 @@ export function calculateMonthlySeasonality(historicalRows = []) {
   });
 
   const matrix = {};
-  const monthStats = {};
-  for (let m = 1; m <= 12; m++) {
-    monthStats[m] = {
-      month: m,
-      plusCount: 0,
-      minusCount: 0,
-      flatCount: 0,
-      totalYearsEvaluated: 0,
-      winRatePercent: 0,
-      avgReturnPercent: 0,
-      avgHighPercent: 0,
-      avgLowPercent: 0,
-      avgMonthlyPrice: 0,
-      returnsList: [],
-      highsList: [],
-      lowsList: [],
-      pricesList: []
-    };
-  }
 
   years.forEach(yr => {
     matrix[yr] = {};
@@ -195,18 +278,6 @@ export function calculateMonthlySeasonality(historicalRows = []) {
         maxLowPercent,
         tradingDays: monthDays.length
       };
-
-      // Accumulate month stats across evaluated years
-      const stats = monthStats[m];
-      stats.totalYearsEvaluated += 1;
-      stats.returnsList.push(returnPercent);
-      stats.highsList.push(maxHighPercent);
-      stats.lowsList.push(maxLowPercent);
-      stats.pricesList.push(avgPrice);
-
-      if (status === 'PLUS') stats.plusCount += 1;
-      else if (status === 'MINUS') stats.minusCount += 1;
-      else stats.flatCount += 1;
     }
 
     // Full Year Return % calculation
@@ -222,67 +293,18 @@ export function calculateMonthlySeasonality(historicalRows = []) {
     };
   });
 
-  // Calculate final averages per month
-  const monthNames = [
-    '', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-  ];
-
-  const evaluatedMonthList = [];
-
-  for (let m = 1; m <= 12; m++) {
-    const stats = monthStats[m];
-    const n = stats.totalYearsEvaluated;
-    if (n > 0) {
-      stats.winRatePercent = Number(((stats.plusCount / n) * 100).toFixed(1));
-      stats.avgReturnPercent = Number((stats.returnsList.reduce((a, b) => a + b, 0) / n).toFixed(2));
-      stats.avgHighPercent = Number((stats.highsList.reduce((a, b) => a + b, 0) / n).toFixed(2));
-      stats.avgLowPercent = Number((stats.lowsList.reduce((a, b) => a + b, 0) / n).toFixed(2));
-      stats.avgMonthlyPrice = Math.round(stats.pricesList.reduce((a, b) => a + b, 0) / n);
-      
-      const compositeScore = stats.winRatePercent * 100 + stats.avgReturnPercent;
-      evaluatedMonthList.push({
-        month: m,
-        name: monthNames[m],
-        winRatePercent: stats.winRatePercent,
-        avgReturnPercent: stats.avgReturnPercent,
-        avgHighPercent: stats.avgHighPercent,
-        avgLowPercent: stats.avgLowPercent,
-        avgMonthlyPrice: stats.avgMonthlyPrice,
-        score: compositeScore
-      });
-    }
-    stats.monthName = monthNames[m];
-  }
-
-  // Sort evaluated months descending by score
-  evaluatedMonthList.sort((a, b) => b.score - a.score);
-
-  const bestMonth = evaluatedMonthList.length > 0 ? evaluatedMonthList[0] : null;
-  const worstMonth = evaluatedMonthList.length > 1 
-    ? evaluatedMonthList[evaluatedMonthList.length - 1] 
-    : (evaluatedMonthList.length === 1 ? evaluatedMonthList[0] : null);
-
-  // Calculate overall 5-year monthly win rate
-  let totalEvaluatedCells = 0;
-  let totalPlusCells = 0;
-  for (let m = 1; m <= 12; m++) {
-    totalEvaluatedCells += monthStats[m].totalYearsEvaluated;
-    totalPlusCells += monthStats[m].plusCount;
-  }
-  const overallWinRate = totalEvaluatedCells > 0
-    ? Number(((totalPlusCells / totalEvaluatedCells) * 100).toFixed(1))
-    : 0;
+  // Calculate stats for the default (initial) year set
+  const stats = aggregateSeasonalityStats(matrix, years);
 
   return {
     years,
     matrix,
-    monthStats,
-    overallWinRate,
-    bestMonth,
-    worstMonth,
-    totalEvaluatedCells,
-    totalPlusCells
+    monthStats: stats.monthStats,
+    overallWinRate: stats.overallWinRate,
+    bestMonth: stats.bestMonth,
+    worstMonth: stats.worstMonth,
+    totalEvaluatedCells: stats.totalEvaluatedCells,
+    totalPlusCells: stats.totalPlusCells
   };
 }
 
