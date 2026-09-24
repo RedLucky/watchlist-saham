@@ -4,19 +4,6 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
-## [2026-09-24] feat | 5-Year Monthly Seasonality Heatmap & Intra-Month Price Analytics (Stock Explorer)
-- Monthly Seasonality Engine (`src/lib/monthlySeasonalityEngine.js`): Implemented 5-year historical price candle grouping and monthly matrix calculation. Computes:
-  - Month-over-Month % Return (Gain/Plus vs Loss/Minus vs Flat/Neutral).
-  - Intra-Month Volatility: Maximum High Swing % (`maxHighPercent`) and Maximum Low Drawdown % (`maxLowPercent`) relative to month open price.
-  - Monthly Average Traded Price (`avgPrice`).
-  - Historical 5-Year Win-Rate % per month, identifying Best Month and Worst Month.
-- API Route Integration (`src/app/api/stocks/[ticker]/route.js`): Integrated 5-year Yahoo Finance historical candles fallback and attached `monthlySeasonality` payload to `GET /api/stocks/[ticker]`.
-- Interactive UI Component (`src/components/MonthlySeasonalityPanel.jsx`): Mounted 5-year Heatmap Matrix Table in Stock Explorer featuring:
-  - Top 4 Stat Summary Cards (Best Month Win Rate, Worst Month, Overall 5y Win Rate, Interactivity Guide).
-  - Color-coded 5y x 12m Heatmap Grid with YTD totals and 5-Year Win-Rate / Avg Return summary rows.
-  - Interactive Cell Detail Modal rendering exact average traded price, open/close values, peak high swing %, and dip low drawdown %.
-- Automated Verification: Added unit test suite in `tests/monthlySeasonality.test.js` (100% pass rate) and verified clean Next.js production build (`rtk npm run build`).
-
 ## [2026-09-24] feat | Official IDX 4-Date Dividend Schedule, Multi-Year Historical Tracker & Corporate Actions Panel
 - Official IDX 4-Date Dividend Pipeline: Upgraded `src/lib/corporateActionEngine.js` to parse official Indonesian Stock Exchange (IDX) corporate action structures, extracting the 4 critical dividend dates: Cum Date, Ex Date, Recording Date (DPS 16:00 WIB), and Payment Date (RDN settlement).
 - Multi-Source DPS Resolution: Implemented hierarchical DPS calculation supporting direct cash dividend per share (`CashDividenPerSaham`), mathematical derivation from total cash dividends and shares outstanding (`CashDividenTotal / sharesOutstanding`), 15-day tolerance window matching against Yahoo Finance history, and static dividend rate fallbacks.
