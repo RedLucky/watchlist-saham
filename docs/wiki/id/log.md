@@ -15,8 +15,8 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
     6. `TOP_PERFORMER`: Persentase kenaikan harga harian tertinggi (+25% s/d -15%).
     7. `ALPHABETICAL`: Penyusunan alfabetis A sampai Z berdasarkan kode ticker resmi BEI.
 - Antarmuka Interaktif & Menu Dropdown Informatif (`src/components/CollectionSortDropdown.jsx`):
-  - Menyematkan tombol picu ringkas `⚡ Urutkan ▾` pada header sidebar koleksi Stock Explorer.
-  - Membangun menu popover kaya informasi yang menampilkan ke-7 opsi lengkap dengan ikon khusus, lencana kategori (`Rekomendasi`, `Kualitas`, `Teknikal`, `Eksekusi`, `Bandarmologi`, `Momentum`, `Kerapian`), dan ringkasan penjelasan 1 baris.
+  - Menata ulang layout kontrol agar pas 100% di dalam lebar sidebar kiri (`w-full`), mencegah menu meluap (*spillover*) ke kanvas kanan dan bertabrakan dengan bilah pencarian saham IDX.
+  - Memanfaatkan `createPortal(..., document.body)` dengan `z-[9999]` untuk Modal Panduan Strategi, melepaskannya dari konteks tumpukan CSS sidebar (`backdrop-blur` / `lg:sticky`) agar tampil bersih di tengah layar penuh tanpa terpotong.
   - Menyediakan Modal Dialog Panduan Strategi interaktif (`(?) Panduan Formula`) yang membedah persamaan matematika, bobot persentase, dan skenario penerapan trading untuk setiap opsi, dilengkapi tombol aksi langsung `[Terapkan]`.
 - Integrasi API & Penyimpanan Database Permanen:
   - Memperkaya endpoint `GET /api/collections/items` dengan indikator teknikal live (`macd`, `rsi14`, `support`, `resistance`, `ma20`, `ma50`).

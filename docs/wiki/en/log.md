@@ -15,8 +15,8 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
     6. `TOP_PERFORMER`: Daily percentage change descending (+25% to -15%).
     7. `ALPHABETICAL`: Clean A to Z sorting by official IDX ticker symbol.
 - Interactive UX & Rich Dropdown Menu (`src/components/CollectionSortDropdown.jsx`):
-  - Added a compact `⚡ Urutkan ▾` trigger button in the Stock Explorer Left Sidebar header.
-  - Built a rich popover dropdown displaying all 7 options with custom icons, category badges (`Rekomendasi`, `Kualitas`, `Teknikal`, `Eksekusi`, `Bandarmologi`, `Momentum`, `Kerapian`), and one-line strategy summaries.
+  - Refactored layout to fit 100% cleanly inside the Left Sidebar width (`w-full`), preventing dropdown overflow from spilling over or colliding with the Stock Explorer canvas and IDX search bar.
+  - Employed `createPortal(..., document.body)` with `z-[9999]` for the Strategy Guide Modal, breaking free of the sidebar's CSS stacking context (`backdrop-blur` / `lg:sticky`) to render cleanly centered over the entire viewport with zero clipping.
   - Implemented an interactive Strategy Guide Modal (`(?) Panduan Formula`) detailing mathematical equations, parameter weights, and trading scenarios for each strategy, complete with direct `[Terapkan]` action buttons.
 - Full-Stack API & Database Persistence:
   - Enriched `GET /api/collections/items` with live stock technicals (`macd`, `rsi14`, `support`, `resistance`, `ma20`, `ma50`).
