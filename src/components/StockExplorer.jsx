@@ -2437,10 +2437,12 @@ export default function StockExplorer({ user }) {
                         </div>
                         <div className="flex justify-between pt-1 border-t border-slate-200 dark:border-slate-800">
                           <span className="text-slate-600 dark:text-slate-400">Dividen Terakhir:</span>
-                          <span className="font-bold text-slate-900 dark:text-slate-100">
-                            {Array.isArray(stockDetail.dividendHistory) && stockDetail.dividendHistory.length > 0 
-                              ? `Rp ${stockDetail.dividendHistory[0].amount || stockDetail.dividendHistory[0].dividend || '-'}` 
-                              : '-'}
+                          <span className="font-bold text-slate-900 dark:text-slate-100 font-mono">
+                            {stockDetail.dividendSchedule?.dps > 0
+                              ? `Rp ${Number(stockDetail.dividendSchedule.dps).toLocaleString('id-ID')} (${stockDetail.dividendSchedule.type?.includes('Interim') ? 'Interim' : 'Final'})`
+                              : (stockDetail.historicalDividends?.[0]?.dps > 0
+                                ? `Rp ${Number(stockDetail.historicalDividends[0].dps).toLocaleString('id-ID')}`
+                                : (f.dividendRate > 0 ? `Rp ${Number(f.dividendRate).toLocaleString('id-ID')}` : '-'))}
                           </span>
                         </div>
                       </div>
@@ -2922,10 +2924,14 @@ export default function StockExplorer({ user }) {
                 )}
 
                 {/* ── BLOOMBERG CA: CORPORATE ACTIONS & CATALYST TIMELINE ── */}
-                {stockDetail?.corporateActions?.length > 0 && (
+                {(stockDetail?.corporateActions?.length > 0 || stockDetail?.dividendSchedule || stockDetail?.historicalDividends?.length > 0) && (
                   <CorporateActionsPanel
-                    corporateActions={stockDetail.corporateActions}
+                    corporateActions={stockDetail.corporateActions || []}
+                    dividendSchedule={stockDetail.dividendSchedule}
+                    historicalDividends={stockDetail.historicalDividends || []}
+                    dividendSummary={stockDetail.dividendSummary}
                     ticker={stockDetail.ticker}
+                    price={stockDetail.price}
                   />
                 )}
 

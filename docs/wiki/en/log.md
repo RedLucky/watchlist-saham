@@ -4,6 +4,17 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-09-24] feat | Official IDX 4-Date Dividend Schedule, Multi-Year Historical Tracker & Corporate Actions Panel
+- Official IDX 4-Date Dividend Pipeline: Upgraded `src/lib/corporateActionEngine.js` to parse official Indonesian Stock Exchange (IDX) corporate action structures, extracting the 4 critical dividend dates: Cum Date, Ex Date, Recording Date (DPS 16:00 WIB), and Payment Date (RDN settlement).
+- Multi-Source DPS Resolution: Implemented hierarchical DPS calculation supporting direct cash dividend per share (`CashDividenPerSaham`), mathematical derivation from total cash dividends and shares outstanding (`CashDividenTotal / sharesOutstanding`), 15-day tolerance window matching against Yahoo Finance history, and static dividend rate fallbacks.
+- Multi-Year Historical Dividend Track Record: Built `compileHistoricalDividends` merging official IDX company profile records with multi-year Yahoo Finance historical distribution sequences, eliminating duplicate records within 15-day merge windows and formatting complete chronological track records.
+- Redesigned Corporate Actions UI Panel: Overhauled `src/components/CorporateActionsPanel.jsx` with an interactive 3-tab layout:
+  1. *Jadwal Terkini*: 4-step visual date stepper, status alerts (Cum Active, Waiting Payment, Paid), DPS nominal, yield against current market price, total distributed cash fund, and dividend streak.
+  2. *Riwayat Dividen*: Full responsive historical distribution table with fiscal year, dividend type (interim vs final), DPS, and source attribution.
+  3. *Agenda & RUPS*: Annual general shareholder meeting (RUPST) windows and quarterly financial statement submission windows (Q1, Q2, Q3, FY).
+- Stock Explorer Detail Integration: Updated `src/app/api/stocks/[ticker]/route.js` and `src/components/StockExplorer.jsx` to pass `dividendSchedule`, `historicalDividends`, and `dividendSummary`, fixing the overview card "Dividen Terakhir" metric to display real resolved DPS.
+- Automated Verification: Added comprehensive unit tests in `tests/corporateAction.test.js` validating IDX field parsing, DPS resolution, deduplication, and schedule metadata (223/223 tests passing 100%). Clean Turbopack production build verified.
+
 ## [2026-09-18] feat | Win Rate Protection, Execution Overhaul & Discord Bot Recommendation Engine
 - Diagnosed Win Rate Divergence: Identified root causes behind the -10.76% system cumulative return (vs +38.95% user manual return), including premature Time Stop closures during shallow pullbacks (< 1.5%), unrealistic swing TP targets applied to short-duration scalping trades, and ticker loss duplication.
 - Active Position Lockout (Deduplication): Updated `src/scripts/discord-notifier.js` to query database for active recommendations (`OPEN` or `WAITING_BUY`). Prevents re-recommending tickers that are already active, eliminating duplicate loss stacking on drifting assets.

@@ -4,6 +4,17 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-09-24] feat | Kalender Aksi Korporasi, Jadwal 4 Tanggal Keramat Dividen BEI & Pelacak Riwayat Multi-Tahun
+- Saluran Data 4 Tanggal Dividen Resmi BEI: Memperbarui `src/lib/corporateActionEngine.js` untuk membedah struktur keterbukaan informasi aksi korporasi Bursa Efek Indonesia (BEI), mengekstrak 4 tanggal krusial dividen: Cum Date (batas beli), Ex Date (tanpa hak dividen), Recording Date (DPS KSEI 16:00 WIB), dan Payment Date (pencairan ke RDN).
+- Resolusi Nilai Dividen (DPS) Bertingkat: Menerapkan hirarki perhitungan DPS mencakup nominal per lembar langsung (`CashDividenPerSaham`), derivasi matematis dividen total dibagi jumlah saham beredar (`CashDividenTotal / sharesOutstanding`), pemadanan jendela toleransi 15 hari dengan data Yahoo Finance, dan cadangan tingkat dividen statis.
+- Rekam Jejak Dividen Multi-Tahun Terpadu: Membangun `compileHistoricalDividends` yang menggabungkan keterbukaan profil BEI dengan histori multi-tahun Yahoo Finance, mengeliminasi duplikasi dalam jendela 15 hari serta menyusun tabel kronologis lengkap.
+- Perombakan Panel Antarmuka Aksi Korporasi: Menulis ulang `src/components/CorporateActionsPanel.jsx` dengan tata letak 3 tab interaktif:
+  1. *Jadwal Terkini*: Stepper visual 4 tanggal, kartu status (Cum Aktif, Menunggu Pencairan, Selesai), nominal DPS, estimasi yield terhadap harga pasar saat ini, total dana dividen tunai, dan rekor dividen berturut-turut.
+  2. *Riwayat Dividen*: Tabel pembagian dividen multi-tahun yang responsif mencakup tahun buku, jenis dividen (interim vs final), DPS, yield saat itu, dan atribusi sumber data.
+  3. *Agenda & RUPS*: Jendela musim RUPS Tahunan (RUPST) dan jendela penyampaian laporan keuangan berkala ke OJK/BEI (Q1, Q2, Q3, FY).
+- Integrasi Detail Stock Explorer: Memperbarui `src/app/api/stocks/[ticker]/route.js` dan `src/components/StockExplorer.jsx` untuk meneruskan `dividendSchedule`, `historicalDividends`, dan `dividendSummary`, serta memperbaiki kartu ikhtisar metrik "Dividen Terakhir" agar menampilkan DPS riil.
+- Pengujian & Verifikasi: Menambahkan unit test komprehensif pada `tests/corporateAction.test.js` untuk menguji parsing BEI, resolusi DPS, deduplikasi, dan metadata jadwal (223/223 pengujian lulus 100%). Build produksi Turbopack terverifikasi bersih.
+
 ## [2026-09-18] feat | Peningkatan Win Rate, Perombakan Eksekusi & Mesin Rekomendasi Bot Discord
 - Diagnosis Penurunan Win Rate Sistem: Mengidentifikasi akar masalah di balik performa kumulatif bot sistem (-10.76% vs portofolio pantauan manual +38.95%), meliputi penutupan Time Stop prematur saat koreksi wajar (< 1.5%), target TP swing yang terlalu tinggi untuk gaya scalping, dan penumpukan rekomendasi duplikat pada saham yang sedang turun.
 - Active Position Lockout (Anti-Duplikasi): Memperbarui `src/scripts/discord-notifier.js` untuk memeriksa status aktif emiten (`OPEN` atau `WAITING_BUY`) sebelum menerbitkan sinyal baru. Mencegah akumulasi kerugian ganda pada emiten yang sedang terkoreksi.

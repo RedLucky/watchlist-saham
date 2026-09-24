@@ -449,7 +449,8 @@ export async function GET(request, { params }) {
       corporateActions = buildCorporateActionsTimeline({
         dividendHistory,
         fundamentals,
-        ticker
+        ticker,
+        price: stock.price
       });
     } catch (caErr) {
       console.warn('[CA] Error building corporate actions timeline:', caErr.message);
@@ -574,6 +575,9 @@ export async function GET(request, { params }) {
       wacc: waccData,
       dividendTrap,
       corporateActions,
+      dividendSchedule: corporateActions?.dividendSchedule || null,
+      historicalDividends: corporateActions?.historicalDividends || [],
+      dividendSummary: corporateActions?.dividendSummary || null,
       executionLimits,
       smartAlerts,
       kseiShift,
