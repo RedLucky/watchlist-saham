@@ -1,8 +1,192 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { buildCorporateActionsTimeline, parseDividendScheduleItem } from '@/lib/corporateActionEngine';
+import { parseDividendScheduleItem } from '@/lib/corporateActionEngine';
 
 export const dynamic = 'force-dynamic';
+
+// In-Memory Cache for Corporate Actions
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes cache
+let cachedEventsData = null;
+let lastCacheTimestamp = 0;
+
+/**
+ * Retrieve or build cached corporate actions events across all stocks.
+ * Avoids expensive DB table scans and thousands of JSON parse calls on every request.
+ */
+async function getCachedCorporateEvents(forceRefresh = false) {
+  const now = Date.now();
+  if (!forceRefresh && cachedEventsData && (now - lastCacheTimestamp < CACHE_TTL_MS)) {
+    return cachedEventsData;
+  }
+
+  // Fetch all stocks with corporate action fields
+  const stocks = await prisma.stockData.findMany({
+    where: {
+      isDelisted: false,
+      sector: { not: null }
+    },
+    select: {
+      ticker: true,
+      name: true,
+      price: true,
+      changePercent: true,
+      sector: true,
+      subSector: true,
+      dividendHistory: true,
+      insiderTrades: true,
+      fundamentals: true
+    }
+  });
+
+  const allEvents = [];
+  const monthsAvailableSet = new Set();
+
+  for (const stock of stocks) {
+    const ticker = stock.ticker;
+    const name = stock.name;
+    const price = Number(stock.price || 0);
+    const changePercent = Number(stock.changePercent || 0);
+    const sector = stock.sector || '';
+
+    let dividendHistory = [];
+    try {
+      dividendHistory = stock.dividendHistory ? JSON.parse(stock.dividendHistory) : [];
+    } catch (e) {
+      dividendHistory = [];
+    }
+
+    let fundamentals = {};
+    try {
+      fundamentals = stock.fundamentals ? JSON.parse(stock.fundamentals) : {};
+    } catch (e) {
+      fundamentals = {};
+    }
+
+    let insiderTrades = [];
+    try {
+      insiderTrades = stock.insiderTrades ? JSON.parse(stock.insiderTrades) : [];
+    } catch (e) {
+      insiderTrades = [];
+    }
+
+    // 1. Process Dividends
+    const idxDivs = Array.isArray(dividendHistory) ? dividendHistory : [];
+    for (let i = 0; i < idxDivs.length; i++) {
+      const parsed = parseDividendScheduleItem(idxDivs[i], fundamentals, price);
+      if (!parsed) continue;
+
+      // Determine critical dates
+      const cumDate = parsed.cumDate ? parsed.cumDate.slice(0, 10) : null;
+      const exDate = parsed.exDate ? parsed.exDate.slice(0, 10) : null;
+      const recordingDate = parsed.recordingDate ? parsed.recordingDate.slice(0, 10) : null;
+      const paymentDate = parsed.paymentDate ? parsed.paymentDate.slice(0, 10) : null;
+
+      // Collect available YYYY-MM
+      if (cumDate) monthsAvailableSet.add(cumDate.slice(0, 7));
+      if (paymentDate) monthsAvailableSet.add(paymentDate.slice(0, 7));
+
+      const baseEventData = {
+        ticker,
+        name,
+        price,
+        changePercent,
+        sector,
+        category: 'DIVIDEND',
+        dps: parsed.dps,
+        yieldPercent: parsed.yieldPercent,
+        fiscalYear: parsed.fiscalYear,
+        dividendType: parsed.type,
+        totalAmount: parsed.totalAmount,
+        cumDate,
+        cumDateFormatted: parsed.cumDateFormatted,
+        exDate,
+        exDateFormatted: parsed.exDateFormatted,
+        recordingDate,
+        recordingDateFormatted: parsed.recordingDateFormatted,
+        paymentDate,
+        paymentDateFormatted: parsed.paymentDateFormatted,
+        stage: parsed.stage,
+        status: parsed.status,
+        badgeColor: parsed.badgeColor,
+        countdown: parsed.countdown,
+        actionMessage: parsed.actionMessage
+      };
+
+      // Create individual date events so they appear on their respective calendar days
+      if (cumDate) {
+        allEvents.push({
+          id: `div-cum-${ticker}-${cumDate}-${i}`,
+          ...baseEventData,
+          date: cumDate,
+          dateType: 'CUM_DATE',
+          eventTitle: `Cum Dividen ${parsed.type} Rp ${parsed.dps > 0 ? parsed.dps.toLocaleString('id-ID') : ''}`,
+          icon: '🛒',
+          subText: 'Batas akhir beli saham untuk berhak dividen'
+        });
+      }
+
+      if (exDate && exDate !== cumDate) {
+        allEvents.push({
+          id: `div-ex-${ticker}-${exDate}-${i}`,
+          ...baseEventData,
+          date: exDate,
+          dateType: 'EX_DATE',
+          eventTitle: `Ex Dividen ${parsed.type}`,
+          icon: '📉',
+          subText: 'Perdagangan tanpa hak dividen'
+        });
+      }
+
+      if (paymentDate && paymentDate !== cumDate && paymentDate !== exDate) {
+        allEvents.push({
+          id: `div-pay-${ticker}-${paymentDate}-${i}`,
+          ...baseEventData,
+          date: paymentDate,
+          dateType: 'PAYMENT_DATE',
+          eventTitle: `Pencairan Dividen Kas ${parsed.dps > 0 ? `Rp ${parsed.dps.toLocaleString('id-ID')}` : ''}`,
+          icon: '💳',
+          subText: 'Dana dividen masuk otomatis ke RDN'
+        });
+      }
+    }
+
+    // 2. Process Corporate Announcements (Insider / Corporate Disclosures)
+    const newsList = Array.isArray(insiderTrades) ? insiderTrades : [];
+    for (let j = 0; j < newsList.length; j++) {
+      const item = newsList[j];
+      if (!item || !item.date) continue;
+      const dateStr = item.date.slice(0, 10);
+      monthsAvailableSet.add(dateStr.slice(0, 7));
+
+      allEvents.push({
+        id: `news-${ticker}-${dateStr}-${j}`,
+        ticker,
+        name,
+        price,
+        changePercent,
+        sector,
+        category: 'DISCLOSURE',
+        date: dateStr,
+        dateType: 'EVENT_DATE',
+        eventTitle: item.title || 'Keterbukaan Informasi BEI',
+        icon: '📰',
+        subText: 'Pengumuman Resmi Keterbukaan Informasi BEI',
+        url: item.url || null,
+        status: 'Pengumuman Resmi',
+        badgeColor: 'slate'
+      });
+    }
+  }
+
+  // Sort months available descending
+  const monthsAvailable = [...monthsAvailableSet]
+    .filter(m => m && m.length === 7)
+    .sort((a, b) => b.localeCompare(a));
+
+  cachedEventsData = { allEvents, monthsAvailable };
+  lastCacheTimestamp = now;
+  return cachedEventsData;
+}
 
 /**
  * GET /api/corporate-actions
@@ -12,6 +196,7 @@ export const dynamic = 'force-dynamic';
  * - category: 'all' | 'DIVIDEND' | 'RUPS' | 'EARNINGS' | 'DISCLOSURE'
  * - search: ticker or company name search query
  * - status: 'all' | 'upcoming' | 'active' | 'completed'
+ * - refresh: 'true' to invalidate cache
  */
 export async function GET(request) {
   try {
@@ -20,165 +205,26 @@ export async function GET(request) {
     const categoryParam = (searchParams.get('category') || 'all').toUpperCase();
     const searchParam = (searchParams.get('search') || '').trim().toLowerCase();
     const statusParam = (searchParams.get('status') || 'all').toLowerCase();
-
-    // Fetch all stocks with corporate action fields
-    const stocks = await prisma.stockData.findMany({
-      where: {
-        isDelisted: false,
-        sector: { not: null }
-      },
-      select: {
-        ticker: true,
-        name: true,
-        price: true,
-        changePercent: true,
-        sector: true,
-        subSector: true,
-        dividendHistory: true,
-        insiderTrades: true,
-        fundamentals: true
-      }
-    });
+    const forceRefresh = searchParams.get('refresh') === 'true';
 
     const now = new Date();
     const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     const targetMonthStr = monthParam === 'upcoming' ? currentYearMonth : (monthParam || currentYearMonth);
 
-    const allEvents = [];
-    const monthsAvailableSet = new Set();
+    // Retrieve cached events instantly
+    const { allEvents, monthsAvailable } = await getCachedCorporateEvents(forceRefresh);
 
-    for (const stock of stocks) {
-      const ticker = stock.ticker;
-      const name = stock.name;
-      const price = Number(stock.price || 0);
-      const changePercent = Number(stock.changePercent || 0);
-      const sector = stock.sector || '';
+    let filteredEvents = allEvents;
 
-      // Skip if search filter is specified and doesn't match ticker or name
-      if (searchParam && !ticker.toLowerCase().includes(searchParam) && !name.toLowerCase().includes(searchParam)) {
-        continue;
-      }
-
-      const dividendHistory = stock.dividendHistory ? JSON.parse(stock.dividendHistory) : [];
-      const fundamentals = stock.fundamentals ? JSON.parse(stock.fundamentals) : {};
-      const insiderTrades = stock.insiderTrades ? JSON.parse(stock.insiderTrades) : [];
-
-      // 1. Process Dividends
-      const idxDivs = Array.isArray(dividendHistory) ? dividendHistory : [];
-      for (let i = 0; i < idxDivs.length; i++) {
-        const parsed = parseDividendScheduleItem(idxDivs[i], fundamentals, price);
-        if (!parsed) continue;
-
-        // Determine critical dates
-        const cumDate = parsed.cumDate ? parsed.cumDate.slice(0, 10) : null;
-        const exDate = parsed.exDate ? parsed.exDate.slice(0, 10) : null;
-        const recordingDate = parsed.recordingDate ? parsed.recordingDate.slice(0, 10) : null;
-        const paymentDate = parsed.paymentDate ? parsed.paymentDate.slice(0, 10) : null;
-
-        // Collect available YYYY-MM
-        if (cumDate) monthsAvailableSet.add(cumDate.slice(0, 7));
-        if (paymentDate) monthsAvailableSet.add(paymentDate.slice(0, 7));
-
-        const baseEventData = {
-          ticker,
-          name,
-          price,
-          changePercent,
-          sector,
-          category: 'DIVIDEND',
-          dps: parsed.dps,
-          yieldPercent: parsed.yieldPercent,
-          fiscalYear: parsed.fiscalYear,
-          dividendType: parsed.type,
-          totalAmount: parsed.totalAmount,
-          cumDate,
-          cumDateFormatted: parsed.cumDateFormatted,
-          exDate,
-          exDateFormatted: parsed.exDateFormatted,
-          recordingDate,
-          recordingDateFormatted: parsed.recordingDateFormatted,
-          paymentDate,
-          paymentDateFormatted: parsed.paymentDateFormatted,
-          stage: parsed.stage,
-          status: parsed.status,
-          badgeColor: parsed.badgeColor,
-          countdown: parsed.countdown,
-          actionMessage: parsed.actionMessage
-        };
-
-        // Create individual date events so they appear on their respective calendar days
-        if (cumDate) {
-          allEvents.push({
-            id: `div-cum-${ticker}-${cumDate}-${i}`,
-            ...baseEventData,
-            date: cumDate,
-            dateType: 'CUM_DATE',
-            eventTitle: `Cum Dividen ${parsed.type} Rp ${parsed.dps > 0 ? parsed.dps.toLocaleString('id-ID') : ''}`,
-            icon: '🛒',
-            subText: 'Batas akhir beli saham untuk berhak dividen'
-          });
-        }
-
-        if (exDate && exDate !== cumDate) {
-          allEvents.push({
-            id: `div-ex-${ticker}-${exDate}-${i}`,
-            ...baseEventData,
-            date: exDate,
-            dateType: 'EX_DATE',
-            eventTitle: `Ex Dividen ${parsed.type}`,
-            icon: '📉',
-            subText: 'Perdagangan tanpa hak dividen'
-          });
-        }
-
-        if (paymentDate && paymentDate !== cumDate && paymentDate !== exDate) {
-          allEvents.push({
-            id: `div-pay-${ticker}-${paymentDate}-${i}`,
-            ...baseEventData,
-            date: paymentDate,
-            dateType: 'PAYMENT_DATE',
-            eventTitle: `Pencairan Dividen Kas ${parsed.dps > 0 ? `Rp ${parsed.dps.toLocaleString('id-ID')}` : ''}`,
-            icon: '💳',
-            subText: 'Dana dividen masuk otomatis ke RDN'
-          });
-        }
-      }
-
-      // 2. Process Corporate Announcements (Insider / Corporate Disclosures)
-      const newsList = Array.isArray(insiderTrades) ? insiderTrades : [];
-      for (let j = 0; j < newsList.length; j++) {
-        const item = newsList[j];
-        if (!item || !item.date) continue;
-        const dateStr = item.date.slice(0, 10);
-        monthsAvailableSet.add(dateStr.slice(0, 7));
-
-        allEvents.push({
-          id: `news-${ticker}-${dateStr}-${j}`,
-          ticker,
-          name,
-          price,
-          changePercent,
-          sector,
-          category: 'DISCLOSURE',
-          date: dateStr,
-          dateType: 'EVENT_DATE',
-          eventTitle: item.title || 'Keterbukaan Informasi BEI',
-          icon: '📰',
-          subText: 'Pengumuman Resmi Keterbukaan Informasi BEI',
-          url: item.url || null,
-          status: 'Pengumuman Resmi',
-          badgeColor: 'slate'
-        });
-      }
+    // Filter by search query (ticker or name)
+    if (searchParam) {
+      filteredEvents = filteredEvents.filter(e =>
+        e.ticker.toLowerCase().includes(searchParam) ||
+        (e.name && e.name.toLowerCase().includes(searchParam))
+      );
     }
 
-    // Sort months available descending
-    const monthsAvailable = [...monthsAvailableSet]
-      .filter(m => m && m.length === 7)
-      .sort((a, b) => b.localeCompare(a));
-
     // Filter events by month param if specified (unless 'all')
-    let filteredEvents = allEvents;
     if (targetMonthStr && targetMonthStr !== 'all') {
       filteredEvents = filteredEvents.filter(e => e.date && e.date.startsWith(targetMonthStr));
     }

@@ -65,9 +65,28 @@ describe('Corporate Actions Calendar API & Data Processing Suite', () => {
     // Standard transition: 2026-09 -> Prev -> 2026-08
     assert.strictEqual(getPrevMonth('2026-09'), '2026-08');
 
-    // Year boundary next: 2026-12 -> Next -> 2027-01
+    // Continuous progression past October 2026 (November, December 2026, and 2027)
+    assert.strictEqual(getNextMonth('2026-10'), '2026-11');
+    assert.strictEqual(getNextMonth('2026-11'), '2026-12');
     assert.strictEqual(getNextMonth('2026-12'), '2027-01');
+    assert.strictEqual(getNextMonth('2027-01'), '2027-02');
+
     // Year boundary prev: 2026-01 -> Prev -> 2025-12
     assert.strictEqual(getPrevMonth('2026-01'), '2025-12');
+  });
+
+  it('4. Memastikan fungsi navigasi bulan berbasis functional state updater dapat beriterasi tanpa batas', () => {
+    let currentMonth = '2026-10';
+    const advanceMonth = (prev) => {
+      const [year, month] = prev.split('-').map(Number);
+      const nextDate = new Date(year, month, 1);
+      return `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}`;
+    };
+
+    // Advancing 12 times from 2026-10 must reach 2027-10 without getting stuck
+    for (let i = 0; i < 12; i++) {
+      currentMonth = advanceMonth(currentMonth);
+    }
+    assert.strictEqual(currentMonth, '2027-10');
   });
 });

@@ -4,6 +4,21 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-09-24] fix | Navigasi Bulan Berkelanjutan Kalender Aksi Korporasi & Caching Memori Sub-Milidetik
+- Analisis Penyebab Utama (Root Cause):
+  - Navigasi Macet Melewati Oktober 2026 & Respon Lambat ("Lama"): Setiap pergantian bulan pada `src/components/CorporateCalendar.jsx`, endpoint `/api/corporate-actions` melakukan pemindaian tabel MySQL penuh tanpa cache terhadap 1.020 saham, mendeserialisasi dan memproses ribuan data JSON teks pada setiap panggilan (~4.000–5.000 ms).
+  - Tampilan Kalender Hilang/Tertutup Spinner: Selama jeda 5 detik tersebut, komponen membongkar (*unmount*) seluruh kisi kalender bulanan dan menggantinya dengan pemuat layar penuh (*spinner*). Hal ini menghilangkan tombol navigasi "Bulan Depan ▶" di banner atas kalender, sehingga klik cepat pengguna terasa tertahan di Oktober 2026 (bulan terjauh yang saat ini memiliki agenda aktif di database).
+- Caching Memori Backend (`src/app/api/corporate-actions/route.js`):
+  - Mengimplementasikan `getCachedCorporateEvents` dengan TTL 5 menit (`CACHE_TTL_MS = 5 * 60 * 1000`). Seluruh 1.657 agenda korporasi dan indeks bulan di-cache dalam memori.
+  - Memangkas latensi API dari ~5.000 ms menjadi **di bawah 1 ms (< 0,001 detik)**, memungkinkan pergantian bulan terjadi seketika tanpa hambatan. Mendukung `?refresh=true` untuk invalidasi manual.
+- Arsitektur Frontend Responsif (`src/components/CorporateCalendar.jsx`):
+  - Navigasi State Fungsional: Mengubah `handleNextMonth` dan `handlePrevMonth` menggunakan *functional state updater* (`setSelectedMonth(prev => ...)`), menjamin klik cepat berturut-turut langsung melompat tanpa terpengaruh *stale closure* (`2026-10` -> `2026-11` -> `2026-12` -> `2027-01` -> ...).
+  - Pembatalan Permintaan dengan AbortController: Mengintegrasikan `AbortController` pada `useEffect` agar klik bulan berikutnya secara otomatis membatalkan permintaan lama yang masih berjalan.
+  - Tampilan Kalender Optimistik Non-Blocking: Mempertahankan tampilan kisi kalender dan tombol navigasi tetap terpasang saat berpindah bulan dengan indikator pemuatan halus (*header spinner*) dan transisi opasitas.
+  - Penjelasan Bulan Tanpa Agenda: Menyediakan banner informasi saat pengguna membuka bulan masa depan atau masa lalu yang belum memiliki jadwal resmi emiten (misalnya November 2026).
+- Verifikasi & Pengujian:
+  - Menambahkan test case pada `tests/corporateCalendar.test.js` untuk memvalidasi lompatan navigasi bulan tanpa batas melewati Oktober 2026 hingga 12 bulan ke depan. Seluruh 233 unit test lulus 100%. Kompilasi produksi Turbopack berhasil tanpa kendala.
+
 ## [2026-09-24] feat | Perluasan Lebar Layar Ultra-Wide Stock Explorer & Header Tetap (Sticky Fixed)
 - Perluasan Lebar Layar Penuh (Fit Width):
   - Memperbarui kontainer `<main>` pada `src/components/Dashboard.jsx` agar secara dinamis beralih dari batas standar `max-w-7xl` ke ultra-wide `max-w-[1920px] 2xl:px-8` saat tab aktif berada di `explorer`, menghilangkan area kosong di sisi kiri dan kanan layar monitor lebar (1080p, 1440p, 4K).

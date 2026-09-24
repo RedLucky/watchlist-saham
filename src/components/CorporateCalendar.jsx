@@ -36,56 +36,59 @@ export default function CorporateCalendar({ user = null, onSelectTicker = null }
 
   // Fetch Calendar Data
   useEffect(() => {
-    let isMounted = true;
+    const controller = new AbortController();
     setLoading(true);
     setError(null);
 
-    const url = `/api/corporate-actions?month=${selectedMonth}&category=${categoryFilter}&search=${encodeURIComponent(searchQuery)}&_t=${Date.now()}`;
+    const url = `/api/corporate-actions?month=${selectedMonth}&category=${categoryFilter}&search=${encodeURIComponent(searchQuery)}`;
     
-    fetch(url)
+    fetch(url, { signal: controller.signal })
       .then(res => {
         if (!res.ok) throw new Error('Gagal mengambil data kalender aksi korporasi');
         return res.json();
       })
       .then(data => {
-        if (isMounted) {
-          if (data.success) {
-            setCalendarData({
-              events: data.events || [],
-              summary: data.summary || {},
-              monthsAvailable: data.monthsAvailable || []
-            });
-          } else {
-            setError(data.error || 'Terjadi kesalahan saat memproses data kalender');
-          }
-          setLoading(false);
+        if (data.success) {
+          setCalendarData({
+            events: data.events || [],
+            summary: data.summary || {},
+            monthsAvailable: data.monthsAvailable || []
+          });
+        } else {
+          setError(data.error || 'Terjadi kesalahan saat memproses data kalender');
         }
+        setLoading(false);
       })
       .catch(err => {
-        if (isMounted) {
-          setError(err.message || 'Gagal terhubung ke server web');
-          setLoading(false);
-        }
+        if (err.name === 'AbortError') return;
+        setError(err.message || 'Gagal terhubung ke server web');
+        setLoading(false);
       });
 
-    return () => { isMounted = false; };
+    return () => {
+      controller.abort();
+    };
   }, [selectedMonth, categoryFilter, searchQuery]);
 
-  // Month Navigation Helpers
+  // Month Navigation Helpers (Functional state update guarantees seamless fast-clicks)
   const handlePrevMonth = () => {
-    const [year, month] = (selectedMonth || initialYearMonth).split('-').map(Number);
-    if (isNaN(year) || isNaN(month)) return;
-    const prevDate = new Date(year, month - 2, 1);
-    const newYearMonth = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
-    setSelectedMonth(newYearMonth);
+    setSelectedMonth((prev) => {
+      const current = prev || initialYearMonth;
+      const [year, month] = current.split('-').map(Number);
+      if (isNaN(year) || isNaN(month)) return current;
+      const prevDate = new Date(year, month - 2, 1);
+      return `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+    });
   };
 
   const handleNextMonth = () => {
-    const [year, month] = (selectedMonth || initialYearMonth).split('-').map(Number);
-    if (isNaN(year) || isNaN(month)) return;
-    const nextDate = new Date(year, month, 1);
-    const newYearMonth = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}`;
-    setSelectedMonth(newYearMonth);
+    setSelectedMonth((prev) => {
+      const current = prev || initialYearMonth;
+      const [year, month] = current.split('-').map(Number);
+      if (isNaN(year) || isNaN(month)) return current;
+      const nextDate = new Date(year, month, 1);
+      return `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}`;
+    });
   };
 
   const handleResetToday = () => {
@@ -309,6 +312,9 @@ export default function CorporateCalendar({ user = null, onSelectTicker = null }
             <span className="text-xs text-slate-400 font-mono hidden sm:inline ml-1">
               ({calendarData.events?.length || 0} event)
             </span>
+            {loading && (
+              <span className="inline-block animate-spin rounded-full h-3 w-3 border-2 border-indigo-500 border-t-transparent ml-1" title="Sinkronisasi data..."></span>
+            )}
           </div>
 
           {/* Category Filter Tabs */}
@@ -455,7 +461,7 @@ export default function CorporateCalendar({ user = null, onSelectTicker = null }
       </div>
 
       {/* ── 3. MAIN CONTENT VIEWS ─────────────────────────────────────────── */}
-      {loading ? (
+      {loading && !calendarData.events?.length && !calendarData.monthsAvailable?.length ? (
         <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-12 text-center shadow-sm">
           <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-indigo-500 border-t-transparent mb-4"></div>
           <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">
@@ -477,7 +483,7 @@ export default function CorporateCalendar({ user = null, onSelectTicker = null }
         <>
           {/* VIEW MODE 1: GRID CALENDAR VIEW */}
           {viewMode === 'grid' && (
-            <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 md:p-5 shadow-sm space-y-3">
+            <div className={`bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 md:p-5 shadow-sm space-y-3 transition-opacity duration-200 ${loading ? 'opacity-70' : 'opacity-100'}`}>
               {/* Month Header Banner */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-200 dark:border-slate-800">
                 <div className="flex items-center gap-2">
@@ -488,6 +494,9 @@ export default function CorporateCalendar({ user = null, onSelectTicker = null }
                   <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
                     ({calendarData.events?.length || 0} Agenda)
                   </span>
+                  {loading && (
+                    <span className="inline-block animate-spin rounded-full h-3.5 w-3.5 border-2 border-indigo-500 border-t-transparent ml-1" title="Sinkronisasi data..."></span>
+                  )}
                 </div>
                 <div className="flex items-center gap-1.5 self-start sm:self-auto">
                   <button
@@ -510,6 +519,17 @@ export default function CorporateCalendar({ user = null, onSelectTicker = null }
                   </button>
                 </div>
               </div>
+
+              {/* Notice if month has no scheduled corporate events */}
+              {calendarData.events?.length === 0 && (
+                <div className="py-2.5 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs text-slate-500 dark:text-slate-400">
+                  <span className="flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
+                    <span>ℹ️</span> Belum ada agenda aksi korporasi atau dividen yang dijadwalkan untuk <strong>{formattedMonthLabel}</strong>.
+                  </span>
+                  <span className="text-[11px] text-slate-400">Gunakan tombol Bulan Depan ▶ atau pilih bulan lain dari dropdown.</span>
+                </div>
+              )}
+
               {/* Day Headers (Senin - Minggu) */}
               <div className="grid grid-cols-7 gap-1 md:gap-2 text-center text-xs font-bold text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800 pb-2">
                 <div>Sen</div>
