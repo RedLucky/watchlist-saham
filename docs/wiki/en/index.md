@@ -26,6 +26,7 @@
 * [Dividend Trap & Cashflow Run-Rate (DTRP / DVD)](./financial-engine/dividend-trap-analyzer.md) — Dividend sustainability, FCF coverage, ex-date drop analysis, and 12-month passive income cashflow run-rate.
 * [Corporate Actions & Catalyst Calendar (CA)](./financial-engine/corporate-actions-calendar.md) — Real-time event diary and countdowns for dividends, RUPS (AGM/EGM), and seasonal financial reporting windows.
 * [Bloomberg Intelligence Dossier (BI)](./financial-engine/bloomberg-intelligence-dossier.md) — AI-driven institutional equity research synthesis, valuation perspectives, and consensus ratings.
+* [Financial Matrix Analysis (FA)](./financial-engine/financial-matrix-analysis.md) — Multi-year financial statement comparative matrix (Income Statement, Balance Sheet, Cash Flow, DuPont & Valuation Ratios) with growth trends and Bloomberg FA aesthetics.
 
 ---
 

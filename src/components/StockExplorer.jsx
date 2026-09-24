@@ -13,6 +13,7 @@ import SmartMoneyLiquidityPanel from './SmartMoneyLiquidityPanel';
 import BloombergIntelligencePanel from './BloombergIntelligencePanel';
 import MonthlySeasonalityPanel from './MonthlySeasonalityPanel';
 import CollectionSortDropdown from './CollectionSortDropdown';
+import FinancialMatrixPanel from './FinancialMatrixPanel';
 import {
   roundToIDXTick,
   calculateMonitorMetrics,
@@ -596,7 +597,7 @@ function renderAiMarkdown(content) {
 
 export default function StockExplorer({ user }) {
   // Navigation View State
-  const [activeTab, setActiveTab] = useState('explorer'); // 'explorer' | 'compare'
+  const [activeTab, setActiveTab] = useState('explorer'); // 'explorer' | 'compare' | 'matrix'
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [cockpitTab, setCockpitTab] = useState('valuation'); // 'valuation' | 'seasonality' | 'smartmoney' | 'ai'
 
@@ -1658,12 +1659,22 @@ export default function StockExplorer({ user }) {
                 </span>
               )}
             </button>
+            <button
+              onClick={() => setActiveTab('matrix')}
+              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
+                activeTab === 'matrix'
+                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <span>📊</span> Matriks Finansial (FA)
+            </button>
           </div>
         </div>
       </div>
 
-      {/* ── 2. VIEW SELECTION: EXPLORER VS COMPARE ──────────────────────── */}
-      {activeTab === 'explorer' ? (
+      {/* ── 2. VIEW SELECTION: EXPLORER VS COMPARE VS MATRIX ────────────── */}
+      {activeTab === 'explorer' && (
         <div className="flex flex-col lg:flex-row gap-5 items-start w-full">
           {/* ── LEFT PANE: KOLEKSI SAYA (SIDEBAR) ─────────────────────────── */}
           {isSidebarOpen && (
@@ -2396,9 +2407,18 @@ export default function StockExplorer({ user }) {
 
                       <div className="space-y-2 text-xs">
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">Dividend Yield:</span>
+                          <span className="text-slate-600 dark:text-slate-400">Dividend Yield (Bruto):</span>
                           <span className="font-bold text-emerald-600 dark:text-emerald-400">
                             {f.dividendYield != null ? `${Number(f.dividendYield).toFixed(2)}%` : '-'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1" title="Netto setelah PPh Final 10% (UU PPh / PP 36/2008). Bebas PPh 0% jika diinvestasikan kembali di NKRI per UU Cipta Kerja.">
+                            <span>Yield Bersih (PPh 10%):</span>
+                            <span className="cursor-help text-slate-400 text-[10px]">ⓘ</span>
+                          </span>
+                          <span className="font-bold text-teal-600 dark:text-teal-400">
+                            {f.dividendYield != null ? `${(Number(f.dividendYield) * 0.9).toFixed(2)}%` : '-'}
                           </span>
                         </div>
                         <div className="flex justify-between">
@@ -2481,9 +2501,8 @@ export default function StockExplorer({ user }) {
                         </div>
                       </div>
                     </div>
-                    <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400 flex justify-between">
-                      <span>Volume Lot:</span>
-                      <span className="font-semibold text-slate-900 dark:text-slate-100">{(vol.lots || vol.frequency) ? `${(vol.lots || vol.frequency).toLocaleString('id-ID')} Lot` : '-'}</span>
+                    <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400">
+                      Frekuensi: <span className="font-semibold text-slate-900 dark:text-slate-100">{vol.frequency ? `${vol.frequency.toLocaleString('id-ID')}x transaksi` : '-'}</span>
                     </div>
                   </div>
 
@@ -2540,7 +2559,10 @@ export default function StockExplorer({ user }) {
                           </span>
                         </div>
                         <div className="flex justify-between pt-1 border-t border-slate-200 dark:border-slate-800">
-                          <span className="text-slate-600 dark:text-slate-400">Piotroski F-Score:</span>
+                          <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1" title="Piotroski F-Score (1-9): Estimasi heuristik multi-faktor adaptif mencakup profitabilitas ROA/ROE, arus kas OCF, kualitas akrual, tingkat utang DER, likuiditas, dan margin efisiensi.">
+                            <span>Piotroski F-Score:</span>
+                            <span className="cursor-help text-slate-400 text-[10px]">ⓘ</span>
+                          </span>
                           <span className={`font-bold ${
                             f.piotroskiFScore != null && f.piotroskiFScore >= 7 ? 'text-emerald-600 dark:text-emerald-400' : f.piotroskiFScore != null && f.piotroskiFScore <= 3 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-slate-100'
                           }`}>
@@ -2548,7 +2570,10 @@ export default function StockExplorer({ user }) {
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">Altman Z-Score:</span>
+                          <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1" title="Altman Z''-Score (Emerging Market Model): Estimasi heuristik adaptif berbasis modal kerja, solvabilitas ekuitas/utang, profitabilitas EBIT, dan perputaran aset. Khusus sektor perbankan diberikan skor aman (3.0) karena struktur DPK.">
+                            <span>Altman Z-Score:</span>
+                            <span className="cursor-help text-slate-400 text-[10px]">ⓘ</span>
+                          </span>
                           <span className={`font-bold ${
                             f.altmanZScore != null && f.altmanZScore >= 2.99 ? 'text-emerald-600 dark:text-emerald-400' : f.altmanZScore != null && f.altmanZScore < 1.81 ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'
                           }`}>
@@ -3048,8 +3073,10 @@ export default function StockExplorer({ user }) {
           </div>
         </main>
       </div>
-      ) : (
-        /* ── MULTI-STOCK COMPARE VIEW (MAX 6 STOCKS) ───────────────────────── */
+      )}
+
+      {/* ── MULTI-STOCK COMPARE VIEW (MAX 6 STOCKS) ───────────────────────── */}
+      {activeTab === 'compare' && (
         <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm space-y-6 animate-in fade-in">
           {/* Compare Toolbar */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
@@ -3592,6 +3619,11 @@ export default function StockExplorer({ user }) {
             </div>
           )}
         </div>
+      )}
+
+      {/* ── BLOOMBERG FINANCIAL MATRIX PANEL (FA MODE) ───────────────────── */}
+      {activeTab === 'matrix' && (
+        <FinancialMatrixPanel stockDetail={stockDetail} />
       )}
 
       {/* ── MODAL: CREATE COLLECTION ─────────────────────────────────── */}

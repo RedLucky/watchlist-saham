@@ -4,6 +4,29 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-09-24] feat | Comprehensive Full-Stack Audit Remediation & Bloomberg Financial Matrix (FA)
+- BEI Holiday Calendar Engine (`src/lib/idxHolidays.js` & `tests/idxHolidays.test.js`):
+  - Created centralized Indonesia Stock Exchange (IDX/BEI) holiday calendar covering 2024-2027 including national holidays and collective leave (Cuti Bersama).
+  - Integrated `isIDXHoliday` and `isIDXTradingDay` into `src/lib/syncService.js` (to avoid unnecessary price polling on market holidays) and `src/lib/recommendationTracker.js` (`getTradingDaysElapsed` for accurate settlement and recommendation holding duration).
+- Docker Infrastructure & Database Connection Pool Optimization:
+  - Tuned PostgreSQL memory limit from 256MB to 512MB in `docker-compose.yml` to prevent OOM under concurrent analytical workloads.
+  - Added connection limits (`connection_limit=10` on app, `connection_limit=5` on scraper) to eliminate connection starvation on PostgreSQL.
+  - Removed redundant index `@@index([ticker])` in `prisma/schema.prisma` since `ticker String @unique` already provides a unique B-tree index in PostgreSQL.
+- PPh Final 10% Domestic Dividend Tax Calculation & UI Transparency:
+  - Implemented `calculateNetDividendYield` with `IDX_DIVIDEND_TAX_RATE = 0.10` in `src/lib/scoring/dividend.js` and added unit test suite (`tests/dividend.test.js`).
+  - Added Gross Dividend Yield and Net Dividend Yield (after 10% PPh Final deduction under PP 9/2021 & UU Cipta Kerja) display in `src/components/StockExplorer.jsx`.
+- Heuristic Transparency & Methodology Tooltips:
+  - Added explanatory tooltips (`ⓘ`) to Piotroski F-Score and Altman Z-Score cards in `StockExplorer.jsx` explaining they are calibrated multi-factor heuristic proxies adapted for IDX financial reporting availability.
+- Accessibility & UX Guardrails:
+  - Added ESC key listeners, backdrop dismissal, ARIA attributes (`role="dialog"`, `aria-modal="true"`, `aria-labelledby`) across modals (`StockOwnershipModal.jsx`, `AuthModal.jsx`).
+  - Added live sync pill with time and manual sync trigger button on mobile header (`TopHeader.jsx`).
+- Bloomberg Financial Matrix Panel (`src/components/FinancialMatrixPanel.jsx`):
+  - Added multi-year comparative financial analysis panel (`activeTab === 'matrix'`) inside StockExplorer.
+  - Covers 4 categories: Laporan Laba Rugi (Income Statement), Neraca Keuangan (Balance Sheet), Arus Kas & Dividen (Cash Flow & Dividend), and Profitabilitas & Valuasi (Profitability & Valuation Ratios).
+- Verification:
+  - 247 test suites passing (100%).
+  - Next.js Turbopack production build succeeded cleanly in 2.1s.
+
 ## [2026-09-24] fix | Domain Modeling: Frequency vs Lot Resolution & Yahoo Finance Ownership Pipeline Integration
 - Resolution of Frequency vs Lot Conceptual Ambiguity (BEI Market Standards):
   - Solved conceptual discrepancy in `src/lib/syncService.js` and `src/scripts/sync-prices.js` where `volume / 100` was historically stored in the DB column `frequency`. In the Indonesia Stock Exchange (IDX/BEI), 1 Lot = 100 shares; thus `volume / 100` represents **Lot Count** rather than trade execution frequency (trade count).

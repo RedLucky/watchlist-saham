@@ -4,6 +4,29 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-09-24] feat | Remediasi Audit Komprehensif Full-Stack & Matriks Finansial Bloomberg (FA)
+- Modul Kalender Libur Bursa Efek Indonesia (`src/lib/idxHolidays.js` & `tests/idxHolidays.test.js`):
+  - Membangun kalender libur resmi BEI terpusat periode 2024-2027 mencakup hari libur nasional dan cuti bersama.
+  - Mengintegrasikan `isIDXHoliday` dan `isIDXTradingDay` ke dalam `src/lib/syncService.js` (untuk melewati polling harga saat bursa tutup) dan `src/lib/recommendationTracker.js` (`getTradingDaysElapsed` untuk ketepatan durasi trading dan settlement T+2).
+- Infrastruktur Docker & Optimasi Pool Koneksi Database:
+  - Meningkatkan batas memori PostgreSQL dari 256MB ke 512MB pada `docker-compose.yml` untuk mencegah OOM saat beban analitik tinggi.
+  - Menetapkan batas koneksi database (`connection_limit=10` pada app, `connection_limit=5` pada scraper) untuk mencegah starvasi koneksi pada PostgreSQL.
+  - Menghapus indeks berlebih `@@index([ticker])` pada `prisma/schema.prisma` karena kolom `ticker String @unique` sudah otomatis memiliki indeks unik B-tree di PostgreSQL.
+- Kalkulasi PPh Final 10% Dividen Domestik & Transparansi UI:
+  - Mengimplementasikan `calculateNetDividendYield` dengan `IDX_DIVIDEND_TAX_RATE = 0.10` pada `src/lib/scoring/dividend.js` beserta pengujian unit (`tests/dividend.test.js`).
+  - Menampilkan Yield Dividen Bruto dan Yield Dividen Netto (setelah potongan PPh Final 10% sesuai PP 9/2021 & UU Cipta Kerja) pada `src/components/StockExplorer.jsx`.
+- Transparansi Metodologi Heuristik & Tooltip:
+  - Menambahkan tooltip penjelasan (`ⓘ`) pada kartu skor Piotroski F-Score dan Altman Z-Score di `StockExplorer.jsx` yang menerangkan bahwa nilai tersebut adalah estimasi heuristik multi-faktor adaptif untuk BEI.
+- Aksesibilitas Dialog & UX Mobile:
+  - Menambahkan pendengar tombol ESC, penutupan klik backdrop, dan atribut ARIA (`role="dialog"`, `aria-modal="true"`, `aria-labelledby`) pada modal dialog (`StockOwnershipModal.jsx`, `AuthModal.jsx`).
+  - Menambahkan indikator status sinkronisasi harga live beserta tombol trigger sinkronisasi manual di header mobile (`TopHeader.jsx`).
+- Panel Matriks Finansial Bloomberg (`src/components/FinancialMatrixPanel.jsx`):
+  - Menyediakan panel analisis laporan keuangan komparatif multi-tahun (`activeTab === 'matrix'`) di dalam StockExplorer.
+  - Mencakup 4 kategori: Laporan Laba Rugi, Neraca Keuangan, Arus Kas & Dividen, dan Rasio Profitabilitas/Valuasi.
+- Verifikasi:
+  - 247 test suites lulus (100%).
+  - Build produksi Next.js Turbopack sukses dalam 2.1 detik tanpa error.
+
 ## [2026-09-24] fix | Pemodelan Domain: Resolusi Frekuensi vs Lot & Integrasi Kepemilikan Institusional Yahoo Finance
 - Resolusi Ambiguitas Konseptual Frekuensi vs Lot (Standar Pasar BEI):
   - Memperbaiki diskrepansi konseptual pada `src/lib/syncService.js` dan `src/scripts/sync-prices.js` di mana nilai `volume / 100` sebelumnya disimpan ke kolom database `frequency`. Di Bursa Efek Indonesia (BEI), 1 Lot = 100 lembar saham; sehingga `volume / 100` merupakan **Jumlah Lot**, BUKAN frekuensi perdagangan (*trade count*).

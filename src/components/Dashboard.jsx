@@ -204,8 +204,13 @@ export default function Dashboard() {
       
       {/* Main App Content Area */}
       <div className="flex-1 flex flex-col min-h-screen w-full lg:w-[calc(100%-16rem)] relative pb-20 lg:pb-0">
-        {/* Top Header (Visible on Mobile with Logo, ThemeToggle, KSEI Upload, User Profile & Logout) */}
-        <TopHeader user={user} handleLogout={handleLogout} />
+        {/* Top Header (Visible on Mobile with Logo, ThemeToggle, KSEI Upload, Sync Status, User Profile & Logout) */}
+        <TopHeader 
+          user={user} 
+          handleLogout={handleLogout} 
+          syncInfo={syncInfo} 
+          handleManualSync={handleManualSync} 
+        />
         
         {/* Main Content */}
         <main className={`flex-1 w-full mx-auto px-4 sm:px-6 py-6 space-y-5 transition-all duration-300 ${

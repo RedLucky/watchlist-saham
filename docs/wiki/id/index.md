@@ -26,6 +26,7 @@
 * [Analisis Jebakan Dividen & Run-Rate Pasif (DTRP / DVD)](./financial-engine/jebakan-dividen-dtrp.md) — Evaluasi keamanan dividen, kecukupan FCF, risiko ex-date drop, dan proyeksi arus kas 12 bulan.
 * [Kalender Aksi Korporasi & Katalis Pasar (CA)](./financial-engine/kalender-aksi-korporasi.md) — Jadwal dan hitung mundur dividen tunai, RUPS (RUPST/RUPSLB), dan jendela musim rilis laporan keuangan.
 * [Berkas Riset Ekuitas AI (Bloomberg Intelligence / BI)](./financial-engine/berkas-riset-ai-bi.md) — Sintesis laporan riset institusional bertenaga AI lokal, konsensus rekomendasi, dan ulasan valuasi wajar.
+* [Matriks Finansial Bloomberg (FA)](./financial-engine/financial-matrix-analysis.md) — Matriks perbandingan laporan keuangan multi-tahun (Laba Rugi, Neraca, Arus Kas, Rasio DuPont & Valuasi) berstandar Bloomberg FA.
 
 ---
 

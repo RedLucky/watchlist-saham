@@ -12,6 +12,7 @@ import { prisma } from './prisma';
 import { getSectorByTicker, getSubSectorByTicker, getAllTickersForYahoo } from './sectorUniverse';
 import { calculateMA, calculateRSI, calculateATR, calculateMACD, calculateBollingerBands } from './indicators';
 import { refreshForexRates, getExchangeRateSync } from './currencyService';
+import { isIDXHoliday } from './idxHolidays';
 
 const DEEP_SYNC_TIMEOUT_MS = parseInt(process.env.DEEP_SYNC_TIMEOUT_MS || '30000', 10);
 const DEEP_SYNC_RETRIES = parseInt(process.env.DEEP_SYNC_RETRIES || '1', 10);
@@ -90,6 +91,7 @@ export function isIDXMarketHours(date = new Date()) {
   const wibDate = new Date(utc + (3600000 * 7)); // WIB = UTC+7
   const day = wibDate.getDay(); // 0 is Sunday, 6 is Saturday
   if (day === 0 || day === 6) return false;
+  if (isIDXHoliday(wibDate)) return false;
 
   const hours = wibDate.getHours();
   const minutes = wibDate.getMinutes();

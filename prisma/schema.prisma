@@ -95,7 +95,6 @@ model StockData {
   kseiHistory     String?  @db.Text
   isDelisted      Boolean  @default(false)
 
-  @@index([ticker])
   @@index([sector])
   @@index([subSector])
   @@index([turnover])

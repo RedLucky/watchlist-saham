@@ -1,13 +1,14 @@
 import { prisma } from './prisma.js';
 import { getStyleConfig } from './modes.js';
+import { isIDXTradingDay } from './idxHolidays.js';
 
 // Konstanta batas evaluasi Time Stop & toleransi fluktuasi wajar
 export const TIME_STOP_GRACE_DAYS = 3; // Tambahan toleransi hari kerja bursa sebelum memotong posisi sehat
 export const TIME_STOP_TOLERANCE_LOSS_PCT = 1.5; // Batas defisit minor (< 1.5%) yang ditoleransi selama grace period
 
 /**
- * Menghitung jumlah hari kerja bursa aktif (Senin s/d Jumat) yang telah lewat.
- * Mengecualikan hari Sabtu dan Minggu agar order tidak kedaluwarsa prematur saat libur bursa.
+ * Menghitung jumlah hari kerja bursa aktif yang telah lewat.
+ * Mengecualikan hari Sabtu, Minggu, serta Libur Nasional dan Cuti Bersama resmi BEI.
  */
 export function getTradingDaysElapsed(startDate, endDate = new Date()) {
   const start = new Date(startDate);
@@ -21,8 +22,7 @@ export function getTradingDaysElapsed(startDate, endDate = new Date()) {
   let tradingDays = 0;
   while (cur < target) {
     cur.setDate(cur.getDate() + 1);
-    const day = cur.getDay();
-    if (day !== 0 && day !== 6) {
+    if (isIDXTradingDay(cur)) {
       tradingDays++;
     }
   }

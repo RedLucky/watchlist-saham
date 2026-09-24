@@ -119,4 +119,20 @@ describe('2. Sistem Skoring Dividen 0-100 (calculateDividendScore)', () => {
     // Skor yield 100 * 0.5 = 50, payout ratio hanya 30 * 0.3 = 9, streak 1 thn 15 * 0.2 = 3 -> Total ~62
     assert.ok(result.score < 75, `Saham dengan payout berisiko harus tertekan di bawah 75, didapat ${result.score}`);
   });
+
+  test('PPh Final 10% dipotong secara presisi pada Net Dividend Yield', () => {
+    const stock = {
+      price: 1000,
+      dividendHistory: [
+        { TanggalCum: dateStr(2), CashDividenPerSaham: 100, MataUang: 'IDR' } // 10% Gross Yield
+      ],
+      fundamentals: {}
+    };
+
+    const result = calculateDividendScore(stock);
+    assert.equal(result.metrics.grossDividendYield, 10.0);
+    // 10% * (1 - 0.10) = 9.0% Netto
+    assert.equal(result.metrics.netDividendYield, 9.0);
+    assert.equal(result.metrics.dividendTaxRate, 10);
+  });
 });
