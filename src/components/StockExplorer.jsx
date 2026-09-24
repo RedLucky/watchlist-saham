@@ -2481,8 +2481,9 @@ export default function StockExplorer({ user }) {
                         </div>
                       </div>
                     </div>
-                    <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400">
-                      Frekuensi: <span className="font-semibold text-slate-900 dark:text-slate-100">{vol.frequency ? `${vol.frequency.toLocaleString('id-ID')}x transaksi` : '-'}</span>
+                    <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400 flex justify-between">
+                      <span>Volume Lot:</span>
+                      <span className="font-semibold text-slate-900 dark:text-slate-100">{(vol.lots || vol.frequency) ? `${(vol.lots || vol.frequency).toLocaleString('id-ID')} Lot` : '-'}</span>
                     </div>
                   </div>
 

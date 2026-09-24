@@ -125,7 +125,11 @@ async function syncAllPrices(limit = null) {
         const computedPercent = getChangePercent(quote);
         const vol = BigInt(Math.round(Number(quote.regularMarketVolume || 0)));
         const turnover = BigInt(Math.round(currentPrice * Number(quote.regularMarketVolume || 0)));
-        const frequency = Math.round(Number(quote.regularMarketVolume || 0) / 100);
+        // CATATAN ARSITEKTURAL IDX: Di Bursa Efek Indonesia (BEI), 1 Lot = 100 lembar saham.
+        // Yahoo Finance hanya menyediakan regularMarketVolume (lembar), bukan frekuensi transaksi (trade count).
+        // Kolom DB 'frequency' secara historis menyimpan Jumlah Lot (volume / 100) untuk komparasi likuiditas.
+        const lots = Math.round(Number(quote.regularMarketVolume || 0) / 100);
+        const frequency = lots;
 
         upsertOps.push(prisma.stockData.upsert({
           where: { ticker },

@@ -194,7 +194,11 @@ export async function fastSyncPrices(limit = 250, force = false) {
         const computedPercent = getChangePercent(quote);
         const vol = BigInt(Math.round(Number(quote.regularMarketVolume || 0)));
         const turnover = BigInt(Math.round(currentPrice * Number(quote.regularMarketVolume || 0)));
-        const frequency = Math.round(Number(quote.regularMarketVolume || 0) / 100);
+        // CATATAN ARSITEKTURAL IDX: Di Bursa Efek Indonesia (BEI), 1 Lot = 100 lembar saham.
+        // Yahoo Finance hanya menyediakan regularMarketVolume (lembar), bukan frekuensi transaksi (trade count).
+        // Kolom DB 'frequency' secara historis menyimpan Jumlah Lot (volume / 100) untuk komparasi likuiditas.
+        const lots = Math.round(Number(quote.regularMarketVolume || 0) / 100);
+        const frequency = lots;
 
         upsertOps.push(prisma.stockData.upsert({
           where: { ticker },
@@ -318,7 +322,7 @@ async function deepSyncStockOnce(fullTicker) {
   // OPTIMIZATION: Check existing 10-year dividend history in DB
   const existingDbStock = await prisma.stockData.findUnique({ 
     where: { ticker: tickerClean }, 
-    select: { fundamentals: true }
+    select: { fundamentals: true, ownership: true }
   });
   
   let existingDivHistory = [];
@@ -364,7 +368,10 @@ async function deepSyncStockOnce(fullTicker) {
             'summaryDetail', 
             'incomeStatementHistory',
             'balanceSheetHistory',
-            'cashflowStatementHistory'
+            'cashflowStatementHistory',
+            'majorHoldersBreakdown',
+            'fundOwnership',
+            'institutionOwnership'
           ]
         }, { validateResult: false }),
         20000,
@@ -442,6 +449,31 @@ async function deepSyncStockOnce(fullTicker) {
   const earningsGrowthRaw = summary?.financialData?.earningsGrowth;
   const operatingCashflowRaw = summary?.financialData?.operatingCashflow;
   const totalDebtRaw = summary?.financialData?.totalDebt;
+
+  // ── Yahoo Finance Institutional & Insider Ownership Breakdown ──
+  const majorHolders = summary?.majorHoldersBreakdown;
+  const insidersPercentHeldRaw = majorHolders?.insidersPercentHeld;
+  const institutionsPercentHeldRaw = majorHolders?.institutionsPercentHeld;
+  const institutionsFloatPercentHeldRaw = majorHolders?.institutionsFloatPercentHeld;
+  const institutionsCountRaw = majorHolders?.institutionsCount;
+
+  const topFundsRaw = Array.isArray(summary?.fundOwnership?.ownershipList)
+    ? summary.fundOwnership.ownershipList.slice(0, 10).map(f => ({
+        name: f.organization || f.holder || 'Fund',
+        position: safeNumber(f.position, 0),
+        pctHeld: normalizePercent(f.pctHeld, null),
+        value: safeNumber(f.value, 0)
+      }))
+    : [];
+
+  const topInstitutionsRaw = Array.isArray(summary?.institutionOwnership?.ownershipList)
+    ? summary.institutionOwnership.ownershipList.slice(0, 10).map(i => ({
+        name: i.organization || i.holder || 'Institution',
+        position: safeNumber(i.position, 0),
+        pctHeld: normalizePercent(i.pctHeld, null),
+        value: safeNumber(i.value, 0)
+      }))
+    : [];
 
   // Merge newly fetched dividends with cached 10-year dividends (Append + Idempotent Dedup)
   const mergedDivHistory = [...existingDivHistory];
@@ -589,6 +621,12 @@ async function deepSyncStockOnce(fullTicker) {
     beta: safeNumber(betaRaw, null),
     fiftyTwoWeekHigh: safeNumber(fiftyTwoWeekHighRaw, null),
     fiftyTwoWeekLow: safeNumber(fiftyTwoWeekLowRaw, null),
+    insidersPercentHeld: normalizePercent(insidersPercentHeldRaw, null),
+    institutionsPercentHeld: normalizePercent(institutionsPercentHeldRaw, null),
+    institutionsFloatPercentHeld: normalizePercent(institutionsFloatPercentHeldRaw, null),
+    institutionsCount: safeNumber(institutionsCountRaw, null),
+    topInstitutionalFunds: topFundsRaw,
+    topInstitutions: topInstitutionsRaw,
   };
 
   // ── Calculate Technicals ──────────────────────────────────────────────
@@ -622,8 +660,25 @@ async function deepSyncStockOnce(fullTicker) {
   const computedPercent = getChangePercent(quote);
   const vol = BigInt(Math.round(Number(quote?.regularMarketVolume || 0)));
   const turnover = BigInt(Math.round(currentPrice * Number(quote?.regularMarketVolume || 0)));
-  const frequency = Math.round(Number(quote?.regularMarketVolume || 0) / 100);
+  // CATATAN ARSITEKTURAL IDX: Di Bursa Efek Indonesia (BEI), 1 Lot = 100 lembar saham.
+  // Yahoo Finance hanya menyediakan regularMarketVolume (lembar), bukan frekuensi transaksi (trade count).
+  // Kolom DB 'frequency' secara historis menyimpan Jumlah Lot (volume / 100) untuk komparasi likuiditas.
+  const lots = Math.round(Number(quote?.regularMarketVolume || 0) / 100);
+  const frequency = lots;
   const now = new Date();
+
+  // Jika ownership di database masih kosong dan ada data dana institusi dari Yahoo Finance, jadikan fallback awal
+  const fallbackOwnership = (!existingDbStock?.ownership && (topFundsRaw.length > 0 || topInstitutionsRaw.length > 0))
+    ? JSON.stringify({
+        shareholders: topFundsRaw.map(f => ({
+          Nama: f.name,
+          Jumlah: f.position,
+          Persentase: f.pctHeld
+        })),
+        source: 'yahoo_finance',
+        updatedAt: now.toISOString()
+      })
+    : undefined;
 
   await prisma.stockData.upsert({
     where: { ticker: tickerClean },
@@ -640,6 +695,7 @@ async function deepSyncStockOnce(fullTicker) {
       fundamentals: JSON.stringify(fundamentals),
       technicals: JSON.stringify(technicals),
       historicalRaw: JSON.stringify(cleanRows),
+      ...(fallbackOwnership && { ownership: fallbackOwnership }),
       lastDeepSync: now,
       lastPriceSync: now
     },
@@ -657,6 +713,7 @@ async function deepSyncStockOnce(fullTicker) {
       fundamentals: JSON.stringify(fundamentals),
       technicals: JSON.stringify(technicals),
       historicalRaw: JSON.stringify(cleanRows),
+      ownership: fallbackOwnership || null,
       lastDeepSync: now,
       lastPriceSync: now
     }

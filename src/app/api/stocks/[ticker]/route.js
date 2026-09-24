@@ -85,6 +85,10 @@ export async function GET(request, { params }) {
             fundamentals = parseJsonField(freshStock.fundamentals) || {};
             technicals = parseJsonField(freshStock.technicals) || {};
             dividendHistory = parseJsonField(freshStock.dividendHistory) || [];
+            ownership = parseJsonField(freshStock.ownership) || {};
+            kseiLatest = parseJsonField(freshStock.kseiLatest) || {};
+            kseiHistory = parseJsonField(freshStock.kseiHistory) || [];
+            insiderTrades = parseJsonField(freshStock.insiderTrades) || [];
           }
         }
       } catch (err) {
@@ -144,7 +148,8 @@ export async function GET(request, { params }) {
       volumeSpikeRatio,
       volumeStatus,
       turnover: Number(stock.turnover || 0),
-      frequency: stock.frequency || 0,
+      frequency: stock.frequency || 0, // Disimpan sebagai Jumlah Lot (volume / 100) di DB
+      lots: stock.frequency || Math.round(todayVol / 100),
       isBreakoutVolume: volumeSpikeRatio >= 1.5 && (stock.changePercent || 0) > 1.5
     };
 

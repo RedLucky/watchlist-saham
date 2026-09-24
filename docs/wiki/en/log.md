@@ -4,6 +4,26 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-09-24] fix | Domain Modeling: Frequency vs Lot Resolution & Yahoo Finance Ownership Pipeline Integration
+- Resolution of Frequency vs Lot Conceptual Ambiguity (BEI Market Standards):
+  - Solved conceptual discrepancy in `src/lib/syncService.js` and `src/scripts/sync-prices.js` where `volume / 100` was historically stored in the DB column `frequency`. In the Indonesia Stock Exchange (IDX/BEI), 1 Lot = 100 shares; thus `volume / 100` represents **Lot Count** rather than trade execution frequency (trade count).
+  - Clarified architectural documentation across `prisma/schema.prisma`, `syncService.js`, and `sync-prices.js` explaining that the `frequency` DB column holds Lot count for schema backward compatibility.
+  - Added dedicated `lots` property to `/api/stocks/[ticker]/route.js` `volumeAnalysis` alongside `frequency`.
+  - Fixed misleading UI in `src/components/StockExplorer.jsx:2486` which previously displayed `...x transaksi` (causing traders to mistakenly perceive millions of trade executions), replacing it with official IDX nomenclature: `... Lot`.
+- Yahoo Finance Ownership Modules Integration (`majorHoldersBreakdown`, `fundOwnership`, `institutionOwnership`):
+  - In `src/lib/syncService.js`, added Yahoo Finance ownership modules to `quoteSummary` and extracted key institutional data into `fundamentals`:
+    - `insidersPercentHeld` (% insider/controlling stake)
+    - `institutionsPercentHeld` (% total institutional ownership)
+    - `institutionsFloatPercentHeld` (% institutional float ownership)
+    - `institutionsCount` (total institutional holder count)
+    - `topInstitutionalFunds` (top 10 mutual funds including Vanguard, BlackRock/iShares with position, value, and % held)
+    - `topInstitutions` (top institutional asset managers)
+  - Added fallback initial ownership persistence in `StockData.ownership` during deep sync so new emiten immediately display major shareholder breakdowns even prior to running the Puppeteer IDX scraper.
+  - Documented why `insiderTransactions` is null on Yahoo Finance for `.JK` tickers (Indonesian corporate insiders file mandatory disclosures with OJK/BEI under POJK 11/POJK.04/2017 rather than US SEC Form 4). Confirmed domestic insider trade tracking remains seamlessly covered via `src/scripts/sync-ownership.js` (IDX Keterbukaan Informasi scraper) and `src/scripts/sync-ksei.js` (KSEI depository scraper).
+- Verification:
+  - 242 unit and integration tests passing (100%).
+  - Next.js Turbopack production build succeeded cleanly.
+
 ## [2026-09-24] feat | Comprehensive Full-Stack Audit Remediations & External Data Pipeline Optimization
 - External Data Pipeline & Yahoo Finance Enhancements:
   - Added official BEI trading hours awareness (`isIDXMarketHours` in `src/lib/syncService.js`). Fast price sync automatically skips outside active trading hours (09:00 - 16:00 WIB, Monday-Friday), saving thousands of API requests and eliminating rate limit risks at night and weekends.

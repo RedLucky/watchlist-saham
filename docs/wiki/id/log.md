@@ -4,6 +4,26 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-09-24] fix | Pemodelan Domain: Resolusi Frekuensi vs Lot & Integrasi Kepemilikan Institusional Yahoo Finance
+- Resolusi Ambiguitas Konseptual Frekuensi vs Lot (Standar Pasar BEI):
+  - Memperbaiki diskrepansi konseptual pada `src/lib/syncService.js` dan `src/scripts/sync-prices.js` di mana nilai `volume / 100` sebelumnya disimpan ke kolom database `frequency`. Di Bursa Efek Indonesia (BEI), 1 Lot = 100 lembar saham; sehingga `volume / 100` merupakan **Jumlah Lot**, BUKAN frekuensi perdagangan (*trade count*).
+  - Memperjelas dokumentasi arsitektural pada `prisma/schema.prisma`, `syncService.js`, dan `sync-prices.js` bahwa kolom database `frequency` menyimpan Jumlah Lot demi menjaga kompatibilitas skema yang sudah ada.
+  - Menambahkan properti resmi `lots` pada respons `/api/stocks/[ticker]/route.js` di samping `frequency`.
+  - Memperbaiki label tampilan yang menyesatkan pada `src/components/StockExplorer.jsx:2486` yang sebelumnya menampilkan `...x transaksi` (membuat trader salah mengira terjadi jutaan kali transaksi), diganti dengan terminologi pasar modal Indonesia yang tepat: `... Lot`.
+- Integrasi Modul Kepemilikan Yahoo Finance (`majorHoldersBreakdown`, `fundOwnership`, `institutionOwnership`):
+  - Pada `src/lib/syncService.js`, menambahkan modul kepemilikan ke pemanggilan `quoteSummary` dan mengekstrak metrik kunci ke dalam objek `fundamentals`:
+    - `insidersPercentHeld` (% kepemilikan insider/pengendali)
+    - `institutionsPercentHeld` (% total kepemilikan institusi)
+    - `institutionsFloatPercentHeld` (% kepemilikan institusi atas saham beredar bebas/float)
+    - `institutionsCount` (total jumlah institusi pemilik saham)
+    - `topInstitutionalFunds` (daftar 10 reksa dana/manajer investasi global seperti Vanguard, BlackRock/iShares beserta lembar kepemilikan, estimasi nilai, dan persentase)
+    - `topInstitutions` (daftar institusi pengelola dana utama)
+  - Menambahkan fallback persistensi kepemilikan awal pada `StockData.ownership` saat deep sync sehingga emiten baru langsung menampilkan data kepemilikan institusi bahkan sebelum scraper Puppeteer BEI dijalankan.
+  - Mendokumentasikan alasan tidak tersedianya `insiderTransactions` di Yahoo Finance untuk emiten berakhiran `.JK` (insider BEI wajib melaporkan kepemilikan ke OJK/BEI sesuai POJK 11/POJK.04/2017, bukan Form 4 US SEC). Pelacakan transaksi insider domestik tetap ditangani secara akurat melalui `src/scripts/sync-ownership.js` (scraper Keterbukaan Informasi BEI) dan `src/scripts/sync-ksei.js` (scraper kustodian KSEI).
+- Verifikasi & Pengujian:
+  - 242 unit dan integration test lulus 100%.
+  - Production build Next.js (Turbopack) berhasil tanpa eror.
+
 ## [2026-09-24] feat | Remidiasi Audit Komprehensif Full-Stack & Optimalisasi Pipeline Data Eksternal
 - Pipeline Data Eksternal & Integrasi Yahoo Finance:
   - Menambahkan kesadaran jam bursa resmi BEI (`isIDXMarketHours` di `src/lib/syncService.js`). Fast price sync otomatis dilewati di luar jam perdagangan aktif (Senin - Jumat 09:00 - 16:00 WIB), menghemat ribuan request API dan mengeliminasi risiko limit kuota pada malam hari dan akhir pekan.
