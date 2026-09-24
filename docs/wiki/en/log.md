@@ -15,9 +15,11 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
     6. `TOP_PERFORMER`: Daily percentage change descending (+25% to -15%).
     7. `ALPHABETICAL`: Clean A to Z sorting by official IDX ticker symbol.
 - Interactive UX & Rich Dropdown Menu (`src/components/CollectionSortDropdown.jsx`):
-  - Refactored layout to fit 100% cleanly inside the Left Sidebar width (`w-full`), preventing dropdown overflow from spilling over or colliding with the Stock Explorer canvas and IDX search bar.
-  - Employed `createPortal(..., document.body)` with `z-[9999]` for the Strategy Guide Modal, breaking free of the sidebar's CSS stacking context (`backdrop-blur` / `lg:sticky`) to render cleanly centered over the entire viewport with zero clipping.
-  - Implemented an interactive Strategy Guide Modal (`(?) Panduan Formula`) detailing mathematical equations, parameter weights, and trading scenarios for each strategy, complete with direct `[Terapkan]` action buttons.
+  - Built a full-width toolbar trigger displaying active strategy (`⚡ Urutkan: Kombinasi Cerdas ▾`) and a companion `[ℹ️ Panduan]` button.
+  - Constrained dropdown menu strictly to the sidebar container width (`left-0 right-0 w-full`), completely eliminating horizontal spillover, clashing, and visual stacking over the Stock Explorer main canvas and IDX search bar.
+  - Rendered all 7 strategy options with custom icons, category badges (`Rekomendasi`, `Kualitas`, `Teknikal`, `Eksekusi`, `Bandarmologi`, `Momentum`, `Kerapian`), and one-line strategy summaries.
+  - Implemented an interactive Strategy Guide Modal (`(?) Panduan Formula`) portaled directly to `document.body` via `createPortal(..., document.body)` with `z-[9999]`, breaking free of any parent CSS stacking/sticky contexts to guarantee clean, unclipped display.
+  - Connected `handleApplySort` with instant optimistic card reordering, database persistence via `PATCH /api/collections/items`, and real-time toast confirmations (`showToast`).
 - Full-Stack API & Database Persistence:
   - Enriched `GET /api/collections/items` with live stock technicals (`macd`, `rsi14`, `support`, `resistance`, `ma20`, `ma50`).
   - Integrated with `PATCH /api/collections/items` to persist new item ordering (`orderedIds`) atomically via Prisma transaction.
