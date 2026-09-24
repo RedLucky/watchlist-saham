@@ -1798,14 +1798,11 @@ export default function StockExplorer({ user }) {
 
                   {/* Auto-Sort Toolbar */}
                   {selectedCollection && collectionItems.length > 1 && (
-                    <div className="flex items-center justify-between pt-1 pb-0.5 px-0.5 border-t border-slate-100 dark:border-slate-800/80">
+                    <div className="pt-2 pb-1 border-t border-slate-100 dark:border-slate-800/80">
                       <CollectionSortDropdown
                         items={collectionItems}
                         onApplySort={handleApplySort}
                       />
-                      <span className="text-[10px] text-slate-400 font-mono">
-                        {collectionItems.length} emiten
-                      </span>
                     </div>
                   )}
 
