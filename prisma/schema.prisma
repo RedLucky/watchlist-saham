@@ -83,6 +83,7 @@ model StockData {
   technicals    String?  @db.Text
   historicalRaw String?  @db.Text
   lastPriceSync DateTime @default(now())
+  lastDeepSync  DateTime @default(now())
   // CATATAN ARSITEKTURAL IDX: Di BEI 1 Lot = 100 lembar. Kolom frequency secara historis menyimpan Jumlah Lot (volume / 100), bukan trade count.
   frequency     Int?     @default(0)
   turnover      BigInt?  @default(0)
@@ -95,6 +96,7 @@ model StockData {
   kseiHistory     String?  @db.Text
   isDelisted      Boolean  @default(false)
 
+  @@index([ticker])
   @@index([sector])
   @@index([subSector])
   @@index([turnover])

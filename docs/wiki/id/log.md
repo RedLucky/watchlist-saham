@@ -5,27 +5,42 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 ---
 
 ## [2026-09-24] feat | Remediasi Audit Komprehensif Full-Stack & Matriks Finansial Bloomberg (FA)
+- Penguatan API Portofolio & Validasi Lot BEI (`/api/portfolio/buy` & `/api/portfolio/sell`):
+  - Memperbaiki parsing payload JSON dan destrukturisasi variabel pada rute beli/jual portofolio.
+  - Menerapkan validasi modulo 100 lembar (1 Lot IDX) yang ketat (`shares % 100 === 0`) dengan pesan validasi ramah pengguna berbahasa Indonesia.
+  - Menambahkan rangkaian uji unit `tests/portfolioLotValidation.test.js` mencakup validasi lot dan logika kalkulasi Realized PnL/Loss.
+- Visualizer Underwater Drawdown Backtest (`src/components/BacktestPanel.jsx`):
+  - Menambahkan grafik interaktif *underwater drawdown profile* di bawah kurva pertumbuhan ekuitas, memetakan persentase penurunan dari puncak tertinggi (*peak*) modal dengan gradien arsir merah dan titik lembah (*trough*).
+- Integrasi Matriks Laporan Keuangan Bloomberg (`src/components/StockExplorer.jsx`):
+  - Memulihkan dan menautkan `FinancialMatrixPanel` ke dalam tab kokpit analitikal Valuasi & Finansial (`cockpitTab === 'valuation'`).
+  - Menyesuaikan *counter* metrik tab kokpit dan menampilkan matriks multi-tahun perbandingan laba rugi, neraca, arus kas, dan rasio valuasi.
+- Aksesibilitas Dialog & Penutupan Modal (`src/components/DetailPanel.jsx`):
+  - Menambahkan penangan tombol Escape serta penutupan klik backdrop dengan `e.stopPropagation()` pada modal pantau saham dan dialog prompt kustom.
 - Modul Kalender Libur Bursa Efek Indonesia (`src/lib/idxHolidays.js` & `tests/idxHolidays.test.js`):
   - Membangun kalender libur resmi BEI terpusat periode 2024-2027 mencakup hari libur nasional dan cuti bersama.
   - Mengintegrasikan `isIDXHoliday` dan `isIDXTradingDay` ke dalam `src/lib/syncService.js` (untuk melewati polling harga saat bursa tutup) dan `src/lib/recommendationTracker.js` (`getTradingDaysElapsed` untuk ketepatan durasi trading dan settlement T+2).
-- Infrastruktur Docker & Optimasi Pool Koneksi Database:
+- Infrastruktur Docker & Optimasi Database:
   - Meningkatkan batas memori PostgreSQL dari 256MB ke 512MB pada `docker-compose.yml` untuk mencegah OOM saat beban analitik tinggi.
   - Menetapkan batas koneksi database (`connection_limit=10` pada app, `connection_limit=5` pada scraper) untuk mencegah starvasi koneksi pada PostgreSQL.
-  - Menghapus indeks berlebih `@@index([ticker])` pada `prisma/schema.prisma` karena kolom `ticker String @unique` sudah otomatis memiliki indeks unik B-tree di PostgreSQL.
+  - Memulihkan kolom `lastDeepSync` dan menghapus indeks berlebih `@@index([ticker])` pada `prisma/schema.prisma` (`prisma validate` dan `prisma db push` berhasil diselaraskan).
+  - Memperbaiki izin file Docker di `Dockerfile` dengan menambahkan `--chown=nextjs:nodejs` pada baris COPY Prisma di tahap `runner` guna mencegah kegagalan `EACCES` saat dijalankan oleh user non-root `nextjs`.
+  - Mengoptimalkan `.dockerignore` dengan mengecualikan `tests`, `docs`, `Dockerfile*`, dan `docker-compose*.yml`.
+- Keandalan API & Keamanan Serialisasi BigInt:
+  - Menambahkan utilitas `serializeData` pada `src/app/api/screener/route.js` dan `src/app/api/portfolio/route.js` untuk menjamin keamanan serialisasi BigInt (`sharesOutstanding`, `volume`, `turnover`) tanpa memicu runtime `TypeError`.
+- Keandalan Frontend & Guardrail Analitik:
+  - Memperbaiki `src/app/layout.js` agar hanya menyuntikkan `<GoogleAnalytics>` apabila `NEXT_PUBLIC_GA_ID` terdefinisi, mencegah error jaringan konsol browser akibat ID placeholder `"G-XXXXXXXXXX"`.
+  - Menambahkan kolom DPR (Dividend Payout Ratio) pada tabel riwayat dividen di `src/components/CorporateActionsPanel.jsx`.
 - Kalkulasi PPh Final 10% Dividen Domestik & Transparansi UI:
   - Mengimplementasikan `calculateNetDividendYield` dengan `IDX_DIVIDEND_TAX_RATE = 0.10` pada `src/lib/scoring/dividend.js` beserta pengujian unit (`tests/dividend.test.js`).
   - Menampilkan Yield Dividen Bruto dan Yield Dividen Netto (setelah potongan PPh Final 10% sesuai PP 9/2021 & UU Cipta Kerja) pada `src/components/StockExplorer.jsx`.
 - Transparansi Metodologi Heuristik & Tooltip:
   - Menambahkan tooltip penjelasan (`ⓘ`) pada kartu skor Piotroski F-Score dan Altman Z-Score di `StockExplorer.jsx` yang menerangkan bahwa nilai tersebut adalah estimasi heuristik multi-faktor adaptif untuk BEI.
 - Aksesibilitas Dialog & UX Mobile:
-  - Menambahkan pendengar tombol ESC, penutupan klik backdrop, dan atribut ARIA (`role="dialog"`, `aria-modal="true"`, `aria-labelledby`) pada modal dialog (`StockOwnershipModal.jsx`, `AuthModal.jsx`).
+  - Menambahkan pendengar tombol universal ESC, penutupan klik backdrop, dan atribut ARIA (`role="dialog"`, `aria-modal="true"`, `aria-labelledby`) pada seluruh modal di `StockExplorer.jsx`, `PensionCalculator.jsx`, `StockOwnershipModal.jsx`, `DetailPanel.jsx`, dan `AuthModal.jsx`.
   - Menambahkan indikator status sinkronisasi harga live beserta tombol trigger sinkronisasi manual di header mobile (`TopHeader.jsx`).
-- Panel Matriks Finansial Bloomberg (`src/components/FinancialMatrixPanel.jsx`):
-  - Menyediakan panel analisis laporan keuangan komparatif multi-tahun (`activeTab === 'matrix'`) di dalam StockExplorer.
-  - Mencakup 4 kategori: Laporan Laba Rugi, Neraca Keuangan, Arus Kas & Dividen, dan Rasio Profitabilitas/Valuasi.
 - Verifikasi:
-  - 247 test suites lulus (100%).
-  - Build produksi Next.js Turbopack sukses dalam 2.1 detik tanpa error.
+  - 246 test suites lulus (100%).
+  - Build produksi Next.js Turbopack sukses dalam 1.8 detik tanpa error.
 
 ## [2026-09-24] fix | Pemodelan Domain: Resolusi Frekuensi vs Lot & Integrasi Kepemilikan Institusional Yahoo Finance
 - Resolusi Ambiguitas Konseptual Frekuensi vs Lot (Standar Pasar BEI):

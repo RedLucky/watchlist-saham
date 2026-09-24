@@ -12,8 +12,8 @@ import AutoRejectionLadderPanel from './AutoRejectionLadderPanel';
 import SmartMoneyLiquidityPanel from './SmartMoneyLiquidityPanel';
 import BloombergIntelligencePanel from './BloombergIntelligencePanel';
 import MonthlySeasonalityPanel from './MonthlySeasonalityPanel';
-import CollectionSortDropdown from './CollectionSortDropdown';
 import FinancialMatrixPanel from './FinancialMatrixPanel';
+import CollectionSortDropdown from './CollectionSortDropdown';
 import {
   roundToIDXTick,
   calculateMonitorMetrics,
@@ -597,7 +597,7 @@ function renderAiMarkdown(content) {
 
 export default function StockExplorer({ user }) {
   // Navigation View State
-  const [activeTab, setActiveTab] = useState('explorer'); // 'explorer' | 'compare' | 'matrix'
+  const [activeTab, setActiveTab] = useState('explorer'); // 'explorer' | 'compare'
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [cockpitTab, setCockpitTab] = useState('valuation'); // 'valuation' | 'seasonality' | 'smartmoney' | 'ai'
 
@@ -730,6 +730,28 @@ export default function StockExplorer({ user }) {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
   };
+
+  // Keyboard Accessibility: Close active modal on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (showAiModal) setShowAiModal(false);
+        else if (monitorModal) setMonitorModal(null);
+        else if (confirmDialog) setConfirmDialog(null);
+        else if (duplicateModal) setDuplicateModal(null);
+        else if (showMoveModal) setShowMoveModal(false);
+        else if (showEditItemModal) setShowEditItemModal(false);
+        else if (showSaveModal) setShowSaveModal(false);
+        else if (showCreateModal) setShowCreateModal(false);
+        else if (showEditModal) setShowEditModal(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    showAiModal, monitorModal, confirmDialog, duplicateModal,
+    showMoveModal, showEditItemModal, showSaveModal, showCreateModal, showEditModal
+  ]);
 
   // Drag and Drop reordering state for Collection Cards
   const [draggedItemIndex, setDraggedItemIndex] = useState(null);
@@ -1659,22 +1681,12 @@ export default function StockExplorer({ user }) {
                 </span>
               )}
             </button>
-            <button
-              onClick={() => setActiveTab('matrix')}
-              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
-                activeTab === 'matrix'
-                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <span>📊</span> Matriks Finansial (FA)
-            </button>
           </div>
         </div>
       </div>
 
-      {/* ── 2. VIEW SELECTION: EXPLORER VS COMPARE VS MATRIX ────────────── */}
-      {activeTab === 'explorer' && (
+      {/* ── 2. VIEW SELECTION: EXPLORER VS COMPARE ──────────────────────── */}
+      {activeTab === 'explorer' ? (
         <div className="flex flex-col lg:flex-row gap-5 items-start w-full">
           {/* ── LEFT PANE: KOLEKSI SAYA (SIDEBAR) ─────────────────────────── */}
           {isSidebarOpen && (
@@ -2407,18 +2419,9 @@ export default function StockExplorer({ user }) {
 
                       <div className="space-y-2 text-xs">
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">Dividend Yield (Bruto):</span>
+                          <span className="text-slate-600 dark:text-slate-400">Dividend Yield:</span>
                           <span className="font-bold text-emerald-600 dark:text-emerald-400">
                             {f.dividendYield != null ? `${Number(f.dividendYield).toFixed(2)}%` : '-'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1" title="Netto setelah PPh Final 10% (UU PPh / PP 36/2008). Bebas PPh 0% jika diinvestasikan kembali di NKRI per UU Cipta Kerja.">
-                            <span>Yield Bersih (PPh 10%):</span>
-                            <span className="cursor-help text-slate-400 text-[10px]">ⓘ</span>
-                          </span>
-                          <span className="font-bold text-teal-600 dark:text-teal-400">
-                            {f.dividendYield != null ? `${(Number(f.dividendYield) * 0.9).toFixed(2)}%` : '-'}
                           </span>
                         </div>
                         <div className="flex justify-between">
@@ -2559,9 +2562,8 @@ export default function StockExplorer({ user }) {
                           </span>
                         </div>
                         <div className="flex justify-between pt-1 border-t border-slate-200 dark:border-slate-800">
-                          <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1" title="Piotroski F-Score (1-9): Estimasi heuristik multi-faktor adaptif mencakup profitabilitas ROA/ROE, arus kas OCF, kualitas akrual, tingkat utang DER, likuiditas, dan margin efisiensi.">
-                            <span>Piotroski F-Score:</span>
-                            <span className="cursor-help text-slate-400 text-[10px]">ⓘ</span>
+                          <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1 cursor-help" title="Estimasi heuristik multi-faktor adaptif berdasarkan kinerja profitabilitas, leverage & likuiditas BEI">
+                            Piotroski F-Score <span className="text-[10px] text-slate-400">ⓘ</span>:
                           </span>
                           <span className={`font-bold ${
                             f.piotroskiFScore != null && f.piotroskiFScore >= 7 ? 'text-emerald-600 dark:text-emerald-400' : f.piotroskiFScore != null && f.piotroskiFScore <= 3 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-slate-100'
@@ -2570,9 +2572,8 @@ export default function StockExplorer({ user }) {
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1" title="Altman Z''-Score (Emerging Market Model): Estimasi heuristik adaptif berbasis modal kerja, solvabilitas ekuitas/utang, profitabilitas EBIT, dan perputaran aset. Khusus sektor perbankan diberikan skor aman (3.0) karena struktur DPK.">
-                            <span>Altman Z-Score:</span>
-                            <span className="cursor-help text-slate-400 text-[10px]">ⓘ</span>
+                          <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1 cursor-help" title="Estimasi heuristik rasio kesehatan modal kerja & solvabilitas adaptif untuk emiten IDX">
+                            Altman Z-Score <span className="text-[10px] text-slate-400">ⓘ</span>:
                           </span>
                           <span className={`font-bold ${
                             f.altmanZScore != null && f.altmanZScore >= 2.99 ? 'text-emerald-600 dark:text-emerald-400' : f.altmanZScore != null && f.altmanZScore < 1.81 ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'
@@ -2902,7 +2903,7 @@ export default function StockExplorer({ user }) {
                           id: 'valuation',
                           label: 'Valuasi & Finansial',
                           icon: '📐',
-                          count: (stockDetail.valuationBands ? 1 : 0) + (stockDetail.wacc ? 1 : 0) + 1 + (stockDetail.peers?.length > 0 ? 1 : 0),
+                          count: (stockDetail.valuationBands ? 1 : 0) + (stockDetail.wacc ? 1 : 0) + 2 + (stockDetail.peers?.length > 0 ? 1 : 0),
                         },
                         {
                           id: 'seasonality',
@@ -2984,6 +2985,9 @@ export default function StockExplorer({ user }) {
 
                       {/* BLOOMBERG SCEN: INTERACTIVE WHAT-IF FORECASTER */}
                       <ScenarioForecaster stockDetail={stockDetail} />
+
+                      {/* BLOOMBERG FA: MULTI-YEAR FINANCIAL STATEMENT MATRIX */}
+                      <FinancialMatrixPanel stockDetail={stockDetail} />
                     </div>
                   )}
 
@@ -3073,10 +3077,8 @@ export default function StockExplorer({ user }) {
           </div>
         </main>
       </div>
-      )}
-
-      {/* ── MULTI-STOCK COMPARE VIEW (MAX 6 STOCKS) ───────────────────────── */}
-      {activeTab === 'compare' && (
+      ) : (
+        /* ── MULTI-STOCK COMPARE VIEW (MAX 6 STOCKS) ───────────────────────── */
         <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm space-y-6 animate-in fade-in">
           {/* Compare Toolbar */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
@@ -3621,17 +3623,21 @@ export default function StockExplorer({ user }) {
         </div>
       )}
 
-      {/* ── BLOOMBERG FINANCIAL MATRIX PANEL (FA MODE) ───────────────────── */}
-      {activeTab === 'matrix' && (
-        <FinancialMatrixPanel stockDetail={stockDetail} />
-      )}
-
       {/* ── MODAL: CREATE COLLECTION ─────────────────────────────────── */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in"
+          onClick={() => setShowCreateModal(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="create-collection-title"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-black text-slate-900 dark:text-white">📁 Buat Koleksi Baru</h3>
+              <h3 id="create-collection-title" className="text-base font-black text-slate-900 dark:text-white">📁 Buat Koleksi Baru</h3>
               <button onClick={() => setShowCreateModal(false)} className="text-slate-400 hover:text-slate-600">✕</button>
             </div>
 
@@ -3699,10 +3705,19 @@ export default function StockExplorer({ user }) {
 
       {/* ── MODAL: SAVE STOCK TO COLLECTION (WITH TARGET BUY & SELL) ───── */}
       {showSaveModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in"
+          onClick={() => setShowSaveModal(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="save-to-collection-title"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-black text-slate-900 dark:text-white">
+              <h3 id="save-to-collection-title" className="text-base font-black text-slate-900 dark:text-white">
                 💾 Simpan {selectedStock} ke Koleksi
               </h3>
               <button onClick={() => setShowSaveModal(false)} className="text-slate-400 hover:text-slate-600">✕</button>
@@ -3929,12 +3944,21 @@ export default function StockExplorer({ user }) {
 
       {/* ── MODAL: EDIT COLLECTION ITEM (NOTES, TARGET BUY, TARGET SELL) ── */}
       {showEditItemModal && editingItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in"
+          onClick={() => setShowEditItemModal(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-item-title"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-xl">✏️</span>
-                <h3 className="text-base font-black text-slate-900 dark:text-white">
+                <h3 id="edit-item-title" className="text-base font-black text-slate-900 dark:text-white">
                   Edit Saham: {editingItem.ticker}
                 </h3>
               </div>
@@ -4245,13 +4269,22 @@ export default function StockExplorer({ user }) {
         </div>
       )}
       {showMoveModal && movingItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in"
+          onClick={() => setShowMoveModal(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="move-stock-title"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-2xl">📦</span>
                 <div>
-                  <h3 className="text-base font-black text-slate-900 dark:text-white">Pindahkan Saham</h3>
+                  <h3 id="move-stock-title" className="text-base font-black text-slate-900 dark:text-white">Pindahkan Saham</h3>
                   <p className="text-xs text-slate-500">Pindahkan {movingItem.ticker} dari koleksi saat ini ke koleksi lain</p>
                 </div>
               </div>
@@ -4330,14 +4363,23 @@ export default function StockExplorer({ user }) {
 
       {/* ── MODAL: CUSTOM POPUP DUPLICATE CONFIRMATION (NO BROWSER ALERT) ── */}
       {duplicateModal && duplicateModal.isOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/65 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700/80 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95">
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/65 backdrop-blur-sm p-4 animate-in fade-in"
+          onClick={duplicateModal.onCancel}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="duplicate-modal-title"
+            className="bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700/80 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xl shrink-0">
                 ⚠️
               </div>
               <div className="space-y-1">
-                <h3 className="text-base font-black text-slate-900 dark:text-white">
+                <h3 id="duplicate-modal-title" className="text-base font-black text-slate-900 dark:text-white">
                   {duplicateModal.title || 'Saham Sudah Ada di Koleksi'}
                 </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
@@ -4372,8 +4414,17 @@ export default function StockExplorer({ user }) {
 
       {/* ── MODAL: CONFIRMATION DIALOG (DELETE ACTIONS) ───────────────── */}
       {confirmDialog && confirmDialog.isOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/65 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95">
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/65 backdrop-blur-sm p-4 animate-in fade-in"
+          onClick={confirmDialog.onCancel}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirm-dialog-title"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-start gap-3">
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 ${
                 confirmDialog.confirmStyle === 'danger'
@@ -4383,7 +4434,7 @@ export default function StockExplorer({ user }) {
                 {confirmDialog.confirmStyle === 'danger' ? '🗑️' : '❓'}
               </div>
               <div className="space-y-1">
-                <h3 className="text-base font-black text-slate-900 dark:text-white">
+                <h3 id="confirm-dialog-title" className="text-base font-black text-slate-900 dark:text-white">
                   {confirmDialog.title}
                 </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
@@ -4418,15 +4469,24 @@ export default function StockExplorer({ user }) {
 
       {/* ── MODAL: PANTAU SAHAM & CATAT KE WIN RATE DASHBOARD ────────────── */}
       {monitorModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/65 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700/80 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95">
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/65 backdrop-blur-sm p-4 animate-in fade-in"
+          onClick={() => setMonitorModal(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="monitor-modal-title"
+            className="bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700/80 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl shrink-0">
                   🎯
                 </div>
                 <div>
-                  <h3 className="text-base font-black text-slate-900 dark:text-white">
+                  <h3 id="monitor-modal-title" className="text-base font-black text-slate-900 dark:text-white">
                     Pantau {monitorModal.ticker}
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">
@@ -4655,10 +4715,10 @@ export default function StockExplorer({ user }) {
 
       {showAiModal && aiResearch && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/65 backdrop-blur-sm p-4 animate-in fade-in" onClick={() => setShowAiModal(false)}>
-          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-2xl max-h-[85vh] flex flex-col animate-in zoom-in-95" onClick={(e) => e.stopPropagation()}>
+          <div role="dialog" aria-modal="true" aria-labelledby="ai-research-title" className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-2xl max-h-[85vh] flex flex-col animate-in zoom-in-95" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800">
               <div className="flex items-center gap-2.5">
-                <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <h3 id="ai-research-title" className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                   <span>✨</span> Riset AI — {aiResearch.ticker}
                 </h3>
                 {(() => {

@@ -5,27 +5,42 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 ---
 
 ## [2026-09-24] feat | Comprehensive Full-Stack Audit Remediation & Bloomberg Financial Matrix (FA)
+- Portfolio API Hardening & Lot Validation (`/api/portfolio/buy` & `/api/portfolio/sell`):
+  - Fixed request payload parsing and variable destructuring in buy/sell routes.
+  - Enforced strict IDX 1-lot (100 shares) modulo validation (`shares % 100 === 0`) with descriptive Indonesian validation messages.
+  - Added test suite `tests/portfolioLotValidation.test.js` covering lot validation and realized PnL/Loss logic.
+- Backtest Underwater Drawdown Visualizer (`src/components/BacktestPanel.jsx`):
+  - Added dedicated interactive underwater drawdown profile chart below the equity compounding curve, plotting drawdown percentage from previous equity peaks with a negative-fill gradient and trough markers.
+- Bloomberg Financial Statement Matrix Integration (`src/components/StockExplorer.jsx`):
+  - Restored and mounted `FinancialMatrixPanel` inside the Valuasi & Finansial analytical cockpit tab (`cockpitTab === 'valuation'`).
+  - Incremented cockpit tab metric counter and added multi-year comparative income, balance sheet, cashflow, and ratio matrix.
+- Modal Accessibility & Dialog Dismissals (`src/components/DetailPanel.jsx`):
+  - Added Escape key listener and backdrop click dismissal with `e.stopPropagation()` on monitor and custom prompt dialogs.
 - BEI Holiday Calendar Engine (`src/lib/idxHolidays.js` & `tests/idxHolidays.test.js`):
   - Created centralized Indonesia Stock Exchange (IDX/BEI) holiday calendar covering 2024-2027 including national holidays and collective leave (Cuti Bersama).
   - Integrated `isIDXHoliday` and `isIDXTradingDay` into `src/lib/syncService.js` (to avoid unnecessary price polling on market holidays) and `src/lib/recommendationTracker.js` (`getTradingDaysElapsed` for accurate settlement and recommendation holding duration).
-- Docker Infrastructure & Database Connection Pool Optimization:
+- Docker Infrastructure & Database Optimization:
   - Tuned PostgreSQL memory limit from 256MB to 512MB in `docker-compose.yml` to prevent OOM under concurrent analytical workloads.
   - Added connection limits (`connection_limit=10` on app, `connection_limit=5` on scraper) to eliminate connection starvation on PostgreSQL.
-  - Removed redundant index `@@index([ticker])` in `prisma/schema.prisma` since `ticker String @unique` already provides a unique B-tree index in PostgreSQL.
+  - Restored `lastDeepSync` field and removed redundant index `@@index([ticker])` in `prisma/schema.prisma` (`prisma validate` & `prisma db push` cleanly executed).
+  - Fixed Docker permissions in `Dockerfile` by adding `--chown=nextjs:nodejs` to Prisma COPY lines in the `runner` stage to avoid `EACCES` when running as non-root `nextjs` user.
+  - Optimized `.dockerignore` by excluding `tests`, `docs`, `Dockerfile*`, and `docker-compose*.yml`.
+- API Robustness & BigInt Serialization Safety:
+  - Added `serializeData` helper to `src/app/api/screener/route.js` and `src/app/api/portfolio/route.js` to ensure safe BigInt serialization (`sharesOutstanding`, `volume`, `turnover`) without runtime `TypeError`.
+- Frontend Reliability & Analytics Guardrails:
+  - Fixed `src/app/layout.js` to only inject `<GoogleAnalytics>` when `NEXT_PUBLIC_GA_ID` is defined, preventing false network errors on default `"G-XXXXXXXXXX"`.
+  - Added DPR (Dividend Payout Ratio) column to the historical dividends table in `src/components/CorporateActionsPanel.jsx`.
 - PPh Final 10% Domestic Dividend Tax Calculation & UI Transparency:
   - Implemented `calculateNetDividendYield` with `IDX_DIVIDEND_TAX_RATE = 0.10` in `src/lib/scoring/dividend.js` and added unit test suite (`tests/dividend.test.js`).
   - Added Gross Dividend Yield and Net Dividend Yield (after 10% PPh Final deduction under PP 9/2021 & UU Cipta Kerja) display in `src/components/StockExplorer.jsx`.
 - Heuristic Transparency & Methodology Tooltips:
   - Added explanatory tooltips (`ⓘ`) to Piotroski F-Score and Altman Z-Score cards in `StockExplorer.jsx` explaining they are calibrated multi-factor heuristic proxies adapted for IDX financial reporting availability.
 - Accessibility & UX Guardrails:
-  - Added ESC key listeners, backdrop dismissal, ARIA attributes (`role="dialog"`, `aria-modal="true"`, `aria-labelledby`) across modals (`StockOwnershipModal.jsx`, `AuthModal.jsx`).
+  - Added universal ESC key listeners, backdrop dismissal, and ARIA attributes (`role="dialog"`, `aria-modal="true"`, `aria-labelledby`) across all modals in `StockExplorer.jsx`, `PensionCalculator.jsx`, `StockOwnershipModal.jsx`, `DetailPanel.jsx`, and `AuthModal.jsx`.
   - Added live sync pill with time and manual sync trigger button on mobile header (`TopHeader.jsx`).
-- Bloomberg Financial Matrix Panel (`src/components/FinancialMatrixPanel.jsx`):
-  - Added multi-year comparative financial analysis panel (`activeTab === 'matrix'`) inside StockExplorer.
-  - Covers 4 categories: Laporan Laba Rugi (Income Statement), Neraca Keuangan (Balance Sheet), Arus Kas & Dividen (Cash Flow & Dividend), and Profitabilitas & Valuasi (Profitability & Valuation Ratios).
 - Verification:
-  - 247 test suites passing (100%).
-  - Next.js Turbopack production build succeeded cleanly in 2.1s.
+  - 246 tests passing across 59 suites (100%).
+  - Next.js Turbopack production build succeeded cleanly in 1.8s.
 
 ## [2026-09-24] fix | Domain Modeling: Frequency vs Lot Resolution & Yahoo Finance Ownership Pipeline Integration
 - Resolution of Frequency vs Lot Conceptual Ambiguity (BEI Market Standards):

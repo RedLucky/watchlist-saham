@@ -1,28 +1,19 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
-  const [isRegister, setIsRegister] = useState(false);
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [riskProfile, setRiskProfile] = useState('MODERATE');
-  const [agreeTnc, setAgreeTnc] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+ const [isRegister, setIsRegister] = useState(false);
+ const [name, setName] = useState('');
+ const [email, setEmail] = useState('');
+ const [password, setPassword] = useState('');
+ const [riskProfile, setRiskProfile] = useState('MODERATE');
+ const [agreeTnc, setAgreeTnc] = useState(false);
+ const [showPassword, setShowPassword] = useState(false);
+ const [loading, setLoading] = useState(false);
+ const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') onClose?.();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
+ if (!isOpen) return null;
 
  const handleSubmit = async (e) => {
  e.preventDefault();
@@ -58,22 +49,13 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
  };
 
  return (
-  <div 
-    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-[#0a0f1a]/80 backdrop-blur-sm animate-in fade-in duration-200 cursor-pointer"
-    onClick={onClose}
-  >
-    <div 
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="auth-modal-title"
-      className="w-full max-w-md glass-panel p-6 rounded-2xl border border-indigo-500/30 bg-white dark:bg-slate-950/95 shadow-2xl space-y-5 cursor-default text-slate-900 dark:text-slate-100"
-      onClick={(e) => e.stopPropagation()}
-    >
+ <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-50 dark:bg-[#0a0f1a]/70 backdrop-blur-sm animate-in fade-in duration-200">
+ <div className="w-full max-w-md glass-panel p-6 rounded-2xl border border-indigo-500/30 bg-slate-950/90 shadow-2xl space-y-5">
  
  {/* Modal Header */}
  <div className="flex justify-between items-center pb-3 border-b border-slate-300 dark:border-white/10">
  <div>
- <h3 id="auth-modal-title" className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+ <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
  <span>{isRegister ? '📝 Buat Akun Baru' : '🔑 Login Pengguna'}</span>
  </h3>
  <p className="text-xs text-slate-500 dark:text-slate-400">

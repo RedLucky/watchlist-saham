@@ -44,15 +44,6 @@ export default function StockOwnershipModal({ stock, isOpen, onClose }) {
     };
   }, [isOpen, stock]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') onClose?.();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
-
   const activeStock = liveStock || stock;
 
   const parsedData = useMemo(() => {
@@ -262,15 +253,9 @@ export default function StockOwnershipModal({ stock, isOpen, onClose }) {
   };
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/60 dark:bg-black/80 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200 cursor-pointer"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/60 dark:bg-black/80 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
       <div 
-        role="dialog"
-        aria-modal="true"
-        aria-label={`Detail Kepemilikan Saham & Bandarmologi ${activeStock?.ticker || ''}`}
-        className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden text-slate-900 dark:text-slate-100 cursor-default"
+        className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden text-slate-900 dark:text-slate-100"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}

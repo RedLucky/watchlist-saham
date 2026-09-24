@@ -6,6 +6,14 @@ import { calculatePortfolioRisk } from '@/lib/portfolioRiskEngine';
 
 export const dynamic = 'force-dynamic';
 
+function serializeData(data) {
+  return JSON.parse(
+    JSON.stringify(data, (key, value) =>
+      typeof value === 'bigint' ? value.toString() : value
+    )
+  );
+}
+
 export async function GET(request) {
   try {
     const userId = getUserIdFromRequest(request);
@@ -113,19 +121,21 @@ export async function GET(request) {
       console.warn("Could not calculate portfolio risk:", riskErr.message);
     }
 
-    return NextResponse.json({
-      summary: {
-        totalInvested,
-        totalCurrentValue,
-        totalFloatingPnL,
-        totalPnL: totalFloatingPnL,
-        totalReturnPercent,
-        totalPnLPercent: totalReturnPercent,
-        realizedPnL
-      },
-      positions: enrichedPositions,
-      riskAnalytics
-    });
+    return NextResponse.json(
+      serializeData({
+        summary: {
+          totalInvested,
+          totalCurrentValue,
+          totalFloatingPnL,
+          totalPnL: totalFloatingPnL,
+          totalReturnPercent,
+          totalPnLPercent: totalReturnPercent,
+          realizedPnL
+        },
+        positions: enrichedPositions,
+        riskAnalytics
+      })
+    );
 
   } catch (error) {
     console.error("Portfolio Fetch Error:", error);

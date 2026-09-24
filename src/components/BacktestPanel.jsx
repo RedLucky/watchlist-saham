@@ -234,6 +234,59 @@ export default function BacktestPanel() {
             </svg>
           </div>
         </div>
+
+        {/* ── UNDERWATER DRAWDOWN PROFILE ── */}
+        <div className="pt-3 border-t border-slate-200 dark:border-white/5 space-y-1.5">
+          <div className="flex items-center justify-between text-[11px] font-semibold">
+            <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1">
+              <span>🌊</span> Underwater Drawdown (%)
+            </span>
+            <span className="text-rose-500 font-mono">
+              Palung Terdalam: -{maxDrawdown.toFixed(1)}%
+            </span>
+          </div>
+          <div className="w-full overflow-x-auto">
+            <div className="min-w-[500px]">
+              {(() => {
+                const ddMaxScale = Math.max(10, Math.ceil(maxDrawdown * 1.15));
+                const ddHeight = 60;
+                const ddPadding = 12;
+                const ddCoords = points.map((p, idx) => {
+                  const x = padding + (idx / (points.length - 1 || 1)) * (svgWidth - padding * 2);
+                  const y = ddPadding + (p.drawdown / ddMaxScale) * (ddHeight - ddPadding * 2);
+                  return { x, y, ...p };
+                });
+                const ddPath = ddCoords.map((c, i) => `${i === 0 ? 'M' : 'L'} ${c.x.toFixed(1)} ${c.y.toFixed(1)}`).join(' ');
+                const ddArea = `${ddPath} L ${ddCoords[ddCoords.length - 1].x.toFixed(1)} ${ddPadding} L ${ddCoords[0].x.toFixed(1)} ${ddPadding} Z`;
+
+                return (
+                  <svg viewBox={`0 0 ${svgWidth} ${ddHeight}`} className="w-full h-16 overflow-visible">
+                    <defs>
+                      <linearGradient id="ddGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.35" />
+                        <stop offset="100%" stopColor="#f43f5e" stopOpacity="0.05" />
+                      </linearGradient>
+                    </defs>
+                    {/* Zero line */}
+                    <line x1={padding} y1={ddPadding} x2={svgWidth - padding} y2={ddPadding} stroke="#64748b" strokeWidth="1" opacity="0.3" />
+                    <text x={padding + 5} y={ddPadding - 3} fill="#64748b" fontSize="8" opacity="0.6">0% (Peak Ekuitas)</text>
+                    
+                    {/* Area & line */}
+                    <path d={ddArea} fill="url(#ddGrad)" />
+                    <path d={ddPath} fill="none" stroke="#f43f5e" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    
+                    {/* Drawdown markers */}
+                    {ddCoords.filter(c => c.drawdown > 0).map((c, i) => (
+                      <circle key={i} cx={c.x} cy={c.y} r={2} fill="#f43f5e">
+                        <title>{`${c.date}: Drawdown -${c.drawdown}%`}</title>
+                      </circle>
+                    ))}
+                  </svg>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
       </div>
     );
   })()}

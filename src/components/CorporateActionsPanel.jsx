@@ -334,6 +334,7 @@ export default function CorporateActionsPanel({
                     <th className="py-2.5 px-3 font-bold">Jenis Dividen</th>
                     <th className="py-2.5 px-3 font-bold text-right">DPS (per Lembar)</th>
                     <th className="py-2.5 px-3 font-bold text-right">Yield</th>
+                    <th className="py-2.5 px-3 font-bold text-right">DPR (%)</th>
                     <th className="py-2.5 px-3 font-bold">Cum Date</th>
                     <th className="py-2.5 px-3 font-bold">Tanggal Pembayaran</th>
                     <th className="py-2.5 px-3 font-bold text-center">Sumber</th>
@@ -361,6 +362,9 @@ export default function CorporateActionsPanel({
                       </td>
                       <td className="py-2.5 px-3 text-right font-mono text-slate-600 dark:text-slate-300">
                         {item.yieldPercent != null ? `${item.yieldPercent}%` : '-'}
+                      </td>
+                      <td className="py-2.5 px-3 text-right font-mono text-slate-600 dark:text-slate-300">
+                        {item.payoutRatio != null ? `${(item.payoutRatio * (item.payoutRatio <= 1 ? 100 : 1)).toFixed(1)}%` : (summary?.payoutRatio != null ? `${(summary.payoutRatio).toFixed(1)}%` : '-')}
                       </td>
                       <td className="py-2.5 px-3 font-mono text-slate-600 dark:text-slate-400">
                         {item.cumDateFormatted || '-'}

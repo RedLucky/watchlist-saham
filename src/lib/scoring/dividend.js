@@ -1,20 +1,5 @@
 import { getExchangeRateSync } from '../currencyService.js';
 
-// Tarif Pajak Penghasilan (PPh) Final atas Dividen untuk Wajib Pajak Orang Pribadi Dalam Negeri (WPOP DN)
-// Berdasarkan UU PPh Pasal 17 ayat (2c) & PP No. 36/2008 = 10%.
-// Catatan: Bebas PPh 0% jika diinvestasikan kembali di NKRI minimal 3 tahun sesuai UU Cipta Kerja / UU HPP.
-export const IDX_DIVIDEND_TAX_RATE = 0.10;
-
-/**
- * Menghitung yield dividen bersih setelah dipotong PPh Final 10%
- * @param {number} grossYield - Persentase dividen bruto (%)
- * @returns {number} Persentase dividen neto (%)
- */
-export function calculateNetDividendYield(grossYield) {
-  if (!Number.isFinite(grossYield) || grossYield <= 0) return 0;
-  return Number((grossYield * (1 - IDX_DIVIDEND_TAX_RATE)).toFixed(2));
-}
-
 export function calculateRawDividendYield(stock) {
   const { dividendYield: yahooYield, marketCap, sharesOutstanding, yahooDividendHistory } = stock.fundamentals || {};
   const yDivHistory = yahooDividendHistory || stock.yahooDividendHistory;
@@ -247,14 +232,6 @@ export function calculateDividendScore(stock) {
   return {
     score: Math.round(Math.min(100, Math.max(0, score))),
     details,
-    metrics: { 
-      dividendYield: safeYield, 
-      grossDividendYield: safeYield,
-      netDividendYield: calculateNetDividendYield(safeYield),
-      dividendTaxRate: IDX_DIVIDEND_TAX_RATE * 100,
-      payoutRatio: safePayout, 
-      streakYears, 
-      dps: Number(safeDps.toFixed(2)) 
-    },
+    metrics: { dividendYield: safeYield, payoutRatio: safePayout, streakYears, dps: Number(safeDps.toFixed(2)) },
   };
 }

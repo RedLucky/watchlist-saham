@@ -43,13 +43,13 @@ RUN addgroup --system --gid 1001 nodejs && \
 
 # ── Prisma: copy ONLY what's needed at runtime ──────────────────────────────
 # 1. Schema file (for db push at startup)
-COPY --from=builder /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 # 2. Generated Prisma Client (includes musl query engine)
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 # 3. All @prisma/* packages (client, engines, debug, config, etc. — CLI needs them all)
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
 # 4. Prisma CLI (for db push at startup)
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
 # 5. Remove Debian-only engine binaries (not needed on Alpine/musl) — saves ~45 MB
 RUN rm -f ./node_modules/@prisma/engines/libquery_engine-debian-* \
           ./node_modules/@prisma/engines/schema-engine-debian-*

@@ -9,7 +9,7 @@ services:
       - "3010:3000"
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-watchlist}?schema=public&connection_limit=10
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-watchlist}?schema=public
       - JWT_SECRET=${JWT_SECRET}
       - ADMIN_SECRET_KEY=${ADMIN_SECRET_KEY}
       - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL}
@@ -39,7 +39,7 @@ services:
     container_name: watchlist_scraper
     restart: always
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-watchlist}?schema=public&connection_limit=5
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-watchlist}?schema=public
       - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL}
       - TZ=Asia/Jakarta
       - NODE_OPTIONS=--max-old-space-size=896
@@ -74,7 +74,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    mem_limit: 512m
+    mem_limit: 256m
     logging:
       driver: "json-file"
       options:

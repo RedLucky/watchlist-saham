@@ -19,6 +19,20 @@ export default function DetailPanel({ stock, mode, styleName }) {
   const [monitorStopLoss, setMonitorStopLoss] = useState('');
   const [savingMonitor, setSavingMonitor] = useState(false);
 
+  // Keyboard accessibility: dismiss modals on Escape
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (showMonitorModal) setShowMonitorModal(false);
+        if (promptModal) setPromptModal(null);
+      }
+    };
+    if (showMonitorModal || promptModal) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [showMonitorModal, promptModal]);
+
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
@@ -439,8 +453,8 @@ export default function DetailPanel({ stock, mode, styleName }) {
 
       {/* ── MODAL: PANTAU SAHAM LENGKAP & REAKTIF DUA ARAH ────────── */}
       {showMonitorModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-sm p-4 animate-in fade-in" role="dialog" aria-modal="true" aria-labelledby="monitor-modal-title">
-          <div className="bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700/80 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-sm p-4 animate-in fade-in cursor-pointer" role="dialog" aria-modal="true" aria-labelledby="monitor-modal-title" onClick={() => setShowMonitorModal(false)}>
+          <div className="bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700/80 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95 cursor-default" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl shrink-0">
@@ -652,8 +666,8 @@ export default function DetailPanel({ stock, mode, styleName }) {
 
       {/* ── MODAL: CUSTOM PROMPT DIALOG ─────────────────────────────────── */}
       {promptModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in" role="dialog" aria-modal="true" aria-labelledby="prompt-modal-title">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in cursor-pointer" role="dialog" aria-modal="true" aria-labelledby="prompt-modal-title" onClick={() => setPromptModal(null)}>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-4 cursor-default" onClick={(e) => e.stopPropagation()}>
             <div>
               <h3 id="prompt-modal-title" className="text-base font-black text-slate-900 dark:text-white">
                 {promptModal.title}

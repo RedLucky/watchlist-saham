@@ -8,6 +8,7 @@ export async function POST(request) {
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await request.json();
+    const { ticker, name, sector, price, shares, notes } = body;
     const IDX_LOT_SIZE = 100;
     if (!ticker || typeof price !== 'number' || typeof shares !== 'number' || price <= 0 || shares <= 0) {
       return NextResponse.json({ error: 'Data input tidak valid' }, { status: 400 });

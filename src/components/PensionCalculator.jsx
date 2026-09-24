@@ -70,6 +70,17 @@ export default function PensionCalculator() {
   const [trackerRecords, setTrackerRecords] = useState([]);
   const [paramsSavedMsg, setParamsSavedMsg] = useState(false);
 
+  // Keyboard accessibility: Close candidate modal on Escape
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && showCandidatesModal) {
+        setShowCandidatesModal(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showCandidatesModal]);
+
   useEffect(() => {
     try {
       const saved = localStorage.getItem('idx_pension_calculator_params');
@@ -1852,8 +1863,17 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
 
   {/* ── MODAL 30 KANDIDAT SAHAM PENSIUN TERBAIK ────────────────────────── */}
   {showCandidatesModal && (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200"
+      onClick={() => setShowCandidatesModal(false)}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="candidates-modal-title"
+        className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Modal Header */}
         <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800/80 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/50">
           <div className="flex items-center gap-3">
@@ -1862,7 +1882,7 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-black text-slate-900 dark:text-white">
+                <h3 id="candidates-modal-title" className="text-base font-black text-slate-900 dark:text-white">
                   30 Saham Pilihan Pensiun Terbaik
                 </h3>
                 <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">

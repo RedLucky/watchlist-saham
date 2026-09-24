@@ -13,6 +13,14 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
+function serializeData(data) {
+  return JSON.parse(
+    JSON.stringify(data, (key, value) =>
+      typeof value === 'bigint' ? value.toString() : value
+    )
+  );
+}
+
 function applyGlobalPenalties(s, baseScore) {
   let score = baseScore;
   
@@ -490,12 +498,12 @@ export async function GET(request) {
     }
 
     return NextResponse.json(
-      {
+      serializeData({
         type,
         results,
         count: results.length,
         lastUpdated: new Date().toISOString(),
-      },
+      }),
       {
         headers: {
           'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
