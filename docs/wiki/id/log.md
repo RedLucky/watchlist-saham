@@ -4,16 +4,18 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
-## [2026-09-24] feat | Halaman Utuh Kalender Aksi Korporasi & API Aggregator
-- Aplikasi Kalender Interaktif (`src/components/CorporateCalendar.jsx`): Membangun modul kalender mandiri penuh dengan fitur:
-  - Kartu metrik header: Total Agenda Terjadwal, Jumlah Cum Date Aktif, Estimasi Total Dana Dividen Bulanan, dan Saham Yield Tertinggi.
-  - Pengatur Bulan (Month Navigator): Pemilih Bulan/Tahun, tombol Sebelumnya/Selanjutnya, dan tombol reset "Hari Ini".
-  - Filter Kategori & Pencarian: Pencarian teks ticker/acara secara real-time, dan beralih kategori (Semua Acara, Dividen Tunai, Keterbukaan Informasi BEI).
-  - Mode Tampilan Ganda: Grid Kalender Bulanan 7-Kolom yang responsif dilengkapi lencana acara dan Modal Detail Hari interaktif; serta Tampilan Daftar/Timeline terurut kronologis.
-  - Bridge Stock Explorer: Navigasi 1-klik kode saham langsung ke analisis finansial mendalam di Stock Explorer.
-- Endpoint API Terpadu (`src/app/api/corporate-actions/route.js`): Mengagregasi jadwal dividen (Cum Date, Ex Date, DPS Date, Payment Date) dan keterbukaan informasi BEI dari seluruh emiten, serta menghitung estimasi total dana dividen tunai bulanan dan metrik yield.
-- Integrasi Navigasi & Dashboard: Menambahkan tab `Kalender Aksi Korporasi` (📅) ke `NAVIGATION_MENU` di bawah `Pasar & Analisis` pada `Sidebar.jsx` dan memasangnya di `Dashboard.jsx`.
-- Pengujian Otomatis & Verifikasi: Membuat suite unit test pada `tests/corporateCalendar.test.js` untuk memvalidasi ekstraksi tanggal, perhitungan cum date aktif, logika hitung mundur relatif, dan kalkulasi yield. Lulus 100% cakupan pengujian dan build produksi Turbopack bersih.
+## [2026-09-24] feat | Matriks Performa & Seasonality Bulanan 5 Tahun Beserta Analisis Rata-Rata Harga (Stock Explorer)
+- Engine Seasonality Bulanan (`src/lib/monthlySeasonalityEngine.js`): Mengimplementasikan pengelompokan candle harga historis 5 tahun dan perhitungan matriks bulanan:
+  - Persentase Return Bulanan (% Plus/Kenaikan vs % Minus/Koreksi vs Flat).
+  - Volatilitas Intra-Bulan: Persentase Kenaikan Puncak Maksimum (`maxHighPercent`) dan Koreksi Terendah Maksimum (`maxLowPercent`) terhadap harga awal bulan.
+  - Rata-Rata Harga Transaksi Saham per Bulan (`avgPrice`).
+  - Win-Rate Historis 5 Tahun per Bulan, serta mengidentifikasi Bulan Terkuat dan Terlemah.
+- Integrasi Rute API (`src/app/api/stocks/[ticker]/route.js`): Memasang mekanisme pencarian historis 5-tahun Yahoo Finance dan menyertakan payload `monthlySeasonality` pada `GET /api/stocks/[ticker]`.
+- Komponen Antarmuka Interaktif (`src/components/MonthlySeasonalityPanel.jsx`): Memasang Tabel Grid Matriks Heatmap 5-Tahun di Stock Explorer dengan fitur:
+  - 4 Kartu Ringkasan Statistik (Bulan Terkuat, Bulan Terlemah, Win Rate Bulanan Total 5-Tahun, Petunjuk Interaksi).
+  - Grid Matriks Heatmap 5-Tahun x 12-Bulan dengan warna intuitif (Hijau Emerald untuk Plus, Merah Rose untuk Minus) lengkap dengan baris ringkasan YTD dan Win-Rate.
+  - Modal Detail Sel Interaktif yang menampilkan rata-rata harga transaksi, harga Open/Close, potensi kenaikan puncak (High Swing %), dan potensi koreksi terendah (Low Dip %).
+- Verifikasi Otomatis: Menambahkan suite unit test pada `tests/monthlySeasonality.test.js` (lulus 100%) dan memverifikasi build produksi Next.js bersih (`rtk npm run build`).
 
 ## [2026-09-24] feat | Kalender Aksi Korporasi, Jadwal 4 Tanggal Keramat Dividen BEI & Pelacak Riwayat Multi-Tahun
 - Saluran Data 4 Tanggal Dividen Resmi BEI: Memperbarui `src/lib/corporateActionEngine.js` untuk membedah struktur keterbukaan informasi aksi korporasi Bursa Efek Indonesia (BEI), mengekstrak 4 tanggal krusial dividen: Cum Date (batas beli), Ex Date (tanpa hak dividen), Recording Date (DPS KSEI 16:00 WIB), dan Payment Date (pencairan ke RDN).

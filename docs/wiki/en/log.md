@@ -4,16 +4,18 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
-## [2026-09-24] feat | Full Interactive Corporate Actions Calendar Page & Aggregated API Endpoint
-- Interactive Calendar Application (`src/components/CorporateCalendar.jsx`): Built full standalone calendar module featuring:
-  - Header metric cards: Total Scheduled Agendas, Active Cum Date Count, Total Monthly Dividend Cash Pool, and Highest Yield Stock.
-  - Month Navigator: Month/Year picker, Previous/Next controls, and "Today" reset button.
-  - Category Filter & Search: Real-time ticker/event text search, and category toggles (All Events, Cash Dividends, BEI Disclosures).
-  - Dual View Modes: Responsive 7-Column Monthly Calendar Grid with event badges and dynamic Day Detail Modal; List/Timeline View grouped chronologically.
-  - Stock Explorer Bridge: Integrated 1-click ticker selection jumping directly to detailed financial analysis.
-- Unified API Endpoint (`src/app/api/corporate-actions/route.js`): Aggregates dividend schedules (Cum Date, Ex Date, DPS Date, Payment Date) and BEI disclosures across all indexed stocks, computing monthly cash dividend payout sums and yield metrics.
-- Navigation & Dashboard Integration: Added `Kalender Aksi Korporasi` (📅) to `NAVIGATION_MENU` under `Pasar & Analisis` in `Sidebar.jsx` and mounted tab in `Dashboard.jsx`.
-- Automated Testing & Verification: Created unit test suite in `tests/corporateCalendar.test.js` validating date extraction, active cum date counting, relative countdown logic, and yield calculations. Passed 100% test coverage and clean Turbopack production build.
+## [2026-09-24] feat | 5-Year Monthly Seasonality Heatmap & Intra-Month Price Analytics (Stock Explorer)
+- Monthly Seasonality Engine (`src/lib/monthlySeasonalityEngine.js`): Implemented 5-year historical price candle grouping and monthly matrix calculation. Computes:
+  - Month-over-Month % Return (Gain/Plus vs Loss/Minus vs Flat/Neutral).
+  - Intra-Month Volatility: Maximum High Swing % (`maxHighPercent`) and Maximum Low Drawdown % (`maxLowPercent`) relative to month open price.
+  - Monthly Average Traded Price (`avgPrice`).
+  - Historical 5-Year Win-Rate % per month, identifying Best Month and Worst Month.
+- API Route Integration (`src/app/api/stocks/[ticker]/route.js`): Integrated 5-year Yahoo Finance historical candles fallback and attached `monthlySeasonality` payload to `GET /api/stocks/[ticker]`.
+- Interactive UI Component (`src/components/MonthlySeasonalityPanel.jsx`): Mounted 5-year Heatmap Matrix Table in Stock Explorer featuring:
+  - Top 4 Stat Summary Cards (Best Month Win Rate, Worst Month, Overall 5y Win Rate, Interactivity Guide).
+  - Color-coded 5y x 12m Heatmap Grid with YTD totals and 5-Year Win-Rate / Avg Return summary rows.
+  - Interactive Cell Detail Modal rendering exact average traded price, open/close values, peak high swing %, and dip low drawdown %.
+- Automated Verification: Added unit test suite in `tests/monthlySeasonality.test.js` (100% pass rate) and verified clean Next.js production build (`rtk npm run build`).
 
 ## [2026-09-24] feat | Official IDX 4-Date Dividend Schedule, Multi-Year Historical Tracker & Corporate Actions Panel
 - Official IDX 4-Date Dividend Pipeline: Upgraded `src/lib/corporateActionEngine.js` to parse official Indonesian Stock Exchange (IDX) corporate action structures, extracting the 4 critical dividend dates: Cum Date, Ex Date, Recording Date (DPS 16:00 WIB), and Payment Date (RDN settlement).

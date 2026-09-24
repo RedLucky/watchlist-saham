@@ -11,6 +11,7 @@ import CorporateActionsPanel from './CorporateActionsPanel';
 import AutoRejectionLadderPanel from './AutoRejectionLadderPanel';
 import SmartMoneyLiquidityPanel from './SmartMoneyLiquidityPanel';
 import BloombergIntelligencePanel from './BloombergIntelligencePanel';
+import MonthlySeasonalityPanel from './MonthlySeasonalityPanel';
 import {
   roundToIDXTick,
   calculateMonitorMetrics,
@@ -2899,6 +2900,14 @@ export default function StockExplorer({ user }) {
                       tickers.forEach(t => handleAddToCompare(t));
                       setActiveTab('compare');
                     }}
+                  />
+                )}
+
+                {/* ── 5-YEAR MONTHLY SEASONALITY & PERFORMANCE HEATMAP ── */}
+                {stockDetail?.monthlySeasonality && (
+                  <MonthlySeasonalityPanel
+                    data={stockDetail.monthlySeasonality}
+                    ticker={stockDetail.ticker}
                   />
                 )}
 

@@ -18,6 +18,7 @@ import { calculateKseiOwnershipShift } from '@/lib/kseiShiftEngine';
 import { calculateBrokerConcentration } from '@/lib/brokerConcentrationEngine';
 import { calculateVolumeProfile } from '@/lib/volumeProfileEngine';
 import { analyzeNewsSentiment } from '@/lib/newsSentimentEngine';
+import { calculateMonthlySeasonality } from '@/lib/monthlySeasonalityEngine';
 
 export const dynamic = 'force-dynamic';
 
@@ -559,6 +560,34 @@ export async function GET(request, { params }) {
       console.warn('[BI] Error fetching AI research dossier:', aiErr.message);
     }
 
+    // 5-Year Monthly Seasonality & Performance Matrix
+    let monthlySeasonality = null;
+    try {
+      let historicalRows = parseJsonField(stock.historicalRaw) || [];
+      if (!Array.isArray(historicalRows) || historicalRows.length < 100) {
+        try {
+          const p1 = new Date();
+          p1.setFullYear(p1.getFullYear() - 5);
+          const p2 = new Date();
+          p2.setDate(p2.getDate() + 1);
+          const yHist = await yahooFinance.historical(`${ticker}.JK`, {
+            period1: p1.toISOString().split('T')[0],
+            period2: p2.toISOString().split('T')[0],
+            interval: '1d'
+          }, { validateResult: false });
+
+          if (Array.isArray(yHist) && yHist.length > 0) {
+            historicalRows = yHist;
+          }
+        } catch (yErr) {
+          console.warn(`[Seasonality] Yahoo 5y fetch fallback for ${ticker}:`, yErr.message);
+        }
+      }
+      monthlySeasonality = calculateMonthlySeasonality(historicalRows);
+    } catch (seasErr) {
+      console.warn('[Seasonality] Error calculating monthly seasonality:', seasErr.message);
+    }
+
     const responseData = {
       ...enrichedStock,
       kseiLatest,
@@ -585,6 +614,7 @@ export async function GET(request, { params }) {
       volumeProfile,
       aiResearch,
       newsSentiment,
+      monthlySeasonality,
       scores: {
         fundamental: fundamentalScore,
         technical: technicalScore,

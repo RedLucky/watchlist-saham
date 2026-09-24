@@ -19,7 +19,6 @@ import AlphaLegendScreeners from './AlphaLegend/AlphaLegendScreeners';
 import PensionCalculator from './PensionCalculator';
 import KseiUploadPanel from './KseiUploadPanel';
 import StockExplorer from './StockExplorer';
-import CorporateCalendar from './CorporateCalendar';
 import AiConsultationPanel from './AiConsultationPanel';
 import AuthModal from './AuthModal';
 import { ThemeToggle } from './ThemeToggle';
@@ -283,13 +282,6 @@ export default function Dashboard() {
  <AlphaLegendScreeners />
  </div>
  )}
-
-  {/* TAB 3.55: KALENDER AKSI KORPORASI */}
-  {activeTab === 'corporate-calendar' && (
-    <div className="animate-in fade-in duration-300">
-      <CorporateCalendar user={user} onSelectTicker={(ticker) => setActiveTab('explorer')} />
-    </div>
-  )}
 
   {/* TAB 3.6: KONSULTASI AI */}
   {activeTab === 'ai-chat' && (
