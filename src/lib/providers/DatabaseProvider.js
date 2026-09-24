@@ -12,6 +12,16 @@ import { calculateRawDividendYield } from '../scoring/dividend.js';
 import { getExchangeRateSync } from '../currencyService.js';
 import { getBandarmologiVerdict } from '../scoring/smartMoney.js';
 
+// In-Memory TTL Cache (30s) to prevent repetitive JSON parsing of thousands of records
+const STOCKS_CACHE_TTL_MS = 30 * 1000;
+let cachedStocksResult = null;
+let lastStocksCacheTime = 0;
+
+export function invalidateStocksCache() {
+  cachedStocksResult = null;
+  lastStocksCacheTime = 0;
+}
+
 export class DatabaseProvider extends DataProvider {
   async getMarketData() {
     try {
@@ -183,6 +193,11 @@ export class DatabaseProvider extends DataProvider {
   }
 
   async getStocks() {
+    const now = Date.now();
+    if (cachedStocksResult && (now - lastStocksCacheTime) < STOCKS_CACHE_TTL_MS) {
+      return cachedStocksResult;
+    }
+
     try {
       console.log(`[DatabaseProvider] Querying StockData...`);
       const dbStocks = await prisma.stockData.findMany({
@@ -238,7 +253,7 @@ export class DatabaseProvider extends DataProvider {
         freqRankMap[s.ticker] = idx + 1;
       });
       
-      return filtered.map(s => {
+      const mappedStocks = filtered.map(s => {
         let fundamentals = {};
         let technicals = {};
         let shareholders = [];
@@ -431,6 +446,10 @@ export class DatabaseProvider extends DataProvider {
           freqRank: freqRankMap[s.ticker] || 999
         };
       });
+
+      cachedStocksResult = mappedStocks;
+      lastStocksCacheTime = Date.now();
+      return mappedStocks;
     } catch (e) {
       console.error("DatabaseProvider Error:", e);
       return [];

@@ -20,6 +20,7 @@ export const IDX_TICK_STEP_TIER_2 = 2;     // Fraksi Rp 2 untuk harga 200 - 500
 export const IDX_TICK_STEP_TIER_3 = 5;     // Fraksi Rp 5 untuk harga 500 - 2.000
 export const IDX_TICK_STEP_TIER_4 = 10;    // Fraksi Rp 10 untuk harga 2.000 - 5.000
 export const IDX_TICK_STEP_TIER_5 = 25;    // Fraksi Rp 25 untuk harga >= 5.000
+export const IDX_REGULAR_BOARD_MIN_PRICE = 50; // Batas bawah harga pasar reguler BEI
 
 // Persentase batas kenaikan harian maksimal (Auto Rejection Atas / ARA) BEI
 export const IDX_ARA_LIMIT_TIER_1_PCT = 35; // +35% untuk harga < 200
@@ -315,6 +316,11 @@ export function calculateTradeSetup(stock, technicalResult, styleConfig) {
   let stopLoss = roundToIDXTick(dynamicStopLoss, 'down');
   const maxStopLoss = entryLow - (getIDXPriceStep(entryLow) * 2);
   stopLoss = Math.min(stopLoss, maxStopLoss);
+
+  // Batas bawah fraksi pasar reguler BEI adalah Rp 50 (saham Rp 50 ke bawah masuk papan FCA/khusus)
+  if (entryLow >= IDX_REGULAR_BOARD_MIN_PRICE) {
+    stopLoss = Math.max(IDX_REGULAR_BOARD_MIN_PRICE, stopLoss);
+  }
 
   // 4. Rasio Risk/Reward
   const reward = target - avgEntry;

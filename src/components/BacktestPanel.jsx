@@ -123,6 +123,121 @@ export default function BacktestPanel() {
  </div>
  </div>
 
+  {/* Equity Curve & Growth Chart */}
+  {result.trades.length > 0 && (() => {
+    const INITIAL_CAPITAL = 10_000_000;
+    let currentCap = INITIAL_CAPITAL;
+    let peakCap = INITIAL_CAPITAL;
+    let maxDrawdown = 0;
+
+    const points = [{ step: 0, date: 'Mulai', capital: INITIAL_CAPITAL, drawdown: 0 }];
+    
+    result.trades.forEach((t, i) => {
+      currentCap = currentCap * (1 + t.pnlPercent / 100);
+      if (currentCap > peakCap) peakCap = currentCap;
+      const dd = ((peakCap - currentCap) / peakCap) * 100;
+      if (dd > maxDrawdown) maxDrawdown = dd;
+      points.push({
+        step: i + 1,
+        date: t.exitDate || t.entryDate,
+        capital: Math.round(currentCap),
+        drawdown: Number(dd.toFixed(1))
+      });
+    });
+
+    const capitals = points.map(p => p.capital);
+    const minCap = Math.min(...capitals, INITIAL_CAPITAL * 0.95);
+    const maxCap = Math.max(...capitals, INITIAL_CAPITAL * 1.05);
+    const range = (maxCap - minCap) || 1;
+
+    const svgWidth = 800;
+    const svgHeight = 160;
+    const padding = 20;
+
+    const coords = points.map((p, idx) => {
+      const x = padding + (idx / (points.length - 1 || 1)) * (svgWidth - padding * 2);
+      const y = svgHeight - padding - ((p.capital - minCap) / range) * (svgHeight - padding * 2);
+      return { x, y, ...p };
+    });
+
+    const pathData = coords.map((c, i) => `${i === 0 ? 'M' : 'L'} ${c.x.toFixed(1)} ${c.y.toFixed(1)}`).join(' ');
+    const isProfitable = currentCap >= INITIAL_CAPITAL;
+    const strokeColor = isProfitable ? '#10b981' : '#f43f5e';
+    const areaPath = `${pathData} L ${coords[coords.length - 1].x.toFixed(1)} ${svgHeight - padding} L ${coords[0].x.toFixed(1)} ${svgHeight - padding} Z`;
+
+    const initialY = svgHeight - padding - ((INITIAL_CAPITAL - minCap) / range) * (svgHeight - padding * 2);
+
+    return (
+      <div className="glass p-5 rounded-2xl border border-slate-200 dark:border-white/5 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div>
+            <h4 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+              <span>📈</span> Kurva Pertumbuhan Ekuitas (Equity Curve)
+            </h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Simulasi compounding modal dari awal Rp 10.000.000 sepanjang {result.trades.length} transaksi
+            </p>
+          </div>
+          <div className="flex items-center gap-4 text-xs font-semibold">
+            <span className="text-slate-500 dark:text-slate-400">
+              Max Drawdown: <span className="text-rose-500 font-bold">-{maxDrawdown.toFixed(1)}%</span>
+            </span>
+            <span className={isProfitable ? 'text-emerald-500' : 'text-rose-500'}>
+              Net: {isProfitable ? '+' : ''}{((currentCap - INITIAL_CAPITAL) / INITIAL_CAPITAL * 100).toFixed(1)}%
+            </span>
+          </div>
+        </div>
+
+        <div className="w-full overflow-x-auto">
+          <div className="min-w-[500px]">
+            <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="w-full h-40 overflow-visible">
+              <defs>
+                <linearGradient id="equityGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={strokeColor} stopOpacity="0.25" />
+                  <stop offset="100%" stopColor={strokeColor} stopOpacity="0.0" />
+                </linearGradient>
+              </defs>
+              {/* Baseline initial capital */}
+              <line 
+                x1={padding} 
+                y1={initialY} 
+                x2={svgWidth - padding} 
+                y2={initialY} 
+                stroke="#64748b" 
+                strokeDasharray="4 4" 
+                strokeWidth="1" 
+                opacity="0.4" 
+              />
+              <text x={padding + 5} y={initialY - 5} fill="#64748b" fontSize="9" opacity="0.7">
+                Modal Awal (Rp 10 Jt)
+              </text>
+
+              {/* Area under curve */}
+              <path d={areaPath} fill="url(#equityGrad)" />
+
+              {/* Line path */}
+              <path d={pathData} fill="none" stroke={strokeColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+
+              {/* Data points */}
+              {coords.map((c, i) => (
+                <circle 
+                  key={i} 
+                  cx={c.x} 
+                  cy={c.y} 
+                  r={i === 0 || i === coords.length - 1 ? 4 : 2.5} 
+                  fill={strokeColor} 
+                  className="transition-all hover:r-5 cursor-pointer"
+                >
+                  <title>{`${c.date}: Rp ${c.capital.toLocaleString('id-ID')} (DD: -${c.drawdown}%)`}</title>
+                </circle>
+              ))}
+            </svg>
+          </div>
+        </div>
+      </div>
+    );
+  })()}
+
  {/* Trade History */}
  <div className="glass rounded-2xl overflow-hidden border border-slate-200 dark:border-white/5">
  <div className="px-5 py-4 border-b border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-white/[0.02] flex justify-between items-center">

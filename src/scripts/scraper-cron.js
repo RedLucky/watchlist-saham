@@ -47,8 +47,17 @@ cron.schedule('0 18 * * *', () => {
   }
 });
 
+let isPriceSyncRunning = false;
+let isDailyScraperRunning = false;
+
 function runPriceSync() {
+  if (isPriceSyncRunning) {
+    console.warn(`\n[PRICE-SYNC-SKIP] Sync harga sebelumnya masih berjalan, melewati jadwal ini.`);
+    return;
+  }
+  isPriceSyncRunning = true;
   const proc = exec('node --max-old-space-size=896 src/scripts/sync-prices.js', (err) => {
+    isPriceSyncRunning = false;
     if (err) {
       console.error(`[PRICE-SYNC-ERR] Gagal sync harga: ${err.message}`);
     }
@@ -73,6 +82,11 @@ function runDiscordNotifier() {
 }
 
 function runDailyScrapers() {
+  if (isDailyScraperRunning) {
+    console.warn(`\n[SCRAPER-SKIP] Scraping harian sebelumnya masih berjalan.`);
+    return;
+  }
+  isDailyScraperRunning = true;
   console.log('\n[1/2] Memulai Sinkronisasi Otomatis Data ZIP KSEI...');
   const kseiProc = exec('node --max-old-space-size=896 src/scripts/sync-ksei.js', (kseiErr) => {
     if (kseiErr) {
@@ -84,6 +98,7 @@ function runDailyScrapers() {
     // Lanjutkan ke IDX Ownership Scraper
     console.log('\n[2/2] Memulai Sinkronisasi Ownership & Insider IDX...');
     const ownProc = exec('node --max-old-space-size=896 src/scripts/sync-ownership.js', (ownErr) => {
+      isDailyScraperRunning = false;
       if (ownErr) {
         console.error(`[OWNERSHIP-CRASH] Scraping ownership gagal: ${ownErr.message}`);
         return;

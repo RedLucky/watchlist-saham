@@ -101,6 +101,8 @@ model StockData {
   @@index([turnover])
   @@index([frequency])
   @@index([isDelisted])
+  @@index([lastPriceSync])
+  @@index([lastDeepSync])
 }
 
 model PensionRecord {
@@ -126,6 +128,7 @@ model User {
   email            String           @unique
   password         String
   name             String
+  role             String           @default("USER") // USER, ADMIN
   riskProfile      String           @default("MODERATE") // CONSERVATIVE, MODERATE, AGGRESSIVE
   customPreset     String?          @db.Text // JSON string of custom stock tickers
   createdAt        DateTime         @default(now())

@@ -66,15 +66,39 @@ export async function GET(request) {
     const totalReturnPercent = totalInvested > 0 ? (totalFloatingPnL / totalInvested) * 100 : 0;
 
     // Calculate Realized PnL from transactions where type === 'SELL'
+    // Realized PnL = (Selling Price - Average Cost Basis) * Sold Shares
     let realizedPnL = 0;
     try {
       const sellTransactions = await prisma.transaction.findMany({
         where: {
           portfolio: { userId },
           type: 'SELL'
+        },
+        include: {
+          portfolio: {
+            select: {
+              averagePrice: true,
+              transactions: {
+                where: { type: 'BUY' },
+                orderBy: { date: 'asc' },
+                select: { price: true, shares: true, totalValue: true }
+              }
+            }
+          }
         }
       });
-      realizedPnL = sellTransactions.reduce((acc, t) => acc + (t.totalValue || 0), 0);
+
+      realizedPnL = sellTransactions.reduce((acc, t) => {
+        // If transaction has recorded costBasis, use it; otherwise compute from buy cost
+        const buyTxs = t.portfolio?.transactions || [];
+        const totalBuyShares = buyTxs.reduce((sum, b) => sum + (b.shares || 0), 0);
+        const totalBuyValue = buyTxs.reduce((sum, b) => sum + (b.totalValue || 0), 0);
+        const avgBuyCost = totalBuyShares > 0 ? (totalBuyValue / totalBuyShares) : (t.portfolio?.averagePrice || 0);
+        const sellProceeds = t.totalValue || (t.price * t.shares);
+        const costBasis = avgBuyCost * t.shares;
+        const profit = sellProceeds - costBasis;
+        return acc + profit;
+      }, 0);
     } catch (e) {
       console.warn("Could not query sell transactions:", e.message);
     }

@@ -114,11 +114,15 @@ export function verifyAdminAccess(request) {
     }
   }
 
-  // 2. Check logged-in user session
-  const userId = getUserIdFromRequest(request);
-  if (userId) {
-    return { authorized: true, userId, type: 'USER_SESSION' };
+  // 2. Check logged-in user session with explicit ADMIN privileges
+  const token = request.cookies?.get?.('auth_token')?.value;
+  if (token) {
+    const payload = verifyToken(token);
+    const adminEmail = process.env.ADMIN_EMAIL;
+    if (payload?.userId && (payload?.role === 'ADMIN' || (adminEmail && payload?.email === adminEmail))) {
+      return { authorized: true, userId: payload.userId, type: 'ADMIN_SESSION' };
+    }
   }
 
-  return { authorized: false, error: 'Unauthorized: Kredensial administratif atau sesi login diperlukan' };
+  return { authorized: false, error: 'Unauthorized: Kredensial administratif atau akun Admin diperlukan' };
 }

@@ -88,7 +88,11 @@ async function sendDiscordNotification(ticker, conclusion) {
   }
 }
 
+let isProcessingQueue = false;
+
 async function processQueue() {
+  if (isProcessingQueue) return;
+  isProcessingQueue = true;
   try {
     // 0. Auto-Recovery: Pulihkan task yang macet di PROCESSING (> 10 menit) akibat worker crash
     const staleCutoff = new Date(Date.now() - STALE_JOB_TIMEOUT_MS);
@@ -245,6 +249,8 @@ async function processQueue() {
 
   } catch (error) {
     console.error('[AI-Worker] Error utama pada poller:', error);
+  } finally {
+    isProcessingQueue = false;
   }
 }
 

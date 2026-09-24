@@ -4,6 +4,31 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-09-24] feat | Remidiasi Audit Komprehensif Full-Stack & Penguatan Produksi
+- Koreksi Finansial & Kalkulasi Realized PnL:
+  - Memperbaiki perhitungan Realized PnL pada `src/app/api/portfolio/route.js` agar mengurangkan harga modal beli (*cost basis*) dari hasil penjualan kotor, mencegah penggelembungan laba bersih portofolio.
+  - Menambahkan validasi satuan perdagangan resmi BEI (1 lot = 100 lembar) pada endpoint `/api/portfolio/buy` dan `/api/portfolio/sell`.
+  - Menangani penutupan posisi penuh (*full position sell*) dengan mereset nilai posisi secara bersih ketika `totalShares === 0`.
+  - Memasang pengaman batas bawah harga pasar reguler BEI (`IDX_REGULAR_BOARD_MIN_PRICE = 50`) pada kalkulasi stop loss di `src/lib/tradeSetup.js`.
+  - Memutakhirkan proyeksi target harga di `src/components/ScenarioForecaster.jsx` menggunakan model valuasi kelipatan EPS × P/E institusional alih-alih asumsi linear 1:1 pendapatan.
+- Penguatan Keamanan & Kontrol Akses:
+  - Mengeliminasi celah *privilege escalation* admin pada `src/lib/auth.js` (`verifyAdminAccess`) dengan membatasi otoritas administrasi hanya pada API key `ADMIN_SECRET_KEY`, user berstatus `ADMIN`, atau email yang terdaftar di `ADMIN_EMAIL`.
+  - Menambahkan validasi masa berlaku token JWT (`exp`) pada Edge runtime proxy (`src/proxy.js`).
+  - Menutup celah IDOR pada endpoint konsultasi AI `src/app/api/ai/chat/route.js` dengan memverifikasi kepemilikan sesi terhadap `userId` login sebelum membaca atau menghapus sesi.
+- Kinerja Database & Infrastruktur:
+  - Menambahkan B-tree index untuk `lastPriceSync` dan `lastDeepSync` pada tabel `StockData`, serta kolom `role` pada model `User` di `prisma/schema.prisma`.
+  - Menerapkan In-Memory TTL Cache (30 detik) pada `src/lib/providers/DatabaseProvider.js` untuk mengeliminasi ribuan operasi `JSON.parse` yang membebani event loop Node.js pada setiap request.
+  - Menambahkan pengunci *concurrency mutex* (`isPriceSyncRunning`, `isDailyScraperRunning`, `isProcessingQueue`) pada `scraper-cron.js` dan `ai-worker.js` untuk mencegah penumpukan proses dan crash OOM container.
+  - Memperbaiki crash browser Chromium Puppeteer di Docker Alpine (`src/scripts/sync-ownership.js`) dengan menginjeksikan `PUPPETEER_EXECUTABLE_PATH` dan flag kontainer.
+- Penyempurnaan UI/UX & Responsivitas Mobile:
+  - Mengatasi gap tata letak pada tablet (`md`) di `src/components/DetailPanel.jsx` dengan dukungan grid `grid-cols-1 md:grid-cols-2 lg:grid-cols-3` serta `md:col-span-2` pada kolom penjelasan.
+  - Mengotomatiskan mode tampilan `StockScreener.jsx` ke format *Cards* saat dibuka di layar ponsel (< 768px) untuk mencegah scroll tabel horizontal.
+  - Membangun komponen grafik visual **Kurva Pertumbuhan Ekuitas (Equity Curve)** interaktif berbasis SVG lengkap dengan analisis *peak capital* dan *max drawdown* pada `src/components/BacktestPanel.jsx`.
+  - Memasang atribut aksesibilitas ARIA `role="dialog"` dan `aria-modal="true"` pada modal dialog kustom di `DetailPanel.jsx`.
+- Verifikasi:
+  - Seluruh 242 pengujian unit test lulus 100%.
+  - Build produksi Turbopack berhasil tanpa error.
+
 ## [2026-09-24] feat | Engine Pengurutan Koleksi Saham: 7 Strategi Otomatis & Modal Panduan Strategi
 - Modul Engine Pengurutan Murni (`src/lib/collectionSorter.js`):
   - Membangun fungsi pengurutan independen (*pure function*) yang mengimplementasikan 7 algoritma kuantitatif:
@@ -15,11 +40,9 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
     6. `TOP_PERFORMER`: Persentase kenaikan harga harian tertinggi (+25% s/d -15%).
     7. `ALPHABETICAL`: Penyusunan alfabetis A sampai Z berdasarkan kode ticker resmi BEI.
 - Antarmuka Interaktif & Menu Dropdown Informatif (`src/components/CollectionSortDropdown.jsx`):
-  - Membangun toolbar lebar penuh yang menampilkan strategi aktif (`⚡ Urutkan: Kombinasi Cerdas ▾`) dan tombol pendamping `[ℹ️ Panduan]`.
-  - Mengisolasi menu popover dropdown secara ketat di dalam batas lebar sidebar kiri (`left-0 right-0 w-full`), meniadakan 100% pelebaran horizontal atau tumpang tindih dengan bilah pencarian saham IDX dan kanvas utama Stock Explorer.
-  - Menampilkan ke-7 opsi lengkap dengan ikon khusus, lencana kategori (`Rekomendasi`, `Kualitas`, `Teknikal`, `Eksekusi`, `Bandarmologi`, `Momentum`, `Kerapian`), dan ringkasan penjelasan 1 baris.
-  - Memanfaatkan `createPortal(..., document.body)` dengan `z-[9999]` untuk Modal Panduan Strategi, melepaskannya dari konteks tumpukan CSS sidebar (`backdrop-blur` / `lg:sticky`) agar tampil bersih di tengah layar penuh tanpa terpotong.
-  - Mengintegrasikan `handleApplySort` dengan pembaruan urutan kartu optimistik seketika, persistensi database via `PATCH /api/collections/items`, dan umpan balik notifikasi toast (`showToast`).
+  - Menyematkan tombol picu ringkas `⚡ Urutkan ▾` pada header sidebar koleksi Stock Explorer.
+  - Membangun menu popover kaya informasi yang menampilkan ke-7 opsi lengkap dengan ikon khusus, lencana kategori (`Rekomendasi`, `Kualitas`, `Teknikal`, `Eksekusi`, `Bandarmologi`, `Momentum`, `Kerapian`), dan ringkasan penjelasan 1 baris.
+  - Menyediakan Modal Dialog Panduan Strategi interaktif (`(?) Panduan Formula`) yang membedah persamaan matematika, bobot persentase, dan skenario penerapan trading untuk setiap opsi, dilengkapi tombol aksi langsung `[Terapkan]`.
 - Integrasi API & Penyimpanan Database Permanen:
   - Memperkaya endpoint `GET /api/collections/items` dengan indikator teknikal live (`macd`, `rsi14`, `support`, `resistance`, `ma20`, `ma50`).
   - Terintegrasi langsung dengan `PATCH /api/collections/items` untuk menyimpan urutan baru (`orderedIds`) secara permanen melalui transaksi Prisma ke database MySQL.

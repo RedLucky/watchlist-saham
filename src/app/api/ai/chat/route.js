@@ -38,6 +38,11 @@ export async function GET(request) {
         return NextResponse.json({ error: 'Sesi konsultasi tidak ditemukan.' }, { status: 404 });
       }
 
+      // Check IDOR: if session belongs to a user, only that user may view it
+      if (session.userId && userId && session.userId !== userId) {
+        return NextResponse.json({ error: 'Akses ditolak: sesi ini milik pengguna lain.' }, { status: 403 });
+      }
+
       return NextResponse.json({ success: true, session });
     }
 
@@ -230,11 +235,32 @@ export async function DELETE(request) {
   try {
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('sessionId');
+    const userId = await getUserIdFromRequest(request);
 
     if (!sessionId) {
       return NextResponse.json(
         { error: 'Parameter sessionId diperlukan.' },
         { status: 400 }
+      );
+    }
+
+    const existingSession = await prisma.chatSession.findUnique({
+      where: { id: sessionId },
+      select: { id: true, userId: true }
+    });
+
+    if (!existingSession) {
+      return NextResponse.json(
+        { error: 'Sesi konsultasi tidak ditemukan.' },
+        { status: 404 }
+      );
+    }
+
+    // Protect against unauthorized deletion
+    if (existingSession.userId && existingSession.userId !== userId) {
+      return NextResponse.json(
+        { error: 'Akses ditolak: Anda tidak memiliki izin untuk menghapus sesi ini.' },
+        { status: 403 }
       );
     }
 

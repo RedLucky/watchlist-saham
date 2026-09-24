@@ -4,6 +4,31 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-09-24] feat | Comprehensive Full-Stack Audit Remediations & Production Hardening
+- Financial Engine & PnL Corrections:
+  - Fixed Realized PnL calculation in `src/app/api/portfolio/route.js` to subtract buy cost basis from sell proceeds instead of incorrectly counting gross proceeds as net profit.
+  - Added IDX lot size validation (100 shares modulo check) to both `/api/portfolio/buy` and `/api/portfolio/sell` routes.
+  - Handled complete portfolio position closures cleanly when `totalShares === 0`.
+  - Added Rp 50 floor guardrail (`IDX_REGULAR_BOARD_MIN_PRICE`) for regular market stop loss calculation in `src/lib/tradeSetup.js`.
+  - Upgraded target price projection in `src/components/ScenarioForecaster.jsx` to use an institutional EPS × P/E multiple model rather than naive 1:1 revenue scaling.
+- Security & Access Control Hardening:
+  - Eliminated admin privilege escalation in `src/lib/auth.js` (`verifyAdminAccess`) by restricting administrative access strictly to verified `ADMIN_SECRET_KEY` API keys, users with `ADMIN` role, or `ADMIN_EMAIL`.
+  - Added JWT token expiration (`exp`) validation in Edge runtime proxy (`src/proxy.js`).
+  - Mitigated IDOR and unauthorized session deletion/reading in `src/app/api/ai/chat/route.js` by checking session ownership against authenticated `userId`.
+- Database Performance & Infrastructure:
+  - Added B-tree indexes for `lastPriceSync` and `lastDeepSync` to `StockData` model, plus `role` column to `User` model in `prisma/schema.prisma`.
+  - Added a 30-second In-Memory TTL Cache in `src/lib/providers/DatabaseProvider.js` to eliminate thousands of redundant `JSON.parse` operations on every request.
+  - Implemented concurrency mutex locks (`isPriceSyncRunning`, `isDailyScraperRunning`, `isProcessingQueue`) in `scraper-cron.js` and `ai-worker.js` to prevent memory leaks and container OOM crashes.
+  - Fixed Puppeteer Chromium launch crash in Alpine Docker (`src/scripts/sync-ownership.js`) by injecting `PUPPETEER_EXECUTABLE_PATH` and container-safe flags.
+- UI/UX & Responsive Enhancements:
+  - Resolved tablet (`md`) responsive layout gap in `src/components/DetailPanel.jsx` by supporting `grid-cols-1 md:grid-cols-2 lg:grid-cols-3` with `md:col-span-2` for the rationale section.
+  - Auto-defaulted `StockScreener.jsx` view mode to `'cards'` on mobile screens (< 768px) to eliminate horizontal table scroll.
+  - Added an interactive visual **Equity Curve & Compounding Chart** (SVG) with peak capital and max drawdown analytics to `src/components/BacktestPanel.jsx`.
+  - Added ARIA `role="dialog"` and `aria-modal="true"` attributes to custom modal overlays in `DetailPanel.jsx`.
+- Verification:
+  - All 242 test suites pass (100%).
+  - Turbopack production build succeeds cleanly.
+
 ## [2026-09-24] feat | Collection Sorter Engine: 7 Automated Sorting Strategies & Strategy Guide Modal
 - Collection Sorter Pure Engine (`src/lib/collectionSorter.js`):
   - Built institutional pure-function sorter featuring 7 distinct sorting algorithms:
@@ -15,11 +40,9 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
     6. `TOP_PERFORMER`: Daily percentage change descending (+25% to -15%).
     7. `ALPHABETICAL`: Clean A to Z sorting by official IDX ticker symbol.
 - Interactive UX & Rich Dropdown Menu (`src/components/CollectionSortDropdown.jsx`):
-  - Built a full-width toolbar trigger displaying active strategy (`⚡ Urutkan: Kombinasi Cerdas ▾`) and a companion `[ℹ️ Panduan]` button.
-  - Constrained dropdown menu strictly to the sidebar container width (`left-0 right-0 w-full`), completely eliminating horizontal spillover, clashing, and visual stacking over the Stock Explorer main canvas and IDX search bar.
-  - Rendered all 7 strategy options with custom icons, category badges (`Rekomendasi`, `Kualitas`, `Teknikal`, `Eksekusi`, `Bandarmologi`, `Momentum`, `Kerapian`), and one-line strategy summaries.
-  - Implemented an interactive Strategy Guide Modal (`(?) Panduan Formula`) portaled directly to `document.body` via `createPortal(..., document.body)` with `z-[9999]`, breaking free of any parent CSS stacking/sticky contexts to guarantee clean, unclipped display.
-  - Connected `handleApplySort` with instant optimistic card reordering, database persistence via `PATCH /api/collections/items`, and real-time toast confirmations (`showToast`).
+  - Added a compact `⚡ Urutkan ▾` trigger button in the Stock Explorer Left Sidebar header.
+  - Built a rich popover dropdown displaying all 7 options with custom icons, category badges (`Rekomendasi`, `Kualitas`, `Teknikal`, `Eksekusi`, `Bandarmologi`, `Momentum`, `Kerapian`), and one-line strategy summaries.
+  - Implemented an interactive Strategy Guide Modal (`(?) Panduan Formula`) detailing mathematical equations, parameter weights, and trading scenarios for each strategy, complete with direct `[Terapkan]` action buttons.
 - Full-Stack API & Database Persistence:
   - Enriched `GET /api/collections/items` with live stock technicals (`macd`, `rsi14`, `support`, `resistance`, `ma20`, `ma50`).
   - Integrated with `PATCH /api/collections/items` to persist new item ordering (`orderedIds`) atomically via Prisma transaction.

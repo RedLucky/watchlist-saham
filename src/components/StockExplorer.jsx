@@ -1566,7 +1566,7 @@ export default function StockExplorer({ user }) {
     // Persist new order to server
     try {
       const orderedIds = sortedItems.map(item => item.id);
-      const res = await fetch('/api/collections/items', {
+      await fetch('/api/collections/items', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1574,18 +1574,10 @@ export default function StockExplorer({ user }) {
           orderedIds,
         }),
       });
-      if (res.ok) {
-        showToast(`✅ Urutan koleksi diperbarui: ${option?.label || 'Berhasil diurutkan'}!`, 'success');
-      } else {
-        const err = await res.json().catch(() => ({}));
-        showToast(`⚠️ Urutan diterapkan di layar (Simpan: ${err.error || 'gagal sinkron server'})`, 'warning');
-      }
     } catch (err) {
       console.error('Failed to persist sorted items order:', err);
-      showToast('⚠️ Urutan diterapkan di layar (Gagal simpan ke server)', 'warning');
     }
   };
-
 
   const handleCopyShareLink = (shareCode) => {
     const url = `${window.location.origin}/api/collections?shareCode=${shareCode}`;
@@ -1806,19 +1798,14 @@ export default function StockExplorer({ user }) {
 
                   {/* Auto-Sort Toolbar */}
                   {selectedCollection && collectionItems.length > 1 && (
-                    <div className="pt-2 pb-1 border-t border-slate-100 dark:border-slate-800/80">
-                      <div className="flex items-center justify-between mb-1 px-0.5">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                          Urutkan Otomatis
-                        </span>
-                        <span className="text-[10px] text-slate-400 font-mono">
-                          {collectionItems.length} emiten
-                        </span>
-                      </div>
+                    <div className="flex items-center justify-between pt-1 pb-0.5 px-0.5 border-t border-slate-100 dark:border-slate-800/80">
                       <CollectionSortDropdown
                         items={collectionItems}
                         onApplySort={handleApplySort}
                       />
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        {collectionItems.length} emiten
+                      </span>
                     </div>
                   )}
 

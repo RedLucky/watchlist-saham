@@ -40,7 +40,21 @@ async function verifyJWTEdge(token, secret) {
       dataBytes
     );
 
-    return isValid;
+    if (!isValid) return false;
+
+    // Verify token expiration claim (exp)
+    try {
+      let b64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+      while (b64.length % 4) b64 += '=';
+      const parsedPayload = JSON.parse(atob(b64));
+      if (parsedPayload.exp && Math.floor(Date.now() / 1000) > parsedPayload.exp) {
+        return false;
+      }
+    } catch {
+      return false;
+    }
+
+    return true;
   } catch (e) {
     console.error("Middleware JWT Verification Error:", e);
     return false;

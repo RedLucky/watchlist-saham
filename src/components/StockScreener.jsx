@@ -14,6 +14,14 @@ export default function StockScreener() {
   const [selectedOwnershipStock, setSelectedOwnershipStock] = useState(null);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'desc' });
   const [viewMode, setViewMode] = useState('table'); // 'table' | 'cards'
+
+  // Default ke mode cards jika dibuka pada perangkat mobile (< 768px)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setViewMode('cards');
+    }
+  }, []);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSector, setSelectedSector] = useState('ALL');
   const [syariahOnly, setSyariahOnly] = useState(false);
