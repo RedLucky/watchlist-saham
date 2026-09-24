@@ -141,6 +141,14 @@ export async function GET(request) {
         changePercent: rawStock.changePercent,
         sector: rawStock.sector,
         score: compositeScore,
+        technicals: {
+          macd: parsedTechnicals.macd || null,
+          rsi14: parsedTechnicals.rsi14 || null,
+          support: parsedTechnicals.support || null,
+          resistance: parsedTechnicals.resistance || null,
+          ma20: parsedTechnicals.ma20 || null,
+          ma50: parsedTechnicals.ma50 || null,
+        },
         scores: {
           fundamental: fScore,
           technical: tScore,

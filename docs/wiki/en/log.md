@@ -4,6 +4,28 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-09-24] feat | Collection Sorter Engine: 7 Automated Sorting Strategies & Strategy Guide Modal
+- Collection Sorter Pure Engine (`src/lib/collectionSorter.js`):
+  - Built institutional pure-function sorter featuring 7 distinct sorting algorithms:
+    1. `SMART_COMBINATION`: Multi-factor rank combining Composite Quality Score (40%), MACD Buy Trigger (35%), and Target Buy Proximity (25%).
+    2. `HIGHEST_SCORE`: Pure composite score descending (A-Grade 80+ to D-Grade).
+    3. `MACD_CROSS`: Technical timing priority (Fresh Golden Cross -> Bullish Histogram -> Rebound Momentum -> Bearish).
+    4. `PROXIMITY_TARGET_BUY`: Sorts by proximity to user's manual target buy price (in-zone $\le 0-2\%$ at top, with fallback to technical support or 5% discount).
+    5. `SMART_MONEY`: Institutional inflow & smart money score descending.
+    6. `TOP_PERFORMER`: Daily percentage change descending (+25% to -15%).
+    7. `ALPHABETICAL`: Clean A to Z sorting by official IDX ticker symbol.
+- Interactive UX & Rich Dropdown Menu (`src/components/CollectionSortDropdown.jsx`):
+  - Added a compact `⚡ Urutkan ▾` trigger button in the Stock Explorer Left Sidebar header.
+  - Built a rich popover dropdown displaying all 7 options with custom icons, category badges (`Rekomendasi`, `Kualitas`, `Teknikal`, `Eksekusi`, `Bandarmologi`, `Momentum`, `Kerapian`), and one-line strategy summaries.
+  - Implemented an interactive Strategy Guide Modal (`(?) Panduan Formula`) detailing mathematical equations, parameter weights, and trading scenarios for each strategy, complete with direct `[Terapkan]` action buttons.
+- Full-Stack API & Database Persistence:
+  - Enriched `GET /api/collections/items` with live stock technicals (`macd`, `rsi14`, `support`, `resistance`, `ma20`, `ma50`).
+  - Integrated with `PATCH /api/collections/items` to persist new item ordering (`orderedIds`) atomically via Prisma transaction.
+  - Preserved 100% manual drag-and-drop capability.
+- Verification & Test Coverage:
+  - Added dedicated test suite `tests/collectionSorter.test.js` covering all 7 strategies and pure function immutability (9/9 tests passing).
+  - All 242 project unit tests passing 100%. Turbopack production build succeeded cleanly.
+
 ## [2026-09-24] fix | Corporate Actions Calendar Continuous Month Navigation & Sub-Millisecond In-Memory Caching
 - Root Cause Analysis:
   - Navigation Beyond October 2026 & Latency ("Lama"): On every single month change in `src/components/CorporateCalendar.jsx`, `/api/corporate-actions` executed a complete un-cached MySQL database scan across all 1,020 stocks, deserializing and processing thousands of JSON text blobs on each request (~4,000–5,000ms latency).

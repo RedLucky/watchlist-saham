@@ -4,6 +4,28 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-09-24] feat | Engine Pengurutan Koleksi Saham: 7 Strategi Otomatis & Modal Panduan Strategi
+- Modul Engine Pengurutan Murni (`src/lib/collectionSorter.js`):
+  - Membangun fungsi pengurutan independen (*pure function*) yang mengimplementasikan 7 algoritma kuantitatif:
+    1. `SMART_COMBINATION`: Peringkat cerdas sinergis menggabungkan Skor Komposit Kualitas (40%), Pemicu Beli MACD (35%), dan Kedekatan Target Beli (25%).
+    2. `HIGHEST_SCORE`: Urutan murni skor komposit tertinggi ke terendah (A-Grade 80+ s/d D-Grade).
+    3. `MACD_CROSS`: Prioritas waktu teknikal (Fresh Golden Cross ➔ Bullish Histogram ➔ Rebound Momentum ➔ Bearish).
+    4. `PROXIMITY_TARGET_BUY`: Mengurutkan dari saham yang paling dekat dengan target beli manual (zona beli $\le 0-2\%$ di posisi teratas, dengan cadangan support teknikal atau diskon 5%).
+    5. `SMART_MONEY`: Aliran dana akumulasi bandarmologi & skor smart money tertinggi.
+    6. `TOP_PERFORMER`: Persentase kenaikan harga harian tertinggi (+25% s/d -15%).
+    7. `ALPHABETICAL`: Penyusunan alfabetis A sampai Z berdasarkan kode ticker resmi BEI.
+- Antarmuka Interaktif & Menu Dropdown Informatif (`src/components/CollectionSortDropdown.jsx`):
+  - Menyematkan tombol picu ringkas `⚡ Urutkan ▾` pada header sidebar koleksi Stock Explorer.
+  - Membangun menu popover kaya informasi yang menampilkan ke-7 opsi lengkap dengan ikon khusus, lencana kategori (`Rekomendasi`, `Kualitas`, `Teknikal`, `Eksekusi`, `Bandarmologi`, `Momentum`, `Kerapian`), dan ringkasan penjelasan 1 baris.
+  - Menyediakan Modal Dialog Panduan Strategi interaktif (`(?) Panduan Formula`) yang membedah persamaan matematika, bobot persentase, dan skenario penerapan trading untuk setiap opsi, dilengkapi tombol aksi langsung `[Terapkan]`.
+- Integrasi API & Penyimpanan Database Permanen:
+  - Memperkaya endpoint `GET /api/collections/items` dengan indikator teknikal live (`macd`, `rsi14`, `support`, `resistance`, `ma20`, `ma50`).
+  - Terintegrasi langsung dengan `PATCH /api/collections/items` untuk menyimpan urutan baru (`orderedIds`) secara permanen melalui transaksi Prisma ke database MySQL.
+  - Mempertahankan 100% fleksibilitas *drag-and-drop* manual pasca pengurutan.
+- Verifikasi & Pengujian:
+  - Menambahkan test suite khusus `tests/collectionSorter.test.js` yang menguji ke-7 strategi dan sifat imutabilitas pure function (9/9 test lulus).
+  - Seluruh 242 unit test proyek lulus 100%. Kompilasi produksi Next.js Turbopack berhasil tanpa galat.
+
 ## [2026-09-24] fix | Navigasi Bulan Berkelanjutan Kalender Aksi Korporasi & Caching Memori Sub-Milidetik
 - Analisis Penyebab Utama (Root Cause):
   - Navigasi Macet Melewati Oktober 2026 & Respon Lambat ("Lama"): Setiap pergantian bulan pada `src/components/CorporateCalendar.jsx`, endpoint `/api/corporate-actions` melakukan pemindaian tabel MySQL penuh tanpa cache terhadap 1.020 saham, mendeserialisasi dan memproses ribuan data JSON teks pada setiap panggilan (~4.000–5.000 ms).

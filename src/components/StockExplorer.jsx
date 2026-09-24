@@ -12,6 +12,7 @@ import AutoRejectionLadderPanel from './AutoRejectionLadderPanel';
 import SmartMoneyLiquidityPanel from './SmartMoneyLiquidityPanel';
 import BloombergIntelligencePanel from './BloombergIntelligencePanel';
 import MonthlySeasonalityPanel from './MonthlySeasonalityPanel';
+import CollectionSortDropdown from './CollectionSortDropdown';
 import {
   roundToIDXTick,
   calculateMonitorMetrics,
@@ -1553,6 +1554,31 @@ export default function StockExplorer({ user }) {
     }
   };
 
+  const handleApplySort = async (sortedItems, option) => {
+    if (!sortedItems || !selectedCollection?.id) return;
+
+    // Optimistic UI update
+    setCollectionItems(sortedItems);
+    if (selectedCollection?.id) {
+      itemsCacheRef.current[selectedCollection.id] = sortedItems;
+    }
+
+    // Persist new order to server
+    try {
+      const orderedIds = sortedItems.map(item => item.id);
+      await fetch('/api/collections/items', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          collectionId: selectedCollection.id,
+          orderedIds,
+        }),
+      });
+    } catch (err) {
+      console.error('Failed to persist sorted items order:', err);
+    }
+  };
+
   const handleCopyShareLink = (shareCode) => {
     const url = `${window.location.origin}/api/collections?shareCode=${shareCode}`;
     navigator.clipboard.writeText(url);
@@ -1766,6 +1792,19 @@ export default function StockExplorer({ user }) {
                       <span className="inline-flex items-center gap-1 font-bold text-emerald-600 dark:text-emerald-400 shrink-0">
                         <span className={`w-1.5 h-1.5 rounded-full bg-emerald-500 ${isSilentRefreshing ? 'animate-ping' : 'animate-pulse'}`}></span>
                         <span>{isSilentRefreshing ? 'Sync...' : 'Live 30s'}</span>
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Auto-Sort Toolbar */}
+                  {selectedCollection && collectionItems.length > 1 && (
+                    <div className="flex items-center justify-between pt-1 pb-0.5 px-0.5 border-t border-slate-100 dark:border-slate-800/80">
+                      <CollectionSortDropdown
+                        items={collectionItems}
+                        onApplySort={handleApplySort}
+                      />
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        {collectionItems.length} emiten
                       </span>
                     </div>
                   )}

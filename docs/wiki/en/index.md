@@ -44,3 +44,4 @@
 * [News Sentiment & Catalyst Tagging (NSENT)](./trading-system/news-sentiment-catalyst.md) — Algorithmic news sentiment index (-100 to +100) and corporate catalyst detection.
 * [AI-Powered Stock Screener](./trading-system/ai-stock-screener.md) — Conversational natural language screening, multi-factor criteria extraction, and offline LLM inference.
 * [AI-Powered Financial Consultation & Advisory](./trading-system/ai-financial-consultation.md) — Multi-turn conversational equity advisor, pre-calculated financial math, strict zero-hallucination grounding, and CPU priority mutex.
+* [Collection Sorter Engine](./trading-system/collection-sorter-engine.md) — 7 institutional automated sorting strategies for collections/watchlists (Smart Combination, Highest Quality Score, MACD Golden Cross, Target Buy Proximity, Smart Money, Top Daily Gainers, A-Z) with instant DB persistence.
