@@ -4,6 +4,34 @@
  * win rates, and best/worst month indicators for Indonesian stocks (IDX).
  */
 
+function parseDateComponents(dateVal) {
+  if (!dateVal) return null;
+
+  // If string, parse YYYY-MM-DD directly to prevent timezone skew (WIB vs UTC)
+  if (typeof dateVal === 'string') {
+    const datePart = dateVal.split('T')[0];
+    const parts = datePart.split('-');
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10);
+      const day = parseInt(parts[2], 10);
+      if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+        return { year, month, day, date: new Date(Date.UTC(year, month - 1, day)) };
+      }
+    }
+  }
+
+  // Fallback for Date objects or timestamps
+  const d = new Date(dateVal);
+  if (isNaN(d.getTime())) return null;
+  return {
+    year: d.getUTCFullYear(),
+    month: d.getUTCMonth() + 1,
+    day: d.getUTCDate(),
+    date: d
+  };
+}
+
 export function calculateMonthlySeasonality(historicalRows = []) {
   if (!Array.isArray(historicalRows) || historicalRows.length === 0) {
     return createEmptySeasonalityResponse();
@@ -11,39 +39,46 @@ export function calculateMonthlySeasonality(historicalRows = []) {
 
   // Filter and sanitize valid historical rows
   const validRows = historicalRows
-    .filter(row => row && row.date && (row.close != null || row.adjClose != null))
     .map(row => {
-      const dateObj = new Date(row.date);
+      if (!row || !row.date) return null;
+      const parsedDate = parseDateComponents(row.date);
+      if (!parsedDate) return null;
+
       const close = Number(row.close ?? row.adjClose ?? 0);
       const open = Number(row.open ?? close);
       const high = Number(row.high ?? Math.max(open, close));
       const low = Number(row.low ?? Math.min(open, close));
       const volume = Number(row.volume ?? 0);
+
+      if (!Number.isFinite(close) || close <= 0) return null;
+
       return {
-        date: dateObj,
-        year: dateObj.getFullYear(),
-        month: dateObj.getMonth() + 1, // 1-indexed (1..12)
-        day: dateObj.getDate(),
-        open,
-        high,
-        low,
+        date: parsedDate.date,
+        year: parsedDate.year,
+        month: parsedDate.month, // 1-indexed (1..12)
+        day: parsedDate.day,
+        open: Number.isFinite(open) && open > 0 ? open : close,
+        high: Number.isFinite(high) && high > 0 ? high : Math.max(open, close),
+        low: Number.isFinite(low) && low > 0 ? low : Math.min(open, close),
         close,
-        volume
+        volume: Number.isFinite(volume) && volume >= 0 ? volume : 0
       };
     })
-    .sort((a, b) => a.date - b.date);
+    .filter(Boolean)
+    .sort((a, b) => a.date.getTime() - b.date.getTime());
 
   if (validRows.length === 0) {
     return createEmptySeasonalityResponse();
   }
 
   const currentDate = new Date();
-  const currentYear = currentDate.getFullYear();
-  const currentMonth = currentDate.getMonth() + 1;
+  const currentYear = currentDate.getUTCFullYear();
+  const currentMonth = currentDate.getUTCMonth() + 1;
 
-  // Generate list of target years (past 5 years up to current year, e.g., 2022..2026 or 2021..2026)
-  const availableYears = Array.from(new Set(validRows.map(r => r.year))).sort((a, b) => b - a);
-  const years = availableYears.slice(0, 5); // Latest 5 years, descending (e.g. 2026, 2025, 2024, 2023, 2022)
+  // Generate list of target years (past 5 years up to current year, e.g. 2026, 2025, 2024, 2023, 2022)
+  const yearSet = new Set(validRows.map(r => r.year));
+  yearSet.add(currentYear);
+  const years = Array.from(yearSet).sort((a, b) => b - a).slice(0, 5);
 
   // Group rows by year and month
   const grouped = {};
@@ -121,11 +156,16 @@ export function calculateMonthlySeasonality(historicalRows = []) {
       if (yearOpen === null && openPrice > 0) yearOpen = openPrice;
       if (closePrice > 0) yearClose = closePrice;
 
-      const highPrice = Math.max(...monthDays.map(d => d.high));
-      const lowPrice = Math.min(...monthDays.map(d => d.low).filter(l => l > 0));
+      const validHighs = monthDays.map(d => d.high).filter(h => Number.isFinite(h) && h > 0);
+      const highPrice = validHighs.length > 0 ? Math.max(...validHighs) : Math.max(openPrice, closePrice);
 
-      const totalPriceSum = monthDays.reduce((acc, d) => acc + d.close, 0);
-      const avgPrice = Math.round(totalPriceSum / monthDays.length);
+      const validLows = monthDays.map(d => d.low).filter(l => Number.isFinite(l) && l > 0);
+      const lowPrice = validLows.length > 0 ? Math.min(...validLows) : Math.min(openPrice, closePrice);
+
+      const validCloses = monthDays.map(d => d.close).filter(c => Number.isFinite(c) && c > 0);
+      const avgPrice = validCloses.length > 0
+        ? Math.round(validCloses.reduce((acc, c) => acc + c, 0) / validCloses.length)
+        : Math.round(closePrice || openPrice || 0);
 
       const returnPercent = openPrice > 0 
         ? Number((((closePrice - openPrice) / openPrice) * 100).toFixed(2))
@@ -188,8 +228,7 @@ export function calculateMonthlySeasonality(historicalRows = []) {
     'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
   ];
 
-  let bestMonth = null;
-  let worstMonth = null;
+  const evaluatedMonthList = [];
 
   for (let m = 1; m <= 12; m++) {
     const stats = monthStats[m];
@@ -200,34 +239,29 @@ export function calculateMonthlySeasonality(historicalRows = []) {
       stats.avgHighPercent = Number((stats.highsList.reduce((a, b) => a + b, 0) / n).toFixed(2));
       stats.avgLowPercent = Number((stats.lowsList.reduce((a, b) => a + b, 0) / n).toFixed(2));
       stats.avgMonthlyPrice = Math.round(stats.pricesList.reduce((a, b) => a + b, 0) / n);
+      
+      const compositeScore = stats.winRatePercent * 100 + stats.avgReturnPercent;
+      evaluatedMonthList.push({
+        month: m,
+        name: monthNames[m],
+        winRatePercent: stats.winRatePercent,
+        avgReturnPercent: stats.avgReturnPercent,
+        avgHighPercent: stats.avgHighPercent,
+        avgLowPercent: stats.avgLowPercent,
+        avgMonthlyPrice: stats.avgMonthlyPrice,
+        score: compositeScore
+      });
     }
     stats.monthName = monthNames[m];
-
-    // Evaluate best and worst months based on winRate and avgReturn
-    if (n > 0) {
-      const monthScore = stats.winRatePercent * 100 + stats.avgReturnPercent;
-      if (!bestMonth || monthScore > bestMonth.score) {
-        bestMonth = {
-          month: m,
-          name: monthNames[m],
-          winRatePercent: stats.winRatePercent,
-          avgReturnPercent: stats.avgReturnPercent,
-          avgHighPercent: stats.avgHighPercent,
-          score: monthScore
-        };
-      }
-      if (!worstMonth || monthScore < worstMonth.score) {
-        worstMonth = {
-          month: m,
-          name: monthNames[m],
-          winRatePercent: stats.winRatePercent,
-          avgReturnPercent: stats.avgReturnPercent,
-          avgLowPercent: stats.avgLowPercent,
-          score: monthScore
-        };
-      }
-    }
   }
+
+  // Sort evaluated months descending by score
+  evaluatedMonthList.sort((a, b) => b.score - a.score);
+
+  const bestMonth = evaluatedMonthList.length > 0 ? evaluatedMonthList[0] : null;
+  const worstMonth = evaluatedMonthList.length > 1 
+    ? evaluatedMonthList[evaluatedMonthList.length - 1] 
+    : (evaluatedMonthList.length === 1 ? evaluatedMonthList[0] : null);
 
   // Calculate overall 5-year monthly win rate
   let totalEvaluatedCells = 0;
@@ -253,7 +287,8 @@ export function calculateMonthlySeasonality(historicalRows = []) {
 }
 
 function createEmptySeasonalityResponse() {
-  const years = [new Date().getFullYear()];
+  const currentYr = new Date().getUTCFullYear();
+  const years = [currentYr];
   const monthStats = {};
   for (let m = 1; m <= 12; m++) {
     monthStats[m] = {

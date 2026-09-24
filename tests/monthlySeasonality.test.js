@@ -63,4 +63,30 @@ test('Monthly Seasonality Engine Suite', async (t) => {
     assert.ok(nullResult);
     assert.equal(nullResult.overallWinRate, 0);
   });
+
+  await t.test('3. Penanganan timezone string YYYY-MM-DD aman tanpa pergeseran bulan', () => {
+    const dateRows = [
+      { date: '2025-01-01T00:00:00.000Z', open: 500, high: 520, low: 490, close: 510 },
+      { date: '2025-01-31T23:59:59.000Z', open: 510, high: 550, low: 505, close: 540 },
+    ];
+    const res = calculateMonthlySeasonality(dateRows);
+    assert.ok(res.matrix[2025][1]);
+    assert.equal(res.matrix[2025][1].status, 'PLUS');
+    assert.equal(res.matrix[2025][1].tradingDays, 2);
+  });
+
+  await t.test('4. Tahan terhadap data ekstrim (low = 0 atau missing) tanpa menghasilkan Infinity', () => {
+    const dirtyRows = [
+      { date: '2025-03-03', open: 100, high: 110, low: 0, close: 105 }, // low is 0
+      { date: '2025-03-28', open: 105, high: 0, low: 100, close: 102 }  // high is 0
+    ];
+    const res = calculateMonthlySeasonality(dirtyRows);
+    const marCell = res.matrix[2025][3];
+    assert.ok(Number.isFinite(marCell.low));
+    assert.ok(Number.isFinite(marCell.high));
+    assert.ok(Number.isFinite(marCell.maxLowPercent));
+    assert.ok(Number.isFinite(marCell.maxHighPercent));
+    assert.notEqual(marCell.low, Infinity);
+    assert.notEqual(marCell.high, -Infinity);
+  });
 });

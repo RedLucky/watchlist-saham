@@ -26,18 +26,24 @@ export default function MonthlySeasonalityPanel({ data, ticker }) {
   const { years, matrix, monthStats, overallWinRate, bestMonth, worstMonth } = data;
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-6">
+    <div className="bg-white dark:bg-slate-900/90 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 md:p-6 shadow-sm space-y-6">
       {/* Header Title */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
         <div>
-          <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <span>🗓️</span> Kalender Seasonality & Performa Bulanan 5 Tahun
-          </h3>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xl md:text-2xl">🗓️</span>
+            <h3 className="text-base md:text-lg font-black text-slate-900 dark:text-white tracking-tight">
+              Kalender Seasonality & Performa Bulanan 5 Tahun
+            </h3>
+            <span className="px-2 py-0.5 text-[10px] font-bold rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 uppercase">
+              5-Year Seasonality Matrix
+            </span>
+          </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Matriks histori persentase kenaikan/penurunan harga ({ticker || 'Emiten'}) per bulan, rata-rata harga transaksi, dan potensi ayunan puncak (swing).
           </p>
         </div>
-        <div className="flex items-center gap-2 text-xs font-semibold">
+        <div className="flex items-center gap-2 text-xs font-semibold self-start sm:self-auto">
           <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
             🟢 Plus / Gain
           </span>
@@ -75,7 +81,7 @@ export default function MonthlySeasonalityPanel({ data, ticker }) {
             {overallWinRate}% Hijau
           </div>
           <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-            Dari 5 tahun histori transaksi
+            Dari seluruh bulan transaksi
           </p>
         </div>
 
@@ -85,7 +91,7 @@ export default function MonthlySeasonalityPanel({ data, ticker }) {
             Klik Sel Bulan
           </div>
           <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-            Untuk melihat rincian rata-rata harga & swing
+            Membuka rincian harga & ayunan swing
           </p>
         </div>
       </div>
@@ -120,6 +126,7 @@ export default function MonthlySeasonalityPanel({ data, ticker }) {
                   {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => {
                     const cell = yrData[m] || {};
                     const { status, returnPercent } = cell;
+                    const isSelected = selectedCell?.year === yr && selectedCell?.month === m;
 
                     let bgClass = 'bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-600';
                     let textVal = '-';
@@ -134,15 +141,19 @@ export default function MonthlySeasonalityPanel({ data, ticker }) {
                       bgClass = 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400';
                       textVal = '0.0%';
                     } else if (status === 'FUTURE') {
-                      bgClass = 'bg-slate-50/40 dark:bg-slate-900/30 text-slate-300 dark:text-slate-700';
+                      bgClass = 'bg-slate-50/40 dark:bg-slate-900/30 text-slate-300 dark:text-slate-700 cursor-default';
                       textVal = '•';
                     }
+
+                    const isInteractive = status !== 'FUTURE' && status !== 'NO_DATA';
 
                     return (
                       <td
                         key={m}
-                        onClick={() => status !== 'FUTURE' && status !== 'NO_DATA' && setSelectedCell({ year: yr, month: m, data: cell })}
-                        className={`py-2 px-1 border-r border-slate-100 dark:border-slate-800 cursor-pointer transition-colors ${bgClass}`}
+                        onClick={() => isInteractive && setSelectedCell({ year: yr, month: m, data: cell })}
+                        className={`py-2 px-1 border-r border-slate-100 dark:border-slate-800 transition-all ${
+                          isInteractive ? 'cursor-pointer' : 'cursor-default opacity-50'
+                        } ${bgClass} ${isSelected ? 'ring-2 ring-indigo-500 relative z-10 font-black' : ''}`}
                         title={cell.open ? `Klik untuk detail rincian ${FULL_MONTH_NAMES[m]} ${yr}` : ''}
                       >
                         {textVal}
@@ -184,12 +195,50 @@ export default function MonthlySeasonalityPanel({ data, ticker }) {
                 const st = monthStats[m] || {};
                 const avgR = st.avgReturnPercent;
                 return (
-                  <td key={m} className={`py-1.5 px-1 border-r border-slate-100 dark:border-slate-800 ${avgR > 0 ? 'text-emerald-600 dark:text-emerald-400' : avgR < 0 ? 'text-rose-600 dark:text-rose-400' : ''}`}>
+                  <td key={m} className={`py-1.5 px-1 border-r border-slate-100 dark:border-slate-800 font-medium ${avgR > 0 ? 'text-emerald-600 dark:text-emerald-400' : avgR < 0 ? 'text-rose-600 dark:text-rose-400' : ''}`}>
                     {st.totalYearsEvaluated > 0 ? `${avgR > 0 ? '+' : ''}${avgR}%` : '-'}
                   </td>
                 );
               })}
               <td className="py-1.5 px-2 font-medium">
+                -
+              </td>
+            </tr>
+
+            {/* Aggregated 5-Year Average Swing High % Row */}
+            <tr className="bg-emerald-50/30 dark:bg-emerald-950/20 text-[10px] border-t border-slate-200/80 dark:border-slate-800/80 text-emerald-700 dark:text-emerald-400">
+              <td className="py-1.5 px-2 text-left border-r border-slate-200 dark:border-slate-800 font-medium">
+                Avg Peak 🚀
+              </td>
+              {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => {
+                const st = monthStats[m] || {};
+                const avgH = st.avgHighPercent;
+                return (
+                  <td key={m} className="py-1 px-1 border-r border-slate-100 dark:border-slate-800 font-mono">
+                    {st.totalYearsEvaluated > 0 ? `+${avgH}%` : '-'}
+                  </td>
+                );
+              })}
+              <td className="py-1 px-2 font-mono">
+                -
+              </td>
+            </tr>
+
+            {/* Aggregated 5-Year Average Traded Price Row */}
+            <tr className="bg-slate-100/50 dark:bg-slate-800/50 text-[10px] border-t border-slate-200/80 dark:border-slate-800/80 text-slate-700 dark:text-slate-300 font-mono">
+              <td className="py-1.5 px-2 text-left border-r border-slate-200 dark:border-slate-800 font-sans font-medium">
+                Avg Harga 💵
+              </td>
+              {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => {
+                const st = monthStats[m] || {};
+                const avgP = st.avgMonthlyPrice;
+                return (
+                  <td key={m} className="py-1 px-1 border-r border-slate-100 dark:border-slate-800">
+                    {st.totalYearsEvaluated > 0 && avgP > 0 ? avgP.toLocaleString('id-ID') : '-'}
+                  </td>
+                );
+              })}
+              <td className="py-1 px-2">
                 -
               </td>
             </tr>
@@ -202,7 +251,7 @@ export default function MonthlySeasonalityPanel({ data, ticker }) {
         <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/70 rounded-xl p-4 relative animate-fadeIn">
           <button
             onClick={() => setSelectedCell(null)}
-            className="absolute top-3 right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs px-2 py-1 rounded-md bg-slate-200/50 dark:bg-slate-700/50"
+            className="absolute top-3 right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs px-2.5 py-1 rounded-md bg-slate-200/60 dark:bg-slate-700/60 font-semibold"
           >
             ✕ Tutup
           </button>
