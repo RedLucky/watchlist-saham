@@ -4,6 +4,17 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-09-24] feat | Halaman Utuh Kalender Aksi Korporasi & API Aggregator
+- Aplikasi Kalender Interaktif (`src/components/CorporateCalendar.jsx`): Membangun modul kalender mandiri penuh dengan fitur:
+  - Kartu metrik header: Total Agenda Terjadwal, Jumlah Cum Date Aktif, Estimasi Total Dana Dividen Bulanan, dan Saham Yield Tertinggi.
+  - Pengatur Bulan (Month Navigator): Pemilih Bulan/Tahun, tombol Sebelumnya/Selanjutnya, dan tombol reset "Hari Ini".
+  - Filter Kategori & Pencarian: Pencarian teks ticker/acara secara real-time, dan beralih kategori (Semua Acara, Dividen Tunai, Keterbukaan Informasi BEI).
+  - Mode Tampilan Ganda: Grid Kalender Bulanan 7-Kolom yang responsif dilengkapi lencana acara dan Modal Detail Hari interaktif; serta Tampilan Daftar/Timeline terurut kronologis.
+  - Bridge Stock Explorer: Navigasi 1-klik kode saham langsung ke analisis finansial mendalam di Stock Explorer.
+- Endpoint API Terpadu (`src/app/api/corporate-actions/route.js`): Mengagregasi jadwal dividen (Cum Date, Ex Date, DPS Date, Payment Date) dan keterbukaan informasi BEI dari seluruh emiten, serta menghitung estimasi total dana dividen tunai bulanan dan metrik yield.
+- Integrasi Navigasi & Dashboard: Menambahkan tab `Kalender Aksi Korporasi` (📅) ke `NAVIGATION_MENU` di bawah `Pasar & Analisis` pada `Sidebar.jsx` dan memasangnya di `Dashboard.jsx`.
+- Pengujian Otomatis & Verifikasi: Membuat suite unit test pada `tests/corporateCalendar.test.js` untuk memvalidasi ekstraksi tanggal, perhitungan cum date aktif, logika hitung mundur relatif, dan kalkulasi yield. Lulus 100% cakupan pengujian dan build produksi Turbopack bersih.
+
 ## [2026-09-24] feat | Kalender Aksi Korporasi, Jadwal 4 Tanggal Keramat Dividen BEI & Pelacak Riwayat Multi-Tahun
 - Saluran Data 4 Tanggal Dividen Resmi BEI: Memperbarui `src/lib/corporateActionEngine.js` untuk membedah struktur keterbukaan informasi aksi korporasi Bursa Efek Indonesia (BEI), mengekstrak 4 tanggal krusial dividen: Cum Date (batas beli), Ex Date (tanpa hak dividen), Recording Date (DPS KSEI 16:00 WIB), dan Payment Date (pencairan ke RDN).
 - Resolusi Nilai Dividen (DPS) Bertingkat: Menerapkan hirarki perhitungan DPS mencakup nominal per lembar langsung (`CashDividenPerSaham`), derivasi matematis dividen total dibagi jumlah saham beredar (`CashDividenTotal / sharesOutstanding`), pemadanan jendela toleransi 15 hari dengan data Yahoo Finance, dan cadangan tingkat dividen statis.

@@ -4,6 +4,17 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-09-24] feat | Full Interactive Corporate Actions Calendar Page & Aggregated API Endpoint
+- Interactive Calendar Application (`src/components/CorporateCalendar.jsx`): Built full standalone calendar module featuring:
+  - Header metric cards: Total Scheduled Agendas, Active Cum Date Count, Total Monthly Dividend Cash Pool, and Highest Yield Stock.
+  - Month Navigator: Month/Year picker, Previous/Next controls, and "Today" reset button.
+  - Category Filter & Search: Real-time ticker/event text search, and category toggles (All Events, Cash Dividends, BEI Disclosures).
+  - Dual View Modes: Responsive 7-Column Monthly Calendar Grid with event badges and dynamic Day Detail Modal; List/Timeline View grouped chronologically.
+  - Stock Explorer Bridge: Integrated 1-click ticker selection jumping directly to detailed financial analysis.
+- Unified API Endpoint (`src/app/api/corporate-actions/route.js`): Aggregates dividend schedules (Cum Date, Ex Date, DPS Date, Payment Date) and BEI disclosures across all indexed stocks, computing monthly cash dividend payout sums and yield metrics.
+- Navigation & Dashboard Integration: Added `Kalender Aksi Korporasi` (📅) to `NAVIGATION_MENU` under `Pasar & Analisis` in `Sidebar.jsx` and mounted tab in `Dashboard.jsx`.
+- Automated Testing & Verification: Created unit test suite in `tests/corporateCalendar.test.js` validating date extraction, active cum date counting, relative countdown logic, and yield calculations. Passed 100% test coverage and clean Turbopack production build.
+
 ## [2026-09-24] feat | Official IDX 4-Date Dividend Schedule, Multi-Year Historical Tracker & Corporate Actions Panel
 - Official IDX 4-Date Dividend Pipeline: Upgraded `src/lib/corporateActionEngine.js` to parse official Indonesian Stock Exchange (IDX) corporate action structures, extracting the 4 critical dividend dates: Cum Date, Ex Date, Recording Date (DPS 16:00 WIB), and Payment Date (RDN settlement).
 - Multi-Source DPS Resolution: Implemented hierarchical DPS calculation supporting direct cash dividend per share (`CashDividenPerSaham`), mathematical derivation from total cash dividends and shares outstanding (`CashDividenTotal / sharesOutstanding`), 15-day tolerance window matching against Yahoo Finance history, and static dividend rate fallbacks.
