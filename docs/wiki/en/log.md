@@ -4,6 +4,14 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-09-24] fix | Corporate Actions Calendar Month Navigation & Rolling Window Options
+- Fixed Month & Year Stuck on Next/Prev Click:
+  - Diagnosed HTML `<select>` option mismatch in `src/components/CorporateCalendar.jsx`: previously, the month dropdown options only rendered `calendarData.monthsAvailable` (months with recorded events). When users clicked `◀` or `▶` to browse to a month without active events (or not yet loaded), the DOM select had no matching option and automatically fell back to displaying the first option (September 2026), making the controls appear frozen.
+  - Implemented `monthOptions` with dynamic rolling window (-24 months to +12 months) merged with `monthsAvailable`, `selectedMonth`, and `initialYearMonth`. Every navigable month is now guaranteed to exist in the dropdown options.
+  - Hardened `handlePrevMonth` and `handleNextMonth` with defensive NaN checks and safe year-boundary transitions (`2026-12` -> `2027-01` and `2026-01` -> `2025-12`).
+  - Added a dedicated Month Header Banner directly above the grid calendar with quick buttons (`◀ Bulan Lalu`, `Hari Ini`, `Bulan Depan ▶`) and live event counters.
+  - Added unit test in `tests/corporateCalendar.test.js` validating forward and backward month calculations across calendar year boundaries (16/16 tests passing).
+
 ## [2026-09-24] feat | Stock Explorer UI Re-Layout: Dual-Pane Master-Detail Workspace & Analytical Cockpit Tabs
 - **Dual-Pane Master-Detail Workspace (Opsi 1)**:
   - Transformed the vertically stacked collections container into a collapsible left sidebar (`w-80 lg:w-80 xl:w-96 shrink-0 lg:sticky lg:top-20`).

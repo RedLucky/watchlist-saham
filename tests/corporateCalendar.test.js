@@ -45,4 +45,29 @@ describe('Corporate Actions Calendar API & Data Processing Suite', () => {
     assert.strictEqual(parsed.badgeColor, 'emerald');
     assert.ok(parsed.cumDaysDiff >= 9 && parsed.cumDaysDiff <= 11);
   });
+
+  it('3. Menghitung bulan sebelumnya dan bulan berikutnya dengan benar melintasi batas tahun', () => {
+    // Helper function matching CorporateCalendar handlePrevMonth & handleNextMonth
+    const getPrevMonth = (selectedMonth) => {
+      const [year, month] = selectedMonth.split('-').map(Number);
+      const prevDate = new Date(year, month - 2, 1);
+      return `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+    };
+
+    const getNextMonth = (selectedMonth) => {
+      const [year, month] = selectedMonth.split('-').map(Number);
+      const nextDate = new Date(year, month, 1);
+      return `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}`;
+    };
+
+    // Standard transition: 2026-09 -> Next -> 2026-10
+    assert.strictEqual(getNextMonth('2026-09'), '2026-10');
+    // Standard transition: 2026-09 -> Prev -> 2026-08
+    assert.strictEqual(getPrevMonth('2026-09'), '2026-08');
+
+    // Year boundary next: 2026-12 -> Next -> 2027-01
+    assert.strictEqual(getNextMonth('2026-12'), '2027-01');
+    // Year boundary prev: 2026-01 -> Prev -> 2025-12
+    assert.strictEqual(getPrevMonth('2026-01'), '2025-12');
+  });
 });

@@ -73,14 +73,16 @@ export default function CorporateCalendar({ user = null, onSelectTicker = null }
 
   // Month Navigation Helpers
   const handlePrevMonth = () => {
-    const [year, month] = selectedMonth.split('-').map(Number);
+    const [year, month] = (selectedMonth || initialYearMonth).split('-').map(Number);
+    if (isNaN(year) || isNaN(month)) return;
     const prevDate = new Date(year, month - 2, 1);
     const newYearMonth = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
     setSelectedMonth(newYearMonth);
   };
 
   const handleNextMonth = () => {
-    const [year, month] = selectedMonth.split('-').map(Number);
+    const [year, month] = (selectedMonth || initialYearMonth).split('-').map(Number);
+    if (isNaN(year) || isNaN(month)) return;
     const nextDate = new Date(year, month, 1);
     const newYearMonth = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}`;
     setSelectedMonth(newYearMonth);
@@ -111,13 +113,31 @@ export default function CorporateCalendar({ user = null, onSelectTicker = null }
   // Format Month Display Name (e.g. "September 2026")
   const formattedMonthLabel = useMemo(() => {
     try {
-      const [y, m] = selectedMonth.split('-').map(Number);
+      const [y, m] = (selectedMonth || initialYearMonth).split('-').map(Number);
       const d = new Date(y, m - 1, 1);
       return d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
     } catch (e) {
       return selectedMonth;
     }
-  }, [selectedMonth]);
+  }, [selectedMonth, initialYearMonth]);
+
+  // Dynamic Month Options (always includes selectedMonth, all monthsAvailable, and a rolling window of +/- 24 months)
+  const monthOptions = useMemo(() => {
+    const set = new Set(calendarData.monthsAvailable || []);
+    if (selectedMonth) set.add(selectedMonth);
+    if (initialYearMonth) set.add(initialYearMonth);
+
+    const [currY, currM] = (selectedMonth || initialYearMonth).split('-').map(Number);
+    if (!isNaN(currY) && !isNaN(currM)) {
+      for (let offset = -24; offset <= 12; offset++) {
+        const d = new Date(currY, currM - 1 + offset, 1);
+        const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        set.add(ym);
+      }
+    }
+
+    return Array.from(set).sort((a, b) => b.localeCompare(a));
+  }, [calendarData.monthsAvailable, selectedMonth, initialYearMonth]);
 
   // Group events by day date for Grid View
   const eventsByDayMap = useMemo(() => {
@@ -263,22 +283,19 @@ export default function CorporateCalendar({ user = null, onSelectTicker = null }
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer shadow-xs"
             >
-              {calendarData.monthsAvailable?.length > 0 ? (
-                calendarData.monthsAvailable.map((m) => {
-                  const [y, mon] = m.split('-').map(Number);
-                  const d = new Date(y, mon - 1, 1);
-                  const label = d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
-                  return (
-                    <option key={m} value={m}>
-                      {label}
-                    </option>
-                  );
-                })
-              ) : (
-                <option value={selectedMonth}>{formattedMonthLabel}</option>
-              )}
+              {monthOptions.map((m) => {
+                const [y, mon] = m.split('-').map(Number);
+                const d = new Date(y, mon - 1, 1);
+                const label = d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+                const isCurrent = m === initialYearMonth;
+                return (
+                  <option key={m} value={m}>
+                    {label} {isCurrent ? '• (Bulan Ini)' : ''}
+                  </option>
+                );
+              })}
             </select>
 
             <button
@@ -461,6 +478,38 @@ export default function CorporateCalendar({ user = null, onSelectTicker = null }
           {/* VIEW MODE 1: GRID CALENDAR VIEW */}
           {viewMode === 'grid' && (
             <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 md:p-5 shadow-sm space-y-3">
+              {/* Month Header Banner */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-200 dark:border-slate-800">
+                <div className="flex items-center gap-2">
+                  <span className="text-base md:text-lg font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <span>🗓️</span>
+                    <span>{formattedMonthLabel}</span>
+                  </span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                    ({calendarData.events?.length || 0} Agenda)
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 self-start sm:self-auto">
+                  <button
+                    onClick={handlePrevMonth}
+                    className="px-2.5 py-1 text-xs font-bold rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors"
+                  >
+                    ◀ Bulan Lalu
+                  </button>
+                  <button
+                    onClick={handleResetToday}
+                    className="px-2.5 py-1 text-xs font-bold rounded-lg bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 transition-colors"
+                  >
+                    Bulan Ini
+                  </button>
+                  <button
+                    onClick={handleNextMonth}
+                    className="px-2.5 py-1 text-xs font-bold rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors"
+                  >
+                    Bulan Depan ▶
+                  </button>
+                </div>
+              </div>
               {/* Day Headers (Senin - Minggu) */}
               <div className="grid grid-cols-7 gap-1 md:gap-2 text-center text-xs font-bold text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800 pb-2">
                 <div>Sen</div>

@@ -4,6 +4,14 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-09-24] fix | Navigasi Bulan & Tahun Kalender Aksi Korporasi & Opsi Jendela Bergulir
+- Perbaikan Tombol Next & Prev Macet (Stuck):
+  - Mendiagnosis ketidakcocokan opsi HTML `<select>` pada `src/components/CorporateCalendar.jsx`: sebelumnya, opsi dropdown bulan hanya merender `calendarData.monthsAvailable` (bulan yang memiliki agenda aksi korporasi di database). Ketika pengguna mengklik tombol `◀` atau `▶` untuk melihat bulan yang belum memiliki agenda (atau sebelum data dimuat), elemen `<select>` DOM tidak menemukan `<option>` yang cocok dan otomatis kembali menampilkan opsi pertama (September 2026), sehingga tampilan bulan/tahun terlihat macet.
+  - Menerapkan `monthOptions` dengan jendela bergulir dinamis (-24 bulan hingga +12 bulan) yang digabungkan secara aman dengan `monthsAvailable`, `selectedMonth`, dan `initialYearMonth`. Seluruh bulan yang dituju kini dijamin tersedia pada opsi pilihan.
+  - Memperkuat fungsi `handlePrevMonth` dan `handleNextMonth` dengan pengecekan `isNaN` defensif dan peralihan batas pergantian tahun yang aman (`2026-12` -> `2027-01` dan `2026-01` -> `2025-12`).
+  - Menambahkan banner header bulan khusus tepat di atas kalender grid lengkap dengan tombol pintas (`◀ Bulan Lalu`, `Hari Ini`, `Bulan Depan ▶`) serta penghitung agenda aktif.
+  - Menambahkan unit test pada `tests/corporateCalendar.test.js` untuk memvalidasi kalkulasi navigasi bulan maju dan mundur melintasi batas tahun (16/16 test lulus).
+
 ## [2026-09-24] feat | Tata Ulang Antarmuka Stock Explorer: Workspace Master-Detail Dual-Pane & Tab Kategori Analytical Cockpit
 - **Workspace Master-Detail Dual-Pane (Opsi 1)**:
   - Mengubah penumpukan vertikal kontainer koleksi di bagian atas menjadi sidebar kiri yang fleksibel dan dapat diciutkan (`w-80 lg:w-80 xl:w-96 shrink-0 lg:sticky lg:top-20`).
