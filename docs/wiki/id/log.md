@@ -4,6 +4,24 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-09-24] feat | Tata Ulang Antarmuka Stock Explorer: Workspace Master-Detail Dual-Pane & Tab Kategori Analytical Cockpit
+- **Workspace Master-Detail Dual-Pane (Opsi 1)**:
+  - Mengubah penumpukan vertikal kontainer koleksi di bagian atas menjadi sidebar kiri yang fleksibel dan dapat diciutkan (`w-80 lg:w-80 xl:w-96 shrink-0 lg:sticky lg:top-20`).
+  - Menambahkan menu pilihan (dropdown) peralihan koleksi dengan tombol aksi kilat (🔄 Refresh, ✏️ Edit, 🔗 Bagikan, 🗑️ Hapus) serta indikator jumlah saham aktif.
+  - Mengimplementasikan daftar kartu saham vertikal yang ringkas dan dapat digulir (`max-h-[calc(100vh-270px)]`), menampilkan harga real-time, persentase & nominal perubahan, lencana skor berkode warna dinamis (80+ emerald, 65+ blue, 50+ amber, <50 rose), lencana pencapaian target harga beli/jual, serta mempertahankan 100% fungsionalitas drag-and-drop untuk mengatur urutan saham.
+  - Menyematkan tombol toggle pada header bilah pencarian (`[◀ Tutup Koleksi] / [📂 Buka Koleksi (N)]`) agar pengguna dapat menciutkan sidebar sewaktu-waktu dan memperluas grafik kanvas hingga lebar penuh layar monitor.
+  - Menyediakan tampilan kanvas kosong (*empty state*) yang intuitif saat belum ada saham yang dipilih, memandu pengguna untuk mencari atau memilih saham dari koleksi.
+- **Tab Kategori Analytical Cockpit (Opsi 4)**:
+  - Mengonsolidasikan 10 sub-panel analitis yang sebelumnya menumpuk panjang di bawah grafik menjadi 4 tab kategori institucional (`cockpitTab`):
+    1. `Valuasi & Finansial`: Valuasi Relatif Peers (RV), Pita Valuasi Historis (PBND), ROIC vs WACC & EVA, serta Interactive Scenario Forecaster.
+    2. `Musim & Dividen`: Heatmap Seasonality Bulanan 5 Tahun, Analisis Jebakan Dividen & Run-Rate, serta Kalender Aksi Korporasi & Timeline Katalis.
+    3. `Smart Money & Aliran`: Pergeseran Kepemilikan KSEI, Konsentrasi Broker (Aliran Bandarmologi), Profil Volume Lelang Pasar, serta Batas Auto-Rejection (ARA/ARB) & Tangga Eksekusi.
+    4. `Riset AI & Sentimen`: Berkas Riset Intelijen Institusional Bloomberg dan Indeks Sentimen Berita Algoritmik.
+  - Menyertakan lencana hitung modul aktif pada setiap header tab untuk menandakan ketersediaan sub-mesin analitis.
+- **Verifikasi & Build**:
+  - Semua pengujian otomatis lulus 100% (15/15 unit test).
+  - Kompilasi produksi Next.js Turbopack sukses bersih dengan 0 error.
+
 ## [2026-09-24] feat | Kalender Aksi Korporasi, Jadwal 4 Tanggal Keramat Dividen BEI & Pelacak Riwayat Multi-Tahun
 - Saluran Data 4 Tanggal Dividen Resmi BEI: Memperbarui `src/lib/corporateActionEngine.js` untuk membedah struktur keterbukaan informasi aksi korporasi Bursa Efek Indonesia (BEI), mengekstrak 4 tanggal krusial dividen: Cum Date (batas beli), Ex Date (tanpa hak dividen), Recording Date (DPS KSEI 16:00 WIB), dan Payment Date (pencairan ke RDN).
 - Resolusi Nilai Dividen (DPS) Bertingkat: Menerapkan hirarki perhitungan DPS mencakup nominal per lembar langsung (`CashDividenPerSaham`), derivasi matematis dividen total dibagi jumlah saham beredar (`CashDividenTotal / sharesOutstanding`), pemadanan jendela toleransi 15 hari dengan data Yahoo Finance, dan cadangan tingkat dividen statis.

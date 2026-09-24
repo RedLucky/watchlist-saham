@@ -34,7 +34,14 @@ version: "1.0.0"
    - **Sector Rotation Bar**: Real-time 11-sector performance heatmap with top 2 leaders marked with flame (`🔥`).
    - **Strategy Control Center**: Unified trading horizon pill toggle (`Scalping`, `Daily`, `Swing`) + AI strategy mode selection (`Auto`, `Balanced`, `Growth`, `Conservative`, `Defensive`, `Custom`).
    - **Stock Table**: Master ranking table with real-time text search, instant filter chips (`Score ≥ 80`, `Supertrend BUY`, `R:R ≥ 2.0`), and mobile key trade levels chip row.
-2. **Stock Explorer**: Deep single-ticker analytics, Graham fair value projections, Piotroski & Altman breakdown, custom collections, ownership breakdown, and **On-Demand AI Research** (Queue-based).
+2. **Stock Explorer**: 
+   - **Dual-Pane Master-Detail Workspace (Opsi 1)**: Collapsible left sidebar (`w-80`/`w-96`) for real-time stock collections with drag-and-drop reordering, 30s auto-sync, target buy/sell alert badges, and instant ticker loading into the main canvas.
+   - **Interactive Chart & Key Metrics**: Real-time candlestick charts, moving averages, 8-metric valuation badges (Graham, Fair Value, Margin of Safety, CAGR, F-Score, Z-Score, Composite Score, Dividend Score).
+   - **Analytical Cockpit Category Tabs (Opsi 4)**: 4-category consolidated dashboard below the chart:
+     - `Valuasi & Finansial`: Relative Valuation Peers (RV), Historical Valuation Bands (PBND), ROIC vs WACC & EVA, Scenario Forecaster.
+     - `Musim & Dividen`: 5-Year Monthly Seasonality Heatmap, Dividend Trap Analyzer & Run-Rate, Corporate Actions Calendar & Catalyst Timeline.
+     - `Smart Money & Aliran`: KSEI Ownership Shift, Broker Concentration (Bandarmologi), Volume Profile, Auto-Rejection Limits (ARA/ARB) & Execution Ladder.
+     - `Riset AI & Sentimen`: Bloomberg Intelligence Institutional Research Dossier and Algorithmic News Sentiment.
 3. **Stock Screener**: Multi-strategy screener tabs (Top Pick, Passive Dividend, Value Cheap, Quality Compounders, Potential Breakout).
 4. **Alpha Legends**: Direct quantitative screening mirroring legends: Warren Buffett, Peter Lynch, Ben Graham, and Joel Greenblatt.
 5. **Pension Planner & Tracker**: Monte Carlo and backprop portfolio optimization for multi-asset retirement accumulation (SBN, Saham, RDPU).

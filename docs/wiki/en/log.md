@@ -4,6 +4,24 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-09-24] feat | Stock Explorer UI Re-Layout: Dual-Pane Master-Detail Workspace & Analytical Cockpit Tabs
+- **Dual-Pane Master-Detail Workspace (Opsi 1)**:
+  - Transformed the vertically stacked collections container into a collapsible left sidebar (`w-80 lg:w-80 xl:w-96 shrink-0 lg:sticky lg:top-20`).
+  - Added a collection switcher dropdown with quick action buttons (🔄 Refresh, ✏️ Edit, 🔗 Share, 🗑️ Delete) and active item count indicators.
+  - Implemented a compact, vertically scrollable list of collection items (`max-h-[calc(100vh-270px)]`) featuring real-time prices, percentage and nominal changes, color-coded score badges (80+ emerald, 65+ blue, 50+ amber, <50 rose), target buy/sell progress badges, and 100% preservation of drag-and-drop reordering.
+  - Added a toggle button in the Search Bar header (`[◀ Tutup Koleksi] / [📂 Buka Koleksi (N)]`) allowing users to seamlessly collapse the sidebar for full-width chart expansion.
+  - Added a clean empty state canvas when no stock is currently selected with guidance to select or search for a ticker.
+- **Analytical Cockpit Category Tabs (Opsi 4)**:
+  - Consolidated the 10 stacked sub-panels below the chart into a 4-tab institutional analytical cockpit (`cockpitTab`):
+    1. `Valuasi & Finansial`: Relative Valuation Peers (RV), Historical Valuation Bands (PBND), ROIC vs WACC & EVA, and Scenario Forecaster.
+    2. `Musim & Dividen`: 5-Year Monthly Seasonality Heatmap, Dividend Trap Analyzer & Run-Rate, and Corporate Actions Calendar & Catalyst Timeline.
+    3. `Smart Money & Aliran`: KSEI Ownership Shift, Broker Concentration (Bandarmologi Flow), Volume Profile, and Auto-Rejection Limits (ARA/ARB) & Execution Ladder.
+    4. `Riset AI & Sentimen`: Bloomberg Intelligence Institutional Research Dossier and Algorithmic News Sentiment.
+  - Added dynamic module count badges on each tab header showing available sub-engines.
+- **Verification & Build**:
+  - Automated test suite passed 100% (15/15 unit tests).
+  - Next.js Turbopack production build succeeded cleanly with 0 errors.
+
 ## [2026-09-24] feat | Official IDX 4-Date Dividend Schedule, Multi-Year Historical Tracker & Corporate Actions Panel
 - Official IDX 4-Date Dividend Pipeline: Upgraded `src/lib/corporateActionEngine.js` to parse official Indonesian Stock Exchange (IDX) corporate action structures, extracting the 4 critical dividend dates: Cum Date, Ex Date, Recording Date (DPS 16:00 WIB), and Payment Date (RDN settlement).
 - Multi-Source DPS Resolution: Implemented hierarchical DPS calculation supporting direct cash dividend per share (`CashDividenPerSaham`), mathematical derivation from total cash dividends and shares outstanding (`CashDividenTotal / sharesOutstanding`), 15-day tolerance window matching against Yahoo Finance history, and static dividend rate fallbacks.

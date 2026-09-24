@@ -33,7 +33,14 @@ version: "1.0.0"
    - **Pita Rotasi Sektor**: Heatmap 11 sektor BEI dengan badge pendar api (`🔥`) pada 2 sektor terkuat.
    - **Pusat Kendali Strategi**: Tombol horison waktu (`Scalping`, `Daily`, `Swing`) + Pemilihan mode algoritma (`Otomatis`, `Seimbang`, `Pertumbuhan`, `Konservatif`, `Defensif`, `Custom`).
    - **Tabel Peringkat Saham**: Tabel pemindai saham dengan pencarian teks real-time, filter instan (`Skor ≥ 80`, `Sinyal BUY`, `R:R ≥ 2.0`), dan chip level beli/target di tampilan mobile.
-2. **Stock Explorer**: Analisis mendalam per emiten, proyeksi Nilai Wajar Graham, breakdown skor Piotroski & Altman, koleksi kustom, dan komposisi pemegang saham.
+2. **Stock Explorer**: 
+   - **Workspace Master-Detail Dual-Pane (Opsi 1)**: Sidebar kiri yang dapat diciutkan (`w-80`/`w-96`) untuk koleksi saham pengguna dengan fitur pengurutan geser-dan-lepas (drag-and-drop), auto-sync 30 detik, lencana alarm target beli/jual, serta pemuatan instan emiten ke kanvas utama.
+   - **Grafik Interaktif & Metrik Kunci**: Grafik candlestick real-time, moving averages, dan 8 lencana valuasi (Graham, Nilai Wajar, Margin of Safety, CAGR, F-Score, Z-Score, Skor Komposit, Skor Dividen).
+   - **Analytical Cockpit Category Tabs (Opsi 4)**: Dashboard analitis 4-kategori terpadu di bawah grafik:
+     - `Valuasi & Finansial`: Valuasi Relatif Peers (RV), Pita Valuasi Historis (PBND), ROIC vs WACC & EVA, Scenario Forecaster.
+     - `Musim & Dividen`: Heatmap Seasonality Bulanan 5 Tahun, Analisis Jebakan Dividen & Run-Rate, Kalender Aksi Korporasi & Timeline Katalis.
+     - `Smart Money & Aliran`: Pergeseran Kepemilikan KSEI, Konsentrasi Broker (Bandarmologi), Profil Volume, Batas Auto-Rejection (ARA/ARB) & Tangga Eksekusi.
+     - `Riset AI & Sentimen`: Berkas Riset Intelijen Institusional Bloomberg dan Indeks Sentimen Berita Algoritmik.
 3. **Stock Screener**: Tab pemindai multi-strategi (Pilihan Utama, Dividen Pasif, Valuasi Murah, Compounder Berkualitas, Potensi Breakout).
 4. **Alpha Legends**: Pemindai saham berbasis filosofi investor legendaris dunia yang disesuaikan untuk pasar BEI.
 5. **Kalkulator & Tracker Pensiun**: Simulasi alokasi pensiun multi-aset (SBN, Saham, RDPU) menggunakan optimasi portofolio modern dan backprop.

@@ -596,6 +596,8 @@ function renderAiMarkdown(content) {
 export default function StockExplorer({ user }) {
   // Navigation View State
   const [activeTab, setActiveTab] = useState('explorer'); // 'explorer' | 'compare'
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [cockpitTab, setCockpitTab] = useState('valuation'); // 'valuation' | 'seasonality' | 'smartmoney' | 'ai'
 
   // Search & Stock Data State
   const [searchQuery, setSearchQuery] = useState('');
@@ -1634,424 +1636,360 @@ export default function StockExplorer({ user }) {
         </div>
       </div>
 
-      {/* ── 1. KOLEKSI SAYA (PLACED AT THE TOP) ───────────────────────────── */}
-      <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">📂</span>
-              <h2 className="text-lg md:text-xl font-black text-slate-900 dark:text-white">
-                Koleksi Saham Saya
-              </h2>
-            </div>
-            <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 mt-0.5">
-              Simpan, kelompokkan, dan pantau target harga beli/jual saham favorit Anda (Klik kartu untuk langsung melihat detail analisis)
-            </p>
-          </div>
-
-          <button
-            onClick={() => {
-              setNewCollectionName('');
-              setNewCollectionDesc('');
-              setNewCollectionEmoji('📁');
-              setShowCreateModal(true);
-            }}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 self-start sm:self-auto"
-          >
-            <span>+</span> Buat Koleksi Baru
-          </button>
-        </div>
-
-        {/* Collections List Pills/Cards */}
-        {loadingCollections ? (
-          <div className="text-center py-6 text-xs text-slate-500 dark:text-slate-400">Memuat koleksi...</div>
-        ) : collections.length === 0 ? (
-          <div className="text-center py-8 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-6">
-            <span className="text-3xl block mb-2">📁</span>
-            <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Belum ada koleksi yang dibuat</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
-              Klik &quot;Buat Koleksi Baru&quot; untuk mulai mengelompokkan saham favorit Anda, misalnya &quot;Blue Chip Dividen&quot; atau &quot;Growth Watchlist&quot;.
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-            {collections.map((col) => {
-              const isSelected = selectedCollection?.id === col.id;
-              return (
-                <div
-                  key={col.id}
-                  onClick={() => setSelectedCollection(col)}
-                  className={`cursor-pointer rounded-xl p-3.5 border transition-all relative group text-left ${
-                    isSelected
-                      ? 'bg-indigo-50/80 dark:bg-indigo-950/40 border-indigo-500 dark:border-indigo-500 ring-2 ring-indigo-500/20'
-                      : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700/60 hover:border-indigo-300'
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <span className="text-2xl">{col.emoji || '📁'}</span>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingCollection(col);
-                          setNewCollectionName(col.name);
-                          setNewCollectionEmoji(col.emoji || '📁');
-                          setNewCollectionDesc(col.description || '');
-                          setIsCollectionPublic(col.isPublic || false);
-                          setShowEditModal(true);
-                        }}
-                        className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors"
-                        title="Edit Nama, Deskripsi & Emoji Koleksi"
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteCollection(col.id, col.name);
-                        }}
-                        className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-100 dark:hover:bg-rose-950/60 rounded transition-colors"
-                        title="Hapus Koleksi"
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                  </div>
-
-                  <h4 className="font-bold text-xs md:text-sm text-slate-900 dark:text-white mt-2 line-clamp-1">
-                    {col.name}
-                  </h4>
-                  <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-400 mt-1">
-                    <span>{col._count?.items || 0} Saham</span>
-                    {col.isPublic && <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold">🌐 Publik</span>}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Selected Collection Stocks Grid (4 Columns) with Instant Click View & Target Alerts */}
-        {selectedCollection && (
-          <div className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 dark:bg-slate-800/40 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700/60">
-              <div className="flex items-center gap-2.5">
-                <span className="text-2xl">{selectedCollection.emoji}</span>
-                <div>
-                  <h3 className="font-bold text-sm md:text-base text-slate-900 dark:text-white flex items-center gap-2">
-                    <span>{selectedCollection.name}</span>
-                    {selectedCollection.isPublic && (
-                      <span className="text-[10px] bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 px-2 py-0.5 rounded-full font-bold">
-                        🌐 Publik
-                      </span>
-                    )}
-                  </h3>
-                  {selectedCollection.description ? (
-                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">{selectedCollection.description}</p>
-                  ) : (
-                    <p className="text-[11px] text-slate-400 italic mt-0.5">Belum ada deskripsi koleksi</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
-                {/* Live Auto-Refresh Indicator */}
-                <div
-                  className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold rounded-xl border border-emerald-200/80 dark:border-emerald-800/60 shadow-sm"
-                  title="Harga & Skor di kartu koleksi otomatis diperbarui setiap 30 detik"
-                >
-                  <span className={`w-2 h-2 rounded-full bg-emerald-500 ${isSilentRefreshing ? 'animate-ping' : 'animate-pulse'}`}></span>
-                  <span>{isSilentRefreshing ? 'Memperbarui...' : 'Auto-Sync 30s'}</span>
-                </div>
-
-                <button
-                  onClick={() => fetchCollectionItems(selectedCollection.id, true, false)}
-                  className="p-1.5 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-indigo-600 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm transition-colors"
-                  title="Refresh data & harga saham koleksi sekarang"
-                >
-                  🔄
-                </button>
-
-                <button
-                  onClick={() => {
-                    setEditingCollection(selectedCollection);
-                    setNewCollectionName(selectedCollection.name);
-                    setNewCollectionEmoji(selectedCollection.emoji || '📁');
-                    setNewCollectionDesc(selectedCollection.description || '');
-                    setIsCollectionPublic(selectedCollection.isPublic || false);
-                    setShowEditModal(true);
-                  }}
-                  className="px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 hover:text-indigo-600 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-1.5 transition-colors"
-                  title="Edit Nama, Deskripsi & Emoji Koleksi Ini"
-                >
-                  <span>✏️</span> Edit Koleksi
-                </button>
-
-                {selectedCollection.shareCode && (
-                  <button
-                    onClick={() => handleCopyShareLink(selectedCollection.shareCode)}
-                    className="px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-1.5 transition-colors"
-                  >
-                    🔗 {copiedShareCode === selectedCollection.shareCode ? 'Link Tersalin! ✅' : 'Bagikan'}
-                  </button>
-                )}
-
-                <button
-                  onClick={() => handleDeleteCollection(selectedCollection.id, selectedCollection.name)}
-                  className="p-1.5 bg-white dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-400 hover:text-rose-600 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm transition-colors"
-                  title="Hapus Koleksi Ini"
-                >
-                  🗑️
-                </button>
-              </div>
-            </div>
-
-            {loadingItems && collectionItems.length === 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
-                {[1, 2, 3, 4].map(idx => (
-                  <div key={idx} className="animate-pulse rounded-2xl p-4 bg-slate-100 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 space-y-3 h-[175px]">
-                    <div className="flex justify-between items-center">
-                      <div className="h-5 w-16 bg-slate-200 dark:bg-slate-700 rounded-md"></div>
-                      <div className="h-4 w-12 bg-slate-200 dark:bg-slate-700 rounded-md"></div>
-                    </div>
-                    <div className="h-3 w-28 bg-slate-200 dark:bg-slate-700 rounded-md"></div>
-                    <div className="h-6 w-24 bg-slate-200 dark:bg-slate-700 rounded-md mt-2"></div>
-                    <div className="h-8 w-full bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
-                  </div>
-                ))}
-              </div>
-            ) : collectionItems.length === 0 ? (
-              <div className="text-center py-8 text-xs text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
-                Koleksi ini masih kosong. Cari saham di bawah lalu klik &quot;Simpan ke Koleksi&quot;.
-              </div>
-            ) : (
-              /* 4-COLUMN CARDS GRID FOR SAVED STOCKS (DRAGGABLE & REORDERABLE) */
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
-                {collectionItems.map((item, index) => {
-                  const s = item.stock || {};
-                  const price = s.price || 0;
-                  const isItemUp = (s.changePercent || 0) >= 0;
-                  const itemNominal = getNominalChange(price, s.changePercent);
-                  
-                  // Keep score 100% in sync with live detail composite score if this stock is currently selected
-                  const isCurrentSelected = stockDetail?.ticker === item.ticker;
-                  const liveCompScore = (isCurrentSelected && scores?.fundamental != null)
-                    ? Math.round(((scores.fundamental ?? 50) * 0.45) + ((scores.technical ?? 50) * 0.35) + ((scores.trending ?? 50) * 0.10) + ((scores.smartMoney ?? 50) * 0.10))
-                    : null;
-                  const score = liveCompScore ?? s.score;
-
-                  // Target Buy Hit: price <= targetBuy
-                  const isTargetBuyHit = item.targetBuy != null && price > 0 && price <= item.targetBuy;
-                  // Target Sell Hit: price >= targetSell
-                  const isTargetSellHit = item.targetSell != null && price > 0 && price >= item.targetSell;
-
-                  const isDragging = draggedItemIndex === index;
-                  const isDragOver = dragOverIndex === index && draggedItemIndex !== index;
-
-                  let cardStyle = 'bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/80 hover:border-indigo-400/60 shadow-sm';
-                  if (isTargetBuyHit) {
-                    cardStyle = 'bg-emerald-50/90 dark:bg-emerald-950/60 border-emerald-500 ring-2 ring-emerald-500/30 shadow-md';
-                  } else if (isTargetSellHit) {
-                    cardStyle = 'bg-rose-50/90 dark:bg-rose-950/60 border-rose-500 ring-2 ring-rose-500/30 shadow-md';
-                  }
-
-                  return (
-                    <div
-                      key={item.id}
-                      draggable={true}
-                      onDragStart={(e) => handleDragStart(e, index)}
-                      onDragOver={(e) => handleDragOver(e, index)}
-                      onDragEnd={handleDragEnd}
-                      onDrop={(e) => handleDrop(e, index)}
-                      onClick={() => handleSelectStock(item.ticker, true)}
-                      className={`cursor-pointer border rounded-xl p-3.5 transition-all flex flex-col justify-between group relative select-none overflow-hidden ${cardStyle} ${
-                        isDragging ? 'opacity-30 scale-95 border-dashed border-indigo-500 shadow-none' : ''
-                      } ${
-                        isDragOver ? 'ring-2 ring-indigo-500 border-indigo-500 scale-[1.02] shadow-lg' : ''
-                      }`}
-                    >
-                      {/* ── BACKGROUND SCORE WATERMARK (DYNAMIC TIER COLOR) ── */}
-                      {score != null && (
-                        <div className="absolute right-6 bottom-3 pointer-events-none select-none z-0 overflow-hidden opacity-25 dark:opacity-30 group-hover:opacity-40 dark:group-hover:opacity-45 transition-opacity flex flex-col items-end">
-                          <span
-                            className={`text-[10px] font-black uppercase tracking-widest leading-none mr-1 -mb-1 font-mono ${
-                              score >= 80
-                                ? 'text-emerald-700 dark:text-emerald-400'
-                                : score >= 65
-                                ? 'text-blue-700 dark:text-blue-400'
-                                : score >= 50
-                                ? 'text-amber-700 dark:text-amber-400'
-                                : 'text-rose-700 dark:text-rose-400'
-                            }`}
-                          >
-                            SKOR
-                          </span>
-                          <span
-                            className={`text-6xl font-black tracking-tighter leading-none font-mono ${
-                              score >= 80
-                                ? 'text-emerald-700 dark:text-emerald-400'
-                                : score >= 65
-                                ? 'text-blue-700 dark:text-blue-400'
-                                : score >= 50
-                                ? 'text-amber-700 dark:text-amber-400'
-                                : 'text-rose-700 dark:text-rose-400'
-                            }`}
-                          >
-                            {score}
-                          </span>
-                        </div>
-                      )}
-
-                      <div className="relative z-10">
-                        {/* Target Alert Badge */}
-                        {isTargetBuyHit && (
-                          <div className="mb-2 px-2 py-0.5 bg-emerald-500 text-white text-[10px] font-black rounded-md flex items-center justify-between">
-                            <span>🎯 TARGET BUY TERCAPAI!</span>
-                            <span>≤ Rp {item.targetBuy.toLocaleString('id-ID')}</span>
-                          </div>
-                        )}
-                        {isTargetSellHit && (
-                          <div className="mb-2 px-2 py-0.5 bg-rose-500 text-white text-[10px] font-black rounded-md flex items-center justify-between">
-                            <span>🚀 TARGET SELL TERCAPAI!</span>
-                            <span>≥ Rp {item.targetSell.toLocaleString('id-ID')}</span>
-                          </div>
-                        )}
-
-                        <div className="flex items-center justify-between mb-1.5">
-                          <div className="flex items-center gap-1.5">
-                            {/* Drag Grip Handle */}
-                            <span
-                              className="cursor-grab active:cursor-grabbing text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 text-xs px-0.5 select-none transition-colors"
-                              title="Tahan & geser untuk atur urutan kartu"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              ⠿
-                            </span>
-                            <span className="font-black text-sm text-slate-900 dark:text-white group-hover:text-indigo-600 transition-colors">
-                              {item.ticker}
-                            </span>
-                            <span className="text-[10px] text-slate-600 dark:text-slate-400 truncate max-w-[85px]">
-                              {s.sector || ''}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={(e) => handleOpenMonitorModal(s, item.ticker, e)}
-                              className="text-xs p-1 text-slate-500 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400"
-                              title="Pantau Saham Ini di Win Rate Dashboard"
-                            >
-                              🎯
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleAddToCompare(item.ticker);
-                              }}
-                              className="text-xs p-1 text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400"
-                              title="Tambah ke Komparasi"
-                            >
-                              ⚖️
-                            </button>
-                            <button
-                              onClick={(e) => handleOpenMoveModal(item, e)}
-                              className="text-xs p-1 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400"
-                              title="Pindahkan ke Koleksi Lain"
-                            >
-                              📦
-                            </button>
-                            <button
-                              onClick={(e) => handleOpenEditItemModal(item, e)}
-                              className="text-xs p-1 text-slate-500 hover:text-amber-600 dark:text-slate-400 dark:hover:text-amber-400"
-                              title="Edit Catatan & Target Buy/Sell"
-                            >
-                              ✏️
-                            </button>
-                            <button
-                              onClick={(e) => handleRemoveStockFromCollection(selectedCollection.id, item.ticker, e)}
-                              className="text-xs p-1 text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400"
-                              title="Hapus dari Koleksi"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Price & Change */}
-                        <div className="flex items-baseline justify-between mb-2">
-                          <span className="text-base font-black text-slate-900 dark:text-white">
-                            Rp {price ? price.toLocaleString('id-ID') : '-'}
-                          </span>
-                          <span
-                            className={`text-xs font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 ${
-                              isItemUp ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300' : 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300'
-                            }`}
-                          >
-                            <span>{isItemUp ? '+' : ''}{itemNominal.toLocaleString('id-ID')}</span>
-                            <span>({isItemUp ? '+' : ''}{s.changePercent ? Number(s.changePercent).toFixed(2) : 0}%)</span>
-                          </span>
-                        </div>
-
-                        {/* Target Buy & Sell Status Tags */}
-                        {(item.targetBuy != null || item.targetSell != null) && (
-                          <div className="space-y-1 mb-2">
-                            <div className="grid grid-cols-2 gap-1 text-[10px] font-semibold">
-                              <div className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300">
-                                Beli: {item.targetBuy != null ? `Rp ${item.targetBuy.toLocaleString('id-ID')}` : '-'}
-                              </div>
-                              <div className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300">
-                                Jual: {item.targetSell != null ? `Rp ${item.targetSell.toLocaleString('id-ID')}` : '-'}
-                              </div>
-                            </div>
-                            {item.targetBuy != null && item.targetSell != null && Number(item.targetBuy) > 0 && (
-                              <div className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center justify-between ${
-                                item.targetSell >= item.targetBuy
-                                  ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40'
-                                  : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200/60 dark:border-rose-800/40'
-                              }`}>
-                                <span>Potensi Gain:</span>
-                                <span>
-                                  {item.targetSell >= item.targetBuy ? '+' : ''}Rp {(item.targetSell - item.targetBuy).toLocaleString('id-ID')} ({item.targetSell >= item.targetBuy ? '+' : ''}{(((item.targetSell - item.targetBuy) / item.targetBuy) * 100).toFixed(1)}%)
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Notes */}
-                        {item.notes && (
-                          <div className="text-[11px] text-slate-700 dark:text-slate-300 bg-slate-50/80 dark:bg-slate-900/80 p-2 rounded-lg border border-slate-200 dark:border-slate-700 line-clamp-2">
-                            📝 {item.notes}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="relative z-10 mt-2.5 pt-2 border-t border-slate-200/80 dark:border-slate-700/60 text-[10px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
-                        <span>Ditambahkan: {new Date(item.addedAt).toLocaleDateString('id-ID')}</span>
-                        <span className="text-indigo-600 dark:text-indigo-400 font-bold group-hover:underline">Buka Riset ➔</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
       {/* ── 2. VIEW SELECTION: EXPLORER VS COMPARE ──────────────────────── */}
       {activeTab === 'explorer' ? (
-        <>
-          {/* SEARCH BAR (PLACED BELOW COLLECTIONS) */}
-          <div className="bg-white dark:bg-slate-900/90 backdrop-blur border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm">
-            <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
-              <div>
-                <h3 className="font-black text-sm md:text-base text-slate-900 dark:text-white">
-                  Pencarian Saham IDX
-                </h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400">
-                  Cari kode ticker atau nama perusahaan (misal: BBCA, BBRI, ASII, ADRO, TLKM)
-                </p>
+        <div className="flex flex-col lg:flex-row gap-5 items-start">
+          {/* ── LEFT PANE: KOLEKSI SAYA (SIDEBAR) ─────────────────────────── */}
+          {isSidebarOpen && (
+            <aside className="w-full lg:w-80 xl:w-96 shrink-0 bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-4 lg:sticky lg:top-20">
+              {/* Sidebar Header */}
+              <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">📂</span>
+                  <div>
+                    <h2 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <span>Koleksi Saham</span>
+                      <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-mono">
+                        {collections.length}
+                      </span>
+                    </h2>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => {
+                      setNewCollectionName('');
+                      setNewCollectionDesc('');
+                      setNewCollectionEmoji('📁');
+                      setShowCreateModal(true);
+                    }}
+                    className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold rounded-lg shadow-sm transition-all flex items-center gap-1"
+                    title="Buat Koleksi Baru"
+                  >
+                    <span>+</span> Buat
+                  </button>
+                  <button
+                    onClick={() => setIsSidebarOpen(false)}
+                    className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    title="Tutup Panel Koleksi"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
+
+              {/* Collection Selector & Actions */}
+              {loadingCollections ? (
+                <div className="text-center py-4 text-xs text-slate-500 dark:text-slate-400">Memuat koleksi...</div>
+              ) : collections.length === 0 ? (
+                <div className="text-center py-6 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-4">
+                  <span className="text-2xl block mb-1">📁</span>
+                  <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">Belum ada koleksi</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                    Klik &quot;+ Buat&quot; untuk mengelompokkan saham favorit Anda.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {/* Collection Dropdown Picker & Action Icons */}
+                  <div className="flex items-center gap-1.5">
+                    <div className="relative flex-1">
+                      <select
+                        value={selectedCollection?.id || ''}
+                        onChange={(e) => {
+                          const col = collections.find(c => c.id === Number(e.target.value));
+                          if (col) setSelectedCollection(col);
+                        }}
+                        className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none pr-8 cursor-pointer"
+                      >
+                        {collections.map((col) => (
+                          <option key={col.id} value={col.id}>
+                            {col.emoji || '📁'} {col.name} ({col._count?.items ?? col.items?.length ?? 0})
+                          </option>
+                        ))}
+                      </select>
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-xs text-slate-400">
+                        ▼
+                      </span>
+                    </div>
+
+                    {selectedCollection && (
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => fetchCollectionItems(selectedCollection.id, true, false)}
+                          className="p-1.5 text-slate-500 hover:text-indigo-600 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors"
+                          title="Refresh harga saham koleksi"
+                        >
+                          🔄
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEditingCollection(selectedCollection);
+                            setNewCollectionName(selectedCollection.name);
+                            setNewCollectionEmoji(selectedCollection.emoji || '📁');
+                            setNewCollectionDesc(selectedCollection.description || '');
+                            setIsCollectionPublic(selectedCollection.isPublic || false);
+                            setShowEditModal(true);
+                          }}
+                          className="p-1.5 text-slate-500 hover:text-indigo-600 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors"
+                          title="Edit Nama, Emoji & Publik"
+                        >
+                          ✏️
+                        </button>
+                        {selectedCollection.shareCode && (
+                          <button
+                            onClick={() => handleCopyShareLink(selectedCollection.shareCode)}
+                            className="p-1.5 text-slate-500 hover:text-indigo-600 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors"
+                            title="Salin Link Bagikan"
+                          >
+                            🔗
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDeleteCollection(selectedCollection.id, selectedCollection.name)}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 bg-slate-50 dark:bg-slate-800/80 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors"
+                          title="Hapus Koleksi Ini"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Selected Collection Meta & Sync Status */}
+                  {selectedCollection && (
+                    <div className="flex items-center justify-between text-[11px] px-1 text-slate-500 dark:text-slate-400">
+                      <span className="truncate max-w-[180px]">
+                        {selectedCollection.description || `${collectionItems.length} saham tersimpan`}
+                      </span>
+                      <span className="inline-flex items-center gap-1 font-bold text-emerald-600 dark:text-emerald-400 shrink-0">
+                        <span className={`w-1.5 h-1.5 rounded-full bg-emerald-500 ${isSilentRefreshing ? 'animate-ping' : 'animate-pulse'}`}></span>
+                        <span>{isSilentRefreshing ? 'Sync...' : 'Live 30s'}</span>
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Compact Stock List (Vertically Scrollable & Draggable) */}
+                  {selectedCollection && (
+                    <div className="space-y-2 max-h-[calc(100vh-270px)] min-h-[180px] overflow-y-auto pr-1">
+                      {loadingItems && collectionItems.length === 0 ? (
+                        <div className="space-y-2">
+                          {[1, 2, 3].map((idx) => (
+                            <div key={idx} className="animate-pulse rounded-xl p-3 bg-slate-100 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 space-y-2 h-20">
+                              <div className="flex justify-between items-center">
+                                <div className="h-4 w-16 bg-slate-200 dark:bg-slate-700 rounded"></div>
+                                <div className="h-4 w-12 bg-slate-200 dark:bg-slate-700 rounded"></div>
+                              </div>
+                              <div className="h-3 w-24 bg-slate-200 dark:bg-slate-700 rounded"></div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : collectionItems.length === 0 ? (
+                        <div className="text-center py-6 text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 p-3">
+                          Koleksi ini masih kosong. Cari saham lalu klik &quot;Simpan ke Koleksi&quot;.
+                        </div>
+                      ) : (
+                        collectionItems.map((item, index) => {
+                          const s = item.stock || {};
+                          const price = s.price || 0;
+                          const isItemUp = (s.changePercent || 0) >= 0;
+
+                          const isCurrentSelected = stockDetail?.ticker === item.ticker;
+                          const liveCompScore = (isCurrentSelected && scores?.fundamental != null)
+                            ? Math.round(((scores.fundamental ?? 50) * 0.45) + ((scores.technical ?? 50) * 0.35) + ((scores.trending ?? 50) * 0.10) + ((scores.smartMoney ?? 50) * 0.10))
+                            : null;
+                          const score = liveCompScore ?? s.score;
+
+                          const isTargetBuyHit = item.targetBuy != null && price > 0 && price <= item.targetBuy;
+                          const isTargetSellHit = item.targetSell != null && price > 0 && price >= item.targetSell;
+
+                          const isDragging = draggedItemIndex === index;
+                          const isDragOver = dragOverIndex === index && draggedItemIndex !== index;
+
+                          let cardBorder = isCurrentSelected
+                            ? 'border-indigo-500 bg-indigo-50/80 dark:bg-indigo-950/40 ring-2 ring-indigo-500/20'
+                            : 'border-slate-200 dark:border-slate-700/80 bg-slate-50/60 dark:bg-slate-800/60 hover:border-indigo-300 dark:hover:border-slate-600';
+
+                          if (isTargetBuyHit) {
+                            cardBorder = 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/40 ring-1 ring-emerald-500/30';
+                          } else if (isTargetSellHit) {
+                            cardBorder = 'border-rose-500 bg-rose-50/70 dark:bg-rose-950/40 ring-1 ring-rose-500/30';
+                          }
+
+                          return (
+                            <div
+                              key={item.id}
+                              draggable={true}
+                              onDragStart={(e) => handleDragStart(e, index)}
+                              onDragOver={(e) => handleDragOver(e, index)}
+                              onDragEnd={handleDragEnd}
+                              onDrop={(e) => handleDrop(e, index)}
+                              onClick={() => handleSelectStock(item.ticker, true)}
+                              className={`cursor-pointer rounded-xl p-2.5 border transition-all text-left relative group select-none ${cardBorder} ${
+                                isDragging ? 'opacity-30 scale-95 border-dashed border-indigo-500' : ''
+                              } ${
+                                isDragOver ? 'ring-2 ring-indigo-500 scale-[1.01]' : ''
+                              }`}
+                            >
+                              {/* Top Row: Drag Handle, Ticker, Sector, Score, Quick Action Icons */}
+                              <div className="flex items-center justify-between gap-1 mb-1">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <span
+                                    className="cursor-grab active:cursor-grabbing text-slate-400 hover:text-indigo-600 text-xs px-0.5 select-none"
+                                    title="Tahan & geser untuk atur urutan"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    ⠿
+                                  </span>
+                                  <span className="font-black text-xs md:text-sm text-slate-900 dark:text-white group-hover:text-indigo-600 transition-colors">
+                                    {item.ticker}
+                                  </span>
+                                  {score != null && (
+                                    <span
+                                      className={`text-[10px] font-mono font-black px-1.5 py-0.2 rounded ${
+                                        score >= 80
+                                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                                          : score >= 65
+                                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
+                                          : score >= 50
+                                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                                          : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                                      }`}
+                                      title={`Skor Komposit: ${score}`}
+                                    >
+                                      {score}
+                                    </span>
+                                  )}
+                                </div>
+
+                                {/* Quick Item Actions */}
+                                <div className="flex items-center gap-0.5 shrink-0 opacity-80 group-hover:opacity-100 transition-opacity">
+                                  <button
+                                    onClick={(e) => handleOpenMonitorModal(s, item.ticker, e)}
+                                    className="text-[11px] p-0.5 text-slate-400 hover:text-emerald-600"
+                                    title="Pantau di Win Rate"
+                                  >
+                                    🎯
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleAddToCompare(item.ticker);
+                                    }}
+                                    className="text-[11px] p-0.5 text-slate-400 hover:text-indigo-600"
+                                    title="Tambah ke Komparasi"
+                                  >
+                                    ⚖️
+                                  </button>
+                                  <button
+                                    onClick={(e) => handleOpenMoveModal(item, e)}
+                                    className="text-[11px] p-0.5 text-slate-400 hover:text-blue-600"
+                                    title="Pindahkan Koleksi"
+                                  >
+                                    📦
+                                  </button>
+                                  <button
+                                    onClick={(e) => handleOpenEditItemModal(item, e)}
+                                    className="text-[11px] p-0.5 text-slate-400 hover:text-amber-600"
+                                    title="Edit Catatan & Target"
+                                  >
+                                    ✏️
+                                  </button>
+                                  <button
+                                    onClick={(e) => handleRemoveStockFromCollection(selectedCollection.id, item.ticker, e)}
+                                    className="text-[11px] p-0.5 text-slate-400 hover:text-rose-600"
+                                    title="Hapus dari Koleksi"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Middle Row: Price & Change */}
+                              <div className="flex items-baseline justify-between">
+                                <span className="text-xs font-black text-slate-900 dark:text-white">
+                                  Rp {price ? price.toLocaleString('id-ID') : '-'}
+                                </span>
+                                <span
+                                  className={`text-[10px] font-bold px-1 py-0.2 rounded flex items-center gap-0.5 ${
+                                    isItemUp
+                                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300'
+                                      : 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300'
+                                  }`}
+                                >
+                                  <span>{isItemUp ? '+' : ''}{s.changePercent ? Number(s.changePercent).toFixed(2) : 0}%</span>
+                                </span>
+                              </div>
+
+                              {/* Target Badges if hit */}
+                              {isTargetBuyHit && (
+                                <div className="mt-1 px-1.5 py-0.5 bg-emerald-500 text-white text-[9px] font-black rounded flex items-center justify-between">
+                                  <span>🎯 TARGET BUY!</span>
+                                  <span>≤ Rp {item.targetBuy.toLocaleString('id-ID')}</span>
+                                </div>
+                              )}
+                              {isTargetSellHit && (
+                                <div className="mt-1 px-1.5 py-0.5 bg-rose-500 text-white text-[9px] font-black rounded flex items-center justify-between">
+                                  <span>🚀 TARGET SELL!</span>
+                                  <span>≥ Rp {item.targetSell.toLocaleString('id-ID')}</span>
+                                </div>
+                              )}
+
+                              {/* Target Buy & Sell Info */}
+                              {(item.targetBuy != null || item.targetSell != null) && !isTargetBuyHit && !isTargetSellHit && (
+                                <div className="mt-1 flex items-center justify-between text-[9px] text-slate-500 dark:text-slate-400">
+                                  <span>B: {item.targetBuy ? `Rp ${item.targetBuy.toLocaleString('id-ID')}` : '-'}</span>
+                                  <span>J: {item.targetSell ? `Rp ${item.targetSell.toLocaleString('id-ID')}` : '-'}</span>
+                                </div>
+                              )}
+
+                              {/* Notes Preview */}
+                              {item.notes && (
+                                <p className="mt-1 text-[10px] text-slate-600 dark:text-slate-400 truncate bg-slate-100/60 dark:bg-slate-900/60 px-1.5 py-0.5 rounded">
+                                  📝 {item.notes}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </aside>
+          )}
+
+          {/* ── RIGHT CANVAS: SEARCH & ANALYTICAL WORKSPACE ───────────────── */}
+          <main className="flex-1 w-full min-w-0 space-y-6">
+            {/* SEARCH BAR */}
+            <div className="bg-white dark:bg-slate-900/90 backdrop-blur border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm">
+              <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {/* Toggle Sidebar Button */}
+                  <button
+                    onClick={() => setIsSidebarOpen(prev => !prev)}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all flex items-center gap-1.5 shrink-0 ${
+                      isSidebarOpen
+                        ? 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                        : 'bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800 shadow-sm'
+                    }`}
+                    title={isSidebarOpen ? 'Sembunyikan panel koleksi untuk memperluas layar' : 'Tampilkan panel koleksi saham'}
+                  >
+                    <span>{isSidebarOpen ? '◀' : '📂'}</span>
+                    <span>{isSidebarOpen ? 'Tutup Koleksi' : `Buka Koleksi (${collections.length})`}</span>
+                  </button>
+
+                  <div>
+                    <h3 className="font-black text-sm md:text-base text-slate-900 dark:text-white">
+                      Pencarian Saham IDX
+                    </h3>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                      Cari kode ticker atau nama perusahaan (misal: BBCA, BBRI, ASII, ADRO, TLKM)
+                    </p>
+                  </div>
+                </div>
 
               {/* Autocomplete Search Input */}
               <div className="relative w-full md:w-96">
@@ -2890,92 +2828,186 @@ export default function StockExplorer({ user }) {
                   </div>
                 </div>
 
-                {/* ── BLOOMBERG RV: RELATIVE VALUATION & PEER COMPARISON MATRIX ── */}
-                {stockDetail?.peers && stockDetail.peers.length > 0 && (
-                  <RelativeValuationPeers
-                    currentStock={stockDetail}
-                    peers={stockDetail.peers}
-                    onSelectTicker={(ticker) => handleSelectStock(ticker)}
-                    onAddAllToCompare={(tickers) => {
-                      tickers.forEach(t => handleAddToCompare(t));
-                      setActiveTab('compare');
-                    }}
-                  />
-                )}
+                {/* ── ANALYTICAL COCKPIT CATEGORY TABS (OPSI 4) ──────────────── */}
+                <div className="space-y-4 pt-2">
+                  <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-1.5 shadow-sm">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
+                      {[
+                        {
+                          id: 'valuation',
+                          label: 'Valuasi & Finansial',
+                          icon: '📐',
+                          count: (stockDetail.valuationBands ? 1 : 0) + (stockDetail.wacc ? 1 : 0) + 1 + (stockDetail.peers?.length > 0 ? 1 : 0),
+                        },
+                        {
+                          id: 'seasonality',
+                          label: 'Musim & Dividen',
+                          icon: '📅',
+                          count: (stockDetail.monthlySeasonality ? 1 : 0) + (stockDetail.dividendTrap ? 1 : 0) + ((stockDetail.corporateActions?.length > 0 || stockDetail.dividendSchedule || stockDetail.historicalDividends?.length > 0) ? 1 : 0),
+                        },
+                        {
+                          id: 'smartmoney',
+                          label: 'Smart Money & Aliran',
+                          icon: '🌊',
+                          count: ((stockDetail.kseiShift || stockDetail.brokerConcentration || stockDetail.volumeProfile) ? 1 : 0) + (stockDetail.executionLimits ? 1 : 0),
+                        },
+                        {
+                          id: 'ai',
+                          label: 'Riset AI & Sentimen',
+                          icon: '🤖',
+                          count: ((stockDetail.aiResearch || stockDetail.newsSentiment) ? 1 : 0),
+                        },
+                      ].map((tab) => {
+                        const isActive = cockpitTab === tab.id;
+                        return (
+                          <button
+                            key={tab.id}
+                            onClick={() => setCockpitTab(tab.id)}
+                            className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 md:gap-2 ${
+                              isActive
+                                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20'
+                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
+                            }`}
+                          >
+                            <span>{tab.icon}</span>
+                            <span className="truncate">{tab.label}</span>
+                            {tab.count > 0 && (
+                              <span
+                                className={`px-1.5 py-0.2 text-[10px] rounded-full font-mono ${
+                                  isActive
+                                    ? 'bg-white/20 text-white'
+                                    : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                                }`}
+                              >
+                                {tab.count}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
 
-                {/* ── 5-YEAR MONTHLY SEASONALITY & PERFORMANCE HEATMAP ── */}
-                {stockDetail?.monthlySeasonality && (
-                  <MonthlySeasonalityPanel
-                    data={stockDetail.monthlySeasonality}
-                    ticker={stockDetail.ticker}
-                  />
-                )}
+                  {/* TAB 1: VALUASI & FINANSIAL */}
+                  {cockpitTab === 'valuation' && (
+                    <div className="space-y-6 animate-in fade-in">
+                      {/* BLOOMBERG RV: RELATIVE VALUATION & PEER COMPARISON MATRIX */}
+                      {stockDetail?.peers && stockDetail.peers.length > 0 && (
+                        <RelativeValuationPeers
+                          currentStock={stockDetail}
+                          peers={stockDetail.peers}
+                          onSelectTicker={(ticker) => handleSelectStock(ticker)}
+                          onAddAllToCompare={(tickers) => {
+                            tickers.forEach(t => handleAddToCompare(t));
+                            setActiveTab('compare');
+                          }}
+                        />
+                      )}
 
-                {/* ── BLOOMBERG PBND: HISTORICAL VALUATION BANDS ── */}
-                {stockDetail?.valuationBands && (
-                  <ValuationBandsPanel
-                    valuationBands={stockDetail.valuationBands}
-                    currentPrice={stockDetail.price}
-                  />
-                )}
+                      {/* BLOOMBERG PBND: HISTORICAL VALUATION BANDS */}
+                      {stockDetail?.valuationBands && (
+                        <ValuationBandsPanel
+                          valuationBands={stockDetail.valuationBands}
+                          currentPrice={stockDetail.price}
+                        />
+                      )}
 
-                {/* ── BLOOMBERG WACC & EVA: ECONOMIC VALUE ADDED ── */}
-                {stockDetail?.wacc && (
-                  <EconomicValuePanel waccData={stockDetail.wacc} />
-                )}
+                      {/* BLOOMBERG WACC & EVA: ECONOMIC VALUE ADDED */}
+                      {stockDetail?.wacc && (
+                        <EconomicValuePanel waccData={stockDetail.wacc} />
+                      )}
 
-                {/* ── BLOOMBERG SCEN: INTERACTIVE WHAT-IF FORECASTER ── */}
-                <ScenarioForecaster stockDetail={stockDetail} />
+                      {/* BLOOMBERG SCEN: INTERACTIVE WHAT-IF FORECASTER */}
+                      <ScenarioForecaster stockDetail={stockDetail} />
+                    </div>
+                  )}
 
-                {/* ── BLOOMBERG DTRP & DVD: DIVIDEND TRAP & RUN-RATE ── */}
-                {stockDetail?.dividendTrap && (
-                  <DividendTrapPanel dividendTrap={stockDetail.dividendTrap} />
-                )}
+                  {/* TAB 2: MUSIM & DIVIDEN */}
+                  {cockpitTab === 'seasonality' && (
+                    <div className="space-y-6 animate-in fade-in">
+                      {/* 5-YEAR MONTHLY SEASONALITY & PERFORMANCE HEATMAP */}
+                      {stockDetail?.monthlySeasonality && (
+                        <MonthlySeasonalityPanel
+                          data={stockDetail.monthlySeasonality}
+                          ticker={stockDetail.ticker}
+                        />
+                      )}
 
-                {/* ── BLOOMBERG CA: CORPORATE ACTIONS & CATALYST TIMELINE ── */}
-                {(stockDetail?.corporateActions?.length > 0 || stockDetail?.dividendSchedule || stockDetail?.historicalDividends?.length > 0) && (
-                  <CorporateActionsPanel
-                    corporateActions={stockDetail.corporateActions || []}
-                    dividendSchedule={stockDetail.dividendSchedule}
-                    historicalDividends={stockDetail.historicalDividends || []}
-                    dividendSummary={stockDetail.dividendSummary}
-                    ticker={stockDetail.ticker}
-                    price={stockDetail.price}
-                  />
-                )}
+                      {/* BLOOMBERG DTRP & DVD: DIVIDEND TRAP & RUN-RATE */}
+                      {stockDetail?.dividendTrap && (
+                        <DividendTrapPanel dividendTrap={stockDetail.dividendTrap} />
+                      )}
 
-                {/* ── BLOOMBERG ARA / ARB & ALRT: EXECUTION LIMITS & ALERTS ── */}
-                {stockDetail?.executionLimits && (
-                  <AutoRejectionLadderPanel
-                    executionLimits={stockDetail.executionLimits}
-                    smartAlerts={stockDetail.smartAlerts || []}
-                    ticker={stockDetail.ticker}
-                  />
-                )}
+                      {/* BLOOMBERG CA: CORPORATE ACTIONS & CATALYST TIMELINE */}
+                      {(stockDetail?.corporateActions?.length > 0 || stockDetail?.dividendSchedule || stockDetail?.historicalDividends?.length > 0) && (
+                        <CorporateActionsPanel
+                          corporateActions={stockDetail.corporateActions || []}
+                          dividendSchedule={stockDetail.dividendSchedule}
+                          historicalDividends={stockDetail.historicalDividends || []}
+                          dividendSummary={stockDetail.dividendSummary}
+                          ticker={stockDetail.ticker}
+                          price={stockDetail.price}
+                        />
+                      )}
+                    </div>
+                  )}
 
-                {/* ── BLOOMBERG OWN, BRKR, & GP: SMART MONEY & LIQUIDITY ── */}
-                {(stockDetail?.kseiShift || stockDetail?.brokerConcentration || stockDetail?.volumeProfile) && (
-                  <SmartMoneyLiquidityPanel
-                    kseiShift={stockDetail.kseiShift}
-                    brokerConcentration={stockDetail.brokerConcentration}
-                    volumeProfile={stockDetail.volumeProfile}
-                    ticker={stockDetail.ticker}
-                  />
-                )}
+                  {/* TAB 3: SMART MONEY & ALIRAN */}
+                  {cockpitTab === 'smartmoney' && (
+                    <div className="space-y-6 animate-in fade-in">
+                      {/* BLOOMBERG OWN, BRKR, & GP: SMART MONEY & LIQUIDITY */}
+                      {(stockDetail?.kseiShift || stockDetail?.brokerConcentration || stockDetail?.volumeProfile) && (
+                        <SmartMoneyLiquidityPanel
+                          kseiShift={stockDetail.kseiShift}
+                          brokerConcentration={stockDetail.brokerConcentration}
+                          volumeProfile={stockDetail.volumeProfile}
+                          ticker={stockDetail.ticker}
+                        />
+                      )}
 
-                {/* ── BLOOMBERG BI & NSENT: AI INTELLIGENCE DOSSIER & NEWS SENTIMENT ── */}
-                {(stockDetail?.aiResearch || stockDetail?.newsSentiment) && (
-                  <BloombergIntelligencePanel
-                    aiResearch={stockDetail.aiResearch}
-                    newsSentiment={stockDetail.newsSentiment}
-                    ticker={stockDetail.ticker}
-                    onOpenFullResearch={() => setShowAiModal(true)}
-                  />
-                )}
+                      {/* BLOOMBERG ARA / ARB & ALRT: EXECUTION LIMITS & ALERTS */}
+                      {stockDetail?.executionLimits && (
+                        <AutoRejectionLadderPanel
+                          executionLimits={stockDetail.executionLimits}
+                          smartAlerts={stockDetail.smartAlerts || []}
+                          ticker={stockDetail.ticker}
+                        />
+                      )}
+                    </div>
+                  )}
+
+                  {/* TAB 4: RISET AI & SENTIMEN */}
+                  {cockpitTab === 'ai' && (
+                    <div className="space-y-6 animate-in fade-in">
+                      {/* BLOOMBERG BI & NSENT: AI INTELLIGENCE DOSSIER & NEWS SENTIMENT */}
+                      {(stockDetail?.aiResearch || stockDetail?.newsSentiment) && (
+                        <BloombergIntelligencePanel
+                          aiResearch={stockDetail.aiResearch}
+                          newsSentiment={stockDetail.newsSentiment}
+                          ticker={stockDetail.ticker}
+                          onOpenFullResearch={() => setShowAiModal(true)}
+                        />
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : !loadingDetail && !detailError ? (
+              <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-10 text-center shadow-sm space-y-3">
+                <div className="w-14 h-14 mx-auto rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/80 dark:border-indigo-800/60 flex items-center justify-center text-2xl">
+                  🔍
+                </div>
+                <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">
+                  Pilih Saham untuk Memulai Analisis
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+                  Gunakan kolom pencarian di atas atau klik salah satu saham di panel koleksi sebelah kiri untuk melihat chart interaktif, valuasi Graham, seasonality 5 tahun, dan smart money flow.
+                </p>
               </div>
             ) : null}
           </div>
-        </>
+        </main>
+      </div>
       ) : (
         /* ── MULTI-STOCK COMPARE VIEW (MAX 6 STOCKS) ───────────────────────── */
         <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm space-y-6 animate-in fade-in">
