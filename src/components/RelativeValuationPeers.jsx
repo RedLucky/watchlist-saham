@@ -8,11 +8,9 @@ export default function RelativeValuationPeers({
   onSelectTicker,
   onAddAllToCompare
 }) {
-  if (!currentStock) return null;
-
-  const f = currentStock.fundamentals || {};
-  const proj = currentStock.projections || {};
-  const scores = currentStock.scores || {};
+  const f = currentStock?.fundamentals || {};
+  const proj = currentStock?.projections || {};
+  const scores = currentStock?.scores || {};
 
   // Use same 2-factor formula as backend peer scores (55% fundamental, 45% technical)
   // to ensure apple-to-apple comparison in the RV matrix
@@ -25,6 +23,7 @@ export default function RelativeValuationPeers({
 
   // Combine target stock and peers into a single comparison list
   const allPeers = useMemo(() => {
+    if (!currentStock) return [];
     const currentFormatted = {
       ticker: currentStock.ticker,
       name: currentStock.name,
@@ -69,8 +68,8 @@ export default function RelativeValuationPeers({
 
   // Generate automated comparative insight
   const insight = useMemo(() => {
-    if (allPeers.length <= 1) {
-      return `Belum ada data emiten pembanding langsung di sub-sektor ${currentStock.subSector || currentStock.sector || 'ini'}.`;
+    if (!currentStock || allPeers.length <= 1) {
+      return `Belum ada data emiten pembanding langsung di sub-sektor ${currentStock?.subSector || currentStock?.sector || 'ini'}.`;
     }
 
     const current = allPeers[0];
@@ -102,6 +101,8 @@ export default function RelativeValuationPeers({
 
     return insights.join(' • ');
   }, [allPeers, stats, currentStock]);
+
+  if (!currentStock) return null;
 
   return (
     <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm space-y-4">

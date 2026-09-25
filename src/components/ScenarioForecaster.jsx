@@ -4,16 +4,14 @@ import React, { useState, useMemo } from 'react';
 import { roundToIDXTick } from '@/lib/tradeSetup';
 
 export default function ScenarioForecaster({ stockDetail }) {
-  if (!stockDetail) return null;
-
-  const f = stockDetail.fundamentals || {};
-  const currentPrice = Number(stockDetail.price) || 0;
-  const sharesOutstanding = Number(stockDetail.sharesOutstanding) || 1;
+  const f = stockDetail?.fundamentals || {};
+  const currentPrice = Number(stockDetail?.price) || 0;
+  const sharesOutstanding = Number(stockDetail?.sharesOutstanding) || 1;
   const currentRevenue = Number(f.totalRevenue) || 0;
   const currentNpm = Number(f.npm) || (currentRevenue > 0 && f.netIncome ? (Number(f.netIncome) / currentRevenue * 100) : 12);
   const currentPayoutRatio = Number(f.payoutRatio) || 45;
-  const currentCagr = Number(stockDetail.projections?.cagrPercent) || 10;
-  const bondYield = Number(stockDetail.projections?.bondYield) || 6.5;
+  const currentCagr = Number(stockDetail?.projections?.cagrPercent) || 10;
+  const bondYield = Number(stockDetail?.projections?.bondYield) || 6.5;
 
   // Interactive Slider States
   const [revenueGrowth, setRevenueGrowth] = useState(Math.round(Math.max(-20, Math.min(40, currentCagr))));
@@ -66,7 +64,9 @@ export default function ScenarioForecaster({ stockDetail }) {
       upsidePct,
       mosPct
     };
-  }, [revenueGrowth, npmTarget, payoutRatio, currentRevenue, currentPrice, sharesOutstanding, bondYield]);
+  }, [revenueGrowth, npmTarget, payoutRatio, currentRevenue, currentPrice, sharesOutstanding, bondYield, f.eps, f.per]);
+
+  if (!stockDetail) return null;
 
   return (
     <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm space-y-5">

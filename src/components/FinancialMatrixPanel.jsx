@@ -26,15 +26,7 @@ function formatFinancialRp(val) {
 }
 
 export default function FinancialMatrixPanel({ stockDetail }) {
-  if (!stockDetail) {
-    return (
-      <div className="p-8 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
-        <p className="text-slate-500 text-sm">Pilih saham terlebih dahulu untuk melihat matriks laporan keuangan multi-tahun.</p>
-      </div>
-    );
-  }
-
-  const f = stockDetail.fundamentals || {};
+  const f = stockDetail?.fundamentals || {};
   const netProfits = Array.isArray(f.netProfit) ? f.netProfit : [];
   const currentYear = new Date().getFullYear();
 
@@ -92,6 +84,14 @@ export default function FinancialMatrixPanel({ stockDetail }) {
       ]
     };
   }, [f, netProfits]);
+
+  if (!stockDetail) {
+    return (
+      <div className="p-8 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
+        <p className="text-slate-500 text-sm">Pilih saham terlebih dahulu untuk melihat matriks laporan keuangan multi-tahun.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">

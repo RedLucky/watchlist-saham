@@ -17,15 +17,8 @@ export default function MonthlySeasonalityPanel({ data, ticker }) {
   const [selectedCell, setSelectedCell] = useState(null);
   const [timeframe, setTimeframe] = useState('5Y'); // '3Y' | '5Y' | '10Y'
 
-  if (!data || !data.years || data.years.length === 0) {
-    return (
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 text-center text-slate-500 dark:text-slate-400">
-        <p className="text-sm">Data histori seasonality belum tersedia untuk {ticker || 'emiten ini'}.</p>
-      </div>
-    );
-  }
-
-  const { years: allYears, matrix } = data;
+  const allYears = data?.years || [];
+  const matrix = data?.matrix || {};
 
   // Determine active slice of years based on selected timeframe
   const yearLimit = timeframe === '3Y' ? 3 : timeframe === '10Y' ? 10 : 5;
@@ -37,6 +30,14 @@ export default function MonthlySeasonalityPanel({ data, ticker }) {
   const { monthStats, overallWinRate, bestMonth, worstMonth } = useMemo(() => {
     return aggregateSeasonalityStats(matrix, activeYears);
   }, [matrix, activeYears]);
+
+  if (!data || !data.years || data.years.length === 0) {
+    return (
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 text-center text-slate-500 dark:text-slate-400">
+        <p className="text-sm">Data histori seasonality belum tersedia untuk {ticker || 'emiten ini'}.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white dark:bg-slate-900/90 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 md:p-6 shadow-sm space-y-6">

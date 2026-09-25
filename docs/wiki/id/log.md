@@ -4,7 +4,7 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
-## [2026-09-25] fix | Resolusi ReferenceError TDZ Scraper Cron, Puppeteer TargetCloseError & useEffect Klien
+## [2026-09-25] fix | Resolusi Scraper Cron TDZ, Puppeteer TargetCloseError, useEffect & React Rules-of-Hooks
 - Memperbaiki `ReferenceError: Cannot access 'isPriceSyncRunning' before initialization` pada `src/scripts/scraper-cron.js` yang disebabkan oleh Temporal Dead Zone (TDZ).
 - Memindahkan deklarasi state (`isPriceSyncRunning`, `isDailyScraperRunning`) dan seluruh definisi fungsi eksekusi (`runPriceSync`, `runDiscordNotifier`, `runDailyScrapers`) ke atas sebelum pemanggilan inisialisasi boot.
 - Memperbaiki `TargetCloseError: Protocol error (Target.setDiscoverTargets): Target closed` saat peluncuran Chromium Puppeteer di kontainer Docker Alpine (`src/scripts/sync-ksei.js` & `src/scripts/sync-ownership.js`):
@@ -13,6 +13,11 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
   - Menambahkan `dumb-init` pada `Dockerfile.scraper` sebagai entrypoint PID 1 process reaper untuk mencegah pembentukan proses zombie Chromium.
   - Membungkus peluncuran dan siklus hidup browser dalam blok defensif `try/finally` untuk memastikan browser selalu ditutup dengan aman (`await browser.close()`).
 - Memperbaiki `ReferenceError: useEffect is not defined` pada `src/components/DetailPanel.jsx` dengan mengimpor `useEffect` dari `'react'`.
+- Menuntaskan seluruh 11 pelanggaran eksekusi hook kondisional (`react-hooks/rules-of-hooks`) pada panel-panel analitikal:
+  - `src/components/FinancialMatrixPanel.jsx`: Memindahkan pemeriksaan fallback data ke bawah eksekusi hook `useMemo`.
+  - `src/components/MonthlySeasonalityPanel.jsx`: Menghilangkan early return sebelum hook `useMemo` (`activeYears` dan `monthStats`) dan menggantinya dengan guard pasca-hook.
+  - `src/components/RelativeValuationPeers.jsx`: Menata ulang hook `useMemo` (`allPeers`, `stats`, `insight`) agar selalu dieksekusi secara konsisten sebelum render fallback.
+  - `src/components/ScenarioForecaster.jsx`: Memindahkan state slider `useState` dan hook kalkulasi `useMemo` ke atas sebelum guard `!stockDetail`.
 
 ## [2026-09-24] feat | Remediasi Audit Komprehensif Full-Stack & Matriks Finansial Bloomberg (FA)
 - Stabilitas Runtime Client & Guardrail Vercel:
