@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ScoreBar from './ScoreBar';
 import Tooltip from './Tooltip';
 import StockChart from './StockChart';
@@ -40,7 +40,7 @@ export default function DetailPanel({ stock, mode, styleName }) {
 
   if (!stock) return null;
 
-  const subScoreEntries = Object.entries(stock.subScores);
+  const subScoreEntries = Object.entries(stock.subScores || {});
 
   const formatPrice = (price) => {
     const value = Number(price);
@@ -275,12 +275,12 @@ export default function DetailPanel({ stock, mode, styleName }) {
  <div className="flex flex-col">
  <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Indikator</span>
  <span className="text-xs text-slate-400 dark:text-slate-500">
- {stock.subScores.technical.metrics?.shortMAName || '-'} / {stock.subScores.technical.metrics?.longMAName || '-'}
+ {stock.subScores?.technical?.metrics?.shortMAName || '-'} / {stock.subScores?.technical?.metrics?.longMAName || '-'}
  </span>
  </div>
  <div className="flex flex-col text-right">
- <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">RSI ({stock.subScores.technical.metrics?.rsiPeriod || (stock.subScores.technical.metrics?.shortMAName === 'MA9' ? '7' : '14')})</span>
- <span className="text-xs text-slate-400 dark:text-slate-500">{stock.subScores.technical.metrics?.rsi}</span>
+ <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">RSI ({stock.subScores?.technical?.metrics?.rsiPeriod || (stock.subScores?.technical?.metrics?.shortMAName === 'MA9' ? '7' : '14')})</span>
+ <span className="text-xs text-slate-400 dark:text-slate-500">{stock.subScores?.technical?.metrics?.rsi ?? '-'}</span>
  </div>
  </div>
 
