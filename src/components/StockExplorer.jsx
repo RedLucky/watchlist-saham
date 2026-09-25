@@ -2885,7 +2885,7 @@ export default function StockExplorer({ user }) {
                         <h3 className="font-bold text-slate-900 dark:text-white text-sm md:text-base">
                           Grafik Interaktif — {stockDetail.ticker}
                         </h3>
-                        <p className="text-xs text-slate-600 dark:text-slate-400">Candlestick, Volume, Moving Averages (MA20/50) & Support/Resistance</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-400">TradingView Pro: Candlestick, Volume, MA (20/50/200), Bollinger Bands, RSI (14), MACD & Deteksi Pola</p>
                       </div>
                     </div>
                   </div>

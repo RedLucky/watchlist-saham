@@ -4,6 +4,22 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-09-25] feat | TradingView Pro Upgrades: MA200, Bollinger Bands, RSI, MACD, Multi-Timeframe & Crosshair Legend
+- Upgraded `src/components/StockChart.jsx` to TradingView Lightweight Charts Pro architecture:
+  - **Live Floating OHLCV HUD Legend**: Crosshair movement listener (`chart.subscribeCrosshairMove`) delivering real-time Open, High, Low, Close, % Change, and Volume with responsive color-coding.
+  - **Multi-Timeframe Aggregation (1D, 1W, 1M)**: Client-side candle aggregation (`aggregateCandles`) without network latency or redundant Yahoo Finance queries.
+  - **Institutional Trend Filter (MA200)**: Added SMA 200 series (`#eab308`) alongside MA20 and MA50.
+  - **Bollinger Bands (20, 2)**: Added upper (`#38bdf8`), middle basis, and lower bands with dashed styling.
+  - **Dedicated Sub-Pane Oscillators**:
+    - **RSI (14)**: Plotted on isolated price scale (`priceScaleId: 'rsi'`) with scale margins (`top: 0.82, bottom: 0.02`) and 70/30 threshold markers.
+    - **MACD (12, 26, 9)**: Plotted on isolated price scale (`priceScaleId: 'macd'`) with MACD line, signal line, and color-coded momentum histogram bars.
+  - **Candlestick Pattern Overlays**: In-chart markers for Bullish Engulfing, Hammer, Shooting Star, and Doji formations.
+  - **Interactive Controls**: Indicator pill toggles, fullscreen mode (`⛶ Zoom`), range fit (`🔄 Fit`), and real-time DOM dark/light mode synchronization via `MutationObserver`.
+- Enhanced `/api/chart/route.js` Backend:
+  - Added mathematical engines for `calculateBollingerForChart(chartData, 20, 2)`, `calculateRSIForChart(chartData, 14)`, and `calculateMACDForChart(chartData, 12, 26, 9)`.
+  - Returned full indicators payload across both primary Yahoo Finance and DB fallback paths.
+- Updated `src/components/StockExplorer.jsx` and `src/components/DetailPanel.jsx` to feature TradingView Pro technical analysis capabilities across Stock Explorer and Analisis Saham.
+
 ## [2026-09-25] fix | Scraper Cron TDZ, Puppeteer TargetCloseError, useEffect & React Rules-of-Hooks Fixes
 - Fixed `ReferenceError: Cannot access 'isPriceSyncRunning' before initialization` in `src/scripts/scraper-cron.js` caused by Temporal Dead Zone (TDZ).
 - Moved `isPriceSyncRunning` and `isDailyScraperRunning` along with all function definitions (`runPriceSync`, `runDiscordNotifier`, `runDailyScrapers`) above initial boot execution triggers.

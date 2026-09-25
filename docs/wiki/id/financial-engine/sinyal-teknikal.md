@@ -73,3 +73,24 @@ Bukan sekadar target persentase kaku, level ambil untung disinkronkan dengan res
 $$\text{Target} = \max(\text{Raw Target}, \, \text{Swing Resistance}_{20} - \text{Fraksi Harga})$$
 * Memasang TP 1 tick tepat di bawah level resisten memastikan peluang *fill* order lebih tinggi sebelum tekanan jual memicu pembalikan arah.
 
+---
+
+## 🖥️ 6. Arsitektur Interaktif TradingView Lightweight Charts Pro
+
+Tersedia pada komponen `src/components/StockChart.jsx` dengan dukungan API `/api/chart/route.js`:
+
+### 1. Agregasi Multi-Timeframe Tanpa Re-fetch
+* Agregasi candle instan di sisi klien memproses data harian menjadi `1D` (Harian), `1W` (Mingguan - jangkar hari Senin), dan `1M` (Bulanan - tanggal 1) tanpa roundtrip jaringan tambahan.
+
+### 2. Hamparan Indikator Lengkap & Sub-Pane Khusus
+* **Moving Averages**: Cepat EMA/SMA 20, SMA 50, dan filter tren institusional SMA 200 (`#eab308`).
+* **Bollinger Bands (20, 2)**: Garis batas atas (`#38bdf8`), garis tengah basis, dan garis batas bawah dengan gaya putus-putus (`LineStyle.Dashed`).
+* **Sub-Pane RSI (14)**: Skala harga terpisah (`priceScaleId: 'rsi'`) dengan batas margin (`top: 0.82, bottom: 0.02`) dan garis ambang batas horizontal 70 (Overbought) dan 30 (Oversold).
+* **Sub-Pane MACD (12, 26, 9)**: Skala harga terpisah (`priceScaleId: 'macd'`) dengan garis MACD (`#38bdf8`), garis Sinyal (`#fb923c`), serta bilah histogram momentum berkode warna (`#22c55e` / `#ef4444`).
+* **Penanda Pola Candlestick**: Marker visual di atas/bawah candle mendeteksi pola Bullish Engulfing, Hammer, Shooting Star, dan Doji via `setMarkers()`.
+
+### 3. Legenda Presisi Dinamis & Tampilan Responsif
+* Langganan kursor real-time (`chart.subscribeCrosshairMove`) menyajikan informasi Open, High, Low, Close, % Perubahan, dan Volume pada banner HUD mengambang.
+* Mode imersif layar penuh (`⛶ Zoom`) dan penyesuaian otomatis cakupan grafik (`🔄 Fit`).
+* Sinkronisasi tema gelap/terang secara real-time via `MutationObserver` pada DOM `document.documentElement`.
+

@@ -37,6 +37,10 @@ export async function GET(request) {
     // Generate MA data for the chart overlay
     const ma20Data = calculateMAForChart(chartData, 20);
     const ma50Data = calculateMAForChart(chartData, 50);
+    const ma200Data = calculateMAForChart(chartData, 200);
+    const bollingerData = calculateBollingerForChart(chartData, 20, 2);
+    const rsiData = calculateRSIForChart(chartData, 14);
+    const macdData = calculateMACDForChart(chartData, 12, 26, 9);
     const analytics = buildChartAnalytics(chartData, ma20Data, ma50Data);
 
     return NextResponse.json({ 
@@ -44,6 +48,10 @@ export async function GET(request) {
       data: chartData,
       ma20: ma20Data,
       ma50: ma50Data,
+      ma200: ma200Data,
+      bollinger: bollingerData,
+      rsi: rsiData,
+      macd: macdData,
       analytics
     });
   } catch (error) {
@@ -73,6 +81,10 @@ export async function GET(request) {
 
       const ma20Data = calculateMAForChart(chartData, 20);
       const ma50Data = calculateMAForChart(chartData, 50);
+      const ma200Data = calculateMAForChart(chartData, 200);
+      const bollingerData = calculateBollingerForChart(chartData, 20, 2);
+      const rsiData = calculateRSIForChart(chartData, 14);
+      const macdData = calculateMACDForChart(chartData, 12, 26, 9);
       const analytics = buildChartAnalytics(chartData, ma20Data, ma50Data);
 
       return NextResponse.json({
@@ -80,6 +92,10 @@ export async function GET(request) {
         data: chartData,
         ma20: ma20Data,
         ma50: ma50Data,
+        ma200: ma200Data,
+        bollinger: bollingerData,
+        rsi: rsiData,
+        macd: macdData,
         analytics,
         source: 'database-fallback'
       });
@@ -288,4 +304,123 @@ function averageClose(chartData, endIndex, period) {
     sum += chartData[endIndex - j].close;
   }
   return sum / period;
+}
+
+function calculateBollingerForChart(chartData, period = 20, multiplier = 2) {
+  if (!Array.isArray(chartData) || chartData.length < period) {
+    return { upper: [], middle: [], lower: [] };
+  }
+  const upper = [];
+  const middle = [];
+  const lower = [];
+
+  for (let i = 0; i < chartData.length; i++) {
+    if (i < period - 1) continue;
+    let sum = 0;
+    for (let j = 0; j < period; j++) {
+      sum += chartData[i - j].close;
+    }
+    const mid = sum / period;
+    let sumSq = 0;
+    for (let j = 0; j < period; j++) {
+      sumSq += Math.pow(chartData[i - j].close - mid, 2);
+    }
+    const stdDev = Math.sqrt(sumSq / period);
+    const up = mid + stdDev * multiplier;
+    const low = mid - stdDev * multiplier;
+    const time = chartData[i].time;
+
+    upper.push({ time, value: Math.round(up * 100) / 100 });
+    middle.push({ time, value: Math.round(mid * 100) / 100 });
+    lower.push({ time, value: Math.round(low * 100) / 100 });
+  }
+
+  return { upper, middle, lower };
+}
+
+function calculateRSIForChart(chartData, period = 14) {
+  if (!Array.isArray(chartData) || chartData.length <= period) return [];
+  const rsiData = [];
+
+  let avgGain = 0;
+  let avgLoss = 0;
+  for (let i = 1; i <= period; i++) {
+    const diff = chartData[i].close - chartData[i - 1].close;
+    if (diff >= 0) avgGain += diff;
+    else avgLoss -= diff;
+  }
+  avgGain /= period;
+  avgLoss /= period;
+
+  let rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
+  let rsi = avgLoss === 0 ? 100 : 100 - (100 / (1 + rs));
+  rsiData.push({ time: chartData[period].time, value: Math.round(rsi * 10) / 10 });
+
+  for (let i = period + 1; i < chartData.length; i++) {
+    const diff = chartData[i].close - chartData[i - 1].close;
+    const gain = diff >= 0 ? diff : 0;
+    const loss = diff < 0 ? -diff : 0;
+    avgGain = (avgGain * (period - 1) + gain) / period;
+    avgLoss = (avgLoss * (period - 1) + loss) / period;
+    rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
+    rsi = avgLoss === 0 ? 100 : 100 - (100 / (1 + rs));
+    rsiData.push({ time: chartData[i].time, value: Math.round(rsi * 10) / 10 });
+  }
+
+  return rsiData;
+}
+
+function calculateMACDForChart(chartData, fastPeriod = 12, slowPeriod = 26, signalPeriod = 9) {
+  if (!Array.isArray(chartData) || chartData.length <= slowPeriod + signalPeriod) {
+    return { macd: [], signal: [], histogram: [] };
+  }
+
+  const fastK = 2 / (fastPeriod + 1);
+  const slowK = 2 / (slowPeriod + 1);
+  const sigK = 2 / (signalPeriod + 1);
+
+  let fastEma = chartData.slice(0, fastPeriod).reduce((acc, d) => acc + d.close, 0) / fastPeriod;
+  for (let i = fastPeriod; i < slowPeriod; i++) {
+    fastEma = chartData[i].close * fastK + fastEma * (1 - fastK);
+  }
+
+  let slowEma = chartData.slice(0, slowPeriod).reduce((acc, d) => acc + d.close, 0) / slowPeriod;
+
+  const macdValues = [];
+  for (let i = slowPeriod; i < chartData.length; i++) {
+    fastEma = chartData[i].close * fastK + fastEma * (1 - fastK);
+    slowEma = chartData[i].close * slowK + slowEma * (1 - slowK);
+    macdValues.push({
+      time: chartData[i].time,
+      macd: fastEma - slowEma
+    });
+  }
+
+  if (macdValues.length < signalPeriod) return { macd: [], signal: [], histogram: [] };
+
+  let sigEma = macdValues.slice(0, signalPeriod).reduce((acc, d) => acc + d.macd, 0) / signalPeriod;
+
+  const macdSeries = [];
+  const signalSeries = [];
+  const histSeries = [];
+
+  for (let i = signalPeriod - 1; i < macdValues.length; i++) {
+    if (i >= signalPeriod) {
+      sigEma = macdValues[i].macd * sigK + sigEma * (1 - sigK);
+    }
+    const mVal = Math.round(macdValues[i].macd * 100) / 100;
+    const sVal = Math.round(sigEma * 100) / 100;
+    const hVal = Math.round((mVal - sVal) * 100) / 100;
+    const time = macdValues[i].time;
+
+    macdSeries.push({ time, value: mVal });
+    signalSeries.push({ time, value: sVal });
+    histSeries.push({
+      time,
+      value: hVal,
+      color: hVal >= 0 ? 'rgba(16, 185, 129, 0.7)' : 'rgba(239, 68, 68, 0.7)'
+    });
+  }
+
+  return { macd: macdSeries, signal: signalSeries, histogram: histSeries };
 }

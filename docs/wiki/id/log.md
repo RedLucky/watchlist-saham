@@ -4,6 +4,22 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-09-25] feat | Peningkatan TradingView Pro: MA200, Bollinger Bands, RSI, MACD, Multi-Timeframe & Legenda Crosshair
+- Memutakhirkan komponen `src/components/StockChart.jsx` ke arsitektur TradingView Lightweight Charts Pro:
+  - **Legenda HUD Mengambang Interaktif**: Langganan pergerakan kursor crosshair (`chart.subscribeCrosshairMove`) menyajikan informasi Open, High, Low, Close, % Perubahan, dan Volume secara real-time dengan kode warna responsif.
+  - **Agregasi Multi-Timeframe (1D, 1W, 1M)**: Agregasi candle di memori klien (`aggregateCandles`) tanpa latensi jaringan maupun beban query berulang ke Yahoo Finance.
+  - **Filter Tren Institusional (MA200)**: Menambahkan garis SMA 200 (`#eab308`) melengkapi MA20 dan MA50.
+  - **Bollinger Bands (20, 2)**: Menambahkan pita atas (`#38bdf8`), garis tengah basis, dan pita bawah dengan garis putus-putus (*dashed*).
+  - **Osilator Sub-Pane Khusus**:
+    - **RSI (14)**: Ditampilkan pada skala harga terpisah (`priceScaleId: 'rsi'`) dengan margin skala (`top: 0.82, bottom: 0.02`) dan batas jenuh 70/30.
+    - **MACD (12, 26, 9)**: Ditampilkan pada skala terpisah (`priceScaleId: 'macd'`) dengan garis MACD, garis sinyal, dan histogram momentum berwarna hijau/merah.
+  - **Penanda Pola Candlestick**: Marker visual dalam grafik untuk pola Bullish Engulfing, Hammer, Shooting Star, dan Doji.
+  - **Kendali Interaktif**: Tombol toggle indikator (pills), mode layar penuh (`⛶ Zoom`), penyesuaian skala otomatis (`🔄 Fit`), dan sinkronisasi tema gelap/terang secara real-time melalui `MutationObserver` pada DOM.
+- Peningkatan Backend `/api/chart/route.js`:
+  - Menambahkan kalkulasi matematis `calculateBollingerForChart(chartData, 20, 2)`, `calculateRSIForChart(chartData, 14)`, dan `calculateMACDForChart(chartData, 12, 26, 9)`.
+  - Mengembalikan payload indikator lengkap baik pada jalur utama Yahoo Finance maupun fallback database lokal.
+- Memperbarui `src/components/StockExplorer.jsx` dan `src/components/DetailPanel.jsx` untuk menampilkan fitur analisis teknikal TradingView Pro pada Stock Explorer dan Analisis Saham.
+
 ## [2026-09-25] fix | Resolusi Scraper Cron TDZ, Puppeteer TargetCloseError, useEffect & React Rules-of-Hooks
 - Memperbaiki `ReferenceError: Cannot access 'isPriceSyncRunning' before initialization` pada `src/scripts/scraper-cron.js` yang disebabkan oleh Temporal Dead Zone (TDZ).
 - Memindahkan deklarasi state (`isPriceSyncRunning`, `isDailyScraperRunning`) dan seluruh definisi fungsi eksekusi (`runPriceSync`, `runDiscordNotifier`, `runDailyScrapers`) ke atas sebelum pemanggilan inisialisasi boot.

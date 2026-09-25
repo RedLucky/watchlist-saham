@@ -73,3 +73,24 @@ Instead of arbitrary percentage targets, take profit levels anchor directly to t
 $$\text{Target} = \max(\text{Raw Target}, \, \text{Swing Resistance}_{20} - \text{Tick Size})$$
 * Placing TP 1 tick below resistance guarantees higher execution fill rates before selling pressure triggers reversal.
 
+---
+
+## 🖥️ 6. Interactive TradingView Lightweight Charts Pro Architecture
+
+Located in `src/components/StockChart.jsx` and backed by `/api/chart/route.js`:
+
+### 1. Multi-Timeframe Candle Aggregation
+* Seamless in-memory client-side aggregation across `1D` (Daily), `1W` (Weekly - Monday anchor), and `1M` (Monthly - 1st of month anchor) without triggering redundant network roundtrips.
+
+### 2. Multi-Indicator Overlay & Sub-Panes
+* **Moving Averages**: Fast EMA/SMA 20, SMA 50, and institutional trend-filter SMA 200 (`#eab308`).
+* **Bollinger Bands (20, 2)**: Upper Band (`#38bdf8`), Middle Basis, and Lower Band rendered with dashed lines (`LineStyle.Dashed`).
+* **Sub-Pane RSI (14)**: Dedicated price scale (`priceScaleId: 'rsi'`) with scale margins (`top: 0.82, bottom: 0.02`) and horizontal threshold bands at 70 (Overbought) and 30 (Oversold).
+* **Sub-Pane MACD (12, 26, 9)**: Dedicated price scale (`priceScaleId: 'macd'`) plotting MACD Line (`#38bdf8`), Signal Line (`#fb923c`), and color-coded momentum histogram bars (`#22c55e` / `#ef4444`).
+* **Candlestick Pattern Overlay**: Markers positioned above/below bars identifying Bullish Engulfing, Hammer, Shooting Star, and Doji formations via `setMarkers()`.
+
+### 3. Dynamic Precision Legend & Responsive Viewport
+* Real-time OHLCV crosshair subscription (`chart.subscribeCrosshairMove`) delivering live Open, High, Low, Close, % Change, and Volume directly in a floating HUD banner.
+* Full-screen immersion mode (`⛶ Zoom`) and automated range fitting (`🔄 Fit`).
+* Real-time dark/light mode synchronization via DOM `MutationObserver`.
+
