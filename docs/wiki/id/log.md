@@ -4,7 +4,7 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
-## [2026-09-25] fix | Resolusi ReferenceError TDZ Scraper Cron & Puppeteer TargetCloseError
+## [2026-09-25] fix | Resolusi ReferenceError TDZ Scraper Cron, Puppeteer TargetCloseError & useEffect Klien
 - Memperbaiki `ReferenceError: Cannot access 'isPriceSyncRunning' before initialization` pada `src/scripts/scraper-cron.js` yang disebabkan oleh Temporal Dead Zone (TDZ).
 - Memindahkan deklarasi state (`isPriceSyncRunning`, `isDailyScraperRunning`) dan seluruh definisi fungsi eksekusi (`runPriceSync`, `runDiscordNotifier`, `runDailyScrapers`) ke atas sebelum pemanggilan inisialisasi boot.
 - Memperbaiki `TargetCloseError: Protocol error (Target.setDiscoverTargets): Target closed` saat peluncuran Chromium Puppeteer di kontainer Docker Alpine (`src/scripts/sync-ksei.js` & `src/scripts/sync-ownership.js`):
@@ -12,6 +12,7 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
   - Menambahkan argumen `--disable-extensions` dan fallback pendeteksian binary Chromium (`/usr/bin/chromium-browser` / `/usr/bin/chromium`).
   - Menambahkan `dumb-init` pada `Dockerfile.scraper` sebagai entrypoint PID 1 process reaper untuk mencegah pembentukan proses zombie Chromium.
   - Membungkus peluncuran dan siklus hidup browser dalam blok defensif `try/finally` untuk memastikan browser selalu ditutup dengan aman (`await browser.close()`).
+- Memperbaiki `ReferenceError: useEffect is not defined` pada `src/components/DetailPanel.jsx` dengan mengimpor `useEffect` dari `'react'`.
 
 ## [2026-09-24] feat | Remediasi Audit Komprehensif Full-Stack & Matriks Finansial Bloomberg (FA)
 - Stabilitas Runtime Client & Guardrail Vercel:

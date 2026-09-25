@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ScoreBar from './ScoreBar';
 import Tooltip from './Tooltip';
 import StockChart from './StockChart';

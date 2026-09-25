@@ -4,7 +4,7 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
-## [2026-09-25] fix | Scraper Cron TDZ ReferenceError & Puppeteer TargetCloseError Resolution
+## [2026-09-25] fix | Scraper Cron TDZ ReferenceError, Puppeteer TargetCloseError & Client useEffect Fix
 - Fixed `ReferenceError: Cannot access 'isPriceSyncRunning' before initialization` in `src/scripts/scraper-cron.js` caused by Temporal Dead Zone (TDZ).
 - Moved `isPriceSyncRunning` and `isDailyScraperRunning` along with all function definitions (`runPriceSync`, `runDiscordNotifier`, `runDailyScrapers`) above initial boot execution triggers.
 - Fixed `TargetCloseError: Protocol error (Target.setDiscoverTargets): Target closed` during Puppeteer launch in Docker Alpine (`src/scripts/sync-ksei.js` & `src/scripts/sync-ownership.js`):
@@ -12,6 +12,7 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
   - Added `--disable-extensions` and executable fallback detection.
   - Added `dumb-init` to `Dockerfile.scraper` as entrypoint PID 1 process reaper to prevent orphaned zombie Chromium processes.
   - Wrapped browser launch and lifecycle in defensive `try/finally` blocks ensuring safe cleanup (`await browser.close()`).
+- Fixed `ReferenceError: useEffect is not defined` in `src/components/DetailPanel.jsx` by importing `useEffect` from `'react'`.
 
 ## [2026-09-24] feat | Comprehensive Full-Stack Audit Remediation & Bloomberg Financial Matrix (FA)
 - Client-Side Runtime Stability & Vercel Guardrails:
