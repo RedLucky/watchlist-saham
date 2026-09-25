@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const puppeteer = require('puppeteer');
+const fs = require('fs');
 
 const prisma = new PrismaClient();
 
@@ -57,22 +58,27 @@ async function syncOwnership() {
     return;
   }
 
-  const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || undefined;
-  const browser = await puppeteer.launch({ 
-    headless: true, 
-    executablePath,
-    args: [
-      '--no-sandbox', 
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-gpu',
-      '--no-first-run',
-      '--no-zygote',
-      '--single-process'
-    ] 
-  });
-  
-  const page = await browser.newPage();
+  const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || 
+    (fs.existsSync('/usr/bin/chromium-browser') ? '/usr/bin/chromium-browser' : 
+    (fs.existsSync('/usr/bin/chromium') ? '/usr/bin/chromium' : undefined));
+  let browser = null;
+
+  try {
+    browser = await puppeteer.launch({ 
+      headless: true, 
+      executablePath,
+      args: [
+        '--no-sandbox', 
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--no-first-run',
+        '--no-zygote',
+        '--disable-extensions'
+      ] 
+    });
+    
+    const page = await browser.newPage();
   await page.setUserAgent(getRandomUA());
   
   // Set viewport acak agar makin menyerupai layar monitor manusia
@@ -133,10 +139,15 @@ async function syncOwnership() {
     // Ganti sidik jari peramban (User Agent) secara acak untuk emiten selanjutnya
     await page.setUserAgent(getRandomUA());
   }
-
-  await browser.close();
-  await prisma.$disconnect();
-  console.log("\n=== SCRAPING COMPLETED ===");
+  } catch (err) {
+    console.error('[OWNERSHIP-ERROR] Error during ownership sync:', err.message);
+  } finally {
+    if (browser) {
+      try { await browser.close(); } catch (_) {}
+    }
+    await prisma.$disconnect();
+    console.log("\n=== SCRAPING COMPLETED ===");
+  }
 }
 
 syncOwnership().catch(console.error);

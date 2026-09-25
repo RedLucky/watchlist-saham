@@ -20,6 +20,7 @@ RUN apk add --no-cache \
       ca-certificates \
       ttf-freefont \
       openssl \
+      dumb-init \
       tzdata && \
     rm -rf /var/cache/apk/*
 
@@ -51,6 +52,8 @@ RUN addgroup -g 1001 -S scrapergroup && \
     chown -R scraperuser:scrapergroup /app /home/scraperuser
 
 USER scraperuser
+
+ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 
 # Start the node-cron scheduler
 CMD ["node", "src/scripts/scraper-cron.js"]

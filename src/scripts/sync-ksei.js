@@ -1,6 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
 const puppeteer = require('puppeteer');
 const AdmZip = require('adm-zip');
+const fs = require('fs');
 
 const prisma = new PrismaClient();
 
@@ -341,25 +342,29 @@ async function syncKseiPublications() {
   console.log(`[KSEI-SCRAPER] Current Stored Periods in DB (${storedPeriods.length}):`, storedPeriods);
 
   // 2. Launch Puppeteer browser
-  const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || undefined;
-  const browser = await puppeteer.launch({
-    headless: true,
-    executablePath,
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-gpu',
-      '--no-first-run',
-      '--no-zygote',
-      '--single-process',
-    ]
-  });
-
-  const page = await browser.newPage();
-  await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+  const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || 
+    (fs.existsSync('/usr/bin/chromium-browser') ? '/usr/bin/chromium-browser' : 
+    (fs.existsSync('/usr/bin/chromium') ? '/usr/bin/chromium' : undefined));
+  let browser = null;
 
   try {
+    browser = await puppeteer.launch({
+      headless: true,
+      executablePath,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--no-first-run',
+        '--no-zygote',
+        '--disable-extensions',
+      ]
+    });
+
+    const page = await browser.newPage();
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+
     console.log('[KSEI-SCRAPER] Navigating to KSEI publications portal...');
     await page.goto('https://www.ksei.co.id/id/publikasi/data-dan-statistik/kepemilikan-efek?page=1', {
       waitUntil: 'networkidle2',
@@ -462,7 +467,9 @@ async function syncKseiPublications() {
   } catch (error) {
     console.error('[KSEI-SCRAPER] Error during KSEI sync:', error.message);
   } finally {
-    await browser.close();
+    if (browser) {
+      try { await browser.close(); } catch (_) {}
+    }
     await prisma.$disconnect();
     console.log('\n=== [KSEI-SCRAPER] KSEI SYNC COMPLETED ===\n');
   }
