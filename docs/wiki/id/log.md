@@ -4,6 +4,10 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-09-25] fix | Resolusi ReferenceError TDZ Scraper Cron
+- Memperbaiki `ReferenceError: Cannot access 'isPriceSyncRunning' before initialization` pada `src/scripts/scraper-cron.js` yang disebabkan oleh Temporal Dead Zone (TDZ).
+- Memindahkan deklarasi state (`isPriceSyncRunning`, `isDailyScraperRunning`) dan seluruh definisi fungsi eksekusi (`runPriceSync`, `runDiscordNotifier`, `runDailyScrapers`) ke atas sebelum pemanggilan inisialisasi boot.
+
 ## [2026-09-24] feat | Remediasi Audit Komprehensif Full-Stack & Matriks Finansial Bloomberg (FA)
 - Stabilitas Runtime Client & Guardrail Vercel:
   - Memperbaiki `ReferenceError: stock is not defined` di dalam hook `useMemo` pada `src/components/ScenarioForecaster.jsx` dengan menggunakan destrukturisasi `f.eps` dan `f.per`.

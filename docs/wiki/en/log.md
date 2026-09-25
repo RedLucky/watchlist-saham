@@ -4,6 +4,10 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-09-25] fix | Scraper Cron TDZ ReferenceError Resolution
+- Fixed `ReferenceError: Cannot access 'isPriceSyncRunning' before initialization` in `src/scripts/scraper-cron.js` caused by Temporal Dead Zone (TDZ).
+- Moved `isPriceSyncRunning` and `isDailyScraperRunning` along with all function definitions (`runPriceSync`, `runDiscordNotifier`, `runDailyScrapers`) above initial boot execution triggers.
+
 ## [2026-09-24] feat | Comprehensive Full-Stack Audit Remediation & Bloomberg Financial Matrix (FA)
 - Client-Side Runtime Stability & Vercel Guardrails:
   - Fixed `ReferenceError: stock is not defined` inside `useMemo` in `src/components/ScenarioForecaster.jsx` by correctly referencing destructured `f.eps` and `f.per`.

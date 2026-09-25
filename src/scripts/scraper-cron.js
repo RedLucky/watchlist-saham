@@ -1,52 +1,6 @@
 const cron = require('node-cron');
 const { exec } = require('child_process');
 
-console.log('🤖 Scraper & Price Sync Cron Scheduler Started (Alpine Minimalist)!');
-console.log('Jadwal:');
-console.log('  - Sync Harga Saham: Setiap 5 Menit');
-console.log('  - Sync KSEI & Ownership: Setiap Hari pukul 10:00 WIB');
-console.log('  - Rekomendasi Saham Discord: Setiap Hari pukul 18:00 WIB');
-
-// 1. Jalankan sinkronisasi harga pertama kali saat boot
-console.log('\n[Boot] Menjalankan initial Price Sync...');
-runPriceSync();
-
-// 2. Jalankan initial KSEI & Ownership sync
-console.log('[Boot] Menjalankan initial KSEI & Ownership Scraper...');
-runDailyScrapers();
-
-// Jadwal Cron: Setiap 5 Menit -> Sync Harga Saham ("*/5 * * * *")
-cron.schedule('*/5 * * * *', () => {
-  console.log(`\n[${new Date().toISOString()}] [CRON-5MIN] Memulai Sinkronisasi Harga Saham Berkala...`);
-  runPriceSync();
-});
-
-// Jadwal Cron: Setiap Hari pukul 10:00 WIB ("0 10 * * *")
-cron.schedule('0 10 * * *', () => {
-  console.log(`\n[${new Date().toISOString()}] [CRON-DAILY] Jadwal 10:00 WIB Terpicu! Memulai KSEI & Ownership Scraping...`);
-  runDailyScrapers();
-}, {
-  timezone: "Asia/Jakarta",
-  missedExecutionTolerance: 300000,
-  onMissedExecution: (date) => {
-    console.warn(`\n[${new Date().toISOString()}] [CRON-DAILY-MISSED] Jadwal 10:00 WIB terlewat pada ${date}, menjalankan pemulihan...`);
-    runDailyScrapers();
-  }
-});
-
-// Jadwal Cron: Setiap Hari pukul 18:00 WIB -> Kirim Rekomendasi Saham ke Discord ("0 18 * * *")
-cron.schedule('0 18 * * *', () => {
-  console.log(`\n[${new Date().toISOString()}] [CRON-DISCORD] Jadwal 18:00 WIB Terpicu! Mengirim Rekomendasi Saham ke Discord...`);
-  runDiscordNotifier();
-}, {
-  timezone: "Asia/Jakarta",
-  missedExecutionTolerance: 300000,
-  onMissedExecution: (date) => {
-    console.warn(`\n[${new Date().toISOString()}] [CRON-DISCORD-MISSED] Jadwal 18:00 WIB terlewat pada ${date}, menjalankan pemulihan...`);
-    runDiscordNotifier();
-  }
-});
-
 let isPriceSyncRunning = false;
 let isDailyScraperRunning = false;
 
@@ -113,5 +67,51 @@ function runDailyScrapers() {
   kseiProc.stdout.on('data', (data) => console.log(data.trim()));
   kseiProc.stderr.on('data', (data) => console.error(data.trim()));
 }
+
+console.log('🤖 Scraper & Price Sync Cron Scheduler Started (Alpine Minimalist)!');
+console.log('Jadwal:');
+console.log('  - Sync Harga Saham: Setiap 5 Menit');
+console.log('  - Sync KSEI & Ownership: Setiap Hari pukul 10:00 WIB');
+console.log('  - Rekomendasi Saham Discord: Setiap Hari pukul 18:00 WIB');
+
+// 1. Jalankan sinkronisasi harga pertama kali saat boot
+console.log('\n[Boot] Menjalankan initial Price Sync...');
+runPriceSync();
+
+// 2. Jalankan initial KSEI & Ownership sync
+console.log('[Boot] Menjalankan initial KSEI & Ownership Scraper...');
+runDailyScrapers();
+
+// Jadwal Cron: Setiap 5 Menit -> Sync Harga Saham ("*/5 * * * *")
+cron.schedule('*/5 * * * *', () => {
+  console.log(`\n[${new Date().toISOString()}] [CRON-5MIN] Memulai Sinkronisasi Harga Saham Berkala...`);
+  runPriceSync();
+});
+
+// Jadwal Cron: Setiap Hari pukul 10:00 WIB ("0 10 * * *")
+cron.schedule('0 10 * * *', () => {
+  console.log(`\n[${new Date().toISOString()}] [CRON-DAILY] Jadwal 10:00 WIB Terpicu! Memulai KSEI & Ownership Scraping...`);
+  runDailyScrapers();
+}, {
+  timezone: "Asia/Jakarta",
+  missedExecutionTolerance: 300000,
+  onMissedExecution: (date) => {
+    console.warn(`\n[${new Date().toISOString()}] [CRON-DAILY-MISSED] Jadwal 10:00 WIB terlewat pada ${date}, menjalankan pemulihan...`);
+    runDailyScrapers();
+  }
+});
+
+// Jadwal Cron: Setiap Hari pukul 18:00 WIB -> Kirim Rekomendasi Saham ke Discord ("0 18 * * *")
+cron.schedule('0 18 * * *', () => {
+  console.log(`\n[${new Date().toISOString()}] [CRON-DISCORD] Jadwal 18:00 WIB Terpicu! Mengirim Rekomendasi Saham ke Discord...`);
+  runDiscordNotifier();
+}, {
+  timezone: "Asia/Jakarta",
+  missedExecutionTolerance: 300000,
+  onMissedExecution: (date) => {
+    console.warn(`\n[${new Date().toISOString()}] [CRON-DISCORD-MISSED] Jadwal 18:00 WIB terlewat pada ${date}, menjalankan pemulihan...`);
+    runDiscordNotifier();
+  }
+});
 
 console.log('Scheduler is now active and listening in background...');
