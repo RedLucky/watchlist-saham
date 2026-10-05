@@ -20,6 +20,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **Stack:** Node.js (JavaScript), Next.js
 - **Package manager:** npm
 
+### Project-specific guidance
+
+- Before changing financial formulas, scoring weights, database schemas or trading logic, read the matching wiki area first: `docs/wiki/en/architecture/`, `docs/wiki/en/financial-engine/` (Graham valuation, scoring weights) and `docs/wiki/en/trading-system/` (order lifecycle, waiting buy, win rate).
+- Never re-derive financial formulas or guess database behaviour from scratch; the wiki is the ground truth.
+
 ## Commands
 
 Run from the repo root. Keep the `rtk` prefix.
