@@ -1,0 +1,4 @@
+# Keeps the graphify knowledge graph lean for AI agents (gitignore syntax).
+# The English wiki explains the concepts; the Indonesian copy and the change logs only add noise.
+docs/wiki/id/
+docs/wiki/*/log.md
