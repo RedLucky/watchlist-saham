@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { PageShell, PageHeader } from './ui/PageShell';
 
 /**
  * Bloomberg CA: Full Corporate Actions Calendar Page
@@ -197,33 +198,21 @@ export default function CorporateCalendar({ user = null, onSelectTicker = null }
   };
 
   return (
-    <div className="space-y-6">
-      {/* ── 1. PAGE HEADER & STATS CARDS ──────────────────────────────────── */}
-      <div className="bg-surface border border-line rounded-md p-5 md:p-6 shadow-sm space-y-5">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-line pb-4">
-          <div>
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <span className="text-2xl md:text-3xl">▦</span>
-              <h1 className="font-black text-xl md:text-2xl text-ink tracking-tight">
-                Kalender Aksi Korporasi & Dividen BEI
-              </h1>
-              <span className="px-2.5 py-1 text-xs font-black rounded-sm bg-up-soft text-up border border-up uppercase tracking-wider">
-                Real-Time KSEI & BEI
-              </span>
-            </div>
-            <p className="text-xs md:text-sm text-muted mt-1">
-              Jadwal resmi 4 tanggal keramat dividen (Cum Date, Ex Date, DPS, Pembayaran), RUPS, dan musim rilis Laporan Keuangan seluruh saham BEI.
-            </p>
-          </div>
-
-          <button
-            onClick={handleResetToday}
-            className="px-3.5 py-2 text-xs font-bold rounded-sm bg-sunken text-ink border border-line hover:bg-sunken transition-all flex items-center gap-1.5 self-start md:self-auto"
-          >
-            <span>◎</span>
+    <PageShell>
+      <PageHeader
+        title="Kalender Aksi Korporasi"
+        subtitle="Jadwal resmi 4 tanggal keramat dividen, RUPS, dan musim rilis laporan keuangan seluruh saham BEI"
+        badge={<span className="badge badge-up">KSEI & BEI</span>}
+        actions={(
+          <button onClick={handleResetToday} className="btn-secondary">
+            <span aria-hidden="true">◎</span>
             <span>Hari Ini</span>
           </button>
-        </div>
+        )}
+      />
+
+      {/* ── 1. SUMMARY STATS ──────────────────────────────────────────────── */}
+      <div className="card p-4 md:p-5 space-y-4">
 
         {/* 4 Summary Stat Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -770,6 +759,6 @@ export default function CorporateCalendar({ user = null, onSelectTicker = null }
           </div>
         </div>
       )}
-    </div>
+    </PageShell>
   );
 }

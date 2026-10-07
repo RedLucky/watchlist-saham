@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import SectorMetricsTab from './SectorMetricsTab';
 import GrowthStoryTab from './GrowthStoryTab';
 import TopInvestorsTab from './TopInvestorsTab';
+import { PageShell, PageHeader, PageToolbar } from '../ui/PageShell';
 
 export default function AlphaLegendScreeners() {
   const [subTab, setSubTab] = useState('sector-metrics'); // 'sector-metrics' | 'growth-story' | 'top-investors'
@@ -29,55 +30,42 @@ export default function AlphaLegendScreeners() {
   }, []);
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
-      {/* Navigation Sub-Tabs Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-md bg-surface border border-line shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-md flex items-center justify-center bg-ink text-on-accent text-xl flex-shrink-0 ">
-            ★
-          </div>
-          <div>
-            <h1 className="text-base font-extrabold text-ink leading-tight">
-              Alpha Legends Screener
-            </h1>
-            <p className="text-xs text-muted ">Modul Komprehensif Panduan & Formula Stock Screener</p>
-          </div>
-        </div>
+    <PageShell className="animate-fade-in">
+      <PageHeader
+        title="Alpha Legends Screener"
+        subtitle="Formula dan panduan penyaringan saham mengikuti pendekatan Buffett, Lynch, Graham, dan Greenblatt"
+        badge={stocks && stocks.length ? <span className="badge badge-outline">{stocks.length} emiten</span> : null}
+      />
 
-        {/* Sub-Tab Navigation Switcher */}
-        <div className="flex items-center gap-1.5 p-1 bg-sunken rounded-md border border-line overflow-x-auto [scrollbar-width:none] w-full sm:w-auto">
+      {/* Sticky sub-tab switcher */}
+      <PageToolbar>
+        <div className="tabs" role="group" aria-label="Modul Alpha Legends">
           <button
+            type="button"
             onClick={() => setSubTab('sector-metrics')}
-            className={`px-3.5 py-2 rounded-sm text-xs font-bold transition-all whitespace-nowrap flex-shrink-0 ${
- subTab === 'sector-metrics'
- ? 'bg-accent text-on-accent shadow-md '
- : 'text-muted hover:text-ink '
- }`}
-          >
+            aria-pressed={subTab === 'sector-metrics'}
+            className="tab"
+            >
             ▤ Metrik Sektoral
           </button>
           <button
+            type="button"
             onClick={() => setSubTab('growth-story')}
-            className={`px-3.5 py-2 rounded-sm text-xs font-bold transition-all whitespace-nowrap flex-shrink-0 ${
- subTab === 'growth-story'
- ? 'bg-up text-on-accent shadow-md '
- : 'text-muted hover:text-ink '
- }`}
-          >
+            aria-pressed={subTab === 'growth-story'}
+            className="tab"
+            >
             ↑ Growth Story
           </button>
           <button
+            type="button"
             onClick={() => setSubTab('top-investors')}
-            className={`px-3.5 py-2 rounded-sm text-xs font-bold transition-all whitespace-nowrap flex-shrink-0 ${
- subTab === 'top-investors'
- ? 'bg-warn text-ink shadow-md font-black'
- : 'text-muted hover:text-ink '
- }`}
-          >
+            aria-pressed={subTab === 'top-investors'}
+            className="tab"
+            >
             ★ Top Investors (10)
           </button>
         </div>
-      </div>
+      </PageToolbar>
 
       {/* Loading & Error States */}
       {loading ? (
@@ -96,6 +84,6 @@ export default function AlphaLegendScreeners() {
           {subTab === 'top-investors' && <TopInvestorsTab stocks={stocks} />}
         </>
       )}
-    </div>
+    </PageShell>
   );
 }

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { readThemeTokens, withAlpha, isDarkTheme } from '@/lib/chartTheme';
+import { PageShell, PageHeader } from './ui/PageShell';
 
 export default function PensionTracker({ records, onRefresh, currentCalculations, stockPrices, sbnAvailable }) {
   const growthCanvasRef = useRef(null);
@@ -484,16 +485,19 @@ export default function PensionTracker({ records, onRefresh, currentCalculations
  }, [monthsGrouped]);
 
   return (
-    <div className="space-y-6">
+    <PageShell>
+      <PageHeader
+        title="Tracker Pensiun"
+        subtitle="Catat eksekusi investasi berkala dan pantau akumulasi aset investasi secara rapi per bulan"
+        badge={<span className="badge badge-outline">per bulan</span>}
+      />
+
       {/* Top Banner & Fast Actions */}
-      <div className="glass-panel p-6 rounded-md border border-line flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="card p-4 sm:p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">↗</span>
-            <h3 className="text-lg font-bold text-ink ">Tracker Konsistensi & Pertumbuhan Aset</h3>
-          </div>
-          <p className="text-xs text-muted mt-1">
-            Catat eksekusi investasi berkala untuk memantau disiplin investasi pensiun dan akumulasi portofolio secara rapi per bulan.
+          <h3 className="section-title">Konsistensi & Pertumbuhan Aset</h3>
+          <p className="section-subtitle mt-1">
+            Catat setiap pembelian dan setoran rutin agar progres menuju target dana terlihat.
           </p>
         </div>
 
@@ -735,7 +739,7 @@ export default function PensionTracker({ records, onRefresh, currentCalculations
             <span className="text-[10px] text-up font-medium">Kumulatif</span>
           </div>
           <div className="w-full flex justify-center overflow-x-auto">
-            <canvas ref={growthCanvasRef} width={450} height={200} className="w-full max-w-[450px] h-auto"/>
+            <canvas ref={growthCanvasRef} width={900} height={220} className="w-full h-auto block"/>
           </div>
         </div>
 
@@ -749,7 +753,7 @@ export default function PensionTracker({ records, onRefresh, currentCalculations
             <span className="text-[10px] text-ink font-medium">Streak ({monthsGrouped.length} Bulan)</span>
           </div>
           <div className="w-full flex justify-center overflow-x-auto">
-            <canvas ref={streakCanvasRef} width={450} height={200} className="w-full max-w-[450px] h-auto"/>
+            <canvas ref={streakCanvasRef} width={900} height={220} className="w-full h-auto block"/>
           </div>
         </div>
       </div>
@@ -968,6 +972,6 @@ export default function PensionTracker({ records, onRefresh, currentCalculations
           </div>
         </div>
       )}
-    </div>
+    </PageShell>
   );
 }

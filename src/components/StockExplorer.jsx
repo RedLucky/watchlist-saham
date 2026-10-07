@@ -27,6 +27,7 @@ import {
   getTargetProgress,
   summarizeCollection,
 } from '@/lib/collectionCardUtils';
+import { PageShell, PageHeader, PageToolbar } from './ui/PageShell';
 
 /** Tailwind classes for each score band returned by getScoreTone (collection cards). */
 const SCORE_TONE_CLASSES = {
@@ -1687,42 +1688,37 @@ export default function StockExplorer({ user }) {
   }, [dynamicFairValue, stockDetail?.price, proj.marginOfSafety]);
 
   return (
-    <div className="space-y-4 sm:space-y-6 pb-12 w-full">
-      {/* ── PAGE TITLE & PAGE TABS (sticky; below the 48px mobile header) ─── */}
-      <div className="sticky top-12 lg:top-0 z-30 -mx-3 sm:mx-0 px-3 sm:px-0 pt-2 pb-3 bg-canvas rule-double">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-3">
-          <div className="min-w-0">
-            <h1 className="page-title">Stock Explorer</h1>
-            <p className="section-subtitle mt-0.5 hidden sm:block">
-              Riset fundamental, valuasi, volume teknikal, bandarmologi & komparasi multi-saham
-            </p>
-          </div>
+    <PageShell className="pb-12">
+      <PageHeader
+        title="Stock Explorer"
+        subtitle="Riset fundamental, valuasi, volume teknikal, bandarmologi & komparasi multi-saham"
+      />
 
-          {/* Page Tabs: Koleksi | Pencarian | Komparasi */}
-          <div role="tablist" aria-label="Halaman Stock Explorer" className="tabs w-full md:w-auto">
-            {[
-              { id: 'collections', icon: '▤', label: 'Koleksi', badge: collections.length > 0 ? collections.length : null },
-              { id: 'explorer', icon: '⌕', label: 'Pencarian', badge: null },
-              { id: 'compare', icon: '⇄', label: 'Komparasi', badge: compareList.length > 0 ? `${compareList.length}/6` : null },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                role="tab"
-                aria-selected={activeTab === tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className="tab"
-              >
-                <span className="font-mono" aria-hidden="true">{tab.icon}</span>
-                <span>{tab.label}</span>
-                {tab.badge != null && (
-                  <span className="font-mono text-[10px] text-muted">{tab.badge}</span>
-                )}
-              </button>
-            ))}
-          </div>
+      {/* Page tabs stay reachable while scrolling a long analysis */}
+      <PageToolbar>
+        <div role="tablist" aria-label="Halaman Stock Explorer" className="tabs w-full md:w-auto">
+          {[
+            { id: 'collections', icon: '▤', label: 'Koleksi', badge: collections.length > 0 ? collections.length : null },
+            { id: 'explorer', icon: '⌕', label: 'Pencarian', badge: null },
+            { id: 'compare', icon: '⇄', label: 'Komparasi', badge: compareList.length > 0 ? `${compareList.length}/6` : null },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className="tab"
+            >
+              <span className="font-mono" aria-hidden="true">{tab.icon}</span>
+              <span>{tab.label}</span>
+              {tab.badge != null && (
+                <span className="font-mono text-[10px] text-muted">{tab.badge}</span>
+              )}
+            </button>
+          ))}
         </div>
-      </div>
+      </PageToolbar>
 
       {/* ── 2. PAGE: KOLEKSI SAHAM ───────────────────────────────────────── */}
       {activeTab === 'collections' && (
@@ -4911,6 +4907,6 @@ export default function StockExplorer({ user }) {
           </div>
         </div>
       )}
-    </div>
+    </PageShell>
   );
 }
