@@ -1,78 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join, relative } from 'node:path';
 
 /**
- * Guard for the "Bursa 1985" migration (ADR 0001): files listed here must use the
- * semantic theme tokens only. Add each file to MIGRATED_FILES once it is migrated;
- * TASK-7761 extends the check to the whole of src/.
+ * Guard for the "Bursa 1985" migration (ADR 0001): every UI file under src/ must use the
+ * semantic theme tokens only, so the theme stays changeable from globals.css alone.
  */
-const MIGRATED_FILES = [
-  'src/app/layout.js',
-  'src/components/ThemeToggle.jsx',
-  'src/components/Dashboard.jsx',
-  'src/components/Navigation/Sidebar.jsx',
-  'src/components/Navigation/TopHeader.jsx',
-  'src/components/Navigation/MobileNav.jsx',
-  'src/components/ScoreBadge.jsx',
-  'src/components/ScoreBar.jsx',
-  'src/components/Tooltip.jsx',
-  'src/components/StyleSelector.jsx',
-  'src/components/ModeSelector.jsx',
-  'src/components/CustomSliders.jsx',
-  'src/components/MarketBadge.jsx',
-  'src/components/SectorBar.jsx',
-  'src/components/AuthModal.jsx',
-  // TASK-8835: Analisis Saham page
-  'src/components/StockTable.jsx',
-  'src/components/SectorRrgPanel.jsx',
-  // TASK-4102: Stock Explorer
-  'src/components/StockExplorer.jsx',
-  // TASK-5527: Stock Explorer analysis panels & chart
-  'src/components/RelativeValuationPeers.jsx',
-  'src/components/ValuationBandsPanel.jsx',
-  'src/components/EconomicValuePanel.jsx',
-  'src/components/ScenarioForecaster.jsx',
-  'src/components/DividendTrapPanel.jsx',
-  'src/components/AutoRejectionLadderPanel.jsx',
-  'src/components/SmartMoneyLiquidityPanel.jsx',
-  'src/components/BloombergIntelligencePanel.jsx',
-  'src/components/MonthlySeasonalityPanel.jsx',
-  'src/components/FinancialMatrixPanel.jsx',
-  'src/components/DetailPanel.jsx',
-  'src/components/StockChart.jsx',
-  // TASK-3690: Market Movers, Screener, Alpha Legends
-  'src/components/MarketMovers.jsx',
-  'src/components/StockScreener.jsx',
-  'src/components/AiScreenerBar.jsx',
-  'src/components/AlphaLegend/AlphaLegendScreeners.jsx',
-  'src/components/AlphaLegend/GrowthStoryTab.jsx',
-  'src/components/AlphaLegend/SectorMetricsTab.jsx',
-  'src/components/AlphaLegend/TopInvestorsTab.jsx',
-  'src/data/alphaLegendSectors.js',
-  // TASK-1846: Corporate Actions & AI Consultation
-  'src/components/CorporateCalendar.jsx',
-  'src/components/CorporateActionsPanel.jsx',
-  'src/components/AiConsultationPanel.jsx',
-  // TASK-9273: Portfolio, History & Win Rate
-  'src/components/PortfolioPanel.jsx',
-  'src/components/HistoryPanel.jsx',
-  'src/components/BacktestPanel.jsx',
-  // TASK-6019: Pension
-  'src/components/PensionCalculator.jsx',
-  'src/components/PensionTracker.jsx',
-  'src/components/PensionRebalance.jsx',
-  'src/app/pensiun/page.js',
-  // TASK-4458: KSEI & ownership
-  'src/components/KseiUploadPanel.jsx',
-  'src/app/admin/ksei/page.jsx',
-  'src/components/StockOwnershipModal.jsx',
-];
 
-/** Lines that handle user-chosen collection emoji (data, not UI icons) may contain emoji. */
-const USER_EMOJI_LINE = /emoji/i;
-
-/** Patterns that belong to the old look and must not appear in migrated files. */
+/** Patterns that belong to the old look and must not appear in UI files. */
 const FORBIDDEN = [
   { name: 'raw palette colour', pattern: /\b(?:bg|text|border|ring|from|via|to|fill|stroke|shadow|outline|divide|accent|decoration)-(?:slate|gray|zinc|indigo|blue|sky|cyan|violet|purple|fuchsia|pink|rose|red|orange|amber|yellow|lime|green|emerald|teal)-\d{2,3}\b/ },
   { name: 'gradient', pattern: /\bbg-gradient-to-|\blinear-gradient\(/ },
@@ -82,9 +18,40 @@ const FORBIDDEN = [
   { name: 'colour emoji', pattern: /\p{Emoji_Presentation}|\uFE0F/u },
 ];
 
-for (const file of MIGRATED_FILES) {
+/** Lines handling user-chosen collection emoji (data, not UI icons) may contain emoji. */
+const USER_EMOJI_LINE = /emoji/i;
+
+/**
+ * Lists UI source files under src/, skipping build output and the Discord/scraper scripts.
+ * Those scripts run outside the browser (Discord embeds, cron logs) where the web theme
+ * does not apply, so emoji and platform-specific formatting are allowed there.
+ *
+ * @param {string} dir - Directory to walk.
+ * @returns {string[]} Repo-relative paths of .js/.jsx files.
+ */
+function listSourceFiles(dir) {
+  const found = [];
+  for (const entry of readdirSync(dir)) {
+    if (entry === 'scripts' || entry === 'node_modules' || entry === '.next') continue;
+    const full = join(dir, entry);
+    if (statSync(full).isDirectory()) {
+      found.push(...listSourceFiles(full));
+    } else if (/\.jsx?$/.test(entry)) {
+      found.push(relative(process.cwd(), full));
+    }
+  }
+  return found;
+}
+
+const files = listSourceFiles('src');
+
+test('src/ contains source files to check', () => {
+  assert.ok(files.length > 50, `only found ${files.length} files`);
+});
+
+for (const file of files) {
   test(`${file} uses theme tokens only`, () => {
-    const source = readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
+    const source = readFileSync(file, 'utf8');
     const problems = [];
 
     source.split('\n').forEach((line, index) => {

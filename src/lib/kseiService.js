@@ -147,7 +147,7 @@ export function enrichKseiHistoryWithDeltas(history = []) {
         deltaRetailRp: 0,
         deltaSmartMoneyRp: 0,
         bfi: 0,
-        verdict: 'Neutral ⚪',
+        verdict: 'Neutral ○',
       };
     }
 
@@ -171,13 +171,13 @@ export function enrichKseiHistoryWithDeltas(history = []) {
     const floatBase = curr.freeFloatShares > 0 ? curr.freeFloatShares : curr.secNum;
     const bfi = floatBase > 0 ? Number((((deltaSmartMoney - deltaRetail) / floatBase) * 100).toFixed(2)) : 0;
 
-    let verdict = 'Neutral ⚪';
+    let verdict = 'Neutral ○';
     if (bfi >= 2.0 || (deltaSmartMoney > 0 && deltaRetail < 0)) {
-      verdict = bfi >= 3.5 ? 'Super Akumulasi 🚀' : 'Akumulasi Institusi 🟢';
+      verdict = bfi >= 3.5 ? 'Super Akumulasi ↑' : 'Akumulasi Institusi ●';
     } else if (bfi <= -2.0 || (deltaSmartMoney < 0 && deltaRetail > 0)) {
-      verdict = bfi <= -3.5 ? 'Distribusi Masif 🔴' : 'Distribusi Ritel Masuk 🔴';
+      verdict = bfi <= -3.5 ? 'Distribusi Masif ●' : 'Distribusi Ritel Masuk ●';
     } else if (deltaSmartMoney > 0) {
-      verdict = 'Akumulasi Diam-Diam 🟡';
+      verdict = 'Akumulasi Diam-Diam ●';
     }
 
     return {

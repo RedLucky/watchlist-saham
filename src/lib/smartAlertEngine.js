@@ -43,7 +43,7 @@ export function evaluateStockAlerts({
       alerts.push({
         ruleId: ALERT_RULES.NEAR_ARA,
         level: 'CRITICAL',
-        title: `🚀 ${safeTicker} Menyentuh ARA (Rp ${executionLimits.araPrice.toLocaleString('id-ID')})`,
+        title: `↑ ${safeTicker} Menyentuh ARA (Rp ${executionLimits.araPrice.toLocaleString('id-ID')})`,
         message: `Saham ${name || safeTicker} telah mencapai batas batas Auto-Rejection Atas (+${executionLimits.limitPct}%). Order beli berpotensi antre panjang.`,
         badgeColor: 'emerald',
         timestamp: new Date().toISOString()
@@ -52,7 +52,7 @@ export function evaluateStockAlerts({
       alerts.push({
         ruleId: ALERT_RULES.NEAR_ARA,
         level: 'WARNING',
-        title: `⚡ ${safeTicker} Dekat ARA (Sisa ${executionLimits.ticksToARA} Fraksi)`,
+        title: `» ${safeTicker} Dekat ARA (Sisa ${executionLimits.ticksToARA} Fraksi)`,
         message: `Harga saat ini Rp ${safePrice.toLocaleString('id-ID')} hanya berjarak ${executionLimits.ticksToARA} fraksi harga menuju batas ARA (Rp ${executionLimits.araPrice.toLocaleString('id-ID')}).`,
         badgeColor: 'emerald',
         timestamp: new Date().toISOString()
@@ -63,7 +63,7 @@ export function evaluateStockAlerts({
       alerts.push({
         ruleId: ALERT_RULES.NEAR_ARB,
         level: 'CRITICAL',
-        title: `🩸 ${safeTicker} Terkunci ARB (Rp ${executionLimits.arbPrice.toLocaleString('id-ID')})`,
+        title: `▼ ${safeTicker} Terkunci ARB (Rp ${executionLimits.arbPrice.toLocaleString('id-ID')})`,
         message: `Saham ${name || safeTicker} telah mengunci batas Auto-Rejection Bawah (-${executionLimits.limitPct}%). Tekanan jual ekstrem terdeteksi.`,
         badgeColor: 'rose',
         timestamp: new Date().toISOString()
@@ -72,7 +72,7 @@ export function evaluateStockAlerts({
       alerts.push({
         ruleId: ALERT_RULES.NEAR_ARB,
         level: 'WARNING',
-        title: `⚠️ ${safeTicker} Dekat ARB (Sisa ${executionLimits.ticksToARB} Fraksi)`,
+        title: `▲ ${safeTicker} Dekat ARB (Sisa ${executionLimits.ticksToARB} Fraksi)`,
         message: `Harga saat ini Rp ${safePrice.toLocaleString('id-ID')} hanya berjarak ${executionLimits.ticksToARB} fraksi harga menuju batas ARB (Rp ${executionLimits.arbPrice.toLocaleString('id-ID')}).`,
         badgeColor: 'rose',
         timestamp: new Date().toISOString()
@@ -85,7 +85,7 @@ export function evaluateStockAlerts({
     alerts.push({
       ruleId: ALERT_RULES.VALUATION_DISCOUNT,
       level: 'INFO',
-      title: `💎 ${safeTicker} di Zona Diskon Ekstrem (P/E Band -2SD)`,
+      title: `◆ ${safeTicker} di Zona Diskon Ekstrem (P/E Band -2SD)`,
       message: `P/E saat ini berada pada level deviasi standar ${valuationBands.pe.zScore} SD. Secara historis merupakan zona akumulasi bernilai tinggi.`,
       badgeColor: 'indigo',
       timestamp: new Date().toISOString()
@@ -97,7 +97,7 @@ export function evaluateStockAlerts({
     alerts.push({
       ruleId: ALERT_RULES.DIVIDEND_TRAP,
       level: 'WARNING',
-      title: `🪤 Waspada Dividend Trap pada ${safeTicker} (Yield ${dividendTrap.yieldPct}%)`,
+      title: `◇ Waspada Dividend Trap pada ${safeTicker} (Yield ${dividendTrap.yieldPct}%)`,
       message: `Imbal hasil dividen tinggi namun skor ketahanan kas hanya ${dividendTrap.safetyScore}/100. Risiko kejatuhan harga di hari Ex-Date tinggi.`,
       badgeColor: 'amber',
       timestamp: new Date().toISOString()
@@ -116,7 +116,7 @@ export function evaluateStockAlerts({
       alerts.push({
         ruleId: ALERT_RULES.VOLUME_SPIKE,
         level: 'INFO',
-        title: `📊 Volume Lonjakan Ekstrem ${safeTicker} (${multiplier}x Lipat)`,
+        title: `▤ Volume Lonjakan Ekstrem ${safeTicker} (${multiplier}x Lipat)`,
         message: `Volume perdagangan hari ini melonjak ${multiplier}x di atas rata-rata 5 hari terakhir. Menandakan aktivitas akumulasi/distribusi besar.`,
         badgeColor: 'purple',
         timestamp: new Date().toISOString()

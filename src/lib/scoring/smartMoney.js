@@ -184,10 +184,10 @@ export function getBandarmologiVerdict({
 
   if (isDividendTrap && numDeltaRetail > 0) {
     return {
-      title: 'Waspada Dividend Trap ⚠️',
-      status: '⚠️ Awas Dividend Trap!',
+      title: 'Waspada Dividend Trap ▲',
+      status: '▲ Awas Dividend Trap!',
       badge: 'amber',
-      theme: 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-300',
+      theme: 'border-warn bg-warn-soft text-warn   ',
       desc: 'Terjadi lonjakan ritel masuk secara agresif menjelang/setelah tanggal Cum-Date dividen.',
       wyckoffPhase: 3,
     };
@@ -195,10 +195,10 @@ export function getBandarmologiVerdict({
 
   if (numBfi >= 3.0 || (numDeltaSM > 0 && numDeltaRetail < 0)) {
     return {
-      title: 'Fase Super Akumulasi 🚀',
-      status: 'Super Accumulation 🚀',
+      title: 'Fase Super Akumulasi ↑',
+      status: 'Super Accumulation ↑',
       badge: 'emerald',
-      theme: 'border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-500/40 dark:bg-emerald-500/15 dark:text-emerald-300',
+      theme: 'border-up bg-up-soft text-up   ',
       desc: `Institusi & Asing melakukan serok masif (+${Math.abs(numDeltaSM).toLocaleString('id-ID')} lbr) di saat investor ritel melakukan cut loss / jualan.`,
       wyckoffPhase: numPriceChange > 2 ? 2 : 1,
     };
@@ -206,10 +206,10 @@ export function getBandarmologiVerdict({
 
   if (numBfi >= 1.0 || numDeltaSM > 0 || numDeltaForeign > 0) {
     return {
-      title: 'Akumulasi Institusi 🟢',
-      status: 'Akumulasi Institusi 🟢',
+      title: 'Akumulasi Institusi ●',
+      status: 'Akumulasi Institusi ●',
       badge: 'emerald',
-      theme: 'border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300',
+      theme: 'border-up bg-up-soft text-up   ',
       desc: 'Terjadi aliran akumulasi bertahap oleh investor institusi dan dana pensiun.',
       wyckoffPhase: 1,
     };
@@ -217,10 +217,10 @@ export function getBandarmologiVerdict({
 
   if (numBfi <= -3.0 || (numDeltaSM < 0 && numDeltaRetail > 0)) {
     return {
-      title: 'Fase Distribusi Masif 🔴',
-      status: 'Distribusi Masif 🔴',
+      title: 'Fase Distribusi Masif ●',
+      status: 'Distribusi Masif ●',
       badge: 'rose',
-      theme: 'border-rose-300 bg-rose-50 text-rose-900 dark:border-rose-500/40 dark:bg-rose-500/15 dark:text-rose-300',
+      theme: 'border-down bg-down-soft text-down   ',
       desc: `Ritel bertambah (+${Math.abs(numDeltaRetail).toLocaleString('id-ID')} lbr) sementara institusi keluar mendistribusikan barang.`,
       wyckoffPhase: numPriceChange < -2 ? 4 : 3,
     };
@@ -228,10 +228,10 @@ export function getBandarmologiVerdict({
 
   if (numBfi <= -1.0 || numDeltaRetail > 0) {
     return {
-      title: 'Distribusi (Ritel Masuk) 🔴',
-      status: 'Distribusi (Ritel Masuk) 🔴',
+      title: 'Distribusi (Ritel Masuk) ●',
+      status: 'Distribusi (Ritel Masuk) ●',
       badge: 'rose',
-      theme: 'border-rose-300 bg-rose-50 text-rose-900 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300',
+      theme: 'border-down bg-down-soft text-down   ',
       desc: 'Porsi ritel mengalami peningkatan sementara institusi mengurangi posisi.',
       wyckoffPhase: 3,
     };
@@ -240,39 +240,39 @@ export function getBandarmologiVerdict({
   if (numSpike > 1.5) {
     if (numPriceChange > 1) {
       return {
-        title: 'Akumulasi Masif (Lonjakan Volume) 🟢',
-        status: 'Akumulasi Masif 🟢',
+        title: 'Akumulasi Masif (Lonjakan Volume) ●',
+        status: 'Akumulasi Masif ●',
         badge: 'emerald',
-        theme: 'border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300',
+        theme: 'border-up bg-up-soft text-up   ',
         desc: `Terjadi lonjakan volume transaksi ${(numSpike * 100).toFixed(0)}% dengan kenaikan harga.`,
         wyckoffPhase: 2,
       };
     }
     if (numPriceChange < -1) {
       return {
-        title: 'Distribusi Masif (Panic Selling) 🔴',
-        status: 'Distribusi Masif 🔴',
+        title: 'Distribusi Masif (Panic Selling) ●',
+        status: 'Distribusi Masif ●',
         badge: 'rose',
-        theme: 'border-rose-300 bg-rose-50 text-rose-900 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300',
+        theme: 'border-down bg-down-soft text-down   ',
         desc: `Terjadi lonjakan volume saat harga turun tajam ${numPriceChange.toFixed(1)}%.`,
         wyckoffPhase: 4,
       };
     }
     return {
-      title: 'Akumulasi Diam-Diam 🟡',
-      status: 'Akumulasi Diam-Diam 🟡',
+      title: 'Akumulasi Diam-Diam ●',
+      status: 'Akumulasi Diam-Diam ●',
       badge: 'amber',
-      theme: 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300',
+      theme: 'border-warn bg-warn-soft text-warn   ',
       desc: 'Lonjakan transaksi tinggi namun harga dijaga tetap tenang di area konsolidasi.',
       wyckoffPhase: 1,
     };
   }
 
   return {
-    title: 'Konsolidasi / Netral ⚪',
-    status: 'Netral ⚪',
+    title: 'Konsolidasi / Netral ○',
+    status: 'Netral ○',
     badge: 'slate',
-    theme: 'border-slate-300 bg-slate-50 text-slate-900 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-300',
+    theme: 'border-line bg-sunken text-ink   ',
     desc: 'Perpindahan kepemilikan saham antara ritel dan institusi masih relatif seimbang.',
     wyckoffPhase: 1,
   };

@@ -18,11 +18,11 @@ const NEGATIVE_KEYWORDS = [
 ];
 
 const CATALYST_PATTERNS = [
-  { tag: 'Dividen Tunai 💰', regex: /dividen|dividend|cum[\s-]date|dps/i },
-  { tag: 'Kinerja Laba 📈', regex: /laba|profit|pendapatan|revenue|ebitda|kinerja|earnings/i },
-  { tag: 'Aksi Korporasi 🏛️', regex: /akuisisi|merger|rights[\s-]issue|split|rups|buyback/i },
-  { tag: 'Ekspansi Bisnis 🏭', regex: /ekspansi|pabrik|proyek|kontrak|investasi|capex/i },
-  { tag: 'Risiko Hukum / Utang ⚠️', regex: /pailit|pkpu|gugatan|utang|default|suspensi|denda/i }
+  { tag: 'Dividen Tunai ¤', regex: /dividen|dividend|cum[\s-]date|dps/i },
+  { tag: 'Kinerja Laba ↗', regex: /laba|profit|pendapatan|revenue|ebitda|kinerja|earnings/i },
+  { tag: 'Aksi Korporasi ▥', regex: /akuisisi|merger|rights[\s-]issue|split|rups|buyback/i },
+  { tag: 'Ekspansi Bisnis ▥', regex: /ekspansi|pabrik|proyek|kontrak|investasi|capex/i },
+  { tag: 'Risiko Hukum / Utang ▲', regex: /pailit|pkpu|gugatan|utang|default|suspensi|denda/i }
 ];
 
 // Sentiment Scoring Constants
@@ -42,7 +42,7 @@ export function analyzeNewsSentiment(articles = []) {
   if (!Array.isArray(articles) || articles.length === 0) {
     return {
       score: 0,
-      verdict: 'Netral / Tanpa Berita Baru ⚖️',
+      verdict: 'Netral / Tanpa Berita Baru ⇄',
       badgeColor: 'blue',
       positiveMentions: 0,
       negativeMentions: 0,
@@ -90,20 +90,20 @@ export function analyzeNewsSentiment(articles = []) {
     Math.min(SENTIMENT_MAX_SCORE, Math.round(totalPoints / count))
   );
 
-  let verdict = 'Netral ⚖️';
+  let verdict = 'Netral ⇄';
   let badgeColor = 'blue';
 
   if (normalizedScore >= THRESHOLD_VERY_BULLISH) {
-    verdict = 'Sangat Positif / Katalis Kuat 🚀';
+    verdict = 'Sangat Positif / Katalis Kuat ↑';
     badgeColor = 'emerald';
   } else if (normalizedScore > THRESHOLD_BULLISH) {
-    verdict = 'Sentimen Positif 🟢';
+    verdict = 'Sentimen Positif ●';
     badgeColor = 'emerald';
   } else if (normalizedScore <= THRESHOLD_VERY_BEARISH) {
-    verdict = 'Sangat Negatif / Berita Buruk 🚨';
+    verdict = 'Sangat Negatif / Berita Buruk ▲';
     badgeColor = 'rose';
   } else if (normalizedScore < THRESHOLD_BEARISH) {
-    verdict = 'Sentimen Negatif 🔴';
+    verdict = 'Sentimen Negatif ●';
     badgeColor = 'rose';
   }
 

@@ -1240,7 +1240,7 @@ function matchAlphaLegendSector(sector = '', subSector = '', companyName = '') {
   // 3. Fallback if no specific niche matched: General Commercial & Industrial framework
   return {
     id: 'general',
-    name: '🏢 General Commercial & Industrial Sector',
+    name: '▥ General Commercial & Industrial Sector',
     rubric: `[GENERAL COMMERCIAL & INDUSTRIAL MANDATE]:
 You MUST apply rigorous fundamental and industrial logic:
 1. Core Business Unit Mix: Detailed breakdown of primary revenue segments and product lines.

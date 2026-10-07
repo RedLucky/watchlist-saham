@@ -59,21 +59,21 @@ export async function sendTradeOutcomeNotification({ recommendation: rec, status
 
   if (isTimeStop) {
     title = isWin 
-      ? `⏰ WAKTU HABIS (WIN / PROFIT) — $${rec.ticker}` 
-      : `⏰ WAKTU HABIS (LOSS / CUT BALANCE) — $${rec.ticker}`;
+      ? `◷ WAKTU HABIS (WIN / PROFIT) — $${rec.ticker}` 
+      : `◷ WAKTU HABIS (LOSS / CUT BALANCE) — $${rec.ticker}`;
     description = isWin 
       ? `Batas waktu simpan saham **${rec.ticker}** (${rec.name || ''}) telah tercapai dan posisi resmi ditutup untung (**WIN**).`
       : `Batas waktu simpan saham **${rec.ticker}** (${rec.name || ''}) telah tercapai dan posisi resmi ditutup rugi (**LOSS**).`;
   } else {
     title = isWin 
-      ? `🏆 TARGET TERCAPAI (WIN / TAKE PROFIT) — $${rec.ticker}` 
-      : `🛑 STOP LOSS TERSENTUH (LOSS / CUT LOSS) — $${rec.ticker}`;
+      ? `★ TARGET TERCAPAI (WIN / TAKE PROFIT) — $${rec.ticker}` 
+      : `■ STOP LOSS TERSENTUH (LOSS / CUT LOSS) — $${rec.ticker}`;
     description = isWin 
       ? `Saham **${rec.ticker}** (${rec.name || ''}) berhasil menyentuh target profit! Posisi resmi ditutup dengan hasil **WIN**.`
       : `Harga pasar saham **${rec.ticker}** (${rec.name || ''}) menyentuh level proteksi stop loss. Posisi resmi ditutup (**LOSS**).`;
   }
 
-  const sourceLabel = rec.source === 'SYSTEM' ? '🤖 Rekomendasi Sistem (Discord)' : '👤 Pantauan Manual User';
+  const sourceLabel = rec.source === 'SYSTEM' ? '◈ Rekomendasi Sistem (Discord)' : '◯ Pantauan Manual User';
   const styleLabel = (rec.style || 'SWING').toUpperCase();
 
   const embed = {
@@ -81,12 +81,12 @@ export async function sendTradeOutcomeNotification({ recommendation: rec, status
     description,
     color,
     fields: [
-      { name: '🏷️ Saham & Sumber', value: `**${rec.ticker}** • ${sourceLabel}`, inline: true },
-      { name: '⏱️ Gaya Trading', value: `**${styleLabel}** (${rec.mode || 'Auto'})`, inline: true },
-      { name: '📊 Realized P/L', value: `**${isPositive ? '+' : ''}${pnlPercent}%**`, inline: true },
-      { name: '💵 Harga Beli (Entry)', value: `Rp ${Number(entryPrice).toLocaleString('id-ID')}`, inline: true },
-      { name: '🏁 Harga Keluar (Exit)', value: `Rp ${Number(exitPrice).toLocaleString('id-ID')}`, inline: true },
-      { name: isWin ? '🎯 Target TP' : '🛑 Batas Cut Loss', value: `Rp ${Number(isWin ? rec.targetPrice : rec.stopLoss).toLocaleString('id-ID')}`, inline: true },
+      { name: '• Saham & Sumber', value: `**${rec.ticker}** • ${sourceLabel}`, inline: true },
+      { name: '◷ Gaya Trading', value: `**${styleLabel}** (${rec.mode || 'Auto'})`, inline: true },
+      { name: '▤ Realized P/L', value: `**${isPositive ? '+' : ''}${pnlPercent}%**`, inline: true },
+      { name: '¤ Harga Beli (Entry)', value: `Rp ${Number(entryPrice).toLocaleString('id-ID')}`, inline: true },
+      { name: '■ Harga Keluar (Exit)', value: `Rp ${Number(exitPrice).toLocaleString('id-ID')}`, inline: true },
+      { name: isWin ? '◎ Target TP' : '■ Batas Cut Loss', value: `Rp ${Number(isWin ? rec.targetPrice : rec.stopLoss).toLocaleString('id-ID')}`, inline: true },
     ],
     footer: {
       text: `Win Rate Real-time Engine • ${new Date().toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', day: '2-digit', month: 'short', year: 'numeric' })} ${new Date().toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' })} WIB`
@@ -102,11 +102,11 @@ export async function sendTradeOutcomeNotification({ recommendation: rec, status
     });
 
     if (res.ok) {
-      console.log(`[DISCORD-OUTCOME] ✅ Berhasil mengirim alert ${status} untuk saham ${rec.ticker} (P/L: ${pnlPercent}%).`);
+      console.log(`[DISCORD-OUTCOME] ✓ Berhasil mengirim alert ${status} untuk saham ${rec.ticker} (P/L: ${pnlPercent}%).`);
       return true;
     } else {
       const errText = await res.text();
-      console.error(`[DISCORD-OUTCOME] ❌ Gagal mengirim alert (${res.status}): ${errText}`);
+      console.error(`[DISCORD-OUTCOME] × Gagal mengirim alert (${res.status}): ${errText}`);
       return false;
     }
   } catch (err) {
@@ -224,7 +224,7 @@ export async function updateExistingRecommendations(currentStocks) {
 
         resolvedCount++;
 
-        // 🚀 REAL-TIME DISCORD NOTIFICATION HANYA UNTUK WIN ATAU LOSS
+        // ↑ REAL-TIME DISCORD NOTIFICATION HANYA UNTUK WIN ATAU LOSS
         if (newStatus === 'WIN' || newStatus === 'LOSS') {
           void sendTradeOutcomeNotification({
             recommendation: rec,

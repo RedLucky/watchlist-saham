@@ -404,7 +404,7 @@ export class DatabaseProvider extends DataProvider {
           isHighRetail,
           retailOwnership,
           changePercent: priceChange,
-          isDividendTrap: bandarmologiStatus === "⚠️ Awas Dividend Trap!",
+          isDividendTrap: bandarmologiStatus === "▲ Awas Dividend Trap!",
           kseiLatest,
           kseiHistory,
           sharesOutstanding,

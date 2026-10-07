@@ -54,8 +54,8 @@ export function getDaysDifference(targetDateStr) {
  */
 export function formatCountdown(daysDiff, eventType = 'DEFAULT') {
   if (daysDiff === null || daysDiff === undefined) return '-';
-  if (daysDiff === 0) return 'Hari Ini 🔔';
-  if (daysDiff === 1) return 'Besok ⏳';
+  if (daysDiff === 0) return 'Hari Ini ◉';
+  if (daysDiff === 1) return 'Besok …';
   if (daysDiff === -1) return 'Kemarin';
   if (daysDiff > 0) return `${daysDiff} hari lagi`;
   return `${Math.abs(daysDiff)} hari lalu`;
@@ -169,20 +169,20 @@ export function parseDividendScheduleItem(div, fundamentals = {}, stockPrice = 0
   const payDaysDiff = getDaysDifference(paymentDateRaw);
 
   let stage = 'COMPLETED';
-  let status = 'Telah Terealisasi ✅';
+  let status = 'Telah Terealisasi ✓';
   let badgeColor = 'slate';
   let actionMessage = 'Dividen telah selesai dibayarkan ke rekening dana nasabah (RDN).';
   let countdown = formatCountdown(payDaysDiff ?? cumDaysDiff);
 
   if (cumDaysDiff !== null && cumDaysDiff >= 0) {
     stage = 'CUM_ACTIVE';
-    status = 'Menjelang Cum Date 🔔';
+    status = 'Menjelang Cum Date ◉';
     badgeColor = 'emerald';
     actionMessage = 'Saham harus dibeli atau dipertahankan paling lambat pada Cum Date untuk berhak menerima dividen.';
     countdown = formatCountdown(cumDaysDiff);
   } else if (payDaysDiff !== null && payDaysDiff >= 0) {
     stage = 'WAITING_PAYMENT';
-    status = 'Menunggu Pembayaran ⏳';
+    status = 'Menunggu Pembayaran …';
     badgeColor = 'blue';
     actionMessage = 'Cum Date telah terlewati. Dana dividen akan otomatis masuk ke RDN pada Payment Date.';
     countdown = `${formatCountdown(payDaysDiff)} (Cair)`;
@@ -336,7 +336,7 @@ export function buildCorporateActionsTimeline({
 
       events.push({
         type: 'DIVIDEND',
-        icon: '💰',
+        icon: '¤',
         title: displayTitle,
         date: dateDisplay,
         daysDiff: primaryDividendSchedule.cumDaysDiff ?? primaryDividendSchedule.payDaysDiff,
@@ -370,7 +370,7 @@ export function buildCorporateActionsTimeline({
 
   events.push({
     type: 'EARNINGS',
-    icon: '📑',
+    icon: '▤',
     title: nextReportName,
     date: targetMonth,
     daysDiff: null,
@@ -383,7 +383,7 @@ export function buildCorporateActionsTimeline({
   // 3. RUPS Tahunan (Musim RUPS Tahunan April - Juni)
   events.push({
     type: 'RUPS',
-    icon: '🏛️',
+    icon: '▥',
     title: `Musim RUPS Tahunan (RUPST ${currentYear})`,
     date: `April - Juni ${currentYear}`,
     daysDiff: null,

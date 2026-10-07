@@ -72,4 +72,13 @@ Wide data lists (e.g. `StockTable`) show a column grid from `md` (768px) and one
 ## 6. Guard tests
 
 * `tests/themeTokens.test.js` — both themes define the same tokens; text colours reach WCAG AA (4.5:1).
-* `tests/designTokens.test.js` — migrated files contain no palette colours, gradients, glass blur, large radius, hard-coded hex colours or colour emoji. Add a file to `MIGRATED_FILES` when you migrate it.
+* `tests/designTokens.test.js` — **every `.js`/`.jsx` file under `src/`** (except `src/scripts/`, which runs outside the browser) must contain no palette colours, gradients, glass blur, large radius, hard-coded hex colours or colour emoji. Add nothing to a list: the test walks the tree.
+* `tests/componentProps.test.js` — checks that the props `Dashboard` passes to its children are props those children actually read, so a typo cannot silently disable a feature.
+
+## 7. Migration status
+
+Complete: all UI files under `src/` use the tokens. Remaining exceptions:
+
+* `src/scripts/**` (Discord bot, notifier, scraper cron) keeps emoji — those strings go to Discord and cron logs, not to the web UI.
+* `src/data/alphaLegendSectors.js` and the collection `emoji` field keep user-chosen emoji, because they are user data.
+* `.glass` / `.glass-panel` remain in `globals.css` as flat token-based aliases for older markup.

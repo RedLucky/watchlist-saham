@@ -4,6 +4,12 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-10-07] feat | Migrasi Selesai: Test Penjaga Mencakup Seluruh src/ & Perbaikan CustomSliders
+- `tests/designTokens.test.js` kini menelusuri semua `.js`/`.jsx` di bawah `src/` (melewati `src/scripts/`, yang berjalan di luar browser), bukan daftar file manual; 481 test lulus.
+- Tiga file terakhir dimigrasi: `CollectionSortDropdown`, `candlestickPatterns`, `scoring/smartMoney`; emoji pada string yang ditampilkan ke pengguna dari engine dan API route diganti simbol (ekspektasi label di 3 test diperbarui).
+- Override `!important` mode terang yang lama dihapus dari `globals.css`.
+- **Perbaikan bug:** `Dashboard` mengirim `onWeightsChange`/`initialStyle` ke `CustomSliders`, padahal komponen itu membaca `onApply` — klik "Terapkan Analisis" menghasilkan error. Diperbaiki, ditambah `tests/componentProps.test.js` agar salah ketik sejenis tidak terulang.
+
 ## [2026-10-07] feat | Migrasi Upload KSEI & Kepemilikan ke Bursa 1985
 - `KseiUploadPanel`, `/admin/ksei`, dan `StockOwnershipModal` dipindah ke token tema dan simbol Unicode (emoji bendera diganti simbol).
 - Halaman admin semula didesain gelap di atas gelap; kini menjadi halaman bertema normal (latar kertas, panel surface, header tabel sunken) sehingga panel dapat dibedakan di kedua tema.

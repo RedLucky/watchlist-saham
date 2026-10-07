@@ -86,13 +86,13 @@ export function calculateExecutionLimits({
   let warningMessage = null;
   if (safeCurrent >= araPrice) {
     proximity = 'AT_ARA';
-    warningMessage = 'Saham menyentuh Auto Rejection Atas (ARA) 🚀';
+    warningMessage = 'Saham menyentuh Auto Rejection Atas (ARA) ↑';
   } else if (ticksToARA > 0 && ticksToARA <= 3) {
     proximity = 'NEAR_ARA';
     warningMessage = `Hanya ${ticksToARA} fraksi harga menuju ARA`;
   } else if (safeCurrent <= arbPrice) {
     proximity = 'AT_ARB';
-    warningMessage = 'Saham terkunci Auto Rejection Bawah (ARB) 🩸';
+    warningMessage = 'Saham terkunci Auto Rejection Bawah (ARB) ▼';
   } else if (ticksToARB > 0 && ticksToARB <= 3) {
     proximity = 'NEAR_ARB';
     warningMessage = `Hanya ${ticksToARB} fraksi harga menuju ARB`;

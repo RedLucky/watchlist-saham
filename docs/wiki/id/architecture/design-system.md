@@ -72,4 +72,13 @@ Daftar data yang lebar (mis. `StockTable`) tampil sebagai grid kolom mulai `md` 
 ## 6. Test penjaga
 
 * `tests/themeTokens.test.js` — kedua tema mendefinisikan token yang sama; warna teks mencapai WCAG AA (4.5:1).
-* `tests/designTokens.test.js` — file yang sudah dimigrasi tidak berisi warna palet, gradien, blur kaca, radius besar, warna hex hard-coded, atau emoji berwarna. Tambahkan file ke `MIGRATED_FILES` saat dimigrasi.
+* `tests/designTokens.test.js` — **semua file `.js`/`.jsx` di bawah `src/`** (kecuali `src/scripts/`, yang berjalan di luar browser) tidak boleh berisi warna palet, gradien, blur kaca, radius besar, warna hex hard-coded, atau emoji berwarna. Tidak ada daftar yang perlu diisi: test menelusuri seluruh folder.
+* `tests/componentProps.test.js` — memastikan prop yang dikirim `Dashboard` ke anak-anaknya benar-benar dibaca anak tersebut, sehingga salah ketik tidak bisa diam-diam mematikan fitur.
+
+## 7. Status migrasi
+
+Selesai: semua file UI di bawah `src/` memakai token. Pengecualian yang tersisa:
+
+* `src/scripts/**` (Discord bot, notifier, scraper cron) tetap memakai emoji — string-nya dikirim ke Discord dan log cron, bukan ke UI web.
+* `src/data/alphaLegendSectors.js` dan field `emoji` koleksi tetap memakai emoji pilihan pengguna, karena itu data pengguna.
+* `.glass` / `.glass-panel` masih ada di `globals.css` sebagai alias rata berbasis token untuk markup lama.

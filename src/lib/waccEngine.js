@@ -85,19 +85,19 @@ export function calculateWaccAndEconomicValue({
   let verdictDesc = 'Perusahaan menghasilkan imbal hasil modal di atas biaya modal (Menciptakan nilai riil).';
 
   if (economicSpread >= 5.0) {
-    verdict = 'Super Value Creator 👑';
+    verdict = 'Super Value Creator ★';
     badgeColor = 'emerald';
     verdictDesc = 'Moat prima! ROIC jauh melampaui WACC, menghasilkan kekayaan signifikan bagi pemegang saham.';
   } else if (economicSpread > 0) {
-    verdict = 'Value Creator ✨';
+    verdict = 'Value Creator ✦';
     badgeColor = 'teal';
     verdictDesc = 'Efisiensi modal sehat. Laba operasional berhasil menutup seluruh biaya modal utang dan ekuitas.';
   } else if (economicSpread >= -3.0) {
-    verdict = 'Marginal Destroyer ⚠️';
+    verdict = 'Marginal Destroyer ▲';
     badgeColor = 'amber';
     verdictDesc = 'ROIC berada tipis di bawah biaya modal. Efisiensi perputaran aset perlu ditingkatkan.';
   } else {
-    verdict = 'Value Destroyer 🚨';
+    verdict = 'Value Destroyer ▲';
     badgeColor = 'rose';
     verdictDesc = 'Peringatan: Meskipun laba buku tercatat, perusahaan sebenarnya membakar modal ekonomi riil.';
   }

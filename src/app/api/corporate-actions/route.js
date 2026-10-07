@@ -120,7 +120,7 @@ async function getCachedCorporateEvents(forceRefresh = false) {
           date: cumDate,
           dateType: 'CUM_DATE',
           eventTitle: `Cum Dividen ${parsed.type} Rp ${parsed.dps > 0 ? parsed.dps.toLocaleString('id-ID') : ''}`,
-          icon: '🛒',
+          icon: '◍',
           subText: 'Batas akhir beli saham untuk berhak dividen'
         });
       }
@@ -132,7 +132,7 @@ async function getCachedCorporateEvents(forceRefresh = false) {
           date: exDate,
           dateType: 'EX_DATE',
           eventTitle: `Ex Dividen ${parsed.type}`,
-          icon: '📉',
+          icon: '↘',
           subText: 'Perdagangan tanpa hak dividen'
         });
       }
@@ -144,7 +144,7 @@ async function getCachedCorporateEvents(forceRefresh = false) {
           date: paymentDate,
           dateType: 'PAYMENT_DATE',
           eventTitle: `Pencairan Dividen Kas ${parsed.dps > 0 ? `Rp ${parsed.dps.toLocaleString('id-ID')}` : ''}`,
-          icon: '💳',
+          icon: '▤',
           subText: 'Dana dividen masuk otomatis ke RDN'
         });
       }
@@ -169,7 +169,7 @@ async function getCachedCorporateEvents(forceRefresh = false) {
         date: dateStr,
         dateType: 'EVENT_DATE',
         eventTitle: item.title || 'Keterbukaan Informasi BEI',
-        icon: '📰',
+        icon: '▤',
         subText: 'Pengumuman Resmi Keterbukaan Informasi BEI',
         url: item.url || null,
         status: 'Pengumuman Resmi',

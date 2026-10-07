@@ -45,7 +45,7 @@ export const SORT_OPTIONS = [
     shortDesc: 'Sinergi Skor (40%), MACD Beli (35%), & Target Beli (25%)',
     badge: 'Rekomendasi',
     badgeColor: 'emerald',
-    icon: '⭐',
+    icon: '★',
     description: 'Menyaring saham terbaik yang memiliki fundamental prima sekaligus berada di momen waktu beli (MACD Golden Cross / dekat Target Beli) yang paling optimal.',
     formula: 'Rank = (Skor Komposit × 40%) + (Poin Sinyal MACD × 35%) + (Poin Kedekatan Target Beli × 25%)',
     scenario: 'Sangat cocok digunakan setiap pagi saat pembukaan bursa untuk memilih saham yang paling prioritas dieksekusi hari ini.'
@@ -56,7 +56,7 @@ export const SORT_OPTIONS = [
     shortDesc: 'Fundamental kuat, valuasi wajar, & tren teknikal sehat',
     badge: 'Kualitas',
     badgeColor: 'blue',
-    icon: '🏆',
+    icon: '★',
     description: 'Mengurutkan saham murni dari skor komposit tertinggi (0–100) yang menggabungkan Fundamental (45%), Teknikal (35%), Trending (10%), dan Smart Money (10%).',
     formula: 'Urutan = Composite Score Descending (A-Grade 80+ ➔ B-Grade 65+ ➔ C-Grade 50+ ➔ D-Grade)',
     scenario: 'Cocok untuk investor dan swing trader yang ingin memprioritaskan kualitas emiten terbaik tanpa terpengaruh fluktuasi jangka pendek.'
@@ -67,7 +67,7 @@ export const SORT_OPTIONS = [
     shortDesc: 'Prioritas Fresh Golden Cross & Momentum Rebound',
     badge: 'Teknikal',
     badgeColor: 'indigo',
-    icon: '📈',
+    icon: '↗',
     description: 'Memprioritaskan saham yang baru saja mengonfirmasi sinyal pembalikan arah naik (Golden Cross) atau histogram MACD yang mulai berbalik positif.',
     formula: 'Prioritas: 1. Fresh Golden Cross ➔ 2. Bullish Histogram (> 0) ➔ 3. Histogram Melengkung Naik ➔ 4. Bearish',
     scenario: 'Sangat efektif bagi swing trader untuk mencari titik masuk (entry point) dengan rasio risk-to-reward terbaik.'
@@ -78,7 +78,7 @@ export const SORT_OPTIONS = [
     shortDesc: 'Saham yang menyentuh atau mendekati area beli (≤ 2%)',
     badge: 'Eksekusi',
     badgeColor: 'amber',
-    icon: '🎯',
+    icon: '◎',
     description: 'Mendeteksi saham yang harganya paling dekat dengan Target Beli manual yang Anda tentukan, atau mendekati area Support Teknikal terdekat.',
     formula: 'Jarak = |Harga Pasar - Target Beli| / Harga Pasar × 100%. Saham di zona beli (≤ 0–2%) berada di urutan teratas.',
     scenario: 'Gunakan saat pasar sedang terkoreksi untuk langsung mengetahui order beli mana yang sudah siap antre atau tereksekusi.'
@@ -89,7 +89,7 @@ export const SORT_OPTIONS = [
     shortDesc: 'Aliran dana bandar & kepemilikan KSEI paling agresif',
     badge: 'Bandarmologi',
     badgeColor: 'purple',
-    icon: '🐋',
+    icon: '◆',
     description: 'Mengurutkan saham berdasarkan inflow akumulasi dana institusi, data kepemilikan KSEI bulanan, serta konsentrasi broker pembeli.',
     formula: 'Urutan = Smart Money Score Descending + Volume Spike terhadap rata-rata 20 hari',
     scenario: 'Cocok untuk mendeteksi saham koleksi yang sedang dikumpulkan secara diam-diam oleh pemain besar.'
@@ -100,7 +100,7 @@ export const SORT_OPTIONS = [
     shortDesc: 'Top Gainers harian (+%) untuk melacak saham momentum',
     badge: 'Momentum',
     badgeColor: 'rose',
-    icon: '🚀',
+    icon: '↑',
     description: 'Menampilkan saham koleksi yang mengalami persentase kenaikan harga harian tertinggi hari ini.',
     formula: 'Urutan = Change Percent Harian Descending (+25% ➔ +5% ➔ 0% ➔ -10%)',
     scenario: 'Cocok saat jam bursa aktif untuk memantau saham mana yang sedang memimpin reli pasar hari ini.'
@@ -111,7 +111,7 @@ export const SORT_OPTIONS = [
     shortDesc: 'Menyusun urutan ticker secara alfabetis rapi',
     badge: 'Kerapian',
     badgeColor: 'slate',
-    icon: '🔤',
+    icon: '≡',
     description: 'Menata ulang seluruh daftar saham di dalam koleksi berdasarkan urutan abjad kode ticker saham BEI dari A sampai Z.',
     formula: 'Urutan = Ticker A ➔ Z',
     scenario: 'Gunakan saat koleksi Anda memiliki banyak saham dan Anda ingin mencarinya dengan cepat berdasarkan abjad.'

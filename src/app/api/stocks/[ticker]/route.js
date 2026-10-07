@@ -137,9 +137,9 @@ export async function GET(request, { params }) {
     const volumeSpikeRatio = avgVol3m > 0 ? Number((todayVol / avgVol3m).toFixed(2)) : (avgVol20d > 0 ? Number((todayVol / avgVol20d).toFixed(2)) : 1);
     
     let volumeStatus = 'Normal';
-    if (volumeSpikeRatio >= 3.0) volumeStatus = 'Spike Ekstrem 🚀';
-    else if (volumeSpikeRatio >= 1.5) volumeStatus = 'Akumulasi Volume 🔥';
-    else if (volumeSpikeRatio < 0.5 && volumeSpikeRatio > 0) volumeStatus = 'Volume Rendah / Sepi ❄️';
+    if (volumeSpikeRatio >= 3.0) volumeStatus = 'Spike Ekstrem ↑';
+    else if (volumeSpikeRatio >= 1.5) volumeStatus = 'Akumulasi Volume ↑';
+    else if (volumeSpikeRatio < 0.5 && volumeSpikeRatio > 0) volumeStatus = 'Volume Rendah / Sepi ○';
 
     const volumeAnalysis = {
       todayVolume: todayVol,

@@ -439,19 +439,8 @@ body {
   .table-base .num { text-align: right; font-family: var(--font-mono); }
 }
 
-/* === LEGACY (removed in TASK-7761 once every component uses the tokens) ===
-   Light-mode contrast fixes for components still using raw slate classes. */
-:root:not(.dark) .text-slate-400 { color: #475569 !important; }
-:root:not(.dark) .text-slate-500 { color: #334155 !important; }
-:root:not(.dark) .text-slate-300 { color: #0f172a !important; }
-:root:not(.dark) .bg-white\/5,
-:root:not(.dark) .bg-white\/10 { background-color: #f1f5f9 !important; }
-:root:not(.dark) .border-white\/10,
-:root:not(.dark) .border-white\/5 { border-color: #e2e8f0 !important; }
-:root:not(.dark) input,
-:root:not(.dark) select { color: #0f172a !important; }
-
-/* Legacy panel classes, now flat (no blur) and token-based. */
+/* === LEGACY PANEL CLASSES ===
+   Kept only so older markup keeps working; they are flat and token-based. */
 .glass,
 .glass-panel {
   background-color: var(--c-surface);

@@ -19,7 +19,7 @@ describe('Bloomberg PORT & MARS: Portfolio Risk & Stress Testing Suite', () => {
     assert.strictEqual(result.totalValue, 1000000);
     assert.strictEqual(result.holdingCount, 2);
     assert.strictEqual(result.weightedBeta, 1.0);
-    assert.strictEqual(result.riskProfile, 'Market Neutral / Balanced ⚖️');
+    assert.strictEqual(result.riskProfile, 'Market Neutral / Balanced ⇄');
     assert.strictEqual(result.topConcentrationPct, 50.0);
 
     // VaR 95% 1-day = 1.645 * 1.5% * 1.0 = ~2.47% -> Rp 24.675

@@ -31,7 +31,7 @@ export function calculateKseiOwnershipShift({
   const totalShares = Number(kseiLatest.secNum) || 0;
 
   let momShift = null;
-  let verdict = 'Net Neutral / Stabil ⚖️';
+  let verdict = 'Net Neutral / Stabil ⇄';
   let badgeColor = 'blue';
 
   if (previousRecord) {
@@ -48,16 +48,16 @@ export function calculateKseiOwnershipShift({
     const diffRetailShares = Math.round((diffRetailPct / 100) * totalShares);
 
     if (diffInstPct > 0.30 && diffRetailPct < -0.20) {
-      verdict = 'Smart Money Akumulasi Masif 🐋';
+      verdict = 'Smart Money Akumulasi Masif ◆';
       badgeColor = 'emerald';
     } else if (diffInstPct > 0.05) {
-      verdict = 'Akumulasi Institusi Ringan 🟢';
+      verdict = 'Akumulasi Institusi Ringan ●';
       badgeColor = 'emerald';
     } else if (diffInstPct < -0.30 && diffRetailPct > 0.20) {
-      verdict = 'Smart Money Distribusi ke Ritel 🚨';
+      verdict = 'Smart Money Distribusi ke Ritel ▲';
       badgeColor = 'rose';
     } else if (diffInstPct < -0.05) {
-      verdict = 'Distribusi Institusi Ringan 🔴';
+      verdict = 'Distribusi Institusi Ringan ●';
       badgeColor = 'rose';
     }
 
@@ -80,31 +80,31 @@ export function calculateKseiOwnershipShift({
       category: 'Dana Pensiun (PF)',
       localPct: totalShares > 0 ? Number(((local.pf || 0) / totalShares * 100).toFixed(2)) : 0,
       foreignPct: totalShares > 0 ? Number(((foreign.pf || 0) / totalShares * 100).toFixed(2)) : 0,
-      icon: '🛡️'
+      icon: '◇'
     },
     {
       category: 'Reksa Dana (MF)',
       localPct: totalShares > 0 ? Number(((local.mf || 0) / totalShares * 100).toFixed(2)) : 0,
       foreignPct: totalShares > 0 ? Number(((foreign.mf || 0) / totalShares * 100).toFixed(2)) : 0,
-      icon: '📈'
+      icon: '↗'
     },
     {
       category: 'Asuransi (IS)',
       localPct: totalShares > 0 ? Number(((local.is || 0) / totalShares * 100).toFixed(2)) : 0,
       foreignPct: totalShares > 0 ? Number(((foreign.is || 0) / totalShares * 100).toFixed(2)) : 0,
-      icon: '🏛️'
+      icon: '▥'
     },
     {
       category: 'Perbankan (IB)',
       localPct: totalShares > 0 ? Number(((local.ib || 0) / totalShares * 100).toFixed(2)) : 0,
       foreignPct: totalShares > 0 ? Number(((foreign.ib || 0) / totalShares * 100).toFixed(2)) : 0,
-      icon: '🏦'
+      icon: '▥'
     },
     {
       category: 'Sekuritas (SC)',
       localPct: totalShares > 0 ? Number(((local.sc || 0) / totalShares * 100).toFixed(2)) : 0,
       foreignPct: totalShares > 0 ? Number(((foreign.sc || 0) / totalShares * 100).toFixed(2)) : 0,
-      icon: '💼'
+      icon: '▣'
     }
   ];
 

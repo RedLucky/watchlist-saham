@@ -254,10 +254,7 @@ export default function Dashboard() {
                 <ModeSelector currentMode={mode} onModeChange={setMode} />
 
                 {mode === 'custom' && (
-                  <CustomSliders 
-                    onWeightsChange={setCustomWeights} 
-                    initialStyle={style} 
-                  />
+                  <CustomSliders onApply={setCustomWeights} />
                 )}
               </div>
 

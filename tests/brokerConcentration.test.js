@@ -16,7 +16,7 @@ describe('Bloomberg BRKR: Broker Concentration & Bandarmologi Suite', () => {
     assert.ok(result);
     assert.strictEqual(result.cr3, 65.0);
     assert.strictEqual(result.isConcentrated, true);
-    assert.strictEqual(result.verdict, 'Akumulasi Masif (Big Accumulation) 🐋');
+    assert.strictEqual(result.verdict, 'Akumulasi Masif (Big Accumulation) ◆');
     assert.strictEqual(result.badgeColor, 'emerald');
   });
 

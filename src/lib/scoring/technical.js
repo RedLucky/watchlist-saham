@@ -90,27 +90,27 @@ export function calculateTechnicalScore(stock, styleConfig = { name: 'swing', la
   } else if (styleSignal.setup === 'breakout') {
     setupScore = isSmartMoneyAccumulating ? 100 : (isRetailDistributing ? 60 : 85);
     details.push(isSmartMoneyAccumulating 
-      ? '🚀 Valid Breakout — terkonfirmasi akumulasi Smart Money / Asing'
+      ? '↑ Valid Breakout — terkonfirmasi akumulasi Smart Money / Asing'
       : (isRetailDistributing 
-        ? '⚠️ Breakout rawan Fakeout — Smart Money terdeteksi distribusi ke Ritel'
+        ? '▲ Breakout rawan Fakeout — Smart Money terdeteksi distribusi ke Ritel'
         : 'Setup breakout harian terdeteksi')
     );
   } else if (styleSignal.setup === 'pullback' && styleConfig?.name === 'daily') {
     setupScore = isSmartMoneyAccumulating ? 100 : 80;
     details.push(isSmartMoneyAccumulating 
-      ? '💎 Golden Pullback — Smart Money mengakumulasi di area support MA20' 
+      ? '◆ Golden Pullback — Smart Money mengakumulasi di area support MA20' 
       : 'Setup pullback harian dekat MA20'
     );
   } else if (styleSignal.setup === 'momentum') {
     setupScore = isSmartMoneyAccumulating ? 80 : 65;
     details.push(isSmartMoneyAccumulating 
-      ? '⚡ Momentum positif terkonfirmasi aliran dana Smart Money'
+      ? '» Momentum positif terkonfirmasi aliran dana Smart Money'
       : 'Momentum harian positif, menunggu konfirmasi volume'
     );
   } else if (styleSignal.setup === 'pullback') {
     setupScore = isSmartMoneyAccumulating ? 100 : 85;
     details.push(isSmartMoneyAccumulating 
-      ? '💎 Swing Pullback Prima — didukung akumulasi Smart Money di support MA20'
+      ? '◆ Swing Pullback Prima — didukung akumulasi Smart Money di support MA20'
       : 'Setup swing pullback ideal — harga di area pantul MA20'
     );
   } else if (styleSignal.setup === 'swing') {
@@ -129,16 +129,16 @@ export function calculateTechnicalScore(stock, styleConfig = { name: 'swing', la
   // Bollinger Squeeze Bonus (Kompresi volatilitas ketat berpotensi ledakan breakout)
   if (activeBollinger?.bandwidth && activeBollinger.bandwidth > 0 && activeBollinger.bandwidth <= 0.12) {
     setupScore = Math.min(100, setupScore + 10);
-    details.push(`🔥 Bollinger Squeeze (BW ${(activeBollinger.bandwidth * 100).toFixed(1)}%) — kompresi volatilitas ketat, potensi ledakan harga tinggi`);
+    details.push(`↑ Bollinger Squeeze (BW ${(activeBollinger.bandwidth * 100).toFixed(1)}%) — kompresi volatilitas ketat, potensi ledakan harga tinggi`);
   }
 
   // Fresh MACD Golden Cross (+10 setup bonus) & Dead Cross (-15 setup penalty)
   if (safeMacd?.isGoldenCross) {
     setupScore = Math.min(100, setupScore + 10);
-    details.push('✨ Fresh MACD Golden Cross — momentum awal pembalikan arah (early markup)');
+    details.push('✦ Fresh MACD Golden Cross — momentum awal pembalikan arah (early markup)');
   } else if (safeMacd?.isDeadCross) {
     setupScore = Math.max(0, setupScore - 15);
-    details.push('⚠️ MACD Dead Cross — momentum melemah, garis MACD memotong ke bawah sinyal');
+    details.push('▲ MACD Dead Cross — momentum melemah, garis MACD memotong ke bawah sinyal');
   }
 
   // RSI Extreme Overbought setup penalty
@@ -156,7 +156,7 @@ export function calculateTechnicalScore(stock, styleConfig = { name: 'swing', la
 
   if (rsi >= 75) {
     rsiScore = 0;
-    details.push(`⚠️ Extreme Overbought (RSI ${rsi.toFixed(1)}) — jenuh beli ekstrim, risiko tinggi koreksi tajam`);
+    details.push(`▲ Extreme Overbought (RSI ${rsi.toFixed(1)}) — jenuh beli ekstrim, risiko tinggi koreksi tajam`);
   } else if (rsi >= rsiMin && rsi <= rsiMax) {
     rsiScore = 100;
     details.push(`RSI (${rsiPeriod}) di level ${rsi.toFixed(1)} — zona optimal`);

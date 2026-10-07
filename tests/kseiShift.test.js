@@ -68,7 +68,7 @@ describe('Bloomberg OWN / HDS: KSEI Ownership Shift Suite', () => {
     const result = calculateKseiOwnershipShift({ kseiLatest, kseiHistory: [] });
     assert.ok(result);
     assert.strictEqual(result.momShift, null);
-    assert.strictEqual(result.verdict, 'Net Neutral / Stabil ⚖️');
+    assert.strictEqual(result.verdict, 'Net Neutral / Stabil ⇄');
   });
 
   it('4. Menangani input null tanpa error', () => {

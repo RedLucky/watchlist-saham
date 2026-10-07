@@ -79,14 +79,14 @@ export function calculatePortfolioRisk({
     .sort((a, b) => b.weightPct - a.weightPct);
 
   // 3. Risk Characterization & Warnings
-  let riskProfile = 'Market Neutral / Balanced ⚖️';
+  let riskProfile = 'Market Neutral / Balanced ⇄';
   let badgeColor = 'blue';
 
   if (weightedBeta >= 1.25) {
-    riskProfile = 'High Beta / Aggressive ⚡';
+    riskProfile = 'High Beta / Aggressive »';
     badgeColor = 'amber';
   } else if (weightedBeta < 0.80) {
-    riskProfile = 'Low Beta / Defensive 🛡️';
+    riskProfile = 'Low Beta / Defensive ◇';
     badgeColor = 'emerald';
   }
 
@@ -108,28 +108,28 @@ export function calculatePortfolioRisk({
     {
       id: 'crash_ihsg',
       name: 'IHSG Flash Crash (-5.0%)',
-      icon: '💥',
+      icon: '■',
       description: 'Penurunan indeks komposit secara mendadak akibat guncangan likuiditas global.',
       impactPct: Number((-5.0 * weightedBeta).toFixed(2))
     },
     {
       id: 'rate_hike',
       name: 'Kenaikan BI Rate (+50 bps)',
-      icon: '🏦',
+      icon: '▥',
       description: 'Pengetatan moneter Bank Indonesia menaikkan beban bunga emiten berutang tinggi.',
       impactPct: calculateRateHikeImpact(enrichedPositions, totalValue)
     },
     {
       id: 'commodity_shock',
       name: 'Commodity Supercycle (+10%)',
-      icon: '🛢️',
+      icon: '◉',
       description: 'Lonjakan harga batubara, minyak, dan nikel global mendongkrak sektor energi & tambang.',
       impactPct: calculateCommodityImpact(enrichedPositions, totalValue)
     },
     {
       id: 'fx_depreciation',
       name: 'Depresiasi Rupiah ke Rp 17.000 / USD',
-      icon: '💵',
+      icon: '¤',
       description: 'Pelemahan nilai tukar rupiah menguntungkan eksportir namun menekan importir.',
       impactPct: calculateFxShockImpact(enrichedPositions, totalValue)
     }

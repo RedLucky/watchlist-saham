@@ -4,6 +4,12 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-10-07] feat | Migration Complete: Theme Guard Covers All of src/ & CustomSliders Fix
+- `tests/designTokens.test.js` now walks all `.js`/`.jsx` under `src/` (skipping `src/scripts/`, which runs outside the browser) instead of a manual file list; 481 tests pass.
+- Last three files migrated: `CollectionSortDropdown`, `candlestickPatterns`, `scoring/smartMoney`; emoji in user-facing strings produced by engines and API routes replaced with symbols (label expectations in 3 tests updated).
+- Removed the legacy light-mode `!important` overrides from `globals.css`.
+- **Bug fix:** `Dashboard` passed `onWeightsChange`/`initialStyle` to `CustomSliders`, which reads `onApply` — clicking "Terapkan Analisis" threw. Fixed, plus new `tests/componentProps.test.js` prevents the same class of typo.
+
 ## [2026-10-07] feat | KSEI Upload & Ownership Migrated to Bursa 1985
 - `KseiUploadPanel`, `/admin/ksei` and `StockOwnershipModal` moved to theme tokens and Unicode symbols (flag emoji replaced with symbols).
 - The admin page was a dark-on-dark design; it is now a normal themed page (paper background, surface panels, sunken table head) so panels are distinguishable in both themes.

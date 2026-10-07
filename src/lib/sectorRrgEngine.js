@@ -57,23 +57,23 @@ export function calculateSectorRrg({
 
     // 3. Classify Quadrant
     let quadrant = QUADRANTS.LAGGING;
-    let label = 'Lagging (Tertinggal) 🔴';
+    let label = 'Lagging (Tertinggal) ●';
     let badgeColor = 'rose';
     let advice = 'Sektor tertinggal dan momentum melemah. Kurangi bobot portofolio.';
 
     if (rsRatio >= QUADRANT_CENTER_THRESHOLD && rsMomentum >= QUADRANT_CENTER_THRESHOLD) {
       quadrant = QUADRANTS.LEADING;
-      label = 'Leading (Memimpin) 🟢';
+      label = 'Leading (Memimpin) ●';
       badgeColor = 'emerald';
       advice = 'Sektor memimpin pasar dengan tren kuat. Pertahankan posisi / Overweight.';
     } else if (rsRatio >= QUADRANT_CENTER_THRESHOLD && rsMomentum < QUADRANT_CENTER_THRESHOLD) {
       quadrant = QUADRANTS.WEAKENING;
-      label = 'Weakening (Melemah) 🟡';
+      label = 'Weakening (Melemah) ●';
       badgeColor = 'amber';
       advice = 'Kekuatan relatif masih ada namun momentum melambat. Bersiap ambil profit.';
     } else if (rsRatio < QUADRANT_CENTER_THRESHOLD && rsMomentum >= QUADRANT_CENTER_THRESHOLD) {
       quadrant = QUADRANTS.IMPROVING;
-      label = 'Improving (Membaik) 🔵';
+      label = 'Improving (Membaik) ●';
       badgeColor = 'blue';
       advice = 'Momentum mulai berbalik positif. Potensi rotasi masuk / Akumulasi awal.';
     }

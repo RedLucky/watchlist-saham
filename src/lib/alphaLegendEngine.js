@@ -319,29 +319,29 @@ export function evaluateAlphaLegends(stocks = []) {
     }
 
     // Klasifikasi Profil Pertumbuhan & Narasi Bisnis
-    let growthStoryCategory = 'Watchlist / Konsolidasi 🟡';
+    let growthStoryCategory = 'Watchlist / Konsolidasi ●';
     let growthStoryBadge = 'amber';
 
     if (der != null && der > 2.5 && roe < 0) {
-      growthStoryCategory = 'Hindari ⚠️ (Risiko Finansial)';
+      growthStoryCategory = 'Hindari ▲ (Risiko Finansial)';
       growthStoryBadge = 'rose';
     } else if ((revenueGrowth >= 10 || profitGrowth >= 10) && roe >= 12 && (isFinancial || (der !== null && der <= 1.2)) && (per <= 18 || peg <= 1.2)) {
-      growthStoryCategory = 'Kandidat Kuat ⭐⭐⭐⭐⭐';
+      growthStoryCategory = 'Kandidat Kuat ★★★★★';
       growthStoryBadge = 'emerald';
     } else if ((revenueGrowth >= 10 || profitGrowth >= 10) && (per > 22 || pbv > 3.5)) {
-      growthStoryCategory = 'Tunggu Harga Murah ⏳';
+      growthStoryCategory = 'Tunggu Harga Murah …';
       growthStoryBadge = 'amber';
     } else if (profitGrowth >= 15 || revenueGrowth >= 15) {
-      growthStoryCategory = 'Fast Grower 🚀';
+      growthStoryCategory = 'Fast Grower ↑';
       growthStoryBadge = 'emerald';
     } else if (roe >= 12 && (isFinancial || (der !== null && der <= 1.2))) {
-      growthStoryCategory = 'Stalwart (Blue Chip Stabil) 💎';
+      growthStoryCategory = 'Stalwart (Blue Chip Stabil) ◆';
       growthStoryBadge = 'indigo';
     } else if (divYield >= 4.0) {
-      growthStoryCategory = 'Cash Cow (Dividen Tinggi) 💰';
+      growthStoryCategory = 'Cash Cow (Dividen Tinggi) ¤';
       growthStoryBadge = 'blue';
     } else if (pbv > 0 && pbv <= 0.8 && per > 0 && per <= 10 && roe > 0) {
-      growthStoryCategory = 'Deep Value / Asset Play 🏛️';
+      growthStoryCategory = 'Deep Value / Asset Play ▥';
       growthStoryBadge = 'cyan';
     }
 

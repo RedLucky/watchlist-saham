@@ -138,35 +138,35 @@ export async function GET(request) {
 
     let signalType = 'NEUTRAL';
     let signalLabel = 'Wait / Netral';
-    let signalBadge = '⚪ WAIT';
+    let signalBadge = '○ WAIT';
     let signalColor = 'slate';
 
     if (isBullSuper && isAboveDema) {
       if (supertrend.isReversal) {
         signalType = 'STRONG_BUY';
         signalLabel = 'Strong Buy (Supertrend Reversal + Di Atas DEMA20)';
-        signalBadge = '🚀 S. BUY';
+        signalBadge = '↑ S. BUY';
         signalColor = 'emerald';
       } else {
         signalType = 'BUY';
         signalLabel = 'Buy (Supertrend Bullish + Di Atas DEMA20)';
-        signalBadge = '🟢 BUY';
+        signalBadge = '● BUY';
         signalColor = 'emerald';
       }
     } else if (!isBullSuper && !isAboveDema) {
       signalType = 'SELL';
       signalLabel = 'Sell / Avoid (Supertrend Bearish + Di Bawah DEMA20)';
-      signalBadge = '🔴 SELL';
+      signalBadge = '● SELL';
       signalColor = 'rose';
     } else if (isBullSuper && !isAboveDema) {
       signalType = 'PULLBACK';
       signalLabel = 'Pullback Support (Supertrend Bullish, Retest DEMA20)';
-      signalBadge = '🟡 PULLBACK';
+      signalBadge = '● PULLBACK';
       signalColor = 'amber';
     } else if (!isBullSuper && isAboveDema) {
       signalType = 'BREAKOUT';
       signalLabel = 'Spekulatif Breakout (Di Atas DEMA20, Uji Supertrend)';
-      signalBadge = '🔵 TEST BO';
+      signalBadge = '● TEST BO';
       signalColor = 'blue';
     }
 

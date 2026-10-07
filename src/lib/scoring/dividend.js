@@ -208,16 +208,16 @@ export function calculateDividendScore(stock) {
   let streakScore = 0;
   if (streakYears >= 5) {
     streakScore = 100;
-    details.push(`🏆 Konsistensi Prima — Rutin membagikan dividen ${streakYears} tahun berturut-turut (Kategori 5+ Tahun)`);
+    details.push(`★ Konsistensi Prima — Rutin membagikan dividen ${streakYears} tahun berturut-turut (Kategori 5+ Tahun)`);
   } else if (streakYears >= 3) {
     streakScore = 70;
-    details.push(`🎖️ Konsistensi Baik — Rutin membagikan dividen ${streakYears} tahun berturut-turut (Kategori 3+ Tahun)`);
+    details.push(`★ Konsistensi Baik — Rutin membagikan dividen ${streakYears} tahun berturut-turut (Kategori 3+ Tahun)`);
   } else if (streakYears === 2) {
     streakScore = 35;
     details.push('✓ Membagikan dividen kas 2 tahun terakhir (Mulai membangun rekam jejak)');
   } else if (streakYears === 1) {
     streakScore = 15;
-    details.push('⚠️ Baru membagikan dividen kas 1 tahun terakhir — belum teruji konsistensinya (risiko one-off)');
+    details.push('▲ Baru membagikan dividen kas 1 tahun terakhir — belum teruji konsistensinya (risiko one-off)');
   } else if (safeYield > 0) {
     streakScore = 10;
     details.push('✓ Dividen kas aktif tercatat di BEI (Riwayat dividen dalam pemantauan)');

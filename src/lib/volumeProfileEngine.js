@@ -125,14 +125,14 @@ export function calculateVolumeProfile({
 
   // 4. Market Position Classification
   const safeCurrent = Number(currentPrice) || validPairs[validPairs.length - 1].price;
-  let positionStatus = 'Di Dalam Value Area (Equilibrium / Fair Value) ⚖️';
+  let positionStatus = 'Di Dalam Value Area (Equilibrium / Fair Value) ⇄';
   let badgeColor = 'blue';
 
   if (safeCurrent > vahPrice) {
-    positionStatus = 'Di Atas Value Area (Bullish Premium / Breakout) 🚀';
+    positionStatus = 'Di Atas Value Area (Bullish Premium / Breakout) ↑';
     badgeColor = 'emerald';
   } else if (safeCurrent < valPrice) {
-    positionStatus = 'Di Bawah Value Area (Diskon / Oversold) 💎';
+    positionStatus = 'Di Bawah Value Area (Diskon / Oversold) ◆';
     badgeColor = 'indigo';
   }
 

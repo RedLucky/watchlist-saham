@@ -39,20 +39,20 @@ export function calculateBrokerConcentration({
   }
 
   // Bandarmologi Flow Verdict
-  let verdict = rawVerdict || 'Netral ⚪';
+  let verdict = rawVerdict || 'Netral ○';
   let badgeColor = 'blue';
 
   if (cr3 >= 60 && bfi > 15) {
-    verdict = 'Akumulasi Masif (Big Accumulation) 🐋';
+    verdict = 'Akumulasi Masif (Big Accumulation) ◆';
     badgeColor = 'emerald';
   } else if (bfi > 5) {
-    verdict = 'Akumulasi Normal 🟢';
+    verdict = 'Akumulasi Normal ●';
     badgeColor = 'emerald';
   } else if (cr3 >= 60 && bfi < -15) {
-    verdict = 'Distribusi Masif (Big Distribution) 🚨';
+    verdict = 'Distribusi Masif (Big Distribution) ▲';
     badgeColor = 'rose';
   } else if (bfi < -5) {
-    verdict = 'Distribusi Normal 🔴';
+    verdict = 'Distribusi Normal ●';
     badgeColor = 'rose';
   }
 

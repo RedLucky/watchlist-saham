@@ -120,16 +120,16 @@ export function analyzeDividendTrap({
   const finalSafetyScore = Math.max(5, Math.min(99, safetyScore));
 
   // Determine Verdict
-  let verdict = 'Aman & Berkelanjutan 🛡️';
+  let verdict = 'Aman & Berkelanjutan ◇';
   let badgeColor = 'emerald';
   let trapRisk = 'Rendah';
 
   if (finalSafetyScore < 45 || (safeYield > 12.0 && finalSafetyScore < 60)) {
-    verdict = 'High Risk Dividend Trap 🚨';
+    verdict = 'High Risk Dividend Trap ▲';
     badgeColor = 'rose';
     trapRisk = 'Tinggi';
   } else if (finalSafetyScore < 65 || (safeYield > 9.0 && streak < 3)) {
-    verdict = 'Waspada Ex-Date Drop ⚠️';
+    verdict = 'Waspada Ex-Date Drop ▲';
     badgeColor = 'amber';
     trapRisk = 'Sedang';
   }
