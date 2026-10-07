@@ -4,6 +4,12 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-10-07] fix | Garis Moving Average Tidak Lagi Dua Nuansa Abu-Abu
+- **Masalah:** MA20 memakai `ink` dan MA50 memakai `muted` — dua-duanya abu-abu netral, jadi kedua garis sulit dibedakan dan terbaca sebagai satu garis.
+- MA20 sekarang biru kehijauan dan MA50 ungu, sementara MA200 tetap amber. kedua warna baru tidak bertabrakan dengan hijau (naik), merah (turun), maupun amber (warn), jadi warna garis tidak pernah menyiratkan arah harga — dan itulah yang sebelumnya disalahartikan.
+- `buildChartPalette(tokens, isDark)` menerima tema supaya tiap tema memakai kecerahan hue yang sama; `getCurrentChartPalette()` meneruskannya.
+- 5 test baru: ketiga rata-rata wajib saling berbeda, tidak boleh `ink`/`muted`/`up`/`down`/`warn`, dan tema gelap wajib berbeda dari terang.
+
 ## [2026-10-07] feat | IDX Value 30 Diisi
 - IDX Value 30 diisi (30 anggota, berlaku 2026-08-03) dari daftar pihak ketiga. Entri seed menyatakan sumber dan catatan kehati-hatinya secara terbuka, karena tidak dicocokkan dengan fact sheet resmi IDX.
 - Semua 30 anggota ada di `StockData`.

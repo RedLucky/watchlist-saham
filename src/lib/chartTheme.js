@@ -60,9 +60,23 @@ export function readThemeTokens(isDark, root) {
 }
 
 /**
+ * Colours for the moving-average lines.
+ *
+ * These were `ink`, `muted` and `warn`, but ink and muted are both neutral greys and the two lines
+ * were hard to tell apart at a glance. These two hues sit apart from each other, from the semantic
+ * green (up) and red (down), and from the amber MA200 — so a colour on the chart never implies a
+ * price direction, which is what the old greys were being mistaken for.
+ */
+const MA_HUES = {
+  light: { short: '#1f6f8b', medium: '#6b4f9e' },
+  dark: { short: '#4fb3d9', medium: '#a98ce0' },
+};
+
+/**
  * Builds every colour the chart needs from theme tokens.
  *
  * @param {typeof FALLBACK_TOKENS.light} tokens
+ * @param {boolean} [isDark=false] - Which set of moving-average hues to use.
  * @returns {{
  *   text: string, grid: string, border: string,
  *   up: string, down: string, warn: string,
@@ -73,7 +87,8 @@ export function readThemeTokens(isDark, root) {
  *   macd: string, macdSignal: string,
  * }}
  */
-export function buildChartPalette(tokens) {
+export function buildChartPalette(tokens, isDark = false) {
+  const hues = isDark ? MA_HUES.dark : MA_HUES.light;
   return {
     text: tokens.muted,
     grid: withAlpha(tokens.line, 0.5),
@@ -83,8 +98,8 @@ export function buildChartPalette(tokens) {
     warn: tokens.warn,
     volumeUp: withAlpha(tokens.up, 0.35),
     volumeDown: withAlpha(tokens.down, 0.35),
-    ma20: tokens.ink,
-    ma50: tokens.muted,
+    ma20: hues.short,
+    ma50: hues.medium,
     ma200: tokens.warn,
     bbBand: withAlpha(tokens.muted, 0.8),
     bbMid: withAlpha(tokens.muted, 0.5),
@@ -102,7 +117,7 @@ export function buildChartPalette(tokens) {
  */
 export function getCurrentChartPalette() {
   const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
-  return buildChartPalette(readThemeTokens(isDark));
+  return buildChartPalette(readThemeTokens(isDark), isDark);
 }
 
 /**

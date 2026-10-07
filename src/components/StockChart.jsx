@@ -294,7 +294,7 @@ export default function StockChart({ ticker }) {
         volumeSeries.setData(volumeData);
         volumeSeriesRef.current = volumeSeries;
 
-        // 4. Moving Averages: MA20 (ink, solid), MA50 (muted, dashed), MA200 (warn, thick)
+        // 4. Moving Averages: MA20 (teal, solid), MA50 (violet, dashed), MA200 (amber, thick).
         const ma20Series = chart.addSeries(LineSeries, {
           color: palette.ma20,
           lineWidth: 1.5,

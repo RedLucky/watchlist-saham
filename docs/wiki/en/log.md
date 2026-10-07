@@ -4,6 +4,12 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-10-07] fix | Moving Average Lines Are No Longer Two Shades Of Grey
+- **Problem:** MA20 used `ink` and MA50 used `muted` — both neutral greys, so the two lines were hard to tell apart and read as one.
+- MA20 is now teal and MA50 violet, with MA200 staying amber. Neither new hue collides with the semantic green (up), red (down) or amber (warn), so a line colour never implies a price direction — which is what the greys were being mistaken for.
+- `buildChartPalette(tokens, isDark)` takes the theme so each theme gets its own brightness of the same hues; `getCurrentChartPalette()` passes it through.
+- 5 new tests: the three averages must be mutually distinct, must not be `ink`/`muted`/`up`/`down`/`warn`, and dark must differ from light.
+
 ## [2026-10-07] feat | IDX Value 30 Seeded
 - IDX Value 30 seeded (30 members, effective 2026-08-03) from a third-party list. The seed entry states the source and the caveat inline, because it was not confirmed against the official IDX fact sheet.
 - All 30 members exist in `StockData`.

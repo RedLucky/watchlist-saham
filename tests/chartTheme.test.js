@@ -63,3 +63,43 @@ test('buildChartPalette', async (t) => {
     }
   });
 });
+
+test('warna garis moving average harus saling berbeda', async (t) => {
+  const light = buildChartPalette(FALLBACK_TOKENS.light);
+  const dark = buildChartPalette(FALLBACK_TOKENS.dark, true);
+
+  await t.test('MA20, MA50 dan MA200 punya warna yang berbeda', () => {
+    const colours = [light.ma20, light.ma50, light.ma200];
+    assert.equal(new Set(colours).size, 3);
+    assert.equal(new Set([dark.ma20, dark.ma50, dark.ma200]).size, 3);
+  });
+
+  await t.test('MA20 dan MA50 tidak lagi memakai abu-abu netral', () => {
+    for (const [palette, tokens] of [[light, FALLBACK_TOKENS.light], [dark, FALLBACK_TOKENS.dark]]) {
+      for (const key of ['ma20', 'ma50']) {
+        assert.notEqual(palette[key], tokens.ink, `${key} masih memakai ink`);
+        assert.notEqual(palette[key], tokens.muted, `${key} masih memakai muted`);
+      }
+    }
+  });
+
+  await t.test('garis MA tidak memakai warna hijau/merah/amber', () => {
+    for (const [palette, tokens] of [[light, FALLBACK_TOKENS.light], [dark, FALLBACK_TOKENS.dark]]) {
+      for (const key of ['ma20', 'ma50']) {
+        assert.notEqual(palette[key], tokens.up, key);
+        assert.notEqual(palette[key], tokens.down, key);
+        assert.notEqual(palette[key], tokens.warn, key);
+      }
+    }
+  });
+
+  await t.test('tema gelap memakai versi hue yang lebih terang', () => {
+    for (const key of ['ma20', 'ma50']) {
+      assert.notEqual(dark[key], light[key], key);
+    }
+  });
+
+  await t.test('default-nya tema terang', () => {
+    assert.equal(buildChartPalette(FALLBACK_TOKENS.light).ma20, light.ma20);
+  });
+});

@@ -85,7 +85,20 @@ Every main page renders through the same shell, so titles, gutters and section r
 
 Rules: `<main>` in `Dashboard` owns `px-3 sm:px-5 lg:px-6` and **no** max-width; `PageToolbar` mirrors those gutters with `-mx-3 sm:-mx-5 lg:-mx-6`. Long tables keep search and filters in a `PageToolbar`.
 
-## 7. Guard tests
+## 7. Chart colours (`src/lib/chartTheme.js`)
+
+Charts cannot use Tailwind classes, so the tokens are read from CSS variables at runtime and turned
+into plain colour strings.
+
+- Candles and volume use `up` (green) and `down` (red). These mean direction and nothing else.
+- The moving averages use **teal (MA20)**, **violet (MA50)** and **amber (MA200)**, each with its
+  own line style. They were `ink`/`muted`/`warn` originally, but two neutral greys on one chart are
+  indistinguishable in practice. None of the three implies a price direction.
+- RSI and MACD keep `ink` and `warn`, since they live in their own panes below the price chart.
+- `buildChartPalette(tokens, isDark)` takes the theme so each theme gets the same hues at its own
+  brightness.
+
+## 8. Guard tests
 
 * `tests/themeTokens.test.js` — both themes define the same tokens; text colours reach WCAG AA (4.5:1).
 * `tests/designTokens.test.js` — every `.js`/`.jsx` file under `src/` (except `src/scripts/`, which runs outside the browser) contains no palette colours, gradients, glass blur, large radius, hard-coded hex colours or colour emoji.

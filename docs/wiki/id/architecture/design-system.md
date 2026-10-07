@@ -85,6 +85,15 @@ Semua halaman utama dirender lewat kerangka yang sama, sehingga judul, gutter, d
 
 Aturan: `<main>` di `Dashboard` memiliki `px-3 sm:px-5 lg:px-6` dan **tanpa** max-width; `PageToolbar` mencerminkan gutter itu dengan `-mx-3 sm:-mx-5 lg:-mx-6`. Tabel panjang menyimpan pencarian dan filter di dalam `PageToolbar`.
 
+## 7. Warna Grafik (`src/lib/chartTheme.js`)
+
+Grafik tidak bisa memakai kelas Tailwind, jadi token dibaca dari CSS variable saat runtime lalu dijadikan string warna biasa.
+
+- Candle dan volume memakai `up` (hijau) dan `down` (merah). Keduanya berarti arah, tidak lebih.
+- Moving average memakai **biru kehijauan (MA20)**, **ungu (MA50)**, dan **amber (MA200)**, masing-masing dengan gaya garis sendiri. Awalnya `ink`/`muted`/`warn`, tapi dua abu-abu netral dalam satu grafik praktis tidak bisa dibedakan. Ketiganya tidak menyiratkan arah harga.
+- RSI dan MACD tetap memakai `ink` dan `warn`, karena berada di panelnya sendiri di bawah grafik harga.
+- `buildChartPalette(tokens, isDark)` menerima tema supaya tiap tema memakai hue yang sama dengan kecerahan yang sesuai.
+
 ## 7. Test penjaga
 
 * `tests/themeTokens.test.js` — kedua tema mendefinisikan token yang sama; warna teks mencapai WCAG AA (4.5:1).
