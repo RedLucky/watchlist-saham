@@ -51,8 +51,8 @@ export default function PortfolioPanel() {
     });
   };
 
-  if (loading) return <div className="p-10 text-center animate-pulse text-slate-500 dark:text-slate-400">Memuat Portfolio...</div>;
-  if (error) return <div className="text-red-400 p-5">Terdapat error: {error}</div>;
+  if (loading) return <div className="p-10 text-center animate-pulse text-muted ">Memuat Portfolio...</div>;
+  if (error) return <div className="text-down p-5">Terdapat error: {error}</div>;
 
   const summary = portfolioData?.summary || {};
   const positions = portfolioData?.positions || [];
@@ -62,107 +62,107 @@ export default function PortfolioPanel() {
   <div className="space-y-6 animate-fade-in">
   {/* Summary Cards */}
   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-  <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.04]">
-  <div className="text-xs text-slate-500 dark:text-slate-400">Total Investasi (Modal)</div>
-  <div className="text-xl font-bold text-slate-900 dark:text-white mt-1">{formatCurrency(summary.totalInvested)}</div>
+  <div className="p-4 rounded-sm bg-sunken border border-line ">
+  <div className="text-xs text-muted ">Total Investasi (Modal)</div>
+  <div className="text-xl font-bold text-ink mt-1">{formatCurrency(summary.totalInvested)}</div>
   </div>
-  <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.04]">
-  <div className="text-xs text-slate-500 dark:text-slate-400">Nilai Portofolio Saat Ini</div>
-  <div className="text-xl font-bold text-slate-900 dark:text-white mt-1">{formatCurrency(summary.totalCurrentValue)}</div>
+  <div className="p-4 rounded-sm bg-sunken border border-line ">
+  <div className="text-xs text-muted ">Nilai Portofolio Saat Ini</div>
+  <div className="text-xl font-bold text-ink mt-1">{formatCurrency(summary.totalCurrentValue)}</div>
   </div>
-  <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.04]">
-  <div className="text-xs text-slate-500 dark:text-slate-400">Floating PnL (Floating Profit)</div>
-  <div className={`text-xl font-bold mt-1 ${summary.totalFloatingPnL >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+  <div className="p-4 rounded-sm bg-sunken border border-line ">
+  <div className="text-xs text-muted ">Floating PnL (Floating Profit)</div>
+  <div className={`text-xl font-bold mt-1 ${summary.totalFloatingPnL >= 0 ? 'text-up' : 'text-down'}`}>
   {formatCurrency(summary.totalFloatingPnL)}
   </div>
   </div>
-  <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.04]">
-  <div className="text-xs text-slate-500 dark:text-slate-400">Total Return (%)</div>
-  <div className={`text-xl font-bold mt-1 ${(summary.totalReturnPercent ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+  <div className="p-4 rounded-sm bg-sunken border border-line ">
+  <div className="text-xs text-muted ">Total Return (%)</div>
+  <div className={`text-xl font-bold mt-1 ${(summary.totalReturnPercent ?? 0) >= 0 ? 'text-up' : 'text-down'}`}>
   {(summary.totalReturnPercent ?? 0).toFixed(2)}%
   </div>
   </div>
   </div>
 
   {/* Realized PnL Summary */}
-  <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.04] flex items-center justify-between">
+  <div className="p-4 rounded-sm bg-sunken border border-line flex items-center justify-between">
   <div>
-  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Total Keuntungan Realisasi (Closed PnL): </span>
-  <span className={`text-base font-bold ml-2 ${summary.realizedPnL >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+  <span className="text-sm font-medium text-ink ">Total Keuntungan Realisasi (Closed PnL): </span>
+  <span className={`text-base font-bold ml-2 ${summary.realizedPnL >= 0 ? 'text-up' : 'text-down'}`}>
   {formatCurrency(summary.realizedPnL)}
   </span>
   </div>
-  <div className="text-xs text-slate-500 dark:text-slate-400">
-  Jumlah Saham Aktif: <strong className="text-slate-800 dark:text-slate-200">{positions.length}</strong>
+  <div className="text-xs text-muted ">
+  Jumlah Saham Aktif: <strong className="text-ink ">{positions.length}</strong>
   </div>
   </div>
 
   {/* ── BLOOMBERG PORT & MARS: PORTFOLIO RISK & STRESS TESTING COCKPIT ── */}
   {riskAnalytics && (
-    <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm space-y-5">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-3.5">
+    <div className="bg-surface border border-line rounded-md p-4 md:p-6 shadow-sm space-y-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-line pb-3.5">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xl">🛡️</span>
+            <span className="text-xl">◇</span>
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-bold text-slate-900 dark:text-white text-sm md:text-base">
+              <h3 className="font-bold text-ink text-sm md:text-base">
                 Portfolio Risk, Beta & Macro Stress Testing (PORT/MARS)
               </h3>
-              <span className="px-2 py-0.5 text-[10px] font-black rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 uppercase tracking-wider">
+              <span className="px-2 py-0.5 text-[10px] font-black rounded-md bg-sunken text-ink border border-line uppercase tracking-wider">
                 Bloomberg PORT
               </span>
             </div>
           </div>
-          <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+          <p className="text-xs text-muted mt-0.5">
             Kalkulasi sensitivitas pasar (Weighted Beta), Value at Risk (VaR 95%), serta simulasi skenario makroekonomi.
           </p>
         </div>
 
-        <span className={`px-3 py-1 rounded-xl text-xs font-black self-start sm:self-auto uppercase tracking-wide border ${
-          riskAnalytics.badgeColor === 'emerald'
-            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
-            : riskAnalytics.badgeColor === 'amber'
-            ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border-amber-300 dark:border-amber-800'
-            : 'bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300 border-blue-300 dark:border-blue-800'
-        }`}>
+        <span className={`px-3 py-1 rounded-sm text-xs font-black self-start sm:self-auto uppercase tracking-wide border ${
+ riskAnalytics.badgeColor === 'emerald'
+ ? 'bg-up-soft text-up border-up '
+ : riskAnalytics.badgeColor === 'amber'
+ ? 'bg-warn-soft text-warn border-warn '
+ : 'bg-sunken text-ink border-line '
+ }`}>
           {riskAnalytics.riskProfile}
         </span>
       </div>
 
       {/* Risk Metrics Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/60">
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+        <div className="p-3.5 rounded-sm bg-sunken border border-line ">
+          <span className="text-[10px] font-bold text-muted uppercase tracking-wider block">
             Weighted Beta (Sensitivitas IHSG)
           </span>
-          <span className="text-lg font-black font-mono text-slate-900 dark:text-white mt-0.5 block">
+          <span className="text-lg font-black font-mono text-ink mt-0.5 block">
             {riskAnalytics.weightedBeta}x
           </span>
-          <span className="text-[10px] text-slate-500">
+          <span className="text-[10px] text-muted">
             {riskAnalytics.weightedBeta > 1 ? 'Lebih fluktuatif dari IHSG' : 'Lebih stabil dari indeks umum'}
           </span>
         </div>
 
-        <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/60">
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+        <div className="p-3.5 rounded-sm bg-sunken border border-line ">
+          <span className="text-[10px] font-bold text-muted uppercase tracking-wider block">
             Value at Risk (VaR 95% 1-Day)
           </span>
-          <span className="text-lg font-black font-mono text-rose-600 dark:text-rose-400 mt-0.5 block">
+          <span className="text-lg font-black font-mono text-down mt-0.5 block">
             -{formatCurrency(riskAnalytics.var95.nominal)} ({riskAnalytics.var95.pct}%)
           </span>
-          <span className="text-[10px] text-slate-500">
+          <span className="text-[10px] text-muted">
             Estimasi potensi risiko harian normal
           </span>
         </div>
 
-        <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/60">
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+        <div className="p-3.5 rounded-sm bg-sunken border border-line ">
+          <span className="text-[10px] font-bold text-muted uppercase tracking-wider block">
             Konsentrasi Portofolio Terbesar
           </span>
-          <span className="text-lg font-black font-mono text-indigo-600 dark:text-indigo-400 mt-0.5 block">
+          <span className="text-lg font-black font-mono text-ink mt-0.5 block">
             {riskAnalytics.topHolding} ({riskAnalytics.topConcentrationPct}%)
           </span>
-          <span className="text-[10px] text-slate-500">
+          <span className="text-[10px] text-muted">
             Porsi aset terbesar saat ini
           </span>
         </div>
@@ -172,8 +172,8 @@ export default function PortfolioPanel() {
       {riskAnalytics.warnings?.length > 0 && (
         <div className="space-y-1.5">
           {riskAnalytics.warnings.map((w, idx) => (
-            <div key={idx} className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-700 dark:text-amber-300 flex items-center gap-2">
-              <span>⚠️</span>
+            <div key={idx} className="p-2.5 rounded-sm bg-warn-soft border border-warn text-xs text-warn flex items-center gap-2">
+              <span>▲</span>
               <span>{w}</span>
             </div>
           ))}
@@ -183,39 +183,39 @@ export default function PortfolioPanel() {
       {/* Bloomberg MARS: Macro Stress Testing Scenarios */}
       <div className="space-y-2.5 pt-1">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-            <span>⚡</span> Simulasi Skenario Guncangan Makro (Stress Testing):
+          <span className="text-xs font-bold text-ink flex items-center gap-1.5">
+            <span>»</span> Simulasi Skenario Guncangan Makro (Stress Testing):
           </span>
-          <span className="text-[11px] text-slate-500 font-mono">
+          <span className="text-[11px] text-muted font-mono">
             Bloomberg MARS Engine
           </span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {riskAnalytics.stressScenarios?.map(s => (
-            <div key={s.id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/30 border border-slate-200/80 dark:border-slate-700/60 flex flex-col justify-between space-y-2">
+            <div key={s.id} className="p-3 rounded-sm bg-sunken border border-line flex flex-col justify-between space-y-2">
               <div>
                 <div className="flex items-center justify-between gap-1">
                   <span className="text-base">{s.icon}</span>
                   <span className={`text-xs font-mono font-black ${
-                    s.impactPct >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
-                  }`}>
+ s.impactPct >= 0 ? 'text-up ' : 'text-down '
+ }`}>
                     {s.impactPct >= 0 ? `+${s.impactPct}%` : `${s.impactPct}%`}
                   </span>
                 </div>
-                <div className="font-bold text-xs text-slate-900 dark:text-white mt-1.5">
+                <div className="font-bold text-xs text-ink mt-1.5">
                   {s.name}
                 </div>
-                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
+                <div className="text-[10px] text-muted mt-0.5 leading-relaxed">
                   {s.description}
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/50 flex items-center justify-between text-[11px]">
-                <span className="text-slate-500 font-sans">Estimasi Dampak:</span>
+              <div className="pt-2 border-t border-line flex items-center justify-between text-[11px]">
+                <span className="text-muted font-sans">Estimasi Dampak:</span>
                 <span className={`font-bold font-mono ${
-                  s.nominalImpact >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
-                }`}>
+ s.nominalImpact >= 0 ? 'text-up ' : 'text-down '
+ }`}>
                   {s.nominalImpact >= 0 ? `+${formatCurrency(s.nominalImpact)}` : formatCurrency(s.nominalImpact)}
                 </span>
               </div>
@@ -227,15 +227,15 @@ export default function PortfolioPanel() {
   )}
 
   {/* Positions Table */}
-  <div className="rounded-xl border border-slate-200 dark:border-white/[0.04] overflow-hidden bg-slate-50 dark:bg-white/[0.02]">
-  <div className="p-4 border-b border-slate-200 dark:border-white/[0.04] font-semibold text-slate-900 dark:text-white">
+  <div className="rounded-sm border border-line overflow-hidden bg-sunken ">
+  <div className="p-4 border-b border-line font-semibold text-ink ">
   Daftar Saham yang Dimiliki
   </div>
   <div className="overflow-x-auto">
   {positions.length > 0 ? (
   <table className="w-full text-left border-collapse">
   <thead>
-  <tr className="border-b border-slate-200 dark:border-white/[0.04] text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400">
+  <tr className="border-b border-line text-xs uppercase tracking-wider text-muted ">
   <th className="p-4">Saham</th>
   <th className="p-4 text-right">Jumlah Lembar</th>
   <th className="p-4 text-right">Harga Rata-Rata</th>
@@ -245,25 +245,25 @@ export default function PortfolioPanel() {
   <th className="p-4 text-center">Aksi</th>
   </tr>
   </thead>
-  <tbody className="divide-y divide-slate-200 dark:divide-white/[0.04]">
+  <tbody className="divide-y divide-line ">
   {positions.map((pos) => (
-  <tr key={pos.ticker} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02]">
+  <tr key={pos.ticker} className="hover:bg-black/[0.02] ">
   <td className="p-4">
-  <div className="font-bold text-slate-900 dark:text-white">{pos.ticker}</div>
-  <div className="text-xs text-slate-500">{pos.name}</div>
+  <div className="font-bold text-ink ">{pos.ticker}</div>
+  <div className="text-xs text-muted">{pos.name}</div>
   </td>
-  <td className="p-4 text-right text-sm text-slate-700 dark:text-slate-300">{pos.totalShares.toLocaleString('id-ID')}</td>
-  <td className="p-4 text-right text-sm text-slate-700 dark:text-slate-300">{formatCurrency(pos.avgPrice)}</td>
-  <td className="p-4 text-right text-sm font-medium text-slate-900 dark:text-white">{formatCurrency(pos.currentPrice)}</td>
-  <td className="p-4 text-right text-sm text-slate-600 dark:text-slate-400">{formatCurrency(pos.currentValue)}</td>
-  <td className={`p-4 text-right text-sm font-bold ${pos.floatingPnL >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+  <td className="p-4 text-right text-sm text-ink ">{pos.totalShares.toLocaleString('id-ID')}</td>
+  <td className="p-4 text-right text-sm text-ink ">{formatCurrency(pos.avgPrice)}</td>
+  <td className="p-4 text-right text-sm font-medium text-ink ">{formatCurrency(pos.currentPrice)}</td>
+  <td className="p-4 text-right text-sm text-muted ">{formatCurrency(pos.currentValue)}</td>
+  <td className={`p-4 text-right text-sm font-bold ${pos.floatingPnL >= 0 ? 'text-up' : 'text-down'}`}>
   <div>{formatCurrency(pos.floatingPnL)}</div>
   <div className="text-xs font-normal opacity-80">{pos.floatingPnLPercent.toFixed(2)}%</div>
   </td>
   <td className="p-4 text-center">
   <button 
   onClick={() => handleSellStock(pos)}
-  className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-lg text-xs font-bold transition-all"
+  className="px-3 py-1.5 bg-down-soft hover:bg-down-soft border border-down text-down rounded-sm text-xs font-bold transition-all"
   >
   Jual
   </button>
@@ -273,7 +273,7 @@ export default function PortfolioPanel() {
   </tbody>
   </table>
   ) : (
-  <div className="p-8 text-center text-slate-500 dark:text-slate-400">
+  <div className="p-8 text-center text-muted ">
   Anda belum memiliki portofolio. Cari saham yang bagus dari hasil Analisis dan tambahkan ke Portofolio Anda.
   </div>
   )}
@@ -282,34 +282,34 @@ export default function PortfolioPanel() {
 
   {/* ── MODAL: CUSTOM CONFIRMATION DIALOG ──────────────────────────── */}
   {confirmDialog && confirmDialog.isOpen && (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+    <div className="modal-backdrop animate-in fade-in">
+      <div className="modal-panel p-4 sm:p-5 space-y-4" role="dialog" aria-modal="true" aria-labelledby="portfolio-sell-title">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center text-xl shrink-0">
-            🗑️
+          <div className="w-10 h-10 rounded-sm bg-down-soft text-down flex items-center justify-center text-xl shrink-0">
+            ⌫
           </div>
           <div>
-            <h3 className="text-base font-black text-slate-900 dark:text-white">
+            <h3 id="portfolio-sell-title" className="text-base font-black text-ink ">
               {confirmDialog.title}
             </h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+            <p className="text-xs text-muted mt-1">
               {confirmDialog.message}
             </p>
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+        <div className="flex justify-end gap-2 pt-2 border-t border-line ">
           <button
             type="button"
             onClick={confirmDialog.onCancel}
-            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition-colors"
+            className="px-4 py-2 bg-sunken hover:bg-sunken text-ink text-xs font-bold rounded-sm transition-colors"
           >
             Batal
           </button>
           <button
             type="button"
             onClick={confirmDialog.onConfirm}
-            className="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl shadow-md transition-all"
+            className="px-5 py-2 bg-down hover:bg-down text-on-accent text-xs font-bold rounded-sm shadow-md transition-all"
           >
             {confirmDialog.confirmLabel || 'Ya, Lanjutkan'}
           </button>

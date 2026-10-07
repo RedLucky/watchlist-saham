@@ -54,6 +54,10 @@ const MIGRATED_FILES = [
   'src/components/CorporateCalendar.jsx',
   'src/components/CorporateActionsPanel.jsx',
   'src/components/AiConsultationPanel.jsx',
+  // TASK-9273: Portfolio, History & Win Rate
+  'src/components/PortfolioPanel.jsx',
+  'src/components/HistoryPanel.jsx',
+  'src/components/BacktestPanel.jsx',
 ];
 
 /** Lines that handle user-chosen collection emoji (data, not UI icons) may contain emoji. */

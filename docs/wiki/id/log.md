@@ -4,6 +4,11 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-10-07] feat | Migrasi Portofolio, Riwayat & Win Rate ke Bursa 1985
+- `PortfolioPanel`, `HistoryPanel`, dan `BacktestPanel` dipindah ke token tema dan simbol Unicode.
+- Filter sumber/status di Riwayat memakai `.tabs`; dialog konfirmasi jual portofolio memakai `.modal-*` dengan `role="dialog"`.
+- SVG kurva ekuitas dan drawdown di Backtest kini membaca token tema (`readThemeTokens`), bukan warna hex tetap, dan kolom gaya trading memakai `.select` standar dengan label terhubung.
+
 ## [2026-10-07] feat | Migrasi Kalender Korporasi & Konsultasi AI ke Bursa 1985
 - `CorporateCalendar`, `CorporateActionsPanel`, dan `AiConsultationPanel` dipindah ke token tema dan simbol Unicode.
 - Filter kategori kalender dan sakelar Grid/Timeline kini memakai `.tabs`; dialog detail hari memakai `.modal-*` dengan `role="dialog"` dan label tombol tutup.

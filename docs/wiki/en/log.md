@@ -4,6 +4,11 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-10-07] feat | Portfolio, History & Win Rate Migrated to Bursa 1985
+- `PortfolioPanel`, `HistoryPanel` and `BacktestPanel` moved to theme tokens and Unicode symbols.
+- History source/status filters use `.tabs`; portfolio sell-confirmation dialog uses `.modal-*` with `role="dialog"`.
+- Backtest equity-curve and drawdown SVGs now read the theme tokens (`readThemeTokens`) instead of fixed hex colours, and the trading-style field uses the standard `.select` with a linked label.
+
 ## [2026-10-07] feat | Corporate Calendar & AI Consultation Migrated to Bursa 1985
 - `CorporateCalendar`, `CorporateActionsPanel` and `AiConsultationPanel` moved to theme tokens and Unicode symbols.
 - Calendar category filter and Grid/Timeline switch now use `.tabs`; the day-detail dialog uses `.modal-*` with `role="dialog"` and a close button label.
