@@ -6,7 +6,7 @@
 
 ## 🏛️ Arsitektur Sistem
 
-* [Ringkasan Sistem](./architecture/ringkasan-sistem.md) — Gambaran arsitektur teknologi (Next.js 16, Turbopack, Tailwind CSS, PostgreSQL, Prisma, Plus Jakarta Sans).
+* [Ringkasan Sistem](./architecture/ringkasan-sistem.md) — Gambaran arsitektur teknologi (Next.js 16, Turbopack, Tailwind CSS, PostgreSQL, Prisma, IBM Plex).
 * [Pipeline & Sinkronisasi Data](./architecture/pipeline-data.md) — Sinkronisasi harga kilat, deep sync fundamental, integrasi Yahoo Finance, dan antrean round-robin.
 * [Model & Skema Database](./architecture/model-database.md) — Definisi skema Prisma, serialisasi BigInt, integritas relasi, dan indexing.
 * [Halaman Stock Explorer](./architecture/stock-explorer.md) — Grid kartu Koleksi Saham, tab Pencarian Saham IDX dan Komparasi, helper kartu koleksi, serta alur klik-untuk-analisis.
@@ -48,3 +48,9 @@
 * [Stock Screener Bertenaga AI](./trading-system/stock-screener-ai.md) — Penyaringan berbasis bahasa alami, ekstraksi kriteria multi-faktor, dan inferensi LLM offline.
 * [Konsultasi & Penasihat Saham AI](./trading-system/konsultasi-keuangan-ai.md) — Penasihat ekuitas percakapan multi-sesi, matematika finansial deterministik, proteksi anti-halusinasi, dan mutex prioritas CPU.
 * [Engine Pengurutan Koleksi Saham](./trading-system/collection-sorter-engine.md) — 7 strategi pengurutan otomatis institusional untuk koleksi/watchlist (Kombinasi Cerdas, Skor Kualitas, MACD Golden Cross, Jarak Target Beli, Smart Money, Top Gainers, A-Z) dengan penyimpanan permanen database.
+
+---
+
+## 📜 Architecture Decision Records
+
+* [0001. Design system "Bursa 1985" dengan token warna semantik](./adr/0001-bursa-1985-design-system.md) — Tema terang kertas & tinta, tema gelap terminal fosfor, font IBM Plex, token `bg-surface` / `text-ink` / `text-up` di `globals.css`.

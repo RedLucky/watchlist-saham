@@ -1,4 +1,4 @@
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { IBM_Plex_Sans, IBM_Plex_Serif, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import "katex/dist/katex.min.css";
 import { ThemeProvider } from "../components/ThemeProvider";
@@ -6,11 +6,28 @@ import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { GoogleAnalytics, GoogleTagManager } from "@next/third-parties/google";
 
-const plusJakartaSans = Plus_Jakarta_Sans({
-  variable: "--font-sans",
+// "Bursa 1985" typography (ADR 0001): Sans for UI text, Serif for page titles,
+// Mono for prices, tickers and small labels. Mapped to font-sans / font-serif /
+// font-mono in src/app/globals.css.
+const plexSans = IBM_Plex_Sans({
+  variable: "--font-plex-sans",
   subsets: ["latin"],
   display: "swap",
-  weight: ["400", "500", "600", "700", "800"],
+  weight: ["400", "500", "600", "700"],
+});
+
+const plexSerif = IBM_Plex_Serif({
+  variable: "--font-plex-serif",
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["500", "600", "700"],
+});
+
+const plexMono = IBM_Plex_Mono({
+  variable: "--font-plex-mono",
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata = {
@@ -35,8 +52,8 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="id" suppressHydrationWarning>
-      <body className={`${plusJakartaSans.variable} min-h-screen bg-[#f8fafc] dark:bg-[#070b14] text-slate-900 dark:text-slate-100 font-sans antialiased selection:bg-cyan-500 selection:text-white`}>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+      <body className={`${plexSans.variable} ${plexSerif.variable} ${plexMono.variable} min-h-screen bg-canvas text-ink font-sans antialiased`}>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           {children}
           {(process.env.VERCEL || process.env.NEXT_PUBLIC_VERCEL_ENV) && <Analytics />}
           {(process.env.VERCEL || process.env.NEXT_PUBLIC_VERCEL_ENV) && <SpeedInsights />}

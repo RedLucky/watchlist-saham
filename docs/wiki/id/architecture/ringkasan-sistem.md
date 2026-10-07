@@ -19,8 +19,8 @@ version: "1.0.0"
 | :--- | :--- | :--- |
 | **Framework** | Next.js 16.3.1 (App Router) | Menggunakan **Turbopack** untuk kompilasi kilat (<1.2 detik). Mengkombinasikan Server Components dan Route Handlers. |
 | **Database ORM** | Prisma 5.x + PostgreSQL | Skema relasional yang dioptimalkan dengan indeks untuk ticker, sektor, dan transaksi pengguna. |
-| **Tipografi** | `Plus Jakarta Sans` (`@next/font/google`) | Variabel `--font-sans` dengan tracking rapat (`-0.01em`) dan `tabular-nums` untuk perataan angka finansial. |
-| **Styling** | Tailwind CSS 3.4+ | Tema ganda: **Deep Obsidian** (`#070b14`) dan **Crisp Pearl** (`#f8fafc`). |
+| **Tipografi** | IBM Plex Sans / Serif / Mono (`next/font/google`) | `font-sans` untuk UI, `font-serif` untuk judul halaman, `font-mono` untuk harga & ticker; `tabular-nums` untuk perataan angka finansial. |
+| **Styling** | Tailwind CSS 4 + token semantik | Tema "Bursa 1985": terang **Kertas Bursa** (`#f4efe4`) dan gelap **Terminal Fosfor** (`#0d0b08`), default mengikuti perangkat. Lihat [ADR 0001](../adr/0001-bursa-1985-design-system.md). |
 | **Grafik Saham** | Lightweight Charts + SVG | Grafik candlestick real-time dengan data OHLCV, pita Supertrend, dan garis DEMA. |
 | **Efisiensi Token** | Rust Token Killer (`rtk`) | Seluruh perintah terminal dibungkus dengan `rtk` untuk menghemat konsumsi token LLM sekitar 55%. |
 

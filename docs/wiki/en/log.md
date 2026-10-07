@@ -4,6 +4,13 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-10-07] feat | "Bursa 1985" Theme Foundation (ADR 0001)
+- New semantic colour tokens in `src/app/globals.css` for light ("Kertas Bursa") and dark ("Terminal Fosfor"), exposed as Tailwind colours (`canvas`, `surface`, `sunken`, `line`, `ink`, `muted`, `accent`, `up`, `down`, `warn`, …).
+- Fonts switched to IBM Plex Sans / Serif / Mono (`font-sans`, `font-serif`, `font-mono`); theme now follows the device by default.
+- Building blocks `.card`, `.label-mono`, `.rule-double`, `.btn-primary`, `.btn-secondary`, `.focus-ring`; legacy `.glass`, score and skeleton classes are now flat and token-based; reduced-motion respected globally.
+- `ThemeToggle` restyled with an accessible label. New `tests/themeTokens.test.js` (token parity + WCAG AA contrast).
+- New ADR: [0001. "Bursa 1985" design system](./adr/0001-bursa-1985-design-system.md).
+
 ## [2026-10-07] style | Koleksi Saham: 5 Cards per Row
 - Collection card grid now shows up to 5 cards per row on wide screens (`2xl:grid-cols-5`), stepping down to 4 / 3 / 2 / 1 on smaller screens.
 

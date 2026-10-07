@@ -19,8 +19,8 @@ version: "1.0.0"
 | :--- | :--- | :--- |
 | **Framework** | Next.js 16.3.1 (App Router) | Running with **Turbopack** for ultra-fast builds (<1.2s). Server components + route handlers. |
 | **Database ORM** | Prisma 5.x + PostgreSQL | Relational schema with index optimization for tickers, sectors, and user portfolio items. |
-| **Typography** | `Plus Jakarta Sans` (`@next/font/google`) | Variable font `--font-sans` with tight tracking (`-0.01em`) and `tabular-nums` for financial alignment. |
-| **Styling** | Tailwind CSS 3.4+ | Dynamic dual theme: **Deep Obsidian** (`#070b14`) and **Crisp Pearl** (`#f8fafc`). |
+| **Typography** | IBM Plex Sans / Serif / Mono (`next/font/google`) | `font-sans` for UI, `font-serif` for page titles, `font-mono` for prices & tickers; `tabular-nums` for financial alignment. |
+| **Styling** | Tailwind CSS 4 + semantic tokens | "Bursa 1985" theme: light **Kertas Bursa** (`#f4efe4`) and dark **Terminal Fosfor** (`#0d0b08`), follows the device by default. See [ADR 0001](../adr/0001-bursa-1985-design-system.md). |
 | **Charts** | Lightweight Charts + SVG | Real-time candlestick charts with OHLCV data, Supertrend bands, and DEMA overlays. |
 | **Local AI Engine** | Llama.cpp Docker (Headless) | Standalone background container running local GGUF (`Qwen3.8-4B-Q4_K_M.gguf`) via an asynchronous polling worker to prevent UI blocking. |
 | **Agent Optimization** | Rust Token Killer (`rtk`) | Shell commands wrapped via `rtk` to minimize LLM token overhead by ~55%. |

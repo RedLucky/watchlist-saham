@@ -6,7 +6,7 @@
 
 ## 🏛️ System Architecture
 
-* [System Overview](./architecture/system-overview.md) — High-level stack overview (Next.js 16, Turbopack, Tailwind CSS, PostgreSQL, Prisma, Plus Jakarta Sans).
+* [System Overview](./architecture/system-overview.md) — High-level stack overview (Next.js 16, Turbopack, Tailwind CSS, PostgreSQL, Prisma, IBM Plex).
 * [Data Pipeline & Sync](./architecture/data-pipeline.md) — Fast price synchronization, deep financial statement sync, Yahoo Finance integration, and round-robin queues.
 * [Database Models & Schemas](./architecture/database-models.md) — Complete Prisma schema definitions, BigInt serialization rules, relational integrity, and indices.
 * [Stock Explorer Pages](./architecture/stock-explorer.md) — Koleksi Saham card grid, Pencarian Saham IDX and Komparasi tabs, collection card helpers, and the click-to-analyse flow.
@@ -48,3 +48,9 @@
 * [AI-Powered Stock Screener](./trading-system/ai-stock-screener.md) — Conversational natural language screening, multi-factor criteria extraction, and offline LLM inference.
 * [AI-Powered Financial Consultation & Advisory](./trading-system/ai-financial-consultation.md) — Multi-turn conversational equity advisor, pre-calculated financial math, strict zero-hallucination grounding, and CPU priority mutex.
 * [Collection Sorter Engine](./trading-system/collection-sorter-engine.md) — 7 institutional automated sorting strategies for collections/watchlists (Smart Combination, Highest Quality Score, MACD Golden Cross, Target Buy Proximity, Smart Money, Top Daily Gainers, A-Z) with instant DB persistence.
+
+---
+
+## 📜 Architecture Decision Records
+
+* [0001. "Bursa 1985" design system with semantic colour tokens](./adr/0001-bursa-1985-design-system.md) — Paper & ink light theme, phosphor terminal dark theme, IBM Plex fonts, `bg-surface` / `text-ink` / `text-up` tokens in `globals.css`.

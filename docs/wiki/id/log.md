@@ -4,6 +4,13 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-10-07] feat | Fondasi Tema "Bursa 1985" (ADR 0001)
+- Token warna semantik baru di `src/app/globals.css` untuk mode terang ("Kertas Bursa") dan gelap ("Terminal Fosfor"), diekspos sebagai warna Tailwind (`canvas`, `surface`, `sunken`, `line`, `ink`, `muted`, `accent`, `up`, `down`, `warn`, …).
+- Font diganti ke IBM Plex Sans / Serif / Mono (`font-sans`, `font-serif`, `font-mono`); tema kini mengikuti perangkat secara default.
+- Blok dasar `.card`, `.label-mono`, `.rule-double`, `.btn-primary`, `.btn-secondary`, `.focus-ring`; class lama `.glass`, skor, dan skeleton kini rata dan berbasis token; reduced-motion dihormati secara global.
+- `ThemeToggle` diperbarui dengan label aksesibel. Test baru `tests/themeTokens.test.js` (kesamaan token + kontras WCAG AA).
+- ADR baru: [0001. Design system "Bursa 1985"](./adr/0001-bursa-1985-design-system.md).
+
 ## [2026-10-07] style | Koleksi Saham: 5 Kartu per Baris
 - Grid kartu koleksi kini menampilkan hingga 5 kartu per baris di layar lebar (`2xl:grid-cols-5`), turun menjadi 4 / 3 / 2 / 1 di layar lebih kecil.
 
