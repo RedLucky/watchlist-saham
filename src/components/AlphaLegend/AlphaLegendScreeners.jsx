@@ -31,63 +31,63 @@ export default function AlphaLegendScreeners() {
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Navigation Sub-Tabs Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-3xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-md bg-surface border border-line shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-500 to-indigo-600 flex items-center justify-center text-white text-xl flex-shrink-0 shadow-md shadow-amber-500/20">
-            👑
+          <div className="w-10 h-10 rounded-md flex items-center justify-center bg-ink text-on-accent text-xl flex-shrink-0 ">
+            ★
           </div>
           <div>
-            <h1 className="text-base font-extrabold text-slate-900 dark:text-white leading-tight">
+            <h1 className="text-base font-extrabold text-ink leading-tight">
               Alpha Legends Screener
             </h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Modul Komprehensif Panduan & Formula Stock Screener</p>
+            <p className="text-xs text-muted ">Modul Komprehensif Panduan & Formula Stock Screener</p>
           </div>
         </div>
 
         {/* Sub-Tab Navigation Switcher */}
-        <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 overflow-x-auto [scrollbar-width:none] w-full sm:w-auto">
+        <div className="flex items-center gap-1.5 p-1 bg-sunken rounded-md border border-line overflow-x-auto [scrollbar-width:none] w-full sm:w-auto">
           <button
             onClick={() => setSubTab('sector-metrics')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex-shrink-0 ${
-              subTab === 'sector-metrics'
-                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
+            className={`px-3.5 py-2 rounded-sm text-xs font-bold transition-all whitespace-nowrap flex-shrink-0 ${
+ subTab === 'sector-metrics'
+ ? 'bg-accent text-on-accent shadow-md '
+ : 'text-muted hover:text-ink '
+ }`}
           >
-            📊 Metrik Sektoral
+            ▤ Metrik Sektoral
           </button>
           <button
             onClick={() => setSubTab('growth-story')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex-shrink-0 ${
-              subTab === 'growth-story'
-                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/20'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
+            className={`px-3.5 py-2 rounded-sm text-xs font-bold transition-all whitespace-nowrap flex-shrink-0 ${
+ subTab === 'growth-story'
+ ? 'bg-up text-on-accent shadow-md '
+ : 'text-muted hover:text-ink '
+ }`}
           >
-            🚀 Growth Story
+            ↑ Growth Story
           </button>
           <button
             onClick={() => setSubTab('top-investors')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex-shrink-0 ${
-              subTab === 'top-investors'
-                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 font-black'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
+            className={`px-3.5 py-2 rounded-sm text-xs font-bold transition-all whitespace-nowrap flex-shrink-0 ${
+ subTab === 'top-investors'
+ ? 'bg-warn text-ink shadow-md font-black'
+ : 'text-muted hover:text-ink '
+ }`}
           >
-            🏆 Top Investors (10)
+            ★ Top Investors (10)
           </button>
         </div>
       </div>
 
       {/* Loading & Error States */}
       {loading ? (
-        <div className="p-12 text-center rounded-3xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-3">
-          <div className="w-8 h-8 mx-auto rounded-full border-4 border-amber-500 border-t-transparent animate-spin"></div>
-          <p className="text-xs font-semibold text-slate-500">Mengkalkulasi Formula Alpha Legends...</p>
+        <div className="p-12 text-center rounded-md bg-surface border border-line space-y-3">
+          <div className="w-8 h-8 mx-auto rounded-full border-4 border-warn border-t-transparent animate-spin"></div>
+          <p className="text-xs font-semibold text-muted">Mengkalkulasi Formula Alpha Legends...</p>
         </div>
       ) : error ? (
-        <div className="p-4 rounded-2xl bg-rose-500/10 text-rose-600 text-xs font-semibold">
-          ⚠️ Gagal memuat data: {error}
+        <div className="p-4 rounded-md bg-down-soft text-down text-xs font-semibold">
+          ▲ Gagal memuat data: {error}
         </div>
       ) : (
         <>

@@ -41,6 +41,15 @@ const MIGRATED_FILES = [
   'src/components/FinancialMatrixPanel.jsx',
   'src/components/DetailPanel.jsx',
   'src/components/StockChart.jsx',
+  // TASK-3690: Market Movers, Screener, Alpha Legends
+  'src/components/MarketMovers.jsx',
+  'src/components/StockScreener.jsx',
+  'src/components/AiScreenerBar.jsx',
+  'src/components/AlphaLegend/AlphaLegendScreeners.jsx',
+  'src/components/AlphaLegend/GrowthStoryTab.jsx',
+  'src/components/AlphaLegend/SectorMetricsTab.jsx',
+  'src/components/AlphaLegend/TopInvestorsTab.jsx',
+  'src/data/alphaLegendSectors.js',
 ];
 
 /** Lines that handle user-chosen collection emoji (data, not UI icons) may contain emoji. */

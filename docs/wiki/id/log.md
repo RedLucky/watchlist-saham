@@ -4,6 +4,11 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-10-07] feat | Migrasi Market Movers, Screener & Alpha Legends ke Bursa 1985
+- `MarketMovers`, `StockScreener`, `AiScreenerBar`, dan 4 komponen Alpha Legends dipindah ke token tema dan simbol Unicode.
+- Ikon di `src/data/alphaLegendSectors.js` (35 sektor) dan daftar investor diganti simbol teks, sehingga chip sektor mengikuti warna tema.
+- Latar tombol dan banner yang kehilangan gradien diperbaiki (tab screener, submit AI, header Growth Story / Top Investors / Sector Metrics); sisa efek blur glow di Sector Metrics dihapus.
+
 ## [2026-10-07] feat | Migrasi Panel Analisis & Chart ke Bursa 1985
 - 11 panel Stock Explorer dan `DetailPanel` dipindah ke token tema dan simbol Unicode; header FA dan tombol "laporan lengkap" BI diperbaiki setelah gradien dihapus.
 - Warna `StockChart` kini diambil dari `src/lib/chartTheme.js` yang membaca token CSS: candle/volume memakai up/down; indikator memakai ink/muted/warn dengan gaya garis (MA50 putus-putus, Bollinger titik-titik, sinyal MACD putus-putus). Mengganti tema kini juga mewarnai ulang seri, bukan hanya grid. Marker pola dan judul garis harga tidak lagi berisi emoji. Modal pola memakai `.modal-*`.

@@ -55,55 +55,55 @@ function MoverRow({ item, type, index, onSelectStock }) {
 
  const pct = Number(item.changePercent);
  const changeColor =
- pct > 0 ? 'text-emerald-400' :
- pct < 0 ? 'text-red-400' : 'text-slate-500 dark:text-slate-400';
+ pct > 0 ? 'text-up' :
+ pct < 0 ? 'text-down' : 'text-muted ';
 
  const pctBg =
- pct > 0 ? 'bg-emerald-500/10 border-emerald-500/20' :
- pct < 0 ? 'bg-red-500/10 border-red-500/20' : 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/5';
+ pct > 0 ? 'bg-up-soft border-up' :
+ pct < 0 ? 'bg-down-soft border-down' : 'bg-sunken  border-line ';
 
  // Avatar color per type
  const avatarStyle = isTrending
- ? 'from-amber-500/15 to-orange-500/15 text-amber-600 dark:text-amber-300'
+ ? '  text-warn '
  : isGainer
- ? 'from-emerald-500/15 to-teal-500/15 text-emerald-300'
+ ? '  text-up'
  : isUnusual
- ? 'from-cyan-500/15 to-blue-500/15 text-cyan-300'
- : 'from-red-500/15 to-rose-500/15 text-red-300';
+ ? '  text-ink'
+ : '  text-down';
 
  const priceChange = formatPriceChange(item.price, item.prevClose);
 
  return (
  <div
  onClick={() => onSelectStock && onSelectStock(item)}
- className={`grid grid-cols-12 items-center gap-2 py-2.5 px-3 rounded-lg
- hover:bg-slate-100 dark:hover:bg-white/[0.04] transition-colors duration-150 group cursor-pointer
+ className={`grid grid-cols-12 items-center gap-2 py-2.5 px-3 rounded-sm
+ hover:bg-sunken transition-colors duration-150 group cursor-pointer
  animate-fade-in stagger-${Math.min(index + 1, 10)}`}
  style={{ opacity: 0 }}
  >
  {/* Rank */}
- <div className="col-span-1 text-xs text-slate-500 dark:text-slate-400 font-mono text-right pr-1 tabular-nums">
+ <div className="col-span-1 text-xs text-muted font-mono text-right pr-1 tabular-nums">
  {index + 1}
  </div>
 
  {/* Avatar + Ticker + Name */}
  <div className="col-span-4 flex items-center gap-2.5 min-w-0">
- <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${avatarStyle}
+ <div className={`w-8 h-8 rounded-sm ${avatarStyle}
  flex items-center justify-center text-[11px] font-bold shrink-0 group-hover:scale-105 transition-transform`}>
  {item.ticker.substring(0, 2)}
  </div>
  <div className="min-w-0">
- <div className="text-[13px] font-bold text-slate-900 dark:text-white leading-tight truncate flex items-center gap-1.5">
+ <div className="text-[13px] font-bold text-ink leading-tight truncate flex items-center gap-1.5">
  {item.ticker}
- <span className="text-[9px] px-1 py-0.2 rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 opacity-0 group-hover:opacity-100 transition-opacity">
- 👥
+ <span className="text-[9px] px-1 py-0.2 rounded bg-sunken text-ink border border-line opacity-0 group-hover:opacity-100 transition-opacity">
+ ◫
  </span>
  </div>
- <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate flex items-center gap-1">
+ <div className="text-[11px] text-muted leading-tight truncate flex items-center gap-1">
  {item.name}
  </div>
  {item.marketCap != null && (
-   <div className="text-[9px] font-semibold text-blue-500 dark:text-blue-400 mt-0.5">
+   <div className="text-[9px] font-semibold text-ink mt-0.5">
      MCap: {(item.marketCap / 1_000_000_000_000).toFixed(1)}T
    </div>
  )}
@@ -112,12 +112,12 @@ function MoverRow({ item, type, index, onSelectStock }) {
 
  {/* Volume (lembar) — metric utama Trending & info tambahan */}
  <div className="col-span-3 text-right">
- <div className="text-[12px] font-mono text-slate-400 dark:text-slate-500 leading-tight">
+ <div className="text-[12px] font-mono text-muted leading-tight">
  {formatVolume(item.volume)}
  </div>
- <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+ <div className="text-[11px] text-muted leading-tight">
  {isUnusual && item.volumeRatio
- ? <span className="text-cyan-400 font-bold">{item.volumeRatio}x avg</span>
+ ? <span className="text-ink font-bold">{item.volumeRatio}x avg</span>
  : formatTurnover(item.turnover)
  }
  </div>
@@ -125,7 +125,7 @@ function MoverRow({ item, type, index, onSelectStock }) {
 
  {/* Harga + Perubahan + % */}
  <div className="col-span-4 text-right">
- <div className="text-[13px] font-semibold text-slate-900 dark:text-white leading-tight tabular-nums">
+ <div className="text-[13px] font-semibold text-ink leading-tight tabular-nums">
  {formatPrice(item.price)}
  </div>
  <div className="flex items-center justify-end gap-1.5 mt-0.5">
@@ -145,19 +145,19 @@ function MoverRow({ item, type, index, onSelectStock }) {
 
 function MoverCard({ title, subtitle, icon, items, type, accentGradient, borderColor, loading, onSelectStock }) {
  return (
- <div className={`glass rounded-2xl overflow-hidden flex flex-col border ${borderColor}`}
+ <div className={`glass rounded-md overflow-hidden flex flex-col border ${borderColor}`}
  style={{ minHeight: 0 }}
  >
  {/* Header */}
- <div className={`px-5 py-3.5 shrink-0 bg-gradient-to-r ${accentGradient} border-b border-slate-200 dark:border-white/5`}>
+ <div className={`px-5 py-3.5 shrink-0 ${accentGradient} border-b border-line `}>
  <div className="flex items-center gap-2.5">
  <span className="text-lg leading-none">{icon}</span>
  <div>
- <h3 className="text-base font-bold text-slate-900 dark:text-white leading-tight">{title}</h3>
- <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">{subtitle}</p>
+ <h3 className="text-base font-bold text-ink leading-tight">{title}</h3>
+ <p className="text-[11px] text-muted leading-tight">{subtitle}</p>
  </div>
  {!loading && (
- <span className="ml-auto text-xs text-slate-500 dark:text-slate-400 font-mono">
+ <span className="ml-auto text-xs text-muted font-mono">
  Top {items.length}
  </span>
  )}
@@ -167,9 +167,9 @@ function MoverCard({ title, subtitle, icon, items, type, accentGradient, borderC
  {!loading && items.length > 0 && (
  <div className="grid grid-cols-12 gap-2 mt-2.5 px-3">
  <div className="col-span-1"/>
- <div className="col-span-4 text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400">Saham</div>
- <div className="col-span-3 text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right">Vol / Nilai</div>
- <div className="col-span-4 text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right">Harga / ± / %</div>
+ <div className="col-span-4 text-[11px] uppercase tracking-wider text-muted ">Saham</div>
+ <div className="col-span-3 text-[11px] uppercase tracking-wider text-muted text-right">Vol / Nilai</div>
+ <div className="col-span-4 text-[11px] uppercase tracking-wider text-muted text-right">Harga / ± / %</div>
  </div>
  )}
  </div>
@@ -183,7 +183,7 @@ function MoverCard({ title, subtitle, icon, items, type, accentGradient, borderC
  <div key={i} className="grid grid-cols-12 items-center gap-2 py-2.5 px-3">
  <div className="col-span-1 skeleton h-3.5 w-5 rounded"/>
  <div className="col-span-4 flex items-center gap-2.5">
- <div className="skeleton w-8 h-8 rounded-lg shrink-0"/>
+ <div className="skeleton w-8 h-8 rounded-sm shrink-0"/>
  <div className="space-y-1.5 flex-1">
  <div className="skeleton h-3.5 w-12 rounded"/>
  <div className="skeleton h-2.5 w-20 rounded"/>
@@ -200,7 +200,7 @@ function MoverCard({ title, subtitle, icon, items, type, accentGradient, borderC
  </div>
  ))
  ) : items.length === 0 ? (
- <div className="py-10 text-center text-xs text-slate-500 dark:text-slate-400">
+ <div className="py-10 text-center text-xs text-muted ">
  Tidak ada data
  </div>
  ) : (
@@ -228,11 +228,11 @@ export default function MarketMovers({ data, loading }) {
  <section className="space-y-2">
  {/* Section Label */}
  <div className="flex items-center gap-2">
- <div className="w-1 h-4 rounded-full bg-gradient-to-b from-amber-400 to-orange-500 shrink-0"/>
- <h2 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+ <div className="w-1 h-4 rounded-full shrink-0"/>
+ <h2 className="text-sm font-bold text-muted uppercase tracking-wider">
  Market Movers Hari Ini
  </h2>
- <span className="text-[10px] text-slate-500 dark:text-slate-400">(data real-time dari BEI)</span>
+ <span className="text-[10px] text-muted ">(data real-time dari BEI)</span>
  </div>
 
  {/* 2-column grid */}
@@ -240,45 +240,45 @@ export default function MarketMovers({ data, loading }) {
  <MoverCard
  title="Top Trending"
  subtitle="Saham paling aktif diperdagangkan (volume lembar)"
- icon="🔥"
+ icon="↑"
  type="trending"
  items={data?.trending ?? []}
  loading={loading}
- accentGradient="from-amber-500/5 to-orange-500/5"
- borderColor="border-amber-500/15"
+ accentGradient=" "
+ borderColor="border-warn"
  onSelectStock={setSelectedOwnershipStock}
  />
  <MoverCard
  title="Top Gainer"
  subtitle="Kenaikan % harga tertinggi hari ini"
- icon="🚀"
+ icon="↑"
  type="gainers"
  items={data?.gainers ?? []}
  loading={loading}
- accentGradient="from-emerald-500/5 to-teal-500/5"
- borderColor="border-emerald-500/15"
+ accentGradient=" "
+ borderColor="border-up"
  onSelectStock={setSelectedOwnershipStock}
  />
  <MoverCard
  title="Top Loser"
  subtitle="Penurunan % harga terdalam hari ini"
- icon="📉"
+ icon="↘"
  type="losers"
  items={data?.losers ?? []}
  loading={loading}
- accentGradient="from-red-500/5 to-rose-500/5"
- borderColor="border-red-500/15"
+ accentGradient=" "
+ borderColor="border-down"
  onSelectStock={setSelectedOwnershipStock}
  />
  <MoverCard
  title="Unusual Volume"
  subtitle="Volume transaksi jauh di atas rata-rata 3 bulan"
- icon="⚡"
+ icon="»"
  type="unusual"
  items={data?.unusualVolume ?? []}
  loading={loading}
- accentGradient="from-cyan-500/5 to-blue-500/5"
- borderColor="border-cyan-500/15"
+ accentGradient=" "
+ borderColor="border-line"
  onSelectStock={setSelectedOwnershipStock}
  />
  </div>

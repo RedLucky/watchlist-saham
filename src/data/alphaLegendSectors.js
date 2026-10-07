@@ -6,7 +6,7 @@ export const ALPHA_LEGEND_SECTORS = [
     id: 'bank',
     part: 1,
     name: 'Bank',
-    icon: '🏦',
+    icon: '▥',
     category: 'Jasa Keuangan',
     metrics: [
       { name: 'NIM (Net Interest Margin)', desc: 'Persentase selisih pendapatan bunga dan beban bunga dibanding total aset produktif.' },
@@ -19,7 +19,7 @@ export const ALPHA_LEGEND_SECTORS = [
     id: 'ritel',
     part: 1,
     name: 'Ritel',
-    icon: '🛒',
+    icon: '▣',
     category: 'Konsumer',
     metrics: [
       { name: 'SSSG (Same-Store Sales Growth)', desc: 'Pertumbuhan penjualan di gerai yang sudah beroperasi lebih dari 1 tahun.' },
@@ -32,7 +32,7 @@ export const ALPHA_LEGEND_SECTORS = [
     id: 'tower',
     part: 1,
     name: 'Tower Provider',
-    icon: '📡',
+    icon: '◉',
     category: 'Infrastruktur',
     metrics: [
       { name: 'Tenancy Ratio', desc: 'Rasio rata-rata penyewa per satu menara telekomunikasi.' },
@@ -45,7 +45,7 @@ export const ALPHA_LEGEND_SECTORS = [
     id: 'rumah-sakit',
     part: 1,
     name: 'Rumah Sakit',
-    icon: '🏥',
+    icon: '+',
     category: 'Kesehatan',
     metrics: [
       { name: 'BOR (Bed Occupancy Ratio)', desc: 'Persentase tingkat keterisian tempat tidur rumah sakit.' },
@@ -58,7 +58,7 @@ export const ALPHA_LEGEND_SECTORS = [
     id: 'properti',
     part: 1,
     name: 'Properti',
-    icon: '🏢',
+    icon: '▥',
     category: 'Real Estate',
     metrics: [
       { name: 'Land Bank', desc: 'Luas cadangan lahan yang dimiliki untuk pengembangan di masa depan.' },
@@ -73,7 +73,7 @@ export const ALPHA_LEGEND_SECTORS = [
     id: 'shipping',
     part: 2,
     name: 'Shipping',
-    icon: '🚢',
+    icon: '⛴',
     category: 'Logistik & Transportasi',
     metrics: [
       { name: 'Freight Rate', desc: 'Tarif sewa kargo per kapal / per kontainer.' },
@@ -86,7 +86,7 @@ export const ALPHA_LEGEND_SECTORS = [
     id: 'coal-mining',
     part: 2,
     name: 'Coal Mining',
-    icon: '⛏️',
+    icon: '⚒',
     category: 'Energi & Tambang',
     metrics: [
       { name: 'Cash Cost', desc: 'Biaya tunai produksi pertambangan batu bara per ton.' },
@@ -99,7 +99,7 @@ export const ALPHA_LEGEND_SECTORS = [
     id: 'cpo',
     part: 2,
     name: 'CPO',
-    icon: '🌴',
+    icon: '✽',
     category: 'Pertanian & Perkebunan',
     metrics: [
       { name: 'FFB Yield', desc: 'Hasil produksi Tandan Buah Segar (TBS) per hektar.' },
@@ -112,7 +112,7 @@ export const ALPHA_LEGEND_SECTORS = [
     id: 'fmcg',
     part: 2,
     name: 'FMCG',
-    icon: '🥤',
+    icon: '◍',
     category: 'Barang Konsumen',
     metrics: [
       { name: 'GPM (Gross Profit Margin)', desc: 'Margin laba kotor terhadap penjualan.' },
@@ -125,7 +125,7 @@ export const ALPHA_LEGEND_SECTORS = [
     id: 'telco-provider',
     part: 2,
     name: 'Telco Provider',
-    icon: '📱',
+    icon: '▯',
     category: 'Telekomunikasi',
     metrics: [
       { name: 'ARPU (Avg. Revenue per User)', desc: 'Pendapatan rata-rata per pengguna aktif data/telepon.' },
@@ -140,7 +140,7 @@ export const ALPHA_LEGEND_SECTORS = [
     id: 'pulp-paper',
     part: 3,
     name: 'Pulp & Paper',
-    icon: '📄',
+    icon: '▤',
     category: 'Material Dasar',
     metrics: [
       { name: 'Utilization Rate', desc: 'Tingkat penggunaan kapasitas pabrik kertas/pulp.' },
@@ -153,7 +153,7 @@ export const ALPHA_LEGEND_SECTORS = [
     id: 'oil-gas',
     part: 3,
     name: 'Oil & Gas',
-    icon: '🛢️',
+    icon: '◉',
     category: 'Energi',
     metrics: [
       { name: 'Cash Cost', desc: 'Biaya ekstraksi per barel minyak/gas.' },
@@ -166,7 +166,7 @@ export const ALPHA_LEGEND_SECTORS = [
     id: 'konstruksi',
     part: 3,
     name: 'Konstruksi',
-    icon: '🏗️',
+    icon: '▥',
     category: 'Infrastruktur',
     metrics: [
       { name: 'Order Book', desc: 'Total kontrak baru dan kontrak berjalan yang dikantongi.' },
@@ -179,7 +179,7 @@ export const ALPHA_LEGEND_SECTORS = [
     id: 'poultry',
     part: 3,
     name: 'Poultry',
-    icon: '🐔',
+    icon: '◍',
     category: 'Peternakan',
     metrics: [
       { name: 'DOC Price', desc: 'Harga bibit ayam (Day Old Chick).' },
@@ -192,7 +192,7 @@ export const ALPHA_LEGEND_SECTORS = [
     id: 'utilities',
     part: 3,
     name: 'Utilities',
-    icon: '⚡',
+    icon: '»',
     category: 'Utilitas',
     metrics: [
       { name: 'Churn Rate', desc: 'Tingkat penurunan pelanggan fasilitas publik.' },
@@ -207,7 +207,7 @@ export const ALPHA_LEGEND_SECTORS = [
     id: 'perhotelan',
     part: 4,
     name: 'Perhotelan',
-    icon: '🏨',
+    icon: '▣',
     category: 'Pariwisata',
     metrics: [
       { name: 'Occupancy Rate', desc: 'Persentase kamar terisi per malam.' },
@@ -220,7 +220,7 @@ export const ALPHA_LEGEND_SECTORS = [
     id: 'jalan-tol',
     part: 4,
     name: 'Jalan Tol',
-    icon: '🛣️',
+    icon: '═',
     category: 'Infrastruktur',
     metrics: [
       { name: 'Jumlah Konsesi Jalan Tol (km)', desc: 'Total panjang ruas jalan tol yang dioperasikan.' },
@@ -233,7 +233,7 @@ export const ALPHA_LEGEND_SECTORS = [
     id: 'financing',
     part: 4,
     name: 'Financing',
-    icon: '💳',
+    icon: '▤',
     category: 'Jasa Keuangan',
     metrics: [
       { name: 'NPF (Non-Performing Financing)', desc: 'Rasio pembiayaan bermasalah/macet multifinance.' },
@@ -246,7 +246,7 @@ export const ALPHA_LEGEND_SECTORS = [
     id: 'media',
     part: 4,
     name: 'Media',
-    icon: '📺',
+    icon: '▣',
     category: 'Hiburan',
     metrics: [
       { name: 'Audience Share', desc: 'Pangsa pemirsa TV pada jam prime time.' },
@@ -259,7 +259,7 @@ export const ALPHA_LEGEND_SECTORS = [
     id: 'automotive-parts',
     part: 4,
     name: 'Automotive Parts',
-    icon: '⚙️',
+    icon: '≡',
     category: 'Otomotif',
     metrics: [
       { name: 'Jumlah Retailer', desc: 'Banyaknya jaringan bengkel dan outlet distribusi.' },
@@ -274,7 +274,7 @@ export const ALPHA_LEGEND_SECTORS = [
     id: 'farmasi',
     part: 5,
     name: 'Farmasi',
-    icon: '💊',
+    icon: '+',
     category: 'Kesehatan',
     metrics: [
       { name: 'GPM (Gross Profit Margin)', desc: 'Margin kotor obat resep vs OTC.' },
@@ -287,7 +287,7 @@ export const ALPHA_LEGEND_SECTORS = [
     id: 'bank-syariah',
     part: 5,
     name: 'Bank Syariah',
-    icon: '🕌',
+    icon: '◩',
     category: 'Jasa Keuangan',
     metrics: [
       { name: 'CASA Ratio', desc: 'Rasio dana murah wadiah/mudharabah.' },
@@ -300,7 +300,7 @@ export const ALPHA_LEGEND_SECTORS = [
     id: 'industrial-estate',
     part: 5,
     name: 'Industrial Estate',
-    icon: '🏭',
+    icon: '▥',
     category: 'Real Estate',
     metrics: [
       { name: 'Marketing Sales', desc: 'Penjualan lahan kawasan industri baru.' },
@@ -313,7 +313,7 @@ export const ALPHA_LEGEND_SECTORS = [
     id: 'ebt',
     part: 5,
     name: 'EBT / Clean Energy',
-    icon: '☀️',
+    icon: '☀',
     category: 'Energi Bersih',
     metrics: [
       { name: 'Installed Capacity', desc: 'Kapasitas terpasang pembangkit EBT (MW).' },
@@ -326,7 +326,7 @@ export const ALPHA_LEGEND_SECTORS = [
     id: 'restaurant',
     part: 5,
     name: 'Restaurant',
-    icon: '🍽️',
+    icon: '◍',
     category: 'Konsumer',
     metrics: [
       { name: 'SSSG (Same-Store Sales Growth)', desc: 'Pertumbuhan omzet resto yang lama beroperasi.' },
@@ -341,7 +341,7 @@ export const ALPHA_LEGEND_SECTORS = [
     id: 'semen',
     part: 6,
     name: 'Semen',
-    icon: '🏗️',
+    icon: '▥',
     category: 'Material Dasar',
     metrics: [
       { name: 'Production Capacity', desc: 'Total kapasitas produksi semen per tahun.' },
@@ -354,7 +354,7 @@ export const ALPHA_LEGEND_SECTORS = [
     id: 'nickel-mining',
     part: 6,
     name: 'Nickel Mining',
-    icon: '⛏️',
+    icon: '⚒',
     category: 'Energi & Tambang',
     metrics: [
       { name: 'Unit Cash Cost of Sales', desc: 'Biaya tunai penambangan nikel per ton.' },
@@ -367,7 +367,7 @@ export const ALPHA_LEGEND_SECTORS = [
     id: 'healthcare-lab',
     part: 6,
     name: 'Healthcare Diagnostic Lab',
-    icon: '🔬',
+    icon: '◉',
     category: 'Kesehatan',
     metrics: [
       { name: 'Number of Outlets', desc: 'Jumlah jaringan laboratorium klinik & cabang.' },
@@ -380,7 +380,7 @@ export const ALPHA_LEGEND_SECTORS = [
     id: 'car-rental',
     part: 6,
     name: 'Car Rental',
-    icon: '🚗',
+    icon: '▣',
     category: 'Jasa & Transportasi',
     metrics: [
       { name: 'Number of Fleet', desc: 'Total armada mobil sewaan beroperasi.' },
@@ -393,7 +393,7 @@ export const ALPHA_LEGEND_SECTORS = [
     id: 'shipping-port',
     part: 6,
     name: 'Shipping Port',
-    icon: '🏗️',
+    icon: '▥',
     category: 'Logistik',
     metrics: [
       { name: 'Capacity Utilization', desc: 'Persentase utilisasi kapasitas dermaga pelabuhan.' },
@@ -408,7 +408,7 @@ export const ALPHA_LEGEND_SECTORS = [
     id: 'taxi-services',
     part: 7,
     name: 'Taxi Services',
-    icon: '🚕',
+    icon: '▬',
     category: 'Transportasi',
     metrics: [
       { name: 'Avg. Revenue per Vehicle (ARPV)', desc: 'Pendapatan harian rata-rata per unit taksi.' },
@@ -421,7 +421,7 @@ export const ALPHA_LEGEND_SECTORS = [
     id: 'insurance',
     part: 7,
     name: 'Insurance',
-    icon: '🛡️',
+    icon: '◇',
     category: 'Jasa Keuangan',
     metrics: [
       { name: 'Premium Growth', desc: 'Pertumbuhan penerimaan premi asuransi.' },
@@ -434,7 +434,7 @@ export const ALPHA_LEGEND_SECTORS = [
     id: 'airlines',
     part: 7,
     name: 'Airlines',
-    icon: '✈️',
+    icon: '✈',
     category: 'Transportasi',
     metrics: [
       { name: 'Seat Load Factor (SLF)', desc: 'Persentase keterisian kursi penerbangan.' },
@@ -447,7 +447,7 @@ export const ALPHA_LEGEND_SECTORS = [
     id: 'courier-logistics',
     part: 7,
     name: 'Courier & Logistic Serv.',
-    icon: '📦',
+    icon: '⇢',
     category: 'Logistik',
     metrics: [
       { name: 'Shipment Volume', desc: 'Banyaknya paket pengiriman barang/ekspedisi.' },
@@ -460,7 +460,7 @@ export const ALPHA_LEGEND_SECTORS = [
     id: 'oil-gas-services',
     part: 7,
     name: 'Oil & Gas Mining Serv.',
-    icon: '🛢️',
+    icon: '◉',
     category: 'Jasa Tambang',
     metrics: [
       { name: 'Rig Utilization', desc: 'Tingkat penyewaan rig pengeboran aktif.' },

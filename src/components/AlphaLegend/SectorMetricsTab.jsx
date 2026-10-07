@@ -35,26 +35,25 @@ export default function SectorMetricsTab({ stocks = [] }) {
   return (
     <div className="space-y-6">
       {/* Top Header Card */}
-      <div className="p-6 rounded-3xl bg-gradient-to-br from-indigo-900 via-blue-900 to-slate-900 text-white shadow-xl relative overflow-hidden">
-        <div className="absolute right-0 top-0 opacity-10 w-96 h-96 bg-blue-500 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="relative z-10 space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-blue-300 text-xs font-bold backdrop-blur-md">
-            <span>📚 Cheat-sheet Alpha Legends</span>
+      <div className="card p-4 sm:p-6">
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sunken text-ink text-xs font-bold ">
+            <span>▤ Cheat-sheet Alpha Legends</span>
             <span>•</span>
             <span>35 Sektor BEI</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-black tracking-tight">Kompilasi Metrik Penting Per Sektor</h2>
-          <p className="text-sm text-white/80 max-w-2xl">
+          <p className="text-sm text-muted max-w-2xl">
             Pahami indikator kinerja keuangan khusus (Key Metrics) untuk 35 sektor industri BEI agar dapat menyaring saham berkinerja tinggi secara akurat.
           </p>
         </div>
       </div>
 
       {/* Search Bar & Title */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-white dark:bg-slate-900/60 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-surface p-4 rounded-md border border-line shadow-sm">
         <div>
-          <h3 className="text-sm font-black text-slate-900 dark:text-white">Pilih Sektor Industri ({filteredSectors.length})</h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Klik sektor untuk melihat metrik khusus & daftar sahamnya</p>
+          <h3 className="text-sm font-black text-ink ">Pilih Sektor Industri ({filteredSectors.length})</h3>
+          <p className="text-xs text-muted ">Klik sektor untuk melihat metrik khusus & daftar sahamnya</p>
         </div>
 
         {/* Search */}
@@ -64,9 +63,9 @@ export default function SectorMetricsTab({ stocks = [] }) {
             placeholder="Cari dari 35 sektor (mis: Bank, Ritel, Semen)..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-3.5 py-2 pl-9 rounded-xl bg-slate-100 dark:bg-slate-800/80 text-xs font-medium text-slate-800 dark:text-slate-200 border border-transparent focus:border-blue-500 focus:outline-none transition-all"
+            className="w-full px-3.5 py-2 pl-9 rounded-sm bg-sunken text-xs font-medium text-ink border border-transparent focus:border-accent focus:outline-none transition-all"
           />
-          <svg className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 text-muted absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </div>
@@ -80,18 +79,18 @@ export default function SectorMetricsTab({ stocks = [] }) {
             <button
               key={sec.id}
               onClick={() => setActiveSectorId(sec.id)}
-              className={`p-3 rounded-2xl border text-left transition-all flex flex-col justify-between space-y-2 group ${
-                isActive
-                  ? 'bg-gradient-to-b from-blue-600 to-indigo-600 text-white border-blue-500 shadow-md shadow-blue-500/20 font-bold scale-[1.02]'
-                  : 'bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-500 text-slate-700 dark:text-slate-300'
-              }`}
+              className={`p-3 rounded-md border text-left transition-all flex flex-col justify-between space-y-2 group ${
+ isActive
+ ? 'bg-accent border-accent text-on-accent font-bold'
+ : 'bg-surface border-line hover:border-line-strong text-ink'
+ }`}
             >
               <div className="flex items-center justify-between">
                 <span className="text-xl">{sec.icon}</span>
               </div>
               <div>
                 <h4 className="text-xs font-black leading-tight break-words">{sec.name}</h4>
-                <p className={`text-[9px] ${isActive ? 'text-blue-100' : 'text-slate-400'} break-words`}>{sec.category}</p>
+                <p className={`text-[9px] ${isActive ? 'text-ink' : 'text-muted'} break-words`}>{sec.category}</p>
               </div>
             </button>
           );
@@ -100,33 +99,33 @@ export default function SectorMetricsTab({ stocks = [] }) {
 
       {/* Detail Sektor Terpilih & Key Metrics */}
       {activeSector && (
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
-          <div className="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-4">
-            <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center text-2xl flex-shrink-0">
+        <div className="p-6 rounded-md bg-surface border border-line shadow-sm space-y-6">
+          <div className="flex items-center gap-3 border-b border-line pb-4">
+            <div className="w-12 h-12 rounded-md bg-sunken flex items-center justify-center text-2xl flex-shrink-0">
               {activeSector.icon}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-xl font-extrabold text-slate-900 dark:text-white break-words">{activeSector.name}</h3>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
+                <h3 className="text-xl font-extrabold text-ink break-words">{activeSector.name}</h3>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sunken text-ink ">
                   {activeSector.category}
                 </span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Metrik Penting Yang Perlu Diketahui Investor</p>
+              <p className="text-xs text-muted mt-0.5">Metrik Penting Yang Perlu Diketahui Investor</p>
             </div>
           </div>
 
           {/* 4 Cards Metrik Sektor */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {activeSector.metrics.map((m, idx) => (
-              <div key={idx} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/80 space-y-1.5">
+              <div key={idx} className="p-4 rounded-md bg-sunken border border-line space-y-1.5">
                 <div className="flex items-start gap-2">
-                  <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-[10px] font-black flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="w-5 h-5 rounded-full bg-accent text-on-accent text-[10px] font-black flex items-center justify-center flex-shrink-0 mt-0.5">
                     {idx + 1}
                   </span>
-                  <h5 className="text-xs font-black text-slate-900 dark:text-white break-words">{m.name}</h5>
+                  <h5 className="text-xs font-black text-ink break-words">{m.name}</h5>
                 </div>
-                <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">{m.desc}</p>
+                <p className="text-[11px] text-muted leading-relaxed">{m.desc}</p>
               </div>
             ))}
           </div>
@@ -134,74 +133,74 @@ export default function SectorMetricsTab({ stocks = [] }) {
           {/* Table Saham Terkait Sektor */}
           <div className="space-y-3 pt-2">
             <div className="flex items-center justify-between">
-              <h4 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+              <h4 className="text-sm font-black text-ink flex items-center gap-2">
                 <span>Daftar Saham Sektor {activeSector.name}</span>
-                <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs text-slate-600 dark:text-slate-400">
+                <span className="px-2 py-0.5 rounded-md bg-sunken text-xs text-muted ">
                   {matchingStocks.length} Saham
                 </span>
               </h4>
             </div>
 
-            <div className="overflow-x-auto overflow-y-auto max-h-[70vh] rounded-2xl border border-slate-200 dark:border-slate-800">
+            <div className="overflow-x-auto overflow-y-auto max-h-[70vh] rounded-md border border-line ">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-bold uppercase tracking-wider text-[10px] sticky top-0 z-20 shadow-xs border-b border-slate-200 dark:border-slate-800">
+                <thead className="bg-sunken text-ink font-bold uppercase tracking-wider text-[10px] sticky top-0 z-20 shadow-xs border-b border-line ">
                   <tr>
-                    <th className="p-3 bg-slate-100 dark:bg-slate-900">Kode / Saham</th>
-                    <th className="p-3 bg-slate-100 dark:bg-slate-900">Harga</th>
-                    <th className="p-3 bg-slate-100 dark:bg-slate-900">PER</th>
-                    <th className="p-3 bg-slate-100 dark:bg-slate-900">PBV</th>
-                    <th className="p-3 bg-slate-100 dark:bg-slate-900">ROE</th>
-                    <th className="p-3 bg-slate-100 dark:bg-slate-900">CAGR Laba</th>
-                    <th className="p-3 bg-slate-100 dark:bg-slate-900">DER</th>
-                    <th className="p-3 bg-slate-100 dark:bg-slate-900">Div Yield</th>
-                    <th className="p-3 bg-slate-100 dark:bg-slate-900">Smart Money</th>
-                    <th className="p-3 text-right bg-slate-100 dark:bg-slate-900">Status Evaluasi</th>
+                    <th className="p-3 bg-sunken ">Kode / Saham</th>
+                    <th className="p-3 bg-sunken ">Harga</th>
+                    <th className="p-3 bg-sunken ">PER</th>
+                    <th className="p-3 bg-sunken ">PBV</th>
+                    <th className="p-3 bg-sunken ">ROE</th>
+                    <th className="p-3 bg-sunken ">CAGR Laba</th>
+                    <th className="p-3 bg-sunken ">DER</th>
+                    <th className="p-3 bg-sunken ">Div Yield</th>
+                    <th className="p-3 bg-sunken ">Smart Money</th>
+                    <th className="p-3 text-right bg-sunken ">Status Evaluasi</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 font-medium">
+                <tbody className="divide-y divide-line font-medium">
                   {matchingStocks.length > 0 ? (
                     matchingStocks.map((stock, i) => {
                       const cagrVal = stock.cagr ?? stock.profitGrowth;
                       return (
                         <tr 
                           key={i}
-                          className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+                          className="hover:bg-sunken transition-colors"
                         >
                           <td className="p-3">
-                            <div className="font-extrabold text-slate-900 dark:text-white">{stock.symbol}</div>
-                            <div className="text-[10px] text-slate-500 line-clamp-2">{stock.name || stock.symbol}</div>
+                            <div className="font-extrabold text-ink ">{stock.symbol}</div>
+                            <div className="text-[10px] text-muted line-clamp-2">{stock.name || stock.symbol}</div>
                           </td>
-                          <td className="p-3 font-semibold text-slate-800 dark:text-slate-200">
+                          <td className="p-3 font-semibold text-ink ">
                             Rp {(stock.price || 0).toLocaleString('id-ID')}
                           </td>
                           <td className="p-3">{stock.per ? `${Number(stock.per).toFixed(1)}x` : '-'}</td>
                           <td className="p-3">{stock.pbv ? `${Number(stock.pbv).toFixed(1)}x` : '-'}</td>
-                          <td className="p-3 text-emerald-600 dark:text-emerald-400 font-bold">{stock.roe ? `${Number(stock.roe).toFixed(1)}%` : '-'}</td>
-                          <td className={`p-3 font-bold ${cagrVal >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                          <td className="p-3 text-up font-bold">{stock.roe ? `${Number(stock.roe).toFixed(1)}%` : '-'}</td>
+                          <td className={`p-3 font-bold ${cagrVal >= 0 ? 'text-up ' : 'text-down '}`}>
                             {cagrVal != null ? `${cagrVal >= 0 ? '+' : ''}${Number(cagrVal).toFixed(1)}%` : '-'}
                           </td>
                           <td className="p-3">{stock.der ? `${Number(stock.der).toFixed(1)}x` : '-'}</td>
-                          <td className="p-3 text-blue-600 dark:text-blue-400">{stock.divYield ? `${Number(stock.divYield).toFixed(1)}%` : '-'}</td>
+                          <td className="p-3 text-ink ">{stock.divYield ? `${Number(stock.divYield).toFixed(1)}%` : '-'}</td>
                           <td className="p-3">
                             {stock.smartMoney ? (
                               <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                                stock.smartMoney.badge === 'emerald' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800' :
-                                stock.smartMoney.badge === 'rose' ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400 border border-rose-200 dark:border-rose-800' :
-                                stock.smartMoney.badge === 'amber' ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800' :
-                                'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
-                              }`}>
-                                {stock.smartMoney.status.replace(/ [🟢🔴🟡⚪]/, '')}
+ stock.smartMoney.badge === 'emerald' ? 'bg-up-soft text-up border border-up ' :
+ stock.smartMoney.badge === 'rose' ? 'bg-down-soft text-down border border-down ' :
+ stock.smartMoney.badge === 'amber' ? 'bg-warn-soft text-warn border border-warn ' :
+ 'bg-sunken text-muted border border-line '
+ }`}>
+                                {stock.smartMoney.status.replace(/ [●●●○]/, '')}
                               </span>
                             ) : '-'}
                           </td>
                           <td className="p-3 text-right">
                             <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                              stock.growthStoryBadge === 'emerald'
-                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                                : stock.growthStoryBadge === 'amber'
-                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                                : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
-                            }`}>
+ stock.growthStoryBadge === 'emerald'
+ ? 'bg-up-soft text-up '
+ : stock.growthStoryBadge === 'amber'
+ ? 'bg-warn-soft text-warn '
+ : 'bg-sunken text-ink '
+ }`}>
                               {stock.growthStoryCategory || 'Potensial'}
                             </span>
                           </td>
@@ -210,7 +209,7 @@ export default function SectorMetricsTab({ stocks = [] }) {
                     })
                   ) : (
                     <tr>
-                      <td colSpan="10" className="p-8 text-center text-slate-400">
+                      <td colSpan="10" className="p-8 text-center text-muted">
                         Tidak ada data saham spesifik untuk sektor ini di database. Gunakan tombol sync untuk memperbarui.
                       </td>
                     </tr>

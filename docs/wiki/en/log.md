@@ -4,6 +4,11 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-10-07] feat | Market Movers, Screener & Alpha Legends Migrated to Bursa 1985
+- `MarketMovers`, `StockScreener`, `AiScreenerBar` and the 4 Alpha Legends components moved to theme tokens and Unicode symbols.
+- Icons in `src/data/alphaLegendSectors.js` (35 sectors) and the investor list replaced by text symbols, so sector chips follow the theme colour.
+- Fixed backgrounds of buttons and hero banners that lost their gradient (screener tabs, AI submit, Growth Story / Top Investors / Sector Metrics headers); removed the leftover blur glow in Sector Metrics.
+
 ## [2026-10-07] feat | Analysis Panels & Chart Migrated to Bursa 1985
 - 11 Stock Explorer panels and `DetailPanel` moved to theme tokens and Unicode symbols; FA header and BI "full report" button fixed after gradient removal.
 - `StockChart` colours now come from `src/lib/chartTheme.js`, which reads the CSS tokens: candles/volume use up/down; indicators use ink/muted/warn with line styles (MA50 dashed, Bollinger dotted, MACD signal dashed). Switching theme now also recolours series, not only the grid. Pattern markers and price-line titles no longer contain emoji. Pattern modal uses `.modal-*`.
