@@ -2155,101 +2155,121 @@ export default function StockExplorer({ user }) {
       {activeTab === 'explorer' && (
           <main className="w-full min-w-0 space-y-6 animate-in fade-in duration-300">
             {/* SEARCH BAR */}
-            <div className="bg-white dark:bg-slate-900/90 backdrop-blur border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm">
-              <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
-                <div className="flex items-center gap-3">
-                  {/* Back to the collection the stock was opened from */}
-                  {backToCollection && (
-                    <button
-                      onClick={() => setActiveTab('collections')}
-                      className="px-3 py-1.5 text-xs font-bold rounded-xl border transition-colors flex items-center gap-1.5 shrink-0 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                      title={`Kembali ke koleksi ${backToCollection.name}`}
-                    >
-                      <span aria-hidden="true">←</span>
-                      <span>Kembali ke Koleksi</span>
-                      <span className="hidden sm:inline max-w-[140px] truncate font-semibold opacity-80">
-                        · {backToCollection.emoji || '📁'} {backToCollection.name}
-                      </span>
-                    </button>
-                  )}
+            <div className="relative bg-white dark:bg-slate-900/90 backdrop-blur border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm">
+              {/* Thin accent line on top of the card */}
+              <div className="absolute inset-x-0 top-0 h-1 rounded-t-2xl bg-gradient-to-r from-indigo-500 via-sky-500 to-emerald-500" aria-hidden="true" />
 
-                  <div>
-                    <h3 className="font-black text-sm md:text-base text-slate-900 dark:text-white">
+              {/* Back to the collection the stock was opened from */}
+              {backToCollection && (
+                <button
+                  onClick={() => setActiveTab('collections')}
+                  className="mb-4 px-3 py-1.5 text-xs font-bold rounded-xl border transition-colors inline-flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                  title={`Kembali ke koleksi ${backToCollection.name}`}
+                >
+                  <span aria-hidden="true">←</span>
+                  <span>Kembali ke Koleksi</span>
+                  <span className="max-w-[160px] truncate font-semibold opacity-80">
+                    · {backToCollection.emoji || '📁'} {backToCollection.name}
+                  </span>
+                </button>
+              )}
+
+              <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-11 h-11 shrink-0 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/80 dark:border-indigo-800/60 flex items-center justify-center text-xl" aria-hidden="true">
+                    🔍
+                  </div>
+                  <div className="min-w-0">
+                    <h2 className="font-black text-base md:text-lg text-slate-900 dark:text-white">
                       Pencarian Saham IDX
-                    </h3>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">
-                      Cari kode ticker atau nama perusahaan (misal: BBCA, BBRI, ASII, ADRO, TLKM)
+                    </h2>
+                    <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400">
+                      Cari kode ticker atau nama perusahaan, misal BBCA, BBRI, ASII, ADRO, TLKM
                     </p>
                   </div>
                 </div>
 
-              {/* Autocomplete Search Input */}
-              <div className="relative w-full md:w-96">
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                    🔍
-                  </span>
-                  <input
-                    ref={searchInputRef}
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onFocus={() => {
-                      if (searchQuery.trim()) {
-                        const q = searchQuery.toUpperCase().trim();
-                        setSuggestions(allTickers.filter(s => (s.ticker && s.ticker.toUpperCase().includes(q)) || (s.name && s.name.toUpperCase().includes(q))).slice(0, 8));
-                      }
-                    }}
-                    placeholder="Ketik kode saham atau nama emiten..."
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                  {searchQuery && (
-                    <button
-                      onClick={() => { setSearchQuery(''); setSuggestions([]); }}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
+                {/* Autocomplete Search Input */}
+                <div className="relative w-full lg:w-[28rem]">
+                  <label htmlFor="idx-stock-search" className="sr-only">Cari saham IDX</label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400" aria-hidden="true">
+                      🔍
+                    </span>
+                    <input
+                      id="idx-stock-search"
+                      ref={searchInputRef}
+                      type="text"
+                      autoComplete="off"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onFocus={() => {
+                        if (searchQuery.trim()) {
+                          const q = searchQuery.toUpperCase().trim();
+                          setSuggestions(allTickers.filter(s => (s.ticker && s.ticker.toUpperCase().includes(q)) || (s.name && s.name.toUpperCase().includes(q))).slice(0, 8));
+                        }
+                      }}
+                      placeholder="Ketik kode saham atau nama emiten..."
+                      className="w-full pl-11 pr-11 py-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-base font-semibold text-slate-900 dark:text-white placeholder:font-normal placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow"
+                    />
+                    {searchQuery && (
+                      <button
+                        onClick={() => { setSearchQuery(''); setSuggestions([]); searchInputRef.current?.focus(); }}
+                        aria-label="Hapus pencarian"
+                        className="absolute inset-y-0 right-0 w-11 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-r-xl"
+                      >
+                        <span aria-hidden="true">✕</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Suggestions Dropdown */}
+                  {suggestions.length > 0 && (
+                    <div
+                      ref={searchDropdownRef}
+                      className="absolute z-50 left-0 right-0 mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl overflow-hidden"
                     >
-                      ✕
-                    </button>
+                      <p className="px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-700/60">
+                        {suggestions.length} hasil teratas
+                      </p>
+                      <div className="max-h-80 overflow-y-auto">
+                        {suggestions.map((s) => {
+                          const suggChange = getNominalChange(s.price, s.changePercent);
+                          const isSuggUp = (s.changePercent || 0) >= 0;
+                          return (
+                            <button
+                              key={s.ticker}
+                              onClick={() => handlePickSuggestion(s.ticker)}
+                              className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-indigo-50 dark:hover:bg-slate-700/60 focus:outline-none focus-visible:bg-indigo-50 dark:focus-visible:bg-slate-700/60 border-b border-slate-100 dark:border-slate-700/50 last:border-0 transition-colors"
+                            >
+                              <span className="w-14 shrink-0 text-center py-1 rounded-lg bg-slate-100 dark:bg-slate-900 text-xs font-black text-slate-900 dark:text-white">
+                                {s.ticker}
+                              </span>
+                              <span className="flex-1 min-w-0">
+                                <span className="block text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">{s.name}</span>
+                                {s.sector && (
+                                  <span className="block text-[10px] text-slate-500 dark:text-slate-400 truncate">{s.sector}</span>
+                                )}
+                              </span>
+                              <span className="text-right shrink-0 tabular-nums">
+                                <span className="block text-xs font-black text-slate-900 dark:text-slate-100">
+                                  Rp {s.price?.toLocaleString('id-ID') || '-'}
+                                </span>
+                                {s.changePercent != null && (
+                                  <span className={`block text-[10px] font-bold ${isSuggUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                    {isSuggUp ? '+' : ''}{suggChange.toLocaleString('id-ID')} ({isSuggUp ? '+' : ''}{Number(s.changePercent).toFixed(2)}%)
+                                  </span>
+                                )}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
                   )}
                 </div>
-
-                {/* Suggestions Dropdown */}
-                {suggestions.length > 0 && (
-                  <div
-                    ref={searchDropdownRef}
-                    className="absolute z-50 left-0 right-0 mt-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl overflow-hidden max-h-72 overflow-y-auto"
-                  >
-                    {suggestions.map((s) => {
-                      const suggChange = getNominalChange(s.price, s.changePercent);
-                      const isSuggUp = (s.changePercent || 0) >= 0;
-                      return (
-                        <button
-                          key={s.ticker}
-                          onClick={() => handlePickSuggestion(s.ticker)}
-                          className="w-full px-4 py-2.5 text-left flex items-center justify-between hover:bg-indigo-50 dark:hover:bg-slate-700/60 border-b border-slate-100 dark:border-slate-700/50 last:border-0 transition-colors"
-                        >
-                          <div>
-                            <span className="font-bold text-slate-900 dark:text-white mr-2">{s.ticker}</span>
-                            <span className="text-xs text-slate-600 dark:text-slate-400 line-clamp-1">{s.name}</span>
-                          </div>
-                          <div className="text-right flex-shrink-0 ml-2">
-                            <div className="text-xs font-black text-slate-900 dark:text-slate-100">
-                              Rp {s.price?.toLocaleString('id-ID') || '-'}
-                            </div>
-                            {s.changePercent != null && (
-                              <div className={`text-[10px] font-bold ${isSuggUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                                {isSuggUp ? '+' : ''}{suggChange.toLocaleString('id-ID')} ({isSuggUp ? '+' : ''}{Number(s.changePercent).toFixed(2)}%)
-                              </div>
-                            )}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
               </div>
             </div>
-          </div>
 
           {/* ── 3. STOCK DETAIL CONTAINER ─────────────────────────────────── */}
           <div ref={detailSectionRef}>
@@ -3202,6 +3222,20 @@ export default function StockExplorer({ user }) {
                 <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
                   Gunakan kolom pencarian di atas atau klik salah satu saham di tab Koleksi Saham untuk melihat chart interaktif, valuasi Graham, seasonality 5 tahun, dan smart money flow.
                 </p>
+                <div className="flex items-center justify-center gap-2 pt-1">
+                  <button
+                    onClick={() => searchInputRef.current?.focus()}
+                    className="px-4 py-2 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                  >
+                    Mulai Mencari
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('collections')}
+                    className="px-4 py-2 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                  >
+                    Buka Koleksi
+                  </button>
+                </div>
               </div>
             ) : null}
           </div>

@@ -34,7 +34,7 @@ version: "1.0.0"
    - **Pusat Kendali Strategi**: Tombol horison waktu (`Scalping`, `Daily`, `Swing`) + Pemilihan mode algoritma (`Otomatis`, `Seimbang`, `Pertumbuhan`, `Konservatif`, `Defensif`, `Custom`).
    - **Tabel Peringkat Saham**: Tabel pemindai saham dengan pencarian teks real-time, filter instan (`Skor ≥ 80`, `Sinyal BUY`, `R:R ≥ 2.0`), dan chip level beli/target di tampilan mobile.
 2. **Stock Explorer**: 
-   - **Workspace Master-Detail Dual-Pane (Opsi 1)**: Sidebar kiri yang dapat diciutkan (`w-80`/`w-96`) untuk koleksi saham pengguna dengan fitur pengurutan geser-dan-lepas (drag-and-drop), auto-sync 30 detik, lencana alarm target beli/jual, serta pemuatan instan emiten ke kanvas utama.
+   - **Tiga tab halaman** — `Koleksi Saham` (default), `Pencarian Saham IDX`, dan `Komparasi`. Halaman Koleksi berupa grid kartu full-width dengan statistik ringkasan, pengurutan geser-dan-lepas, dan auto-sync 30 detik; klik kartu membuka saham di tab Pencarian dengan tombol "kembali ke koleksi". Lihat [Halaman Stock Explorer](./stock-explorer.md).
    - **Grafik Interaktif & Metrik Kunci**: Grafik candlestick real-time, moving averages, dan 8 lencana valuasi (Graham, Nilai Wajar, Margin of Safety, CAGR, F-Score, Z-Score, Skor Komposit, Skor Dividen).
    - **Analytical Cockpit Category Tabs (Opsi 4)**: Dashboard analitis 4-kategori terpadu di bawah grafik:
      - `Valuasi & Finansial`: Valuasi Relatif Peers (RV), Pita Valuasi Historis (PBND), ROIC vs WACC & EVA, Scenario Forecaster.

@@ -9,6 +9,7 @@
 * [Ringkasan Sistem](./architecture/ringkasan-sistem.md) — Gambaran arsitektur teknologi (Next.js 16, Turbopack, Tailwind CSS, PostgreSQL, Prisma, Plus Jakarta Sans).
 * [Pipeline & Sinkronisasi Data](./architecture/pipeline-data.md) — Sinkronisasi harga kilat, deep sync fundamental, integrasi Yahoo Finance, dan antrean round-robin.
 * [Model & Skema Database](./architecture/model-database.md) — Definisi skema Prisma, serialisasi BigInt, integritas relasi, dan indexing.
+* [Halaman Stock Explorer](./architecture/stock-explorer.md) — Grid kartu Koleksi Saham, tab Pencarian Saham IDX dan Komparasi, helper kartu koleksi, serta alur klik-untuk-analisis.
 * [Autentikasi & Akses Admin](./architecture/autentikasi.md) — Cookie sesi JWT, aturan proxy API, admin API key, dan pengecekan role admin dari database (`verifyAdminAccess`).
 * [Mesin Riset AI Lokal & Antrean](./architecture/mesin-ai.md) — Inferensi mandiri GGUF (llama.cpp), optimasi thread CPU multi-core, pencarian berita, dan antrean pekerja asinkron.
 

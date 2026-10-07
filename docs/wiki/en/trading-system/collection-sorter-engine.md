@@ -9,7 +9,7 @@ The **Collection Sorter Engine** (`src/lib/collectionSorter.js`) provides automa
 * **Module**: `src/lib/collectionSorter.js`
 * **UI Trigger & Modal**: `src/components/CollectionSortDropdown.jsx`
 * **API Integration**: `GET /api/collections/items` (enriched with live technicals) & `PATCH /api/collections/items` (persists `orderedIds` to DB via Prisma transaction)
-* **Parent View**: `src/components/StockExplorer.jsx` (Left Sidebar Collection Workspace)
+* **Parent View**: `src/components/StockExplorer.jsx` (Koleksi Saham tab — collection card grid)
 
 ```
 [ Collection Items ] ──> [ CollectionSortDropdown ]

@@ -4,6 +4,14 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-10-07] feat | Stock Explorer Dipecah menjadi Tab Koleksi, Pencarian & Komparasi
+- Sidebar koleksi yang bisa diciutkan diganti tiga tab halaman: `Koleksi Saham` (default), `Pencarian Saham IDX`, `Komparasi`.
+- Halaman Koleksi didesain ulang: chip koleksi, toolbar, statistik ringkasan (jumlah, rata-rata perubahan, target beli/jual tercapai), dan grid kartu responsif dengan bar progres target serta tombol aksi yang selalu terlihat.
+- Klik kartu koleksi membuka saham di tab Pencarian (pemuatan detail sama seperti sebelumnya) dengan tombol "← Kembali ke Koleksi"; preload BBCA tidak lagi memindahkan tab.
+- Header Pencarian dipercantik: input lebih besar dengan label, baris saran lebih informatif (ticker, nama, sektor, harga), tombol aksi di empty state.
+- Helper murni baru `src/lib/collectionCardUtils.js` beserta unit test.
+- Halaman baru: [Halaman Stock Explorer](./architecture/stock-explorer.md); memperbarui Ringkasan Sistem dan Collection Sorter Engine.
+
 ## [2026-10-07] fix | 401 Admin saat Upload KSEI: Pengecekan Role Admin dari Database
 - Masalah: `POST /api/ksei/ingest` mengembalikan 401 untuk user yang role-nya di database sudah `ADMIN`, karena JWT yang ada tidak berisi `role`.
 - `verifyAdminAccess` (`src/lib/auth.js`) kini `async` dan membaca role user dari database, bukan dari JWT; perubahan role langsung berlaku dan token lama tidak lagi bermasalah. Menolak akses (fail closed) bila DB error.

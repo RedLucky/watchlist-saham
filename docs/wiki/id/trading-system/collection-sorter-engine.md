@@ -9,7 +9,7 @@
 * **Modul Engine**: `src/lib/collectionSorter.js`
 * **Komponen Menu & Modal**: `src/components/CollectionSortDropdown.jsx`
 * **Integrasi API**: `GET /api/collections/items` (dilengkapi data teknikal live) & `PATCH /api/collections/items` (menyimpan `orderedIds` ke database melalui transaksi Prisma)
-* **Tampilan Induk**: `src/components/StockExplorer.jsx` (Sidebar Kiri Koleksi Saham)
+* **Tampilan Induk**: `src/components/StockExplorer.jsx` (Tab Koleksi Saham — grid kartu koleksi)
 
 ```
 [ Item Koleksi ] ──> [ CollectionSortDropdown ]

@@ -35,7 +35,7 @@ version: "1.0.0"
    - **Strategy Control Center**: Unified trading horizon pill toggle (`Scalping`, `Daily`, `Swing`) + AI strategy mode selection (`Auto`, `Balanced`, `Growth`, `Conservative`, `Defensive`, `Custom`).
    - **Stock Table**: Master ranking table with real-time text search, instant filter chips (`Score ≥ 80`, `Supertrend BUY`, `R:R ≥ 2.0`), and mobile key trade levels chip row.
 2. **Stock Explorer**: 
-   - **Dual-Pane Master-Detail Workspace (Opsi 1)**: Collapsible left sidebar (`w-80`/`w-96`) for real-time stock collections with drag-and-drop reordering, 30s auto-sync, target buy/sell alert badges, and instant ticker loading into the main canvas.
+   - **Three page tabs** — `Koleksi Saham` (default), `Pencarian Saham IDX` and `Komparasi`. The Koleksi page is a full-width card grid with summary stats, drag-and-drop reordering and 30s auto-sync; clicking a card opens the stock in the Pencarian tab with a "back to collection" button. See [Stock Explorer Pages](./stock-explorer.md).
    - **Interactive Chart & Key Metrics**: Real-time candlestick charts, moving averages, 8-metric valuation badges (Graham, Fair Value, Margin of Safety, CAGR, F-Score, Z-Score, Composite Score, Dividend Score).
    - **Analytical Cockpit Category Tabs (Opsi 4)**: 4-category consolidated dashboard below the chart:
      - `Valuasi & Finansial`: Relative Valuation Peers (RV), Historical Valuation Bands (PBND), ROIC vs WACC & EVA, Scenario Forecaster.

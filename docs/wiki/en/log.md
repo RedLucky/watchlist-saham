@@ -4,6 +4,14 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-10-07] feat | Stock Explorer Split into Koleksi, Pencarian & Komparasi Tabs
+- Replaced the collapsible collection sidebar with three page tabs: `Koleksi Saham` (default), `Pencarian Saham IDX`, `Komparasi`.
+- Koleksi page redesigned: collection chips, toolbar, summary stats (count, average change, buy/sell targets hit) and a responsive card grid with target progress bar and always-visible actions.
+- Clicking a collection card opens the stock in Pencarian (same detail load as before) with a "← Kembali ke Koleksi" button; BBCA preload no longer switches tabs.
+- Pencarian header polished: larger search input with label, richer suggestion rows (ticker, name, sector, price), empty-state actions.
+- New pure helpers `src/lib/collectionCardUtils.js` with unit tests.
+- New page: [Stock Explorer Pages](./architecture/stock-explorer.md); updated System Overview and Collection Sorter Engine.
+
 ## [2026-10-07] fix | Admin 401 on KSEI Upload: Database-Backed Admin Role Check
 - Problem: `POST /api/ksei/ingest` returned 401 for users whose database role is `ADMIN`, because existing JWTs did not contain `role`.
 - `verifyAdminAccess` (`src/lib/auth.js`) is now `async` and reads the user's role from the database instead of trusting the JWT; role changes apply immediately and stale tokens no longer matter. Fails closed on DB errors.
