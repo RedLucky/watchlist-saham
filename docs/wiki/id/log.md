@@ -4,6 +4,15 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-10-07] fix | 401 Admin saat Upload KSEI: Pengecekan Role Admin dari Database
+- Masalah: `POST /api/ksei/ingest` mengembalikan 401 untuk user yang role-nya di database sudah `ADMIN`, karena JWT yang ada tidak berisi `role`.
+- `verifyAdminAccess` (`src/lib/auth.js`) kini `async` dan membaca role user dari database, bukan dari JWT; perubahan role langsung berlaku dan token lama tidak lagi bermasalah. Menolak akses (fail closed) bila DB error.
+- Helper baru `isAdminUser`: pencocokan `ADMIN_EMAIL` kini tidak peka huruf besar/kecil (sama seperti registrasi).
+- `src/proxy.js` meneruskan request `/api/ksei/ingest` yang membawa header admin key tanpa cookie sesi (`src/lib/adminKeyRequest.js`); route tetap memvalidasi key.
+- Pemanggil diperbarui ke `await`: `/api/ksei/ingest`, `/api/sync`, `/api/admin/add-ticker`. Test diperluas di `tests/security.test.js`.
+- Login/register kini juga menandatangani `role` ke JWT dan `/api/auth/me` mengembalikan `role`.
+- Halaman baru: [Autentikasi & Akses Admin](./architecture/autentikasi.md).
+
 ## [2026-09-25] feat | Peningkatan TradingView Pro: MA200, Bollinger Bands, RSI, MACD, Multi-Timeframe & Legenda Crosshair
 - Memutakhirkan komponen `src/components/StockChart.jsx` ke arsitektur TradingView Lightweight Charts Pro:
   - **Legenda HUD Mengambang Interaktif**: Langganan pergerakan kursor crosshair (`chart.subscribeCrosshairMove`) menyajikan informasi Open, High, Low, Close, % Perubahan, dan Volume secara real-time dengan kode warna responsif.

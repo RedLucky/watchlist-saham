@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { prisma } from './prisma.js';
 
 function getJwtSecret() {
   const secret = process.env.JWT_SECRET;
@@ -93,11 +94,24 @@ export function getUserIdFromRequest(request) {
 }
 
 /**
- * Verifies administrative authority via:
- * 1. API Key matching process.env.ADMIN_SECRET_KEY via 'x-admin-key' or 'Authorization: Bearer <KEY>'
- * 2. An authenticated user session
+ * Checks whether a request is allowed to use admin-only endpoints.
+ *
+ * Access is granted when either:
+ * 1. The request sends the admin API key (process.env.ADMIN_SECRET_KEY) via the
+ *    'x-admin-key' header or 'Authorization: Bearer <KEY>'.
+ * 2. The request has a valid 'auth_token' session cookie AND the user stored in the
+ *    database currently has role 'ADMIN' or the email in process.env.ADMIN_EMAIL.
+ *
+ * The role is read from the database instead of the JWT on purpose: tokens live for
+ * 30 days, so a role inside the token goes stale (older tokens have no role at all,
+ * and a role change in the database would not take effect until the next login).
+ *
+ * @param {Request} request - Incoming Next.js request (needs `headers.get` and `cookies.get`).
+ * @param {{ prisma?: { user: { findUnique: Function } } }} [deps] - Optional dependencies, used by unit tests to inject a mocked Prisma client.
+ * @returns {Promise<{ authorized: boolean, type?: 'API_KEY' | 'ADMIN_SESSION', userId?: number, error?: string }>}
  */
-export function verifyAdminAccess(request) {
+export async function verifyAdminAccess(request, deps = {}) {
+  const db = deps.prisma || prisma;
   const adminKey = process.env.ADMIN_SECRET_KEY;
   
   // 1. Check API Key header
@@ -114,15 +128,40 @@ export function verifyAdminAccess(request) {
     }
   }
 
-  // 2. Check logged-in user session with explicit ADMIN privileges
+  // 2. Check logged-in user session. The token only proves WHO the user is;
+  // whether they are an admin is looked up fresh from the database.
   const token = request.cookies?.get?.('auth_token')?.value;
-  if (token) {
-    const payload = verifyToken(token);
-    const adminEmail = process.env.ADMIN_EMAIL;
-    if (payload?.userId && (payload?.role === 'ADMIN' || (adminEmail && payload?.email === adminEmail))) {
-      return { authorized: true, userId: payload.userId, type: 'ADMIN_SESSION' };
+  const payload = token ? verifyToken(token) : null;
+  if (payload?.userId) {
+    try {
+      const user = await db.user.findUnique({
+        where: { id: payload.userId },
+        select: { id: true, email: true, role: true },
+      });
+      if (user && isAdminUser(user)) {
+        return { authorized: true, userId: user.id, type: 'ADMIN_SESSION' };
+      }
+    } catch (err) {
+      // Fail closed: if the database is unreachable we cannot confirm admin rights.
+      console.error('[verifyAdminAccess] Failed to load user role', { userId: payload.userId, error: err.message });
+      return { authorized: false, error: 'Unauthorized: Gagal memverifikasi akses Admin' };
     }
   }
 
-  return { authorized: false, error: 'Unauthorized: Kredensial administratif atau akun Admin diperlukan' };
+  return { authorized: false, error: 'Unauthorized: Login sebagai Admin atau sertakan Admin Key diperlukan' };
+}
+
+/**
+ * Decides whether a database user record counts as an admin.
+ * A user is an admin when their role is 'ADMIN', or when their email matches
+ * process.env.ADMIN_EMAIL (compared case-insensitively, same as registration).
+ *
+ * @param {{ email?: string, role?: string }} user - User record from the database.
+ * @returns {boolean} True when the user has admin rights.
+ */
+export function isAdminUser(user) {
+  if (user?.role === 'ADMIN') return true;
+  const adminEmail = process.env.ADMIN_EMAIL;
+  if (!adminEmail || !user?.email) return false;
+  return user.email.toLowerCase() === adminEmail.toLowerCase();
 }

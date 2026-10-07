@@ -40,7 +40,7 @@ export async function GET() {
 }
 
 export async function POST(request) {
-  const auth = verifyAdminAccess(request);
+  const auth = await verifyAdminAccess(request);
   if (!auth.authorized) {
     return NextResponse.json({ error: auth.error }, { status: 401 });
   }

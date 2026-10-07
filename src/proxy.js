@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { isAdminKeyRequest } from './lib/adminKeyRequest.js';
 
 // Web Crypto API HMAC SHA-256 verification (Edge runtime compatible)
 async function verifyJWTEdge(token, secret) {
@@ -61,6 +62,13 @@ async function verifyJWTEdge(token, secret) {
   }
 }
 
+/**
+ * Next.js proxy (formerly middleware): requires a valid session cookie for /api routes,
+ * except the public endpoints and admin-key requests listed below.
+ *
+ * @param {import('next/server').NextRequest} request - Incoming request.
+ * @returns {Promise<Response>} The next response or a 401/500 JSON error.
+ */
 export async function proxy(request) {
   const { pathname } = request.nextUrl;
 
@@ -85,6 +93,12 @@ export async function proxy(request) {
     pathname === '/api/pension/ai-generate' ||
     (pathname.startsWith('/api/ai/research') && request.method === 'GET')
   ) {
+    return NextResponse.next();
+  }
+
+  // Admin-key requests to KSEI ingest carry no session cookie. Let them through;
+  // the route itself validates the key with verifyAdminAccess (timing-safe compare).
+  if (isAdminKeyRequest(request)) {
     return NextResponse.next();
   }
 

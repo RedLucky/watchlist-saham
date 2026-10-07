@@ -48,22 +48,40 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Email sudah terdaftar. Silakan login.' }, { status: 400 });
     }
 
+    const existingUserCount = await prisma.user.count();
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const role = (existingUserCount === 0 || (adminEmail && email.toLowerCase() === adminEmail.toLowerCase()))
+      ? 'ADMIN'
+      : 'USER';
+
     const hashedPassword = hashPassword(password);
     const user = await prisma.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
+        role,
         riskProfile: riskProfile || 'MODERATE',
         hasAgreedTnc: true
       }
     });
 
-    const token = signToken({ userId: user.id, email: user.email, name: user.name });
+    const token = signToken({ 
+      userId: user.id, 
+      email: user.email, 
+      name: user.name, 
+      role: user.role 
+    });
 
     const response = NextResponse.json({
       success: true,
-      user: { id: user.id, name: user.name, email: user.email, riskProfile: user.riskProfile }
+      user: { 
+        id: user.id, 
+        name: user.name, 
+        email: user.email, 
+        role: user.role, 
+        riskProfile: user.riskProfile 
+      }
     });
 
     response.cookies.set('auth_token', token, {

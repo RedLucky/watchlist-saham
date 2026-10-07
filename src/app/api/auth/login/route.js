@@ -74,11 +74,22 @@ export async function POST(request) {
       data: updateData
     });
 
-    const token = signToken({ userId: user.id, email: user.email, name: user.name });
+    const token = signToken({ 
+      userId: user.id, 
+      email: user.email, 
+      name: user.name, 
+      role: user.role || 'USER' 
+    });
 
     const response = NextResponse.json({
       success: true,
-      user: { id: user.id, name: user.name, email: user.email, riskProfile: user.riskProfile }
+      user: { 
+        id: user.id, 
+        name: user.name, 
+        email: user.email, 
+        role: user.role || 'USER', 
+        riskProfile: user.riskProfile 
+      }
     });
 
     response.cookies.set('auth_token', token, {

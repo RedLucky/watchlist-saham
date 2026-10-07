@@ -5,7 +5,7 @@ import { normalizeTicker, getSectorByTicker, getSubSectorByTicker, isSyariahStoc
 
 export async function POST(request) {
   try {
-    const auth = verifyAdminAccess(request);
+    const auth = await verifyAdminAccess(request);
     if (!auth.authorized) {
       return NextResponse.json({ error: auth.error }, { status: 401 });
     }

@@ -4,6 +4,15 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-10-07] fix | Admin 401 on KSEI Upload: Database-Backed Admin Role Check
+- Problem: `POST /api/ksei/ingest` returned 401 for users whose database role is `ADMIN`, because existing JWTs did not contain `role`.
+- `verifyAdminAccess` (`src/lib/auth.js`) is now `async` and reads the user's role from the database instead of trusting the JWT; role changes apply immediately and stale tokens no longer matter. Fails closed on DB errors.
+- New `isAdminUser` helper: `ADMIN_EMAIL` match is now case-insensitive (same as registration).
+- `src/proxy.js` lets `/api/ksei/ingest` requests with an admin key header through without a session cookie (`src/lib/adminKeyRequest.js`); the route still validates the key.
+- Callers updated to `await`: `/api/ksei/ingest`, `/api/sync`, `/api/admin/add-ticker`. Tests extended in `tests/security.test.js`.
+- Login/register now also sign `role` into the JWT and `/api/auth/me` returns `role`.
+- New page: [Authentication & Admin Access](./architecture/authentication.md).
+
 ## [2026-09-25] feat | TradingView Pro Upgrades: MA200, Bollinger Bands, RSI, MACD, Multi-Timeframe & Crosshair Legend
 - Upgraded `src/components/StockChart.jsx` to TradingView Lightweight Charts Pro architecture:
   - **Live Floating OHLCV HUD Legend**: Crosshair movement listener (`chart.subscribeCrosshairMove`) delivering real-time Open, High, Low, Close, % Change, and Volume with responsive color-coding.
