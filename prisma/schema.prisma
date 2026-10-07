@@ -251,3 +251,30 @@ model ChatMessage {
   @@index([createdAt])
 }
 
+/// An IDX index we track (LQ45, IDX30, IDXValue30, HIDV20, ISSI).
+model IdxIndex {
+  code           String   @id // "LQ45"
+  name           String // "LQ45"
+  description    String? // short Indonesian explanation
+  effectiveFrom  DateTime? // when IDX published this membership
+  lastSyncedAt   DateTime @default(now())
+  memberCount    Int      @default(0)
+  source         String   @default("scrape") // "scrape" | "upload"
+
+  constituents  IdxConstituent[]
+
+  @@index([lastSyncedAt])
+}
+
+/// One stock inside an index.
+model IdxConstituent {
+  id       String @id @default(cuid())
+  indexCode String
+  index    IdxIndex @relation(fields: [indexCode], references: [code], onDelete: Cascade)
+  ticker   String
+  position Int? // rank inside the index when known
+
+  @@unique([indexCode, ticker])
+  @@index([ticker])
+}
+

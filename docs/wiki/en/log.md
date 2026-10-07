@@ -4,6 +4,14 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-10-07] feat | IDX Index Membership, the Indeks BEI Page & Compact Index Labels
+- New Prisma models `IdxIndex` and `IdxConstituent` plus migration `20261007120000_add_idx_indices`; two tables instead of JSON because the common question is "who is in LQ45?".
+- `src/scripts/sync-indices.js` scrapes the five tracked indices with Puppeteer, mirroring `sync-ksei.js`. A failed index logs a warning and keeps the previous membership, because an empty index looks authoritative while a stale one does not.
+- Manual fallback `POST /api/indices` (admin only) replaces membership from pasted text via `parseMembershipText()`, which fails loudly on bad lines instead of dropping them; the index is then marked `source = "upload"`.
+- New "Indeks BEI" navigation entry rendering `IndexDirectory.jsx`: one card per index with member count, freshness and stale marking, plus a member table enriched with price, change and score and a `tracked` flag for members missing from our database.
+- `IndexBadges.jsx` renders at most two chips plus a `+N` counter, with the full list in the tooltip, and fetches the ticker map once per browser session. Wired into Analisis Saham, Stock Explorer cards, both Stock Screener layouts, Portfolio positions, Market Movers and the index page itself.
+- `src/lib/idxIndices.js` (`TRACKED_INDICES`, `isStaleSync`, `buildMembershipMaps`, `parseMembershipText`) with 20 unit tests in `tests/idxIndices.test.js`.
+
 ## [2026-10-07] feat | Migration Complete: Theme Guard Covers All of src/ & CustomSliders Fix
 - `tests/designTokens.test.js` now walks all `.js`/`.jsx` under `src/` (skipping `src/scripts/`, which runs outside the browser) instead of a manual file list; 481 tests pass.
 - Last three files migrated: `CollectionSortDropdown`, `candlestickPatterns`, `scoring/smartMoney`; emoji in user-facing strings produced by engines and API routes replaced with symbols (label expectations in 3 tests updated).

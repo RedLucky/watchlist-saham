@@ -4,6 +4,14 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-10-07] feat | Keanggotaan Indeks IDX, Halaman Indeks BEI & Label Indeks Ringkas
+- Model Prisma baru `IdxIndex` dan `IdxConstituent` plus migrasi `20261007120000_add_idx_indices`; dua tabel, bukan JSON, karena pertanyaan yang paling sering adalah "siapa anggota LQ45?".
+- `src/scripts/sync-indices.js` mengambil lima indeks dengan Puppeteer, meniru `sync-ksei.js`. Indeks yang gagal hanya memberi peringatan dan mempertahankan keanggotaan lama, karena indeks kosong terlihat benar sedangkan indeks basi tidak.
+- Cadangan manual `POST /api/indices` (khusus admin) mengganti keanggotaan dari teks yang ditempel lewat `parseMembershipText()`, yang gagal keras pada baris bermasalah daripada membuangnya; indeks ditandai `source = "upload"`.
+- Menu baru "Indeks BEI" memakai `IndexDirectory.jsx`: satu kartu per indeks berisi jumlah anggota, kesegaran, dan tanda basi, ditambah tabel anggota lengkap dengan harga, perubahan, skor, dan penanda `tracked` untuk anggota yang tidak ada di database kita.
+- `IndexBadges.jsx` menampilkan maksimal dua chip ditambah `+N`, daftar lengkap ada di tooltip, dan peta ticker hanya diambil sekali per sesi browser. Terpasang di Analisis Saham, kartu Stock Explorer, dua tampilan Stock Screener, posisi Portofolio, Market Movers, dan halaman indeks itu sendiri.
+- `src/lib/idxIndices.js` (`TRACKED_INDICES`, `isStaleSync`, `buildMembershipMaps`, `parseMembershipText`) dengan 20 unit test di `tests/idxIndices.test.js`.
+
 ## [2026-10-07] feat | Migrasi Selesai: Test Penjaga Mencakup Seluruh src/ & Perbaikan CustomSliders
 - `tests/designTokens.test.js` kini menelusuri semua `.js`/`.jsx` di bawah `src/` (melewati `src/scripts/`, yang berjalan di luar browser), bukan daftar file manual; 481 test lulus.
 - Tiga file terakhir dimigrasi: `CollectionSortDropdown`, `candlestickPatterns`, `scoring/smartMoney`; emoji pada string yang ditampilkan ke pengguna dari engine dan API route diganti simbol (ekspektasi label di 3 test diperbarui).

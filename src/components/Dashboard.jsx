@@ -15,6 +15,7 @@ import PortfolioPanel from './PortfolioPanel';
 import BacktestPanel from './BacktestPanel';
 import MarketMovers from './MarketMovers';
 import StockScreener from './StockScreener';
+import IndexDirectory from './IndexDirectory';
 import AlphaLegendScreeners from './AlphaLegend/AlphaLegendScreeners';
 import PensionCalculator from './PensionCalculator';
 import KseiUploadPanel from './KseiUploadPanel';
@@ -285,6 +286,13 @@ export default function Dashboard() {
  {activeTab === 'screener' && (
  <div className="animate-in fade-in duration-300">
  <StockScreener />
+ </div>
+ )}
+
+ {/* TAB 3.25: INDEKS BEI */}
+ {activeTab === 'indices' && (
+ <div className="animate-in fade-in duration-300">
+ <IndexDirectory />
  </div>
  )}
 

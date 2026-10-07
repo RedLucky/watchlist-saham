@@ -10,10 +10,10 @@ import {
 } from '../src/lib/navigation.js';
 
 test('NAVIGATION_MENU', async (t) => {
-  await t.test('berisi 11 menu dengan id unik dan label pendek', () => {
+  await t.test('berisi 12 menu dengan id unik dan label pendek', () => {
     const items = flattenMenu();
-    assert.equal(items.length, 11);
-    assert.equal(new Set(items.map((i) => i.id)).size, 11);
+    assert.equal(items.length, 12);
+    assert.equal(new Set(items.map((i) => i.id)).size, 12);
     for (const item of items) {
       assert.ok(item.label && item.shortLabel && item.icon, `menu ${item.id} tidak lengkap`);
       assert.ok(item.shortLabel.length <= 10, `shortLabel ${item.shortLabel} terlalu panjang untuk bar mobile`);
@@ -31,14 +31,14 @@ test('splitMobileNav', async (t) => {
   await t.test('4 menu utama sesuai urutan + sisanya di "Lainnya"', () => {
     const { primary, more } = splitMobileNav();
     assert.deepEqual(primary.map((i) => i.id), MOBILE_PRIMARY_IDS);
-    assert.equal(more.length, 7);
+    assert.equal(more.length, 8);
     assert.ok(more.every((i) => !MOBILE_PRIMARY_IDS.includes(i.id)));
   });
 
   await t.test('id utama yang tidak dikenal diabaikan', () => {
     const { primary, more } = splitMobileNav(NAVIGATION_MENU, ['explorer', 'tidak-ada']);
     assert.deepEqual(primary.map((i) => i.id), ['explorer']);
-    assert.equal(more.length, 10);
+    assert.equal(more.length, 11);
   });
 });
 

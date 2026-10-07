@@ -16,6 +16,7 @@ export const NAVIGATION_MENU = [
       { id: 'explorer', label: 'Stock Explorer', shortLabel: 'Explorer', icon: '◎' },
       { id: 'movers', label: 'Market Movers', shortLabel: 'Movers', icon: '⇅' },
       { id: 'screener', label: 'Stock Screener', shortLabel: 'Screener', icon: '⌕' },
+      { id: 'indices', label: 'Indeks BEI', shortLabel: 'Indeks', icon: '⁂' },
       { id: 'alpha-legend', label: 'Alpha Legends Screener', shortLabel: 'Legends', icon: '♛\uFE0E' },
       { id: 'corporate-calendar', label: 'Kalender Aksi Korporasi', shortLabel: 'Kalender', icon: '▦' },
       { id: 'ai-chat', label: 'Konsultasi AI', shortLabel: 'Konsultasi', icon: '◈' },

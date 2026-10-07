@@ -1,16 +1,29 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { PageShell, PageHeader, SectionTitle } from './ui/PageShell';
 import { AutoGrid } from './ui/AutoGrid';
 import { StatCard } from './ui/StatCard';
 import { TechnicalSummary } from './ui/TechnicalSummary';
+import { IndexBadgeList } from './IndexBadges';
 
 export default function PortfolioPanel() {
   const [portfolioData, setPortfolioData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(null);
+  const [sortBy, setSortBy] = useState('value');
+  const [sortAsc, setSortAsc] = useState(false);
+
+  /** Toggles sort direction when the same column is clicked twice. */
+  const handleSort = (field) => {
+    if (sortBy === field) {
+      setSortAsc((prev) => !prev);
+    } else {
+      setSortBy(field);
+      setSortAsc(false);
+    }
+  };
 
   const fetchPortfolio = async () => {
     try {
@@ -35,6 +48,29 @@ export default function PortfolioPanel() {
 
   const formatCurrency = (val) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(val || 0);
 
+  const summary = portfolioData?.summary || {};
+  const positions = useMemo(() => portfolioData?.positions || [], [portfolioData]);
+  const riskAnalytics = portfolioData?.riskAnalytics;
+
+  // Each position gets its share of the portfolio so concentration is visible at a glance.
+  const positionsWithWeight = useMemo(() => {
+    const totalValue = summary.totalCurrentValue || 0;
+    return positions.map((pos) => ({
+      ...pos,
+      weight: totalValue > 0 ? (pos.currentValue / totalValue) * 100 : 0,
+    }));
+  }, [positions, summary.totalCurrentValue]);
+
+  const sortedPositions = useMemo(() => {
+    const sorted = [...positionsWithWeight];
+    const byNumber = (a, b) => Number(a[sortBy] || 0) - Number(b[sortBy] || 0);
+    sorted.sort((a, b) => {
+      if (sortBy === 'ticker') return sortAsc ? a.ticker.localeCompare(b.ticker) : b.ticker.localeCompare(a.ticker);
+      return byNumber(a, b);
+    });
+    return sortAsc ? sorted.reverse() : sorted;
+  }, [positionsWithWeight, sortBy, sortAsc]);
+
   const handleSellStock = (pos) => {
     setConfirmDialog({
       isOpen: true,
@@ -57,10 +93,6 @@ export default function PortfolioPanel() {
 
   if (loading) return <div className="p-10 text-center animate-pulse text-muted ">Memuat Portfolio...</div>;
   if (error) return <div className="text-down p-5">Terdapat error: {error}</div>;
-
-  const summary = portfolioData?.summary || {};
-  const positions = portfolioData?.positions || [];
-  const riskAnalytics = portfolioData?.riskAnalytics;
 
   return (
   <PageShell className="animate-fade-in">
@@ -232,37 +264,66 @@ export default function PortfolioPanel() {
       <div className="card overflow-hidden">
   <div className="scroll-area">
   {positions.length > 0 ? (
-  <table className="w-full text-left border-collapse">
+  <div className="scroll-area">
+  <table className="table-base">
   <thead>
-  <tr className="border-b border-line text-xs uppercase tracking-wider text-muted ">
-  <th className="p-4">Saham</th>
-  <th className="p-4 text-right">Jumlah Lembar</th>
-  <th className="p-4 text-right">Harga Rata-Rata</th>
-  <th className="p-4 text-right">Harga Saat Ini</th>
-  <th className="p-4 text-right">Total Nilai</th>
-  <th className="p-4 text-right">Floating PnL</th>
-  <th className="p-4 text-center">Aksi</th>
+  <tr>
+  <th>
+  <button type="button" className="hover:text-ink focus-ring" onClick={() => handleSort('ticker')}>Saham</button>
+  </th>
+  <th className="num">
+  <button type="button" className="hover:text-ink focus-ring" onClick={() => handleSort('shares')}>Lembar</button>
+  </th>
+  <th className="num">Harga Rata-Rata</th>
+  <th className="num">Harga Sekarang</th>
+  <th className="num">
+  <button type="button" className="hover:text-ink focus-ring" onClick={() => handleSort('value')}>Nilai</button>
+  </th>
+  <th className="num">
+  <button type="button" className="hover:text-ink focus-ring" onClick={() => handleSort('weight')}>Alokasi</button>
+  </th>
+  <th className="num">
+  <button type="button" className="hover:text-ink focus-ring" onClick={() => handleSort('pnl')}>Floating PnL</button>
+  </th>
+  <th>Indeks</th>
+  <th className="text-right">Aksi</th>
   </tr>
   </thead>
-  <tbody className="divide-y divide-line ">
-  {positions.map((pos) => (
-  <tr key={pos.ticker} className="hover:bg-black/[0.02] ">
-  <td className="p-4">
-  <div className="font-bold text-ink ">{pos.ticker}</div>
-  <div className="text-xs text-muted">{pos.name}</div>
+  <tbody>
+  {sortedPositions.map((pos) => (
+  <tr key={pos.ticker}>
+  <td>
+  <div className="font-semibold text-ink">{pos.ticker}</div>
+  <div className="text-xs text-muted truncate max-w-[220px]">{pos.name}</div>
   </td>
-  <td className="p-4 text-right text-sm text-ink ">{pos.totalShares.toLocaleString('id-ID')}</td>
-  <td className="p-4 text-right text-sm text-ink ">{formatCurrency(pos.avgPrice)}</td>
-  <td className="p-4 text-right text-sm font-medium text-ink ">{formatCurrency(pos.currentPrice)}</td>
-  <td className="p-4 text-right text-sm text-muted ">{formatCurrency(pos.currentValue)}</td>
-  <td className={`p-4 text-right text-sm font-bold ${pos.floatingPnL >= 0 ? 'text-up' : 'text-down'}`}>
+  <td className="num">{pos.totalShares.toLocaleString('id-ID')}</td>
+  <td className="num">{formatCurrency(pos.avgPrice)}</td>
+  <td className="num font-semibold">{formatCurrency(pos.currentPrice)}</td>
+  <td className="num">{formatCurrency(pos.currentValue)}</td>
+  <td className="num">
+  <div>{pos.weight.toFixed(1)}%</div>
+  <div className="mt-1 h-1 w-full max-w-[70px] ml-auto rounded-sm bg-sunken overflow-hidden">
+  <div
+  className={`h-full ${pos.weight > 25 ? 'bg-warn' : 'bg-ink'}`}
+  style={{ width: `${Math.min(100, pos.weight * 2.5)}%` }}
+  role="img"
+  aria-label={`Alokasi ${pos.weight.toFixed(1)} persen`}
+  />
+  </div>
+  </td>
+  <td className={`num font-semibold ${pos.floatingPnL >= 0 ? 'text-up' : 'text-down'}`}>
   <div>{formatCurrency(pos.floatingPnL)}</div>
-  <div className="text-xs font-normal opacity-80">{pos.floatingPnLPercent.toFixed(2)}%</div>
+  <div className="text-xs">{pos.floatingPnLPercent.toFixed(2)}%</div>
   </td>
-  <td className="p-4 text-center">
-  <button 
+  <td>
+  <IndexBadgeList tickers={[pos.ticker]} />
+  </td>
+  <td className="text-right">
+  <button
+  type="button"
   onClick={() => handleSellStock(pos)}
-  className="px-3 py-1.5 bg-down-soft hover:bg-down-soft border border-down text-down rounded-sm text-xs font-bold transition-all"
+  aria-label={`Jual ${pos.ticker}`}
+  className="btn-secondary !min-h-8 !px-2.5 text-down"
   >
   Jual
   </button>
@@ -271,9 +332,13 @@ export default function PortfolioPanel() {
   ))}
   </tbody>
   </table>
+  </div>
   ) : (
-  <div className="p-8 text-center text-muted ">
-  Anda belum memiliki portofolio. Cari saham yang bagus dari hasil Analisis dan tambahkan ke Portofolio Anda.
+  <div className="p-10 text-center">
+  <h3 className="section-title">Portofolio masih kosong</h3>
+  <p className="section-subtitle mt-1">
+  Cari saham di halaman Analisis, lalu simpan ke portofolio untuk melacak alokasi dan profit.
+  </p>
   </div>
   )}
   </div>

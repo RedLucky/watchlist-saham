@@ -12,6 +12,7 @@
 * [Design System (Bursa 1985)](./architecture/design-system.md) — Token warna, tipografi IBM Plex, dan class standar untuk judul, tombol, form, badge, alert, tab, modal, dan tabel.
 * [Kerangka Aplikasi & Navigasi](./architecture/app-shell-navigation.md) — Sidebar desktop (bisa diciutkan), header mobile, bar bawah ramping dengan lembar "Lainnya", footer, dan konfigurasi menu bersama.
 * [Halaman Stock Explorer](./architecture/stock-explorer.md) — Grid kartu Koleksi Saham, tab Pencarian Saham IDX dan Komparasi, helper kartu koleksi, serta alur klik-untuk-analisis.
+* [Keanggotaan Indeks IDX](./architecture/idx-indices.md) — Lima indeks BEI yang dilacak, cara anggota diambil dari IDX dengan cadangan unggah manual, dan label indeks ringkas di setiap saham.
 * [Autentikasi & Akses Admin](./architecture/autentikasi.md) — Cookie sesi JWT, aturan proxy API, admin API key, dan pengecekan role admin dari database (`verifyAdminAccess`).
 * [Mesin Riset AI Lokal & Antrean](./architecture/mesin-ai.md) — Inferensi mandiri GGUF (llama.cpp), optimasi thread CPU multi-core, pencarian berita, dan antrean pekerja asinkron.
 

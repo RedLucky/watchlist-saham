@@ -28,6 +28,7 @@ import {
   summarizeCollection,
 } from '@/lib/collectionCardUtils';
 import { PageShell, PageHeader, PageToolbar } from './ui/PageShell';
+import { IndexBadgeList } from './IndexBadges';
 
 /** Tailwind classes for each score band returned by getScoreTone (collection cards). */
 const SCORE_TONE_CLASSES = {
@@ -2024,6 +2025,7 @@ export default function StockExplorer({ user }) {
                                 {score}
                               </span>
                             )}
+                            <IndexBadgeList tickers={[item.ticker]} max={1} />
                           </div>
                           <span
                             className={`shrink-0 text-[11px] font-bold px-1.5 py-0.5 rounded tabular-nums ${

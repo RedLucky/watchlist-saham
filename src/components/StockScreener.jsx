@@ -6,6 +6,7 @@ import StockOwnershipModal from './StockOwnershipModal';
 import AiScreenerBar from './AiScreenerBar';
 import { PageShell, PageHeader, PageToolbar, SectionTitle } from './ui/PageShell';
 import { AutoGrid } from './ui/AutoGrid';
+import { IndexBadgeList } from './IndexBadges';
 import { StatCard } from './ui/StatCard';
 
 export default function StockScreener() {
@@ -1174,6 +1175,7 @@ export default function StockScreener() {
                           <span className="font-black text-base text-ink tracking-wide">
                             {item.ticker}
                           </span>
+                          <IndexBadgeList tickers={[item.ticker]} max={1} />
                           {item.isSyariah && (
                             <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-up-soft text-up border border-up font-black">
                               ☾ Syariah
@@ -1340,6 +1342,7 @@ export default function StockScreener() {
                                 <span className="font-black text-sm text-ink tracking-wide">
                                   {item.ticker}
                                 </span>
+                                <IndexBadgeList tickers={[item.ticker]} max={1} />
                                 {item.isSyariah && (
                                   <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-up-soft text-up border border-up font-black">
                                     ☾ Syariah

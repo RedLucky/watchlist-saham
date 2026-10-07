@@ -12,6 +12,7 @@
 * [Design System (Bursa 1985)](./architecture/design-system.md) — Colour tokens, IBM Plex typography, and standard classes for headings, buttons, forms, badges, alerts, tabs, modals and tables.
 * [App Shell & Navigation](./architecture/app-shell-navigation.md) — Desktop sidebar (collapsible), mobile header, slim bottom bar with "Lainnya" sheet, footer, and the shared menu config.
 * [Stock Explorer Pages](./architecture/stock-explorer.md) — Koleksi Saham card grid, Pencarian Saham IDX and Komparasi tabs, collection card helpers, and the click-to-analyse flow.
+* [IDX Index Membership](./architecture/idx-indices.md) — The five tracked BEI indices, how membership is scraped from IDX with a manual upload fallback, and the compact index labels shown on every stock.
 * [Authentication & Admin Access](./architecture/authentication.md) — JWT session cookie, API proxy rules, admin API key, and database-backed admin role check (`verifyAdminAccess`).
 * [Local AI Engine & Queue](./architecture/ai-engine.md) — Self-hosted GGUF inference (llama.cpp), multi-core CPU tuning, live news aggregation, and async queue worker.
 

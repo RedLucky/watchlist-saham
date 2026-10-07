@@ -4,6 +4,7 @@ import { useState } from 'react';
 import StockOwnershipModal from './StockOwnershipModal';
 import { PageShell, PageHeader } from './ui/PageShell';
 import { AutoGrid } from './ui/AutoGrid';
+import { IndexBadgeList } from './IndexBadges';
 
 // ── Formatting Helpers ────────────────────────────────────────────────────────
 
@@ -98,6 +99,7 @@ function MoverRow({ item, type, index, onSelectStock }) {
         <div className="min-w-0">
           <div className="text-[15px] font-semibold text-ink leading-tight truncate">{item.ticker}</div>
           <div className="text-xs text-muted leading-tight truncate">{item.name}</div>
+          <IndexBadgeList tickers={[item.ticker]} max={1} />
         </div>
       </div>
 

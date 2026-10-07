@@ -7,6 +7,7 @@ import Tooltip from './Tooltip';
 import StockOwnershipModal from './StockOwnershipModal';
 import { getSignalBadgeClass, getRiskTone, getChangeTone } from '@/lib/uiTones';
 import { PageToolbar } from './ui/PageShell';
+import { IndexBadgeList } from './IndexBadges';
 
 /** Desktop column template shared by the header and every row so they stay aligned.
  *  #  saham | harga | % chg | skor | ST+DEMA | area beli | target | cut loss | risiko | sektor  */
@@ -287,6 +288,7 @@ export default function StockTable({ stocks, loading, mode, style }) {
                     >
                       Kepemilikan
                     </button>
+                    <IndexBadgeList tickers={[stock.ticker]} max={1} />
                   </div>
                   <p className="text-xs text-muted truncate max-w-[220px]">{stock.name}</p>
                   {/* Phone-only meta */}
