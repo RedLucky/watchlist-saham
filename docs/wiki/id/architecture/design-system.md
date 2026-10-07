@@ -69,13 +69,31 @@ Agar "beli" atau "risiko tinggi" tampil sama di setiap halaman:
 
 Daftar data yang lebar (mis. `StockTable`) tampil sebagai grid kolom mulai `md` (768px) dan satu kartu per baris di bawahnya, dengan angka kunci dalam strip kecil 3 kolom. Baris yang bisa dibuka adalah `role="button"` dengan `aria-expanded` dan bisa dipakai dengan Enter/Space.
 
-## 6. Test penjaga
+## 6. Kerangka halaman (`src/components/ui/`)
+
+Semua halaman utama dirender lewat kerangka yang sama, sehingga judul, gutter, dan ritme bagian selalu seragam:
+
+| Komponen | Fungsi |
+| :--- | :--- |
+| `PageShell` | Pembungkus halaman: lebar penuh tanpa batas atas, ritme vertikal seragam. **Tidak** menambah padding — `<main>` di `Dashboard` yang memiliki gutter |
+| `PageHeader` | Judul serif dengan garis koran, subjudul, lencana dan tombol aksi opsional |
+| `PageToolbar` | Bar kontrol lengket (pencarian, filter, sakelar tampilan). Memakai margin negatif yang mencerminkan gutter `<main>` sehingga melebar penuh |
+| `SectionTitle` | Judul blok + catatan rata kanan |
+| `StatCard` / `StatGrid` | Kartu angka ringkas; grid menambah kolom seiring layar melebar |
+| `AutoGrid` | Grid apa pun yang jumlah kolomnya mengikuti lebar layar (dipakai untuk kartu Market Movers) |
+| `TechnicalSummary` | Accordion tertutup secara default untuk detail sekunder ("Ringkasan Teknis") |
+
+Aturan: `<main>` di `Dashboard` memiliki `px-3 sm:px-5 lg:px-6` dan **tanpa** max-width; `PageToolbar` mencerminkan gutter itu dengan `-mx-3 sm:-mx-5 lg:-mx-6`. Tabel panjang menyimpan pencarian dan filter di dalam `PageToolbar`.
+
+## 7. Test penjaga
 
 * `tests/themeTokens.test.js` — kedua tema mendefinisikan token yang sama; warna teks mencapai WCAG AA (4.5:1).
-* `tests/designTokens.test.js` — **semua file `.js`/`.jsx` di bawah `src/`** (kecuali `src/scripts/`, yang berjalan di luar browser) tidak boleh berisi warna palet, gradien, blur kaca, radius besar, warna hex hard-coded, atau emoji berwarna. Tidak ada daftar yang perlu diisi: test menelusuri seluruh folder.
-* `tests/componentProps.test.js` — memastikan prop yang dikirim `Dashboard` ke anak-anaknya benar-benar dibaca anak tersebut, sehingga salah ketik tidak bisa diam-diam mematikan fitur.
+* `tests/designTokens.test.js` — setiap file `.js`/`.jsx` di bawah `src/` (kecuali `src/scripts/`) tidak boleh berisi warna palet, gradien, blur kaca, radius besar, warna hex hard-coded, atau emoji berwarna.
+* `tests/uiShell.test.js` — komponen kerangka menjaga kontraknya (lebar penuh, grid `auto-fill`, toolbar lengket).
+* `tests/pageLayout.test.js` — tiap halaman utama memakai `PageShell` + `PageHeader`; halaman tabel memakai `PageToolbar`; `Dashboard` tanpa max-width dan dengan gutter yang sesuai.
+* `tests/componentProps.test.js` — prop yang dikirim `Dashboard` benar-benar dibaca oleh anaknya.
 
-## 7. Status migrasi
+## 8. Status migrasi
 
 Selesai: semua file UI di bawah `src/` memakai token. Pengecualian yang tersisa:
 

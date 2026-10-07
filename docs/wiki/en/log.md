@@ -10,6 +10,12 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 - Removed the legacy light-mode `!important` overrides from `globals.css`.
 - **Bug fix:** `Dashboard` passed `onWeightsChange`/`initialStyle` to `CustomSliders`, which reads `onApply` — clicking "Terapkan Analisis" threw. Fixed, plus new `tests/componentProps.test.js` prevents the same class of typo.
 
+## [2026-10-07] feat | Layout Migration Complete: Every Page Uses the Shared Shell
+- Corporate Calendar, Alpha Legends, Pension Tracker and Stock Explorer now render through `PageShell`/`PageHeader`; Alpha Legends sub-tabs and the Explorer page tabs moved to standard `.tabs` inside a `PageToolbar`.
+- Pension Tracker canvases fill their card (900px wide) instead of being capped at 450px.
+- New `tests/pageLayout.test.js`: every main page uses the shell, table pages use a sticky toolbar, and `Dashboard` keeps unrestricted width with matching gutters.
+- Design system wiki documents the page shell.
+
 ## [2026-10-07] feat | KSEI Upload & Ownership Migrated to Bursa 1985
 - `KseiUploadPanel`, `/admin/ksei` and `StockOwnershipModal` moved to theme tokens and Unicode symbols (flag emoji replaced with symbols).
 - The admin page was a dark-on-dark design; it is now a normal themed page (paper background, surface panels, sunken table head) so panels are distinguishable in both themes.

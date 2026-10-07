@@ -10,6 +10,12 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 - Override `!important` mode terang yang lama dihapus dari `globals.css`.
 - **Perbaikan bug:** `Dashboard` mengirim `onWeightsChange`/`initialStyle` ke `CustomSliders`, padahal komponen itu membaca `onApply` — klik "Terapkan Analisis" menghasilkan error. Diperbaiki, ditambah `tests/componentProps.test.js` agar salah ketik sejenis tidak terulang.
 
+## [2026-10-07] feat | Migrasi Layout Selesai: Semua Halaman Pakai Kerangka Bersama
+- Kalender Korporasi, Alpha Legends, Pensiun Tracker, dan Stock Explorer kini dirender lewat `PageShell`/`PageHeader`; sub-tab Alpha Legends dan tab halaman Explorer dipindah ke `.tabs` standar di dalam `PageToolbar`.
+- Canvas Pensiun Tracker kini memenuhi lebar kartu (900px) dan tidak lagi dibatasi 450px.
+- Test baru `tests/pageLayout.test.js`: setiap halaman utama memakai kerangka, halaman tabel memakai toolbar lengket, dan `Dashboard` menjaga lebar tanpa batas dengan gutter yang cocok.
+- Halaman design system di wiki mendokumentasikan kerangka halaman.
+
 ## [2026-10-07] feat | Migrasi Upload KSEI & Kepemilikan ke Bursa 1985
 - `KseiUploadPanel`, `/admin/ksei`, dan `StockOwnershipModal` dipindah ke token tema dan simbol Unicode (emoji bendera diganti simbol).
 - Halaman admin semula didesain gelap di atas gelap; kini menjadi halaman bertema normal (latar kertas, panel surface, header tabel sunken) sehingga panel dapat dibedakan di kedua tema.

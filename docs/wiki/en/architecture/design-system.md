@@ -69,13 +69,31 @@ So that "buy" or "high risk" looks the same on every page:
 
 Wide data lists (e.g. `StockTable`) show a column grid from `md` (768px) and one card per row below it, with the key numbers in a small 3-column strip. Rows that expand are `role="button"` with `aria-expanded` and work with Enter/Space.
 
-## 6. Guard tests
+## 6. Page shell (`src/components/ui/`)
+
+Every main page renders through the same shell, so titles, gutters and section rhythm match:
+
+| Component | Purpose |
+| :--- | :--- |
+| `PageShell` | Page wrapper: full width, no max-width cap, consistent vertical rhythm. Adds **no** padding — `<main>` in `Dashboard` owns the gutters |
+| `PageHeader` | Serif title over a double rule, subtitle, optional badge and actions |
+| `PageToolbar` | Sticky control bar (search, filters, view switch). Uses negative margins that mirror the `<main>` gutters, so it spans edge to edge |
+| `SectionTitle` | Heading for a block plus a right-aligned note |
+| `StatCard` / `StatGrid` | Compact figure card; the grid adds columns as the viewport grows |
+| `AutoGrid` | Any grid whose column count follows the viewport (used for the Market Movers cards) |
+| `TechnicalSummary` | Collapsed-by-default accordion for secondary detail ("Ringkasan Teknis") |
+
+Rules: `<main>` in `Dashboard` owns `px-3 sm:px-5 lg:px-6` and **no** max-width; `PageToolbar` mirrors those gutters with `-mx-3 sm:-mx-5 lg:-mx-6`. Long tables keep search and filters in a `PageToolbar`.
+
+## 7. Guard tests
 
 * `tests/themeTokens.test.js` — both themes define the same tokens; text colours reach WCAG AA (4.5:1).
-* `tests/designTokens.test.js` — **every `.js`/`.jsx` file under `src/`** (except `src/scripts/`, which runs outside the browser) must contain no palette colours, gradients, glass blur, large radius, hard-coded hex colours or colour emoji. Add nothing to a list: the test walks the tree.
-* `tests/componentProps.test.js` — checks that the props `Dashboard` passes to its children are props those children actually read, so a typo cannot silently disable a feature.
+* `tests/designTokens.test.js` — every `.js`/`.jsx` file under `src/` (except `src/scripts/`, which runs outside the browser) contains no palette colours, gradients, glass blur, large radius, hard-coded hex colours or colour emoji.
+* `tests/uiShell.test.js` — the shell components keep their contract (full width, `auto-fill` grids, sticky toolbar offset).
+* `tests/pageLayout.test.js` — each main page uses `PageShell` + `PageHeader`; table pages use `PageToolbar`; `Dashboard` has no max-width and the expected gutters.
+* `tests/componentProps.test.js` — the props `Dashboard` passes are props its children actually read.
 
-## 7. Migration status
+## 8. Migration status
 
 Complete: all UI files under `src/` use the tokens. Remaining exceptions:
 
