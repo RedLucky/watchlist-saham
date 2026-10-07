@@ -597,8 +597,9 @@ function renderAiMarkdown(content) {
 
 export default function StockExplorer({ user }) {
   // Navigation View State
-  const [activeTab, setActiveTab] = useState('explorer'); // 'explorer' | 'compare'
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [activeTab, setActiveTab] = useState('collections'); // 'collections' | 'explorer' | 'compare'
+  // Collection the user came from when opening a stock via the Koleksi tab (shows a "back" button), or null.
+  const [backToCollection, setBackToCollection] = useState(null);
   const [cockpitTab, setCockpitTab] = useState('valuation'); // 'valuation' | 'seasonality' | 'smartmoney' | 'ai'
 
   // Search & Stock Data State
@@ -918,8 +919,13 @@ export default function StockExplorer({ user }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch single stock detail & smooth scroll to detail
-  const handleSelectStock = async (ticker, shouldScroll = true) => {
+  /**
+   * Loads the full detail of one stock into the Pencarian Saham IDX tab.
+   * @param {string} ticker - IDX ticker, with or without the ".JK" suffix.
+   * @param {boolean} [shouldScroll=true] - Smoothly scroll to the detail section once loaded.
+   * @param {boolean} [switchTab=true] - Switch to the Pencarian tab. False for the silent default load.
+   */
+  const handleSelectStock = async (ticker, shouldScroll = true, switchTab = true) => {
     if (!ticker) return;
     const cleanTicker = ticker.toUpperCase().replace(/\.JK$/, '');
     setSelectedStock(cleanTicker);
@@ -927,7 +933,7 @@ export default function StockExplorer({ user }) {
     setSearchQuery(cleanTicker);
     setLoadingDetail(true);
     setDetailError(null);
-    setActiveTab('explorer');
+    if (switchTab) setActiveTab('explorer');
     setAiResearch(null);
     setAiStatus(null);
 
@@ -973,9 +979,30 @@ export default function StockExplorer({ user }) {
   // Default initial search if none selected
   useEffect(() => {
     if (!selectedStock && allTickers.length > 0) {
-      handleSelectStock('BBCA', false);
+      // Preload silently so the Pencarian tab is ready, without leaving the Koleksi tab.
+      handleSelectStock('BBCA', false, false);
     }
   }, [allTickers]);
+
+  /**
+   * Opens a stock clicked in the Koleksi tab: same detail load as before, then the
+   * Pencarian tab shows a "back to collection" button for the current collection.
+   * @param {string} ticker - Ticker of the clicked collection item.
+   */
+  const handleOpenFromCollection = (ticker) => {
+    setBackToCollection(selectedCollection);
+    handleSelectStock(ticker, true);
+  };
+
+  /**
+   * Opens a stock picked from the search suggestions. Clears the "back to collection"
+   * context because the user is no longer browsing a collection.
+   * @param {string} ticker - Ticker of the chosen suggestion.
+   */
+  const handlePickSuggestion = (ticker) => {
+    setBackToCollection(null);
+    handleSelectStock(ticker);
+  };
 
   // Auto-polling AI queue status if pending or processing
   useEffect(() => {
@@ -1654,43 +1681,44 @@ export default function StockExplorer({ user }) {
             </p>
           </div>
 
-          {/* Mode Switcher Tabs */}
-          <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-            <button
-              onClick={() => setActiveTab('explorer')}
-              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
-                activeTab === 'explorer'
-                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <span>🔍</span> Eksplorasi Saham
-            </button>
-            <button
-              onClick={() => setActiveTab('compare')}
-              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
-                activeTab === 'compare'
-                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <span>⚖️</span> Komparasi Saham
-              {compareList.length > 0 && (
-                <span className="px-1.5 py-0.2 text-[10px] rounded-full bg-indigo-600 text-white">
-                  {compareList.length}/6
-                </span>
-              )}
-            </button>
+          {/* Page Tabs: Koleksi | Pencarian | Komparasi */}
+          <div
+            role="tablist"
+            aria-label="Halaman Stock Explorer"
+            className="flex items-center p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 w-full sm:w-auto overflow-x-auto"
+          >
+            {[
+              { id: 'collections', icon: '📂', label: 'Koleksi Saham', badge: collections.length > 0 ? collections.length : null },
+              { id: 'explorer', icon: '🔍', label: 'Pencarian Saham IDX', badge: null },
+              { id: 'compare', icon: '⚖️', label: 'Komparasi', badge: compareList.length > 0 ? `${compareList.length}/6` : null },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                role="tab"
+                aria-selected={activeTab === tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex-1 sm:flex-none whitespace-nowrap px-3 md:px-4 py-2 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+                  activeTab === tab.id
+                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <span aria-hidden="true">{tab.icon}</span>
+                <span>{tab.label}</span>
+                {tab.badge != null && (
+                  <span className="px-1.5 py-0.5 text-[10px] leading-none rounded-full bg-indigo-600 text-white font-mono">
+                    {tab.badge}
+                  </span>
+                )}
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* ── 2. VIEW SELECTION: EXPLORER VS COMPARE ──────────────────────── */}
-      {activeTab === 'explorer' ? (
-        <div className="flex flex-col lg:flex-row gap-5 items-start w-full">
-          {/* ── LEFT PANE: KOLEKSI SAYA (SIDEBAR) ─────────────────────────── */}
-          {isSidebarOpen && (
-            <aside className="w-full lg:w-80 xl:w-96 2xl:w-[400px] shrink-0 bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-4 lg:sticky lg:top-[94px]">
+      {/* ── 2. PAGE: KOLEKSI SAHAM ───────────────────────────────────────── */}
+      {activeTab === 'collections' && (
+            <section className="w-full bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm space-y-4 animate-in fade-in duration-300">
               {/* Sidebar Header */}
               <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
                 <div className="flex items-center gap-2">
@@ -1717,13 +1745,6 @@ export default function StockExplorer({ user }) {
                     title="Buat Koleksi Baru"
                   >
                     <span>+</span> Buat
-                  </button>
-                  <button
-                    onClick={() => setIsSidebarOpen(false)}
-                    className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                    title="Tutup Panel Koleksi"
-                  >
-                    ✕
                   </button>
                 </div>
               </div>
@@ -1887,7 +1908,7 @@ export default function StockExplorer({ user }) {
                               onDragOver={(e) => handleDragOver(e, index)}
                               onDragEnd={handleDragEnd}
                               onDrop={(e) => handleDrop(e, index)}
-                              onClick={() => handleSelectStock(item.ticker, true)}
+                              onClick={() => handleOpenFromCollection(item.ticker)}
                               className={`cursor-pointer rounded-xl p-2.5 border transition-all text-left relative group select-none ${cardBorder} ${
                                 isDragging ? 'opacity-30 scale-95 border-dashed border-indigo-500' : ''
                               } ${
@@ -2020,28 +2041,30 @@ export default function StockExplorer({ user }) {
                   )}
                 </div>
               )}
-            </aside>
-          )}
+            </section>
+      )}
 
-          {/* ── RIGHT CANVAS: SEARCH & ANALYTICAL WORKSPACE ───────────────── */}
-          <main className="flex-1 w-full min-w-0 space-y-6">
+      {/* ── 3. PAGE: PENCARIAN SAHAM IDX & ANALYTICAL WORKSPACE ─────────── */}
+      {activeTab === 'explorer' && (
+          <main className="w-full min-w-0 space-y-6 animate-in fade-in duration-300">
             {/* SEARCH BAR */}
             <div className="bg-white dark:bg-slate-900/90 backdrop-blur border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm">
               <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
                 <div className="flex items-center gap-3">
-                  {/* Toggle Sidebar Button */}
-                  <button
-                    onClick={() => setIsSidebarOpen(prev => !prev)}
-                    className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all flex items-center gap-1.5 shrink-0 ${
-                      isSidebarOpen
-                        ? 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
-                        : 'bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800 shadow-sm'
-                    }`}
-                    title={isSidebarOpen ? 'Sembunyikan panel koleksi untuk memperluas layar' : 'Tampilkan panel koleksi saham'}
-                  >
-                    <span>{isSidebarOpen ? '◀' : '📂'}</span>
-                    <span>{isSidebarOpen ? 'Tutup Koleksi' : `Buka Koleksi (${collections.length})`}</span>
-                  </button>
+                  {/* Back to the collection the stock was opened from */}
+                  {backToCollection && (
+                    <button
+                      onClick={() => setActiveTab('collections')}
+                      className="px-3 py-1.5 text-xs font-bold rounded-xl border transition-colors flex items-center gap-1.5 shrink-0 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                      title={`Kembali ke koleksi ${backToCollection.name}`}
+                    >
+                      <span aria-hidden="true">←</span>
+                      <span>Kembali ke Koleksi</span>
+                      <span className="hidden sm:inline max-w-[140px] truncate font-semibold opacity-80">
+                        · {backToCollection.emoji || '📁'} {backToCollection.name}
+                      </span>
+                    </button>
+                  )}
 
                   <div>
                     <h3 className="font-black text-sm md:text-base text-slate-900 dark:text-white">
@@ -2095,7 +2118,7 @@ export default function StockExplorer({ user }) {
                       return (
                         <button
                           key={s.ticker}
-                          onClick={() => handleSelectStock(s.ticker)}
+                          onClick={() => handlePickSuggestion(s.ticker)}
                           className="w-full px-4 py-2.5 text-left flex items-center justify-between hover:bg-indigo-50 dark:hover:bg-slate-700/60 border-b border-slate-100 dark:border-slate-700/50 last:border-0 transition-colors"
                         >
                           <div>
@@ -3070,15 +3093,16 @@ export default function StockExplorer({ user }) {
                   Pilih Saham untuk Memulai Analisis
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
-                  Gunakan kolom pencarian di atas atau klik salah satu saham di panel koleksi sebelah kiri untuk melihat chart interaktif, valuasi Graham, seasonality 5 tahun, dan smart money flow.
+                  Gunakan kolom pencarian di atas atau klik salah satu saham di tab Koleksi Saham untuk melihat chart interaktif, valuasi Graham, seasonality 5 tahun, dan smart money flow.
                 </p>
               </div>
             ) : null}
           </div>
         </main>
-      </div>
-      ) : (
-        /* ── MULTI-STOCK COMPARE VIEW (MAX 6 STOCKS) ───────────────────────── */
+      )}
+
+      {/* ── 4. PAGE: MULTI-STOCK COMPARE VIEW (MAX 6 STOCKS) ─────────────── */}
+      {activeTab === 'compare' && (
         <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm space-y-6 animate-in fade-in">
           {/* Compare Toolbar */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
