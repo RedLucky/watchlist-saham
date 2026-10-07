@@ -4,6 +4,12 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-10-07] feat | Standard UI Classes & Shared Components Migrated
+- Added standard classes to `globals.css`: headings (`.page-title`, `.section-title`), buttons (`.btn-ghost`, `.btn-icon`), forms (`.field-label`, `.input`, `.select`, `.checkbox`), `.badge-*`, `.alert-*`, `.tabs/.tab`, `.modal-*` (bottom sheet on phones), `.scroll-area`, `.table-base`.
+- Migrated to tokens: `ScoreBadge`, `ScoreBar` (now has a real bar + progressbar role), `Tooltip` (keyboard focusable), `StyleSelector`, `ModeSelector`, `CustomSliders`, `MarketBadge` (2 columns on phones), `SectorBar`, `AuthModal` (labelled fields, bottom sheet on phones), and the Analisis Saham header in `Dashboard`.
+- New guard test `tests/designTokens.test.js`.
+- New page: [Design System (Bursa 1985)](./architecture/design-system.md).
+
 ## [2026-10-07] feat | New App Shell: Sidebar, Mobile Header, Slim Bottom Bar
 - Sidebar, mobile header, bottom bar and footer rebuilt with the "Bursa 1985" tokens; emoji icons replaced by Unicode symbols.
 - Desktop sidebar can collapse to an icon rail (remembered in `localStorage`).

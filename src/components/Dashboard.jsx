@@ -229,28 +229,30 @@ export default function Dashboard() {
 
           {/* TAB 1: WATCHLIST & ANALISIS SAHAM */}
           {activeTab === 'watchlist' && (
-            <div className="space-y-5 animate-in fade-in duration-300">
+            <div className="space-y-4 sm:space-y-5 animate-in fade-in duration-300">
+              {/* Page title */}
+              <div className="rule-double pb-2">
+                <h1 className="page-title">Analisis Saham</h1>
+                <p className="section-subtitle mt-0.5">Peringkat saham BEI berdasarkan scoring fundamental, teknikal & smart money</p>
+              </div>
+
               {/* Market Condition 4-Card Cockpit */}
               <MarketBadge market={market} />
 
               {/* Style Selector (Scalping, Daily, Swing) & Strategy Mode */}
-              <div className="space-y-4">
-                {/* Style Selector Container */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900/85 border border-slate-200/80 dark:border-slate-800 shadow-xs">
+              <div className="space-y-3 sm:space-y-4">
+                <section className="card p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-base">⚡</span>
-                      <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white">Horison Waktu Trading</h3>
-                    </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">Pilih strategi horison waktu transaksi untuk penyesuaian bobot indikator teknikal vs fundamental</p>
+                    <h2 className="section-title">Horison Waktu Trading</h2>
+                    <p className="section-subtitle mt-0.5">Atur bobot indikator teknikal vs fundamental sesuai lama Anda memegang saham</p>
                   </div>
-                  <div className="w-full sm:w-80 flex-shrink-0">
+                  <div className="w-full sm:w-80 shrink-0">
                     <StyleSelector currentStyle={style} onStyleChange={setStyle} />
                   </div>
-                </div>
+                </section>
 
                 <ModeSelector currentMode={mode} onModeChange={setMode} />
-                
+
                 {mode === 'custom' && (
                   <CustomSliders 
                     onWeightsChange={setCustomWeights} 

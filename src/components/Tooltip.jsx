@@ -78,6 +78,10 @@ export default function Tooltip({ term, children, className = '' }) {
  className={`relative flex items-center ${className}`}
  onMouseEnter={() => setShow(true)}
  onMouseLeave={() => setShow(false)}
+ // Keyboard users can focus the trigger to read the explanation.
+ tabIndex={0}
+ onFocus={() => setShow(true)}
+ onBlur={() => setShow(false)}
  onClick={(e) => {
  e.stopPropagation();
  setShow(!show);
@@ -85,7 +89,7 @@ export default function Tooltip({ term, children, className = '' }) {
  style={{ cursor: 'help' }}
  >
  <div className="flex-grow">{children}</div>
- <svg className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 flex-shrink-0 ml-1 opacity-60 hover:opacity-100 transition-opacity"viewBox="0 0 16 16"fill="currentColor">
+ <svg className="w-3.5 h-3.5 text-muted flex-shrink-0 ml-1 opacity-70 hover:opacity-100 transition-opacity" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
  <path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 2.5a1 1 0 110 2 1 1 0 010-2zM6.5 7h1.25v4.5h1.5V7H10.5V5.75H6.5V7z"/>
  </svg>
  {show && (
@@ -93,12 +97,12 @@ export default function Tooltip({ term, children, className = '' }) {
  ref={tooltipRef}
  className={`
  absolute z-[100] min-w-[200px] max-w-[min(320px,calc(100vw-24px))]
- bg-[#1e293b] text-[#e2e8f0]
- px-3.5 py-2.5 rounded-xl
- text-[13px] leading-relaxed
+ bg-ink text-surface
+ px-3 py-2 rounded-sm
+ text-xs leading-relaxed font-normal normal-case tracking-normal
  pointer-events-none
- shadow-[0_4px_24px_rgba(0,0,0,0.5)]
- border border-slate-300 dark:border-white/10
+ shadow-lg
+ border border-line-strong
  transition-opacity duration-150
  ${position.top ? 'bottom-full mb-2' : 'top-full mt-2'}
  ${position.left ? 'left-0' : position.right ? 'right-0' : 'left-1/2 -translate-x-1/2'}
@@ -109,7 +113,7 @@ export default function Tooltip({ term, children, className = '' }) {
  {/* Arrow */}
  <span
  className={`
- absolute w-2.5 h-2.5 bg-[#1e293b] border border-slate-300 dark:border-white/10 rotate-45
+ absolute w-2.5 h-2.5 bg-ink border border-line-strong rotate-45
  ${position.top
  ? 'top-full -mt-[6px] border-t-0 border-l-0'
  : 'bottom-full -mb-[6px] border-b-0 border-r-0'

@@ -1,34 +1,42 @@
 'use client';
 
-export default function ScoreBadge({ score, size = 'md' }) {
-  const getScoreStyle = (score) => {
-    if (score >= 85) return { bg: 'bg-score-strong', text: 'text-white font-extrabold', glow: 'glow-green', label: 'Kuat' };
-    if (score >= 70) return { bg: 'bg-score-good', text: 'text-white font-extrabold', glow: 'glow-blue', label: 'Bagus' };
-    if (score >= 60) return { bg: 'bg-score-watch', text: 'text-white font-extrabold', glow: 'glow-yellow', label: 'Pantau' };
-    return { bg: 'bg-score-ignore', text: 'text-white font-extrabold', glow: '', label: 'Abaikan' };
-  };
+/**
+ * Score bands used by the badge: ≥85 Kuat (up colour), ≥70 Bagus (ink), ≥60 Pantau (warn),
+ * otherwise Abaikan (muted). Background classes are defined in globals.css.
+ */
+const BANDS = [
+  { min: 85, bg: 'bg-score-strong', text: 'text-up', label: 'Kuat' },
+  { min: 70, bg: 'bg-score-good', text: 'text-ink', label: 'Bagus' },
+  { min: 60, bg: 'bg-score-watch', text: 'text-warn', label: 'Pantau' },
+  { min: -Infinity, bg: 'bg-score-ignore', text: 'text-muted', label: 'Abaikan' },
+];
 
-  const style = getScoreStyle(score);
-  const sizeClasses = size === 'lg'
-    ? 'w-14 h-14 text-lg font-black'
-    : size === 'sm'
-    ? 'w-8 h-8 text-xs font-black'
-    : 'w-11 h-11 text-sm font-black';
+const SIZE_CLASSES = {
+  sm: 'w-8 h-8 text-xs',
+  md: 'w-10 h-10 text-sm',
+  lg: 'w-14 h-14 text-lg',
+};
+
+/**
+ * Square badge showing a composite score (0–100) with its verdict label underneath.
+ *
+ * @param {object} props
+ * @param {number} props.score - Composite score.
+ * @param {'sm'|'md'|'lg'} [props.size='md'] - Badge size; 'sm' hides the label.
+ */
+export default function ScoreBadge({ score, size = 'md' }) {
+  const band = BANDS.find((b) => score >= b.min) || BANDS[BANDS.length - 1];
 
   return (
     <div className="flex flex-col items-center gap-1">
-      <div className={`${sizeClasses} ${style.bg} ${style.glow} ${style.text} rounded-xl flex items-center justify-center shadow-sm`}>
+      <div
+        className={`${SIZE_CLASSES[size] || SIZE_CLASSES.md} ${band.bg} rounded-sm flex items-center justify-center font-mono font-semibold tabular-nums`}
+        title={`Skor ${score} · ${band.label}`}
+      >
         {score}
       </div>
       {size !== 'sm' && (
-        <span className={`text-[10px] font-bold uppercase tracking-wider ${
-          score >= 85 ? 'text-emerald-700 dark:text-emerald-400' :
-          score >= 70 ? 'text-blue-700 dark:text-blue-400' :
-          score >= 60 ? 'text-amber-800 dark:text-amber-400' :
-          'text-slate-700 dark:text-slate-400'
-        }`}>
-          {style.label}
-        </span>
+        <span className={`label-mono text-[10px] ${band.text}`}>{band.label}</span>
       )}
     </div>
   );

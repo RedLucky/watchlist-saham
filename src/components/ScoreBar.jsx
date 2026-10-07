@@ -1,44 +1,54 @@
 'use client';
 
-export default function ScoreBar({ label, score, weight, color, tooltip, animate = true }) {
- const getBarColor = (score) => {
- if (score >= 85) return 'from-emerald-500 to-emerald-400';
- if (score >= 70) return 'from-blue-500 to-blue-400';
- if (score >= 60) return 'from-amber-500 to-amber-400';
- return 'from-slate-500 to-slate-400';
- };
+/**
+ * Colour of the bar and score text for a 0–100 score:
+ * ≥85 up, ≥70 ink, ≥60 warn, otherwise muted.
+ * @param {number} score
+ * @returns {{ bar: string, text: string }}
+ */
+function getTone(score) {
+  if (score >= 85) return { bar: 'bg-up', text: 'text-up' };
+  if (score >= 70) return { bar: 'bg-ink', text: 'text-ink' };
+  if (score >= 60) return { bar: 'bg-warn', text: 'text-warn' };
+  return { bar: 'bg-muted', text: 'text-muted' };
+}
 
- const barColor = color || getBarColor(score);
+/**
+ * Horizontal bar for one sub-score (e.g. Fundamental 72 with weight 30%).
+ *
+ * @param {object} props
+ * @param {string} props.label - Sub-score name.
+ * @param {number} props.score - Value 0–100.
+ * @param {number} [props.weight] - Weight in percent, shown as a small badge.
+ * @param {string} [props.color] - Optional Tailwind background class overriding the bar colour.
+ * @param {boolean} [props.animate=true] - Animate width changes.
+ */
+export default function ScoreBar({ label, score, weight, color, animate = true }) {
+  const tone = getTone(score);
+  const width = Math.max(0, Math.min(100, Number(score) || 0));
 
- return (
- <div className="group">
- <div className="flex items-center justify-between mb-1.5">
- <div className="flex items-center gap-2">
- <span className="text-sm text-slate-400 dark:text-slate-500">{label}</span>
- {weight && (
- <span className="text-[10px] text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-white/5 px-1.5 py-0.5 rounded">
- {weight}%
- </span>
- )}
- </div>
- <span className={`text-sm font-semibold ${
- score >= 85 ? 'text-emerald-400' :
- score >= 70 ? 'text-blue-400' :
- score >= 60 ? 'text-amber-400' :
- 'text-slate-400'
- }`}>
- {score}
- </span>
- </div>
- <div className="progress-bar-track">
- <div
- className={`progress-bar-fill bg-gradient-to-r ${barColor}`}
- style={{
- width: `${score}%`,
- transition: animate ? undefined : 'none'
- }}
- />
- </div>
- </div>
- );
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-xs text-muted truncate">{label}</span>
+          {weight && <span className="badge">{weight}%</span>}
+        </div>
+        <span className={`font-mono text-sm font-semibold tabular-nums ${tone.text}`}>{score}</span>
+      </div>
+      <div
+        className="h-1.5 w-full rounded-sm bg-sunken overflow-hidden"
+        role="progressbar"
+        aria-label={label}
+        aria-valuenow={width}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
+        <div
+          className={`h-full ${color || tone.bar} ${animate ? 'transition-[width] duration-500' : ''}`}
+          style={{ width: `${width}%` }}
+        />
+      </div>
+    </div>
+  );
 }
