@@ -53,6 +53,53 @@ Because IDX reviews membership a few times a year, the freshness matters more th
 `isStaleSync()` treats data older than `STALE_AFTER_DAYS` (60 days) as stale, and the UI says so
 instead of quietly presenting old membership as current.
 
+### The scraper no longer works — and why
+
+IDX moved the page behind bot protection. Measured from this repo, on 2026-10-07:
+
+| Request | Result |
+|----------|--------|
+| `idx.co.id/idx-data/idx-stock-composition` (the old URL) | 503 through a real headless browser, 403 through curl |
+| `idx.co.id/primary/Index/GetIndexConstituent` (old JSON API) | 302 → 404 page |
+| `idx.co.id/StaticData/.../BEI.POP_*.zip` (announcement files) | 403 |
+
+A newer endpoint does exist — `idx.co.id/secondary/get/StockData/GetStockUploader` — and it did
+return valid JSON (LQ45: 4 records, ISSI: 7) when called from inside a loaded browser page. But
+Cloudflare blocked it on the very next request, so it cannot be relied on unattended.
+
+Two consequences worth remembering: the endpoint returns **announcement ZIP files**, not tickers, so
+there would still be a download-and-parse step; and `sync-indices.js` must keep its
+"never destroy stored data on failure" behaviour, because its URL is dead and it will now log
+`0 anggota ditemukan` on every run.
+
+### Two things this page deliberately does not do
+
+- **No composite score column.** `StockData` has no `score` column; the composite score is computed
+  on the fly from the `fundamentals` and `technicals` JSON (see `/api/screener`). Recomputing it
+  here would duplicate that weighting and let the two pages drift apart, so the index table shows
+  membership and market data only. The score is one click away on the analysis pages.
+- **No admin key field.** Adding and removing members relies on the logged-in session cookie.
+  Typing a key on every page is friction for no benefit; the key input lives only on the bulk
+  upload page, which is the admin entry point.
+
+### The seed file is the real source
+
+`src/data/idxMembers.seed.json` holds human-verified membership, applied by:
+
+```bash
+node src/scripts/seed-indices.js
+```
+
+Each entry records `effectiveFrom` (when IDX published it), `source`, `verifiedOn` and
+`verifiedFrom` (the pages the list was checked against), so a reviewer can see the provenance of
+every ticker rather than trusting a number. Re-running is safe; it replaces the member list of
+each seeded index.
+
+At the time of writing only LQ45 and IDX30 are seeded. IDX Value 30, High Dividend 20 and ISSI
+were **not** filled in: their authoritative lists live in the monthly
+[Fact Sheet Index](https://www.idx.co.id/id/data-pasar/laporan-statistik/fact-sheet-indeks) PDFs
+on the same protected domain, and no list was entered without a verifiable source.
+
 ### Manual fallback
 
 `POST /api/indices` (admin only, same `verifyAdminAccess` check as KSEI ingest) accepts pasted

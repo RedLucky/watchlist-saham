@@ -36,7 +36,10 @@ export async function GET(request, context) {
     const stocks = tickers.length
       ? await prisma.stockData.findMany({
           where: { ticker: { in: tickers } },
-          select: { ticker: true, name: true, sector: true, price: true, changePercent: true, score: true },
+          // No composite score here: it is computed on the fly from the fundamentals and technicals
+          // JSON (see /api/screener), not stored as a column. Duplicating that weighting would let
+          // the two pages drift apart, so this table sticks to membership and market data.
+          select: { ticker: true, name: true, sector: true, price: true, changePercent: true },
         })
       : [];
     const stockByTicker = new Map(stocks.map((s) => [s.ticker, s]));
@@ -57,7 +60,6 @@ export async function GET(request, context) {
           sector: stock?.sector || '-',
           price: stock?.price ?? null,
           changePercent: stock?.changePercent ?? null,
-          score: stock?.score ?? null,
           tracked: Boolean(stock),
         };
       }),

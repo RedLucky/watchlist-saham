@@ -46,6 +46,55 @@ Dua sifat aman yang sengaja dibuat:
 
 Karena IDX menilai ulang keanggotaan beberapa kali setahun, yang penting bukan Soal tanggal persisnya, tapi seberapa tua datanya. `isStaleSync()` menganggap data yang lebih tua dari `STALE_AFTER_DAYS` (60 hari) sebagai basi, dan antarmuka mengatakannya secara terbuka daripada diam-diam menyajikan data lama sebagai data terkini.
 
+### Scraper tidak lagi berfungsi — dan alasannya
+
+IDX memindahkan halaman tersebut ke balik proteksi bot. Hasil pengukuran dari repo ini, per2026-10-07:
+
+| Permintaan | Hasil |
+| :--- | :--- |
+| `idx.co.id/idx-data/idx-stock-composition` (URL lama) | 503 lewat browser headless sungguhan, 403 lewat curl |
+| `idx.co.id/primary/Index/GetIndexConstituent` (API JSON lama) | 302 → halaman 404 |
+| `idx.co.id/StaticData/.../BEI.POP_*.zip` (file pengumuman) | 403 |
+
+Endpoint yang lebih baru memang ada — `idx.co.id/secondary/get/StockData/GetStockUploader` — dan
+ia sempat mengembalikan JSON valid (LQ45: 4 record, ISSI: 7) saat dipanggil dari dalam halaman
+browser yang sudah terbuka. Tapi Cloudflare memblokirnya pada permintaan berikutnya, sehingga tidak
+bisa diandalkan tanpa pengawasan.
+
+Dua akibat yang perlu diingat: endpoint itu mengembalikan **file ZIP pengumuman**, bukan ticker,
+jadi masih ada langkah unduh-dan-parse; dan `sync-indices.js` harus tetap memakai perilakunya "data
+lama tidak pernah dihapus saat gagal", karena URL-nya sudah mati dan sekarang akan mencatat
+`0 anggota ditemukan` di setiap jadwal.
+
+### Dua hal yang sengaja tidak dilakukan halaman ini
+
+- **Tidak ada kolom skor komposit.** `StockData` tidak punya kolom `score`; skor komposit dihitung
+  on-the-fly dari JSON `fundamentals` dan `technicals` (lihat `/api/screener`). Menghitungnya
+  ulang di sini akan menggandakan bobot itu dan membuat dua halaman menyimpang, jadi tabel indeks
+  hanya menampilkan keanggotaan dan data pasar. Skornya tersedia di halaman analisis.
+- **Tidak ada field admin key.** Menambah dan menghapus anggota memakai cookie sesi yang sedang
+  login. Mengetik key di setiap halaman hanya menambah friksi tanpa manfaat; input key hanya ada
+  di halaman unggah massal, yang merupakan pintu masuk admin.
+
+### Seed file adalah sumber sebenarnya
+
+`src/data/idxMembers.seed.json` memuat keanggotaan yang sudah diverifikasi manusia, diterapkan oleh:
+
+```bash
+node src/scripts/seed-indices.js
+```
+
+Setiap entri mencatat `effectiveFrom` (kapan IDX menerbitkannya), `source`, `verifiedOn`, dan
+`verifiedFrom` (halaman mana yang dipakai untuk mencocokkan), sehingga pembaca review bisa melihat
+asal setiap ticker alih-alih percaya begitu saja. Menjalankan ulang aman; ia mengganti daftar
+anggota tiap indeks yang ada di seed.
+
+Pada saat dokumen ini ditulis hanya LQ45 dan IDX30 yang terisi. IDX Value 30, High Dividend 20, dan
+ISSI **tidak** diisi: daftar resminya berada di PDF
+[Fact Sheet Indeks](https://www.idx.co.id/id/data-pasar/laporan-statistik/fact-sheet-indeks) bulanan
+di domain terlindungi yang sama, dan tidak ada satu pun daftar yang dimasukkan tanpa sumber yang
+bisa diverifikasi.
+
 ### Cadangan manual
 
 `POST /api/indices` (khusus admin, memakai `verifyAdminAccess` seperti ingest KSEI) menerima teks yang ditempel lalu mengganti keanggotaan yang tersimpan. Formatnya satu ticker per baris, atau `KODE_INDEKS<tab atau koma>TICKER` untuk memperbarui beberapa indeks sekaligus. Indeks kemudian ditandai `source = "upload"` supaya antarmuka bisa membedakan daftar dari manusia dengan hasil scraper.

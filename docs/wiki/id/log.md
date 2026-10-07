@@ -4,6 +4,18 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-10-07] fix | Indeks BEI Berhenti Error Dan Tidak Lagi Meminta Admin Key
+- **Bug:** `/api/indices/LQ45` mengembalikan error Prisma untuk semua indeks. Query-nya memilih field `score`, padahal `StockData` tidak punya kolom tersebut — skor komposit dihitung on-the-fly dari JSON `fundamentals` dan `technicals`. Kolom Skor dihapus, bukan menggandakan bobot itu, karena itu akan membuat halaman indeks dan `/api/screener` menyimpang.
+- Input admin key dihapus dari form tambah/hapus; pemanggilan itu memakai cookie sesi. Field key tetap ada hanya di `/admin/indeks`, pintu masuk admin.
+- Query Prisma yang sudah diperbaiki diverifikasi langsung ke database: 45 anggota ditemukan, harga tersedia untuk seluruh 45.
+
+## [2026-10-07] feat | Seed File Berisi Keanggotaan LQ45 Dan IDX30 Yang Terverifikasi
+- Terukur mengapa scraping IDX gagal: halaman komposisi lama membalas 503 ke browser headless sungguhan dan 403 ke curl, API JSON lama dialihkan ke halaman 404, dan ZIP pengumuman 403. Cloudflare memblokir, jadi scraper tidak bisa berjalan tanpa pengawasan.
+- Ditambahkan `src/data/idxMembers.seed.json` beserta `src/scripts/seed-indices.js`. Setiap entri mencatat `effectiveFrom`, `source`, `verifiedOn`, dan `verifiedFrom`, sehingga asal setiap ticker bisa direview lewat git, bukan sekadar angka tanpa penjelasan.
+- LQ45 (45 anggota, berlaku 2026-08-03) diisi dari tabel Agustus–Oktober 2026 di Wikipedia yang dicocokkan dengan pengumuman BEI yang dilaporkan Kontan. IDX30 (30 anggota) diisi dari StockWatch, dicocokkan karena setiap anggota IDX30 harus ada juga di LQ45 — diverifikasi secara programatis, 0 anggota di luar LQ45.
+- Semua 30 anggota IDX30 ada di `StockData`, jadi harga dan skor tampil di halaman indeks.
+- **IDX Value 30, High Dividend 20, dan ISSI sengaja dikosongkan.** Daftar resminya ada di PDF Fact Sheet Indeks bulanan IDX di domain terlindungi yang sama, dan tidak ada satu pun ticker yang dimasukkan tanpa sumber yang bisa diverifikasi.
+
 ## [2026-10-07] fix | Keanggotaan Indeks Bisa Ditambah Dan Dihapus Dari Halaman Indeks BEI
 - **Masalah:** halaman hanya bisa dibaca, jadi dengan database kosong tidak ada cara mendaftarkan atau menghapus saham, dan `/admin/indeks` tidak ditautkan dari mana pun di UI.
 - `src/lib/idxStore.js` (baru): `ensureIndexRow`, `addConstituent`, `removeConstituent`. Keduanya memvalidasi kode indeks dan ticker *sebelum* menyentuh database, dan setiap fungsi menerima Prisma client opsional supaya test tidak perlu database sungguhan.

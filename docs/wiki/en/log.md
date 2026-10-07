@@ -4,6 +4,18 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-10-07] fix | Indeks BEI Stopped Erroring And No Longer Asks For An Admin Key
+- **Bug:** `/api/indices/LQ45` returned a Prisma error for every index. The query selected a `score` field, but `StockData` has no such column — the composite score is computed on the fly from the `fundamentals` and `technicals` JSON. The Skor column is removed rather than duplicating that weighting, which would let the index page and `/api/screener` drift apart.
+- The admin key input is gone from the add/remove form; those calls rely on the session cookie. The key field stays only on `/admin/indeks`, the admin entry point.
+- Verified the corrected Prisma query directly against the database: 45 members found, prices present for all 45.
+
+## [2026-10-07] feat | Seed File With Verified LQ45 And IDX30 Membership
+- Measured why IDX scraping fails: the old composition page returns 503 to a real headless browser and 403 to curl, the old JSON API redirects to a 404 page, and the announcement ZIPs are 403. Cloudflare blocks, so the scraper cannot run unattended.
+- Added `src/data/idxMembers.seed.json` plus `src/scripts/seed-indices.js`. Every entry records `effectiveFrom`, `source`, `verifiedOn` and `verifiedFrom`, so the provenance of each ticker is reviewable in git rather than being an unexplained number.
+- LQ45 (45 members, effective 2026-08-03) seeded from Wikipedia's Aug–Oct 2026 table cross-checked against the BEI announcement reported by Kontan. IDX30 (30 members) seeded from StockWatch, cross-checked because every IDX30 member must also be in LQ45 — verified programmatically, 0 members outside LQ45.
+- All 30 IDX30 members exist in `StockData`, so prices and scores render on the index page.
+- **IDX Value 30, High Dividend 20 and ISSI were deliberately left empty.** Their authoritative lists are in the monthly IDX Fact Sheet PDFs on the same blocked domain, and no ticker list was entered without a verifiable source.
+
 ## [2026-10-07] fix | Index Membership Can Be Added And Removed From The Indeks BEI Page
 - **Problem:** the page was read-only, so with an empty database there was no way to register or remove a stock, and `/admin/indeks` had no link pointing to it from anywhere in the UI.
 - `src/lib/idxStore.js` (new): `ensureIndexRow`, `addConstituent`, `removeConstituent`. Both validate the index code and ticker *before* touching the database, and every function takes an optional Prisma client so tests never need a real database.

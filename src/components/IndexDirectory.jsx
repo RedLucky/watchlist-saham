@@ -34,7 +34,6 @@ export default function IndexDirectory() {
   const [notice, setNotice] = useState(null);
   const [newTicker, setNewTicker] = useState('');
   const [saving, setSaving] = useState(false);
-  const [adminKey, setAdminKey] = useState('');
 
   /** Refetches the member list of the selected index without changing the selection. */
   const reloadDetail = useCallback(async () => {
@@ -62,10 +61,7 @@ export default function IndexDirectory() {
     try {
       const res = await fetch(`/api/indices/${activeCode}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(adminKey.trim() ? { 'x-admin-key': adminKey.trim() } : {}),
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ticker: newTicker.trim() }),
       });
       const json = await res.json();
@@ -88,7 +84,6 @@ export default function IndexDirectory() {
     setNotice(null);
     const res = await fetch(`/api/indices/${activeCode}?ticker=${encodeURIComponent(ticker)}`, {
       method: 'DELETE',
-      headers: adminKey.trim() ? { 'x-admin-key': adminKey.trim() } : {},
     });
     const json = await res.json();
     setNotice(res.ok ? { ok: true, message: json.message } : { ok: false, message: json.error });
@@ -201,19 +196,6 @@ export default function IndexDirectory() {
         )}
 
         <form onSubmit={handleAdd} className="card p-3 mb-4 flex flex-wrap items-end gap-2">
-          <div>
-            <label htmlFor="admin-key-indeks" className="label-mono block mb-1">
-              Admin Key
-            </label>
-            <input
-              id="admin-key-indeks"
-              type="password"
-              value={adminKey}
-              onChange={(e) => setAdminKey(e.target.value)}
-              className="input w-40"
-              placeholder="opsional"
-            />
-          </div>
           <div className="flex-1 min-w-[160px]">
             <label htmlFor="new-ticker" className="label-mono block mb-1">
               Tambah saham ke {activeMeta?.name || 'indeks ini'}
@@ -260,7 +242,6 @@ export default function IndexDirectory() {
                   <th>Sektor</th>
                   <th className="num">Harga</th>
                   <th className="num">Perubahan</th>
-                  <th className="num">Skor</th>
                   <th>Indeks</th>
                   <th className="text-right">Aksi</th>
                 </tr>
@@ -289,9 +270,6 @@ export default function IndexDirectory() {
                       {member.changePercent != null
                         ? `${member.changePercent >= 0 ? '+' : ''}${member.changePercent.toFixed(2)}%`
                         : '-'}
-                    </td>
-                    <td className="num">
-                      {member.score != null ? member.score.toFixed(1) : '-'}
                     </td>
                     <td>
                       <IndexBadgeList tickers={[member.ticker]} />
