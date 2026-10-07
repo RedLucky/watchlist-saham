@@ -4,6 +4,11 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-10-07] feat | Migrasi Upload KSEI & Kepemilikan ke Bursa 1985
+- `KseiUploadPanel`, `/admin/ksei`, dan `StockOwnershipModal` dipindah ke token tema dan simbol Unicode (emoji bendera diganti simbol).
+- Halaman admin semula didesain gelap di atas gelap; kini menjadi halaman bertema normal (latar kertas, panel surface, header tabel sunken) sehingga panel dapat dibedakan di kedua tema.
+- Input admin key dan area tempel KSEI memakai `.input` standar dengan label terhubung; tombol memakai `.btn-primary` / `.btn-secondary`; modal kepemilikan memakai `.modal-backdrop` dengan `role="dialog"`.
+
 ## [2026-10-07] feat | Migrasi Modul Pensiun ke Bursa 1985
 - `PensionCalculator`, `PensionTracker`, `PensionRebalance`, dan `/pensiun` dipindah ke token tema dan simbol Unicode; tombol yang kehilangan gradien memakai `.btn-primary` / `.btn-secondary`, modal kandidat & auth memakai `.modal-*`.
 - Canvas pertumbuhan aset dan bar bulanan di `PensionTracker` membaca token tema, bukan warna hex tetap (bar memakai ink → muted, bukan gradien indigo/ungu).

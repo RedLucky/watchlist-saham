@@ -4,6 +4,11 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-10-07] feat | KSEI Upload & Ownership Migrated to Bursa 1985
+- `KseiUploadPanel`, `/admin/ksei` and `StockOwnershipModal` moved to theme tokens and Unicode symbols (flag emoji replaced with symbols).
+- The admin page was a dark-on-dark design; it is now a normal themed page (paper background, surface panels, sunken table head) so panels are distinguishable in both themes.
+- Admin key input and the KSEI paste area use the standard `.input` with linked labels; buttons use `.btn-primary` / `.btn-secondary`; ownership modal uses `.modal-backdrop` with `role="dialog"`.
+
 ## [2026-10-07] feat | Pension Modules Migrated to Bursa 1985
 - `PensionCalculator`, `PensionTracker`, `PensionRebalance` and `/pensiun` moved to theme tokens and Unicode symbols; buttons that lost their gradient use `.btn-primary` / `.btn-secondary`, candidate/auth modals use `.modal-*`.
 - Asset-growth and monthly-bar canvases in `PensionTracker` read theme tokens instead of fixed hex colours (bars use ink → muted instead of an indigo/purple gradient).

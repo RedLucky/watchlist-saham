@@ -63,6 +63,10 @@ const MIGRATED_FILES = [
   'src/components/PensionTracker.jsx',
   'src/components/PensionRebalance.jsx',
   'src/app/pensiun/page.js',
+  // TASK-4458: KSEI & ownership
+  'src/components/KseiUploadPanel.jsx',
+  'src/app/admin/ksei/page.jsx',
+  'src/components/StockOwnershipModal.jsx',
 ];
 
 /** Lines that handle user-chosen collection emoji (data, not UI icons) may contain emoji. */
