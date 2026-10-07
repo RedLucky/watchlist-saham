@@ -89,14 +89,18 @@ Setiap entri mencatat `effectiveFrom` (kapan IDX menerbitkannya), `source`, `ver
 asal setiap ticker alih-alih percaya begitu saja. Menjalankan ulang aman; ia mengganti daftar
 anggota tiap indeks yang ada di seed.
 
-Sudah terisi: **LQ45** (45, berlaku 2026-08-03), **IDX30** (30, 2026-08-03), dan
-**HIDV20** (20, 2026-08-05).
+Sudah terisi: **LQ45** (45, berlaku 2026-08-03), **IDX30** (30, 2026-08-03), **HIDV20** (20,
+2026-08-05), dan **IDX Value 30** (30, 2026-08-03).
 
-Masih kosong: **IDX Value 30** dan **ISSI**. Daftar resminya berada di PDF
-[Fact Sheet Indeks](https://www.idx.co.id/id/data-pasar/laporan-statistik/fact-sheet-indeks) bulanan
-di domain terlindungi, dan ISSI juga membutuhkan *Sharia Securities List* milik OJK yang
-diterbitkan terpisah oleh DSN-MUI/OJK. Tidak ada daftar yang dimasukkan tanpa sumber yang bisa
-diverifikasi.
+IDX Value 30 berasal dari situs pihak ketiga, bukan dari IDX. Entri di seed file menyatakan itu
+secara terbuka, lengkap dengan catatan kehati-hatiannya. Bandingkan dengan fact sheet resmi saat
+bisa, dan perbaiki dari halaman Indeks BEI kalau ada nama yang keliru.
+
+Masih kosong: **ISSI**. Ukurannya jauh lebih besar dari yang terlihat — per 7 Juli 2026 berisi
+**578** konstituen, yaitu seluruh saham yang ada di *Sharia Securities List* (DES) milik OJK, yang
+ditinjau setiap Mei dan November. Daftar resminya adalah PDF pengumuman BEI di domain terlindungi.
+Menarik 578 ticker dari sumber yang tidak bisa diverifikasi adalah jenis tebakan yang tidak
+boleh masuk ke alat investasi.
 
 ### Cadangan manual
 

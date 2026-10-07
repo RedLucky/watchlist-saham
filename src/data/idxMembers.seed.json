@@ -47,6 +47,22 @@
         "ITMG", "PGAS", "ANTM", "INDF", "AKRA", "TAPG", "HMSP", "UNVR", "ACES",
         "ERAA", "SCMA"
       ]
+    },
+    {
+      "code": "IDXVALUE30",
+      "effectiveFrom": "2026-08-03",
+      "source": "seed",
+      "verifiedOn": "2026-10-07",
+      "verifiedFrom": [
+        "carisaham.com/indeks/detail/IDXV30 — third-party list, exactly 30 constituents with prices current as of the fetch date",
+        "NOT confirmed against the official IDX Fact Sheet PDF; treat as unverified and correct it from the Indeks BEI page if needed"
+      ],
+      "members": [
+        "AALI", "ADRO", "AKRA", "ASII", "BBTN", "BJBR", "BJTM", "BMRI", "BMTR",
+        "BSDE", "CTRA", "DMAS", "DSNG", "ELSA", "ERAA", "GGRM", "INDF", "INKP",
+        "ITMG", "JPFA", "LSIP", "MEDC", "MNCN", "PTBA", "PTPP", "PWON", "SMGR",
+        "SRTG", "TKIM", "UNTR"
+      ]
     }
   ]
 }

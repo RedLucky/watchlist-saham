@@ -4,6 +4,11 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-10-07] feat | IDX Value 30 Diisi
+- IDX Value 30 diisi (30 anggota, berlaku 2026-08-03) dari daftar pihak ketiga. Entri seed menyatakan sumber dan catatan kehati-hatinya secara terbuka, karena tidak dicocokkan dengan fact sheet resmi IDX.
+- Semua 30 anggota ada di `StockData`.
+- **ISSI tetap kosong dan alasannya adalah jumlah, bukan usaha:** per 7 Juli 2026 berisi 578 konstituen, yaitu seluruh saham di Sharia Securities List OJK. Daftar resminya adalah PDF pengumuman BEI di domain terlindungi Cloudflare. 578 ticker yang tidak bisa diverifikasi bukan hal yang layak dimasukkan ke alat investasi.
+
 ## [2026-10-07] feat | IDXHIDIV20 DiisiDan Tabel Anggota Dapat Paginasi & Scroll Sendiri
 - High Dividend 20 diisi (20 anggota, berlaku 2026-08-05) dari tabel Fortune Indonesia untuk evaluasi minor Juli 2026, yang mencantumkan setiap konstituen beserta bobot indeksnya. BEI mengonfirmasi evaluasi itu hanya mengubah bobot, bukan keanggotaan.
 - Tabel anggota kini menampilkan 20 baris per halaman dengan tombol sebelumnya/berikutnya dan penghitung "menampilkan X–Y dari Z", sehingga keanggotaan ISSI yang jauh lebih panjang tidak menghasilkan halaman yang tak berujung.

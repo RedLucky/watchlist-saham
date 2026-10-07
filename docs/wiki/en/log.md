@@ -4,6 +4,11 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-10-07] feat | IDX Value 30 Seeded
+- IDX Value 30 seeded (30 members, effective 2026-08-03) from a third-party list. The seed entry states the source and the caveat inline, because it was not confirmed against the official IDX fact sheet.
+- All 30 members exist in `StockData`.
+- **ISSI stays empty and the reason is size, not effort:** as of 7 July 2026 it holds 578 constituents, which is every stock on the OJK Sharia Securities List. The authoritative list is the BEI announcement PDF on the Cloudflare-protected domain. 578 unverifiable tickers is not something to put into an investment tool.
+
 ## [2026-10-07] feat | IDXHIDIV20 Seeded And The Member Table Gains Pagination And Its Own Scroll
 - High Dividend 20 seeded (20 members, effective 2026-08-05) from Fortune Indonesia's table of the July 2026 minor review, which lists every constituent with its index weight. BEI confirmed the review changed weights only, not membership.
 - The member table now shows 20 rows per page with prev/next controls and a "menampilkan X–Y dari Z" counter, so ISSI's much longer membership will not produce an endless page.

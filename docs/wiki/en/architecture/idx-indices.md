@@ -95,13 +95,18 @@ Each entry records `effectiveFrom` (when IDX published it), `source`, `verifiedO
 every ticker rather than trusting a number. Re-running is safe; it replaces the member list of
 each seeded index.
 
-Seeded so far: **LQ45** (45, effective 2026-08-03), **IDX30** (30, 2026-08-03) and
-**HIDV20** (20, 2026-08-05).
+Seeded: **LQ45** (45, effective 2026-08-03), **IDX30** (30, 2026-08-03), **HIDV20** (20,
+2026-08-05) and **IDX Value 30** (30, 2026-08-03).
 
-Still missing: **IDX Value 30** and **ISSI**. Their authoritative lists live in the monthly
-[Fact Sheet Index](https://www.idx.co.id/id/data-pasar/laporan-statistik/fact-sheet-indeks) PDFs on
-the protected domain, and ISSI additionally requires the OJK *Sharia Securities List*, which is
-published separately by DSN-MUI/OJK. No list was entered without a verifiable source.
+IDX Value 30 comes from a third-party site, not from IDX. Its entry in the seed file says so, and
+lists the caveat inline. Check it against the official fact sheet when you can and correct it from
+the Indeks BEI page if a name is wrong.
+
+Still missing: **ISSI**. It is far larger than it looks — as of 7 July 2026 it holds **578**
+constituents, which is every stock on the OJK *Sharia Securities List* (DES), reviewed in May and
+November. The authoritative list is the BEI announcement PDF on the protected domain. Extracting
+578 tickers from an unverifiable source is exactly the kind of guess that must not go into an
+investment tool.
 
 ### Manual fallback
 
