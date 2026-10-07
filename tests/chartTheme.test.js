@@ -31,7 +31,7 @@ test('FALLBACK_TOKENS sama dengan nilai token di globals.css', () => {
     return css.slice(start, css.indexOf('}', start));
   };
   const value = (body, name) => new RegExp(`--c-${name}:\\s*(#[0-9a-f]{6})`, 'i').exec(body)[1].toLowerCase();
-  const names = { ink: 'ink', muted: 'muted', line: 'line', lineStrong: 'line-strong', up: 'up', down: 'down', warn: 'warn', accent: 'accent' };
+  const names = { canvas: 'canvas', ink: 'ink', muted: 'muted', line: 'line', lineStrong: 'line-strong', up: 'up', down: 'down', warn: 'warn', accent: 'accent' };
 
   for (const [theme, selector] of [['light', ':root'], ['dark', '.dark']]) {
     const body = block(selector);

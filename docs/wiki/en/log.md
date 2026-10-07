@@ -4,6 +4,11 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-10-07] feat | Pension Modules Migrated to Bursa 1985
+- `PensionCalculator`, `PensionTracker`, `PensionRebalance` and `/pensiun` moved to theme tokens and Unicode symbols; buttons that lost their gradient use `.btn-primary` / `.btn-secondary`, candidate/auth modals use `.modal-*`.
+- Asset-growth and monthly-bar canvases in `PensionTracker` read theme tokens instead of fixed hex colours (bars use ink → muted instead of an indigo/purple gradient).
+- `chartTheme` now also exposes the `canvas` token and `isDarkTheme()`.
+
 ## [2026-10-07] feat | Portfolio, History & Win Rate Migrated to Bursa 1985
 - `PortfolioPanel`, `HistoryPanel` and `BacktestPanel` moved to theme tokens and Unicode symbols.
 - History source/status filters use `.tabs`; portfolio sell-confirmation dialog uses `.modal-*` with `role="dialog"`.

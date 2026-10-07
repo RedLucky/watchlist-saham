@@ -58,6 +58,11 @@ const MIGRATED_FILES = [
   'src/components/PortfolioPanel.jsx',
   'src/components/HistoryPanel.jsx',
   'src/components/BacktestPanel.jsx',
+  // TASK-6019: Pension
+  'src/components/PensionCalculator.jsx',
+  'src/components/PensionTracker.jsx',
+  'src/components/PensionRebalance.jsx',
+  'src/app/pensiun/page.js',
 ];
 
 /** Lines that handle user-chosen collection emoji (data, not UI icons) may contain emoji. */

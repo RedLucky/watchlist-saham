@@ -17,16 +17,16 @@ export default function PensionPage() {
       <div className="max-w-7xl mx-auto space-y-6">
         
         {/* Navigation Top Bar */}
-        <div className="flex items-center justify-between pb-4 border-b border-white/10">
+        <div className="flex items-center justify-between pb-4 border-b border-line">
           <Link
             href="/"
-            className="flex items-center gap-2 text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-colors bg-white/5 px-3 py-2 rounded-lg border border-white/10"
+            className="flex items-center gap-2 text-xs font-bold text-ink hover:text-ink transition-colors bg-sunken px-3 py-2 rounded-sm border border-line"
           >
             ← Kembali ke Dashboard IDX Watchlist
           </Link>
 
           <div className="text-right">
-            <h1 className="text-sm font-bold text-white uppercase tracking-wider">Modul Alokasi Pensiun</h1>
+            <h1 className="label-mono">Modul Alokasi Pensiun</h1>
             <span className="text-[10px] text-text-muted">Kalkulasi Presisi Real-Time</span>
           </div>
         </div>

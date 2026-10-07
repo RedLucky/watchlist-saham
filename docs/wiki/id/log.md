@@ -4,6 +4,11 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-10-07] feat | Migrasi Modul Pensiun ke Bursa 1985
+- `PensionCalculator`, `PensionTracker`, `PensionRebalance`, dan `/pensiun` dipindah ke token tema dan simbol Unicode; tombol yang kehilangan gradien memakai `.btn-primary` / `.btn-secondary`, modal kandidat & auth memakai `.modal-*`.
+- Canvas pertumbuhan aset dan bar bulanan di `PensionTracker` membaca token tema, bukan warna hex tetap (bar memakai ink → muted, bukan gradien indigo/ungu).
+- `chartTheme` kini mengekspos token `canvas` dan `isDarkTheme()`.
+
 ## [2026-10-07] feat | Migrasi Portofolio, Riwayat & Win Rate ke Bursa 1985
 - `PortfolioPanel`, `HistoryPanel`, dan `BacktestPanel` dipindah ke token tema dan simbol Unicode.
 - Filter sumber/status di Riwayat memakai `.tabs`; dialog konfirmasi jual portofolio memakai `.modal-*` dengan `role="dialog"`.

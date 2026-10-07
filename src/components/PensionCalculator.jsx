@@ -245,8 +245,8 @@ export default function PensionCalculator() {
 
           showToast(
             data.isAiGenerated
-              ? '✨ Portofolio & alokasi lot berhasil dioptimalkan oleh AI!'
-              : '✅ Portofolio dioptimalkan menggunakan Algoritma Kuantitatif Multi-Faktor!',
+              ? '✦ Portofolio & alokasi lot berhasil dioptimalkan oleh AI!'
+              : '✓ Portofolio dioptimalkan menggunakan Algoritma Kuantitatif Multi-Faktor!',
             'success'
           );
         }
@@ -327,7 +327,7 @@ export default function PensionCalculator() {
     const nextLots = currentStock.lots + 1;
 
     if (nextLots > maxAffordableForTicker) {
-      showToast(`⚠️ Anggaran belanja saham tidak mencukupi untuk menambah 1 lot ${ticker} (Maksimal ${maxAffordableForTicker} lot dengan alokasi saham lainnya)`, 'warning');
+      showToast(`▲ Anggaran belanja saham tidak mencukupi untuk menambah 1 lot ${ticker} (Maksimal ${maxAffordableForTicker} lot dengan alokasi saham lainnya)`, 'warning');
       return;
     }
 
@@ -370,7 +370,7 @@ export default function PensionCalculator() {
 
     if (num > maxAffordable) {
       setManualLots((prev) => ({ ...prev, [ticker]: maxAffordable }));
-      showToast(`⚠️ Pembelian ${ticker} disesuaikan ke ${maxAffordable} lot agar belanja saham tetap dalam batas anggaran`, 'warning');
+      showToast(`▲ Pembelian ${ticker} disesuaikan ke ${maxAffordable} lot agar belanja saham tetap dalam batas anggaran`, 'warning');
     } else {
       setManualLots((prev) => ({ ...prev, [ticker]: num }));
     }
@@ -378,7 +378,7 @@ export default function PensionCalculator() {
 
   const handleResetAutoLots = () => {
     setManualLots({});
-    showToast('✅ Semua alokasi lot di-rebalance otomatis (Min. 1 Lot, Max Growth & Return)', 'success');
+    showToast('✓ Semua alokasi lot di-rebalance otomatis (Min. 1 Lot, Max Growth & Return)', 'success');
   };
 
   const handleRefreshPrices = async () => {
@@ -449,7 +449,7 @@ export default function PensionCalculator() {
         return next;
       });
       syncCustomPresetToDB(updated);
-      showToast(`✅ Saham ${ticker} (${candidateStock.name}) ditambahkan! Alokasi lot di-rebalance otomatis (Min. 1 Lot & Max Return).`, 'success');
+      showToast(`✓ Saham ${ticker} (${candidateStock.name}) ditambahkan! Alokasi lot di-rebalance otomatis (Min. 1 Lot & Max Return).`, 'success');
     }
   };
 
@@ -529,7 +529,7 @@ export default function PensionCalculator() {
         });
         syncCustomPresetToDB(updated);
         setCustomTickerInput('');
-        showToast(`✅ Saham ${ticker} (${name}) berhasil ditambahkan! Alokasi lot di-rebalance otomatis.`, 'success');
+        showToast(`✓ Saham ${ticker} (${name}) berhasil ditambahkan! Alokasi lot di-rebalance otomatis.`, 'success');
       } else {
         showToast(`Saham ${ticker} tidak ditemukan di database.`, 'error');
       }
@@ -549,13 +549,13 @@ export default function PensionCalculator() {
  // Asset Ratios based on Risk Profile
  const assetRatios = useMemo(() => {
  if (riskProfile === 'CONSERVATIVE') {
- return { sbn: 0.60, stock: 0.20, rdpu: 0.20, label: '🟢 Konservatif (60% SBN / 20% Saham / 20% RDPU)' };
+ return { sbn: 0.60, stock: 0.20, rdpu: 0.20, label: '● Konservatif (60% SBN / 20% Saham / 20% RDPU)' };
  }
  if (riskProfile === 'AGGRESSIVE') {
- return { sbn: 0.30, stock: 0.60, rdpu: 0.10, label: '🔴 Agresif (30% SBN / 60% Saham / 10% RDPU)' };
+ return { sbn: 0.30, stock: 0.60, rdpu: 0.10, label: '● Agresif (30% SBN / 60% Saham / 10% RDPU)' };
  }
  // MODERATE
- return { sbn: 0.50, stock: 0.35, rdpu: 0.15, label: '🟡 Moderat (50% SBN / 35% Saham / 15% RDPU)' };
+ return { sbn: 0.50, stock: 0.35, rdpu: 0.15, label: '● Moderat (50% SBN / 35% Saham / 15% RDPU)' };
  }, [riskProfile]);
 
   // Backpropagation Gradient Descent Optimizer for Stock Lot Allocation & Weights
@@ -986,7 +986,7 @@ inflationRate,
       .map((st) => `• ${st.ticker}: ${st.lots} Lot (Rp ${st.cost.toLocaleString('id-ID')})`)
       .join('\n');
 
-    const text = `🛒 ORDER BELANJA SAHAM PENSIUN (${riskProfile}):
+    const text = `▣ ORDER BELANJA SAHAM PENSIUN (${riskProfile}):
 ${stockLines}
 ---
 Total Belanja Saham: Rp ${calculations.totalStockSpent.toLocaleString('id-ID')}
@@ -1003,21 +1003,21 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
  <div className="space-y-6 max-w-[1400px] mx-auto pb-12">
  
   {/* Top User Auth Bar */}
-  <div className="flex justify-between items-center bg-white dark:bg-slate-900/80 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
+  <div className="flex justify-between items-center bg-surface p-3.5 rounded-md border border-line shadow-2xs">
   <div className="flex items-center gap-3">
-  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center font-black text-white text-xs shadow-xs">
-  {currentUser ? currentUser.name.charAt(0).toUpperCase() : '👤'}
+  <div className="w-8 h-8 rounded-full bg-ink flex items-center justify-center font-black text-on-accent text-xs">
+  {currentUser ? currentUser.name.charAt(0).toUpperCase() : '◯'}
   </div>
   <div>
   {currentUser ? (
   <div className="flex items-center gap-2">
-  <span className="text-xs font-black text-slate-900 dark:text-white">Halo, {currentUser.name}</span>
-  <span className="text-[10px] px-2 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-extrabold border border-indigo-200 dark:border-indigo-500/30">
+  <span className="text-xs font-black text-ink ">Halo, {currentUser.name}</span>
+  <span className="text-[10px] px-2 py-0.5 rounded-sm bg-sunken text-ink font-extrabold border border-line ">
   {riskProfile}
   </span>
   </div>
   ) : (
-  <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+  <span className="text-xs text-muted font-medium">
   Mode Tamu (Silakan login untuk menyimpan portofolio tracker Anda ke database)
   </span>
   )}
@@ -1028,32 +1028,32 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
   {currentUser ? (
   <button
   onClick={handleLogout}
-  className="text-xs text-rose-700 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 font-bold px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 transition-colors"
+  className="text-xs text-down hover:text-down font-bold px-3 py-1.5 rounded-sm bg-down-soft hover:bg-down-soft transition-colors"
   >
   Logout
   </button>
   ) : (
   <button
   onClick={() => setShowAuthModal(true)}
-  className="text-xs font-black text-white bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 px-4 py-2 rounded-xl shadow-md shadow-indigo-500/20 transition-all cursor-pointer"
+  className="btn-primary cursor-pointer"
   >
-  🔑 Login / Registrasi Akun
+  ⚿ Login / Registrasi Akun
   </button>
   )}
   </div>
   </div>
 
   {/* Header Banner */}
-  <div className="glass-panel p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 relative overflow-hidden bg-gradient-to-br from-indigo-50/80 via-cyan-50/40 to-white dark:from-indigo-950/40 dark:via-cyan-950/20 dark:to-[#070b14]">
+  <div className="glass-panel p-4 sm:p-6 rounded-md border border-line relative overflow-hidden to-white ">
   <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 sm:gap-4">
   <div>
   <div className="flex items-center gap-2 mb-1">
-  <span className="text-xl sm:text-2xl">🏖️</span>
-  <h2 className="text-base sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
+  <span className="text-xl sm:text-2xl">◷</span>
+  <h2 className="text-base sm:text-xl font-black text-ink tracking-tight">
   Kalkulator Alokasi & Target Dana Pensiun
   </h2>
  </div>
- <p className="text-[11px] sm:text-xs text-slate-600 dark:text-slate-400 font-medium max-w-2xl">
+ <p className="text-[11px] sm:text-xs text-muted font-medium max-w-2xl">
  Rekomendasi preset saham dinamis ter-update dari database (Analisis Fundamental, Valuasi PER/PBV & Dividen Yield/Streak).
  </p>
  </div>
@@ -1062,7 +1062,7 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
   <button
     onClick={handleAiOptimize}
     disabled={isAiOptimizing || loadingPreset}
-    className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 text-white font-extrabold text-[11px] sm:text-xs transition-all shadow-lg shadow-indigo-500/25 border border-indigo-400/30 flex items-center gap-1.5 disabled:opacity-50 active:scale-95 cursor-pointer"
+    className="btn-secondary disabled:opacity-50 cursor-pointer"
     title="Optimasi Pemilihan Saham & Perhitungan Lot Maksimal Menggunakan AI Lokal"
   >
     {isAiOptimizing ? (
@@ -1074,7 +1074,7 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
       </>
     ) : (
       <>
-        <span className="text-sm">✨</span>
+        <span className="text-sm">✦</span>
         <span>Optimasi AI</span>
       </>
     )}
@@ -1082,16 +1082,16 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
 
  <button
  onClick={handleRefreshPrices}
- className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-bold text-[11px] sm:text-xs transition-colors border border-blue-500/20 flex items-center gap-1.5"
+ className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-sm bg-sunken hover:bg-sunken text-ink font-bold text-[11px] sm:text-xs transition-colors border border-line flex items-center gap-1.5"
  >
- <span>⚡ Refresh Harga</span>
+ <span>» Refresh Harga</span>
  </button>
 
  <button
  onClick={handleCopySummary}
- className="px-3 sm:px-4 py-1.5 sm:py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[11px] sm:text-xs transition-all shadow-lg shadow-emerald-500/20 rounded-xl flex items-center gap-2"
+ className="px-3 sm:px-4 py-1.5 sm:py-2 bg-up hover:bg-up text-on-accent font-extrabold text-[11px] sm:text-xs transition-all shadow-lg rounded-sm flex items-center gap-2"
  >
- {copied ? '✓ Tersalin!' : '📋 Salin Order'}
+ {copied ? '✓ Tersalin!' : '▤ Salin Order'}
  </button>
  </div>
  </div>
@@ -1102,15 +1102,15 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
  
  {/* LEFT COLUMN: Configuration Panel */}
  <div className="lg:col-span-3 space-y-4 static lg:sticky lg:top-24 z-10">
- <div className="glass-panel p-5 rounded-2xl border border-slate-300 dark:border-white/10 bg-white dark:bg-slate-900/50 shadow-xl">
+ <div className="glass-panel p-5 rounded-md border border-line bg-surface shadow-xl">
  <div 
  onClick={() => setMobileParamsOpen(!mobileParamsOpen)}
- className="flex justify-between items-center cursor-pointer lg:cursor-default select-none border-b border-slate-300 dark:border-white/10 pb-3"
+ className="flex justify-between items-center cursor-pointer lg:cursor-default select-none border-b border-line pb-3"
  >
- <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
- <span>⚙️</span> Parameter Perhitungan
+ <h3 className="text-sm font-bold text-ink flex items-center gap-2">
+ <span>≡</span> Parameter Perhitungan
  </h3>
- <span className="lg:hidden text-xs font-extrabold text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2.5 py-1 rounded-lg border border-indigo-200 dark:border-indigo-500/30 flex items-center gap-1">
+ <span className="lg:hidden text-xs font-extrabold text-ink bg-sunken px-2.5 py-1 rounded-sm border border-line flex items-center gap-1">
  {mobileParamsOpen ? '▲ Sembunyikan' : '▼ Parameter'}
  </span>
  </div>
@@ -1119,22 +1119,22 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
 
  {/* Risk Profile Selector */}
  <div className="space-y-1">
- <label className="text-[10px] uppercase text-indigo-700 dark:text-indigo-400 font-extrabold block">
- 🎛️ Profil Risiko Investasi
+ <label className="text-[10px] uppercase text-ink font-extrabold block">
+ ≡ Profil Risiko Investasi
  </label>
  <select
  value={riskProfile}
  onChange={(e) => setRiskProfile(e.target.value)}
- className="w-full bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-lg px-2.5 py-2 text-xs font-bold text-indigo-700 dark:text-indigo-300 focus:outline-none focus:border-indigo-400"
+ className="w-full bg-sunken border border-line rounded-sm px-2.5 py-2 text-xs font-bold text-ink focus:outline-none focus:border-accent"
  >
- <option value="CONSERVATIVE">🟢 Konservatif (SBN 60%)</option>
- <option value="MODERATE">🟡 Moderat (SBN 50% / Saham 35%)</option>
- <option value="AGGRESSIVE">🔴 Agresif (SBN 30% / Saham 60%)</option>
+ <option value="CONSERVATIVE">● Konservatif (SBN 60%)</option>
+ <option value="MODERATE">● Moderat (SBN 50% / Saham 35%)</option>
+ <option value="AGGRESSIVE">● Agresif (SBN 30% / Saham 60%)</option>
  </select>
- <div className="text-[9px] text-slate-700 dark:text-slate-300 font-bold bg-indigo-50 dark:bg-indigo-950/30 p-1.5 rounded-lg border border-indigo-200 dark:border-indigo-500/20">
- 💡 Return Portofolio: <strong className="text-indigo-700 dark:text-indigo-300">{portfolioWeightedReturn}% / thn</strong>
+ <div className="text-[9px] text-ink font-bold bg-sunken p-1.5 rounded-sm border border-line ">
+ ✦ Return Portofolio: <strong className="text-ink ">{portfolioWeightedReturn}% / thn</strong>
  <br />
- <span className="text-[8.5px] text-slate-600 dark:text-slate-400 font-medium">
+ <span className="text-[8.5px] text-muted font-medium">
  (SBN 6.5% | Saham {estimatedStockReturn.toFixed(1)}% | RDPU 5.0%)
  </span>
  </div>
@@ -1142,11 +1142,11 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
 
  {/* Pengeluaran Bulanan */}
  <div className="space-y-1">
- <label className="text-[10px] uppercase text-amber-800 dark:text-amber-400 font-extrabold block">
- 💸 Pengeluaran Bulanan
+ <label className="text-[10px] uppercase text-warn font-extrabold block">
+ ¤ Pengeluaran Bulanan
  </label>
- <div className="flex items-center gap-2 bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-lg px-2.5 py-1.5 focus-within:border-amber-400">
- <span className="text-xs text-slate-700 dark:text-slate-400 font-bold">Rp</span>
+ <div className="flex items-center gap-2 bg-sunken border border-line rounded-sm px-2.5 py-1.5 focus-within:border-warn">
+ <span className="text-xs text-ink font-bold">Rp</span>
  <input
  type="text"
  value={monthlyExpense === 0 ? '' : monthlyExpense.toLocaleString('id-ID')}
@@ -1154,18 +1154,18 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
    const val = e.target.value.replace(/\D/g, '');
    setMonthlyExpense(val ? Number(val) : 0);
  }}
- className="w-full bg-transparent text-sm font-bold text-slate-900 dark:text-white focus:outline-none"
+ className="w-full bg-transparent text-sm font-bold text-ink focus:outline-none"
  />
  </div>
  </div>
 
  {/* Total Menabung Bulanan */}
  <div className="space-y-1">
- <label className="text-[10px] uppercase text-emerald-700 dark:text-emerald-400 font-extrabold block">
- 💰 Total Investasi Bulanan
+ <label className="text-[10px] uppercase text-up font-extrabold block">
+ ¤ Total Investasi Bulanan
  </label>
- <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg px-2.5 py-1.5 focus-within:border-emerald-400">
- <span className="text-xs text-emerald-700 dark:text-emerald-400 font-bold">Rp</span>
+ <div className="flex items-center gap-2 bg-up-soft border border-up rounded-sm px-2.5 py-1.5 focus-within:border-up">
+ <span className="text-xs text-up font-bold">Rp</span>
  <input
  type="text"
  value={totalBudget === 0 ? '' : totalBudget.toLocaleString('id-ID')}
@@ -1173,7 +1173,7 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
    const val = e.target.value.replace(/\D/g, '');
    setTotalBudget(val ? Number(val) : 0);
  }}
- className="w-full bg-transparent text-sm font-extrabold text-emerald-700 dark:text-emerald-400 focus:outline-none"
+ className="w-full bg-transparent text-sm font-extrabold text-up focus:outline-none"
  />
  </div>
  </div>
@@ -1181,21 +1181,21 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
  {/* Usia & Target */}
  <div className="grid grid-cols-2 gap-3">
  <div className="space-y-1">
- <label className="text-[10px] uppercase text-indigo-700 dark:text-indigo-400 font-extrabold block">Usia Saat Ini</label>
+ <label className="text-[10px] uppercase text-ink font-extrabold block">Usia Saat Ini</label>
  <input
  type="number"
  value={currentAge}
  onChange={(e) => setCurrentAge(Math.max(18, Number(e.target.value)))}
- className="w-full bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-indigo-400"
+ className="w-full bg-sunken border border-line rounded-sm px-2.5 py-1.5 text-xs font-bold text-ink focus:outline-none focus:border-accent"
  />
  </div>
  <div className="space-y-1">
- <label className="text-[10px] uppercase text-indigo-700 dark:text-indigo-400 font-extrabold block">Usia Pensiun</label>
+ <label className="text-[10px] uppercase text-ink font-extrabold block">Usia Pensiun</label>
  <input
  type="number"
  value={targetAge}
  onChange={(e) => setTargetAge(Math.max(currentAge + 1, Number(e.target.value)))}
- className="w-full bg-indigo-500/10 border border-indigo-500/30 rounded-lg px-2.5 py-1.5 text-xs font-bold text-indigo-700 dark:text-indigo-300 focus:outline-none focus:border-indigo-400"
+ className="w-full bg-sunken border border-line rounded-sm px-2.5 py-1.5 text-xs font-bold text-ink focus:outline-none focus:border-accent"
  />
  </div>
  </div>
@@ -1204,7 +1204,7 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
  <div className="grid grid-cols-2 gap-3">
  <div className="space-y-1">
  <div className="flex justify-between items-center">
- <label className="text-[10px] uppercase text-purple-700 dark:text-purple-400 font-extrabold block">Target Return</label>
+ <label className="text-[10px] uppercase text-ink font-extrabold block">Target Return</label>
  <button
  type="button"
  onClick={() => {
@@ -1218,95 +1218,95 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
  const autoWeighted = (sbnWeight * 6.5) + (stockWeight * autoStockRet) + (rdpuWeight * 5.0);
  setExpectedReturn(Number(autoWeighted.toFixed(1)));
  }}
- className="text-[9px] text-purple-700 dark:text-purple-300 font-extrabold hover:underline"
+ className="text-[9px] text-ink font-extrabold hover:underline"
  title="Reset Dividen & Growth ke Auto, lalu samakan dengan bobot portofolio"
  >
- ⚡ Sync All ({portfolioWeightedReturn}%)
+ » Sync All ({portfolioWeightedReturn}%)
  </button>
  </div>
- <div className="flex items-center bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-lg px-2.5 py-1.5 focus-within:border-purple-400">
+ <div className="flex items-center bg-sunken border border-line rounded-sm px-2.5 py-1.5 focus-within:border-accent">
  <input
  type="number"
  step="0.1"
  value={expectedReturn}
  onChange={(e) => setExpectedReturn(Math.max(1, Number(e.target.value)))}
- className="w-full bg-transparent text-xs font-bold text-purple-700 dark:text-purple-300 focus:outline-none"
+ className="w-full bg-transparent text-xs font-bold text-ink focus:outline-none"
  />
- <span className="text-xs text-slate-700 dark:text-slate-400 font-bold">%</span>
+ <span className="text-xs text-ink font-bold">%</span>
  </div>
  </div>
  <div className="space-y-1">
- <label className="text-[10px] uppercase text-rose-700 dark:text-rose-400 font-extrabold block">Inflasi / Thn</label>
- <div className="flex items-center bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-lg px-2.5 py-1.5 focus-within:border-rose-400">
+ <label className="text-[10px] uppercase text-down font-extrabold block">Inflasi / Thn</label>
+ <div className="flex items-center bg-sunken border border-line rounded-sm px-2.5 py-1.5 focus-within:border-down">
  <input
  type="number"
  value={inflationRate}
  onChange={(e) => setInflationRate(Math.max(1, Number(e.target.value)))}
- className="w-full bg-transparent text-xs font-bold text-rose-700 dark:text-rose-300 focus:outline-none"
+ className="w-full bg-transparent text-xs font-bold text-down focus:outline-none"
  />
- <span className="text-xs text-slate-700 dark:text-slate-400 font-bold">%</span>
+ <span className="text-xs text-ink font-bold">%</span>
  </div>
  </div>
  </div>
 
  {/* Variable Return Saham (Dividen & Growth) */}
- <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-300 dark:border-white/10">
+ <div className="grid grid-cols-2 gap-3 pt-2 border-t border-line ">
  <div className="space-y-1">
  <div className="flex justify-between items-center">
- <label className="text-[10px] uppercase text-emerald-700 dark:text-emerald-400 font-extrabold block">Dividen Saham</label>
+ <label className="text-[10px] uppercase text-up font-extrabold block">Dividen Saham</label>
  {customDivYield !== null && (
  <button
  type="button"
  onClick={() => setCustomDivYield(null)}
- className="text-[8px] text-emerald-700 dark:text-emerald-300 font-bold hover:underline"
+ className="text-[8px] text-up font-bold hover:underline"
  title="Reset ke rata-rata preset"
  >
- 🔄 Auto
+ ↻ Auto
  </button>
  )}
  </div>
- <div className="flex items-center bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-lg px-2.5 py-1.5 focus-within:border-emerald-400">
+ <div className="flex items-center bg-sunken border border-line rounded-sm px-2.5 py-1.5 focus-within:border-up">
  <input
  type="number"
  step="0.1"
  value={effectiveDivYield}
  onChange={(e) => setCustomDivYield(Math.max(0, Number(e.target.value)))}
- className="w-full bg-transparent text-xs font-bold text-emerald-700 dark:text-emerald-300 focus:outline-none"
+ className="w-full bg-transparent text-xs font-bold text-up focus:outline-none"
  />
- <span className="text-xs text-slate-700 dark:text-slate-400 font-bold">%</span>
+ <span className="text-xs text-ink font-bold">%</span>
  </div>
- <span className="text-[8.5px] text-slate-600 dark:text-slate-400 block font-medium">
+ <span className="text-[8.5px] text-muted block font-medium">
  {customDivYield === null ? `Preset avg: ${autoStockDivYield}%` : 'Manual Custom'}
  </span>
  </div>
 
  <div className="space-y-1">
  <div className="flex justify-between items-center">
- <label className="text-[10px] uppercase text-indigo-700 dark:text-indigo-400 font-extrabold block">Growth Saham</label>
+ <label className="text-[10px] uppercase text-ink font-extrabold block">Growth Saham</label>
  {customGrowthRate !== null && (
  <button
  type="button"
  onClick={() => setCustomGrowthRate(null)}
- className="text-[8px] text-indigo-700 dark:text-indigo-300 font-bold hover:underline"
+ className="text-[8px] text-ink font-bold hover:underline"
  title="Reset ke rata-rata preset"
  >
- 🔄 Auto
+ ↻ Auto
  </button>
  )}
  </div>
- <div className="flex items-center bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-lg px-2.5 py-1.5 focus-within:border-indigo-400">
+ <div className="flex items-center bg-sunken border border-line rounded-sm px-2.5 py-1.5 focus-within:border-accent">
  <input
  type="number"
  step="0.1"
  value={effectiveGrowthRate}
  onChange={(e) => setCustomGrowthRate(Math.max(0, Number(e.target.value)))}
- className="w-full bg-transparent text-xs font-bold text-indigo-700 dark:text-indigo-300 focus:outline-none"
+ className="w-full bg-transparent text-xs font-bold text-ink focus:outline-none"
  />
- <span className="text-xs text-slate-700 dark:text-slate-400 font-bold">%</span>
+ <span className="text-xs text-ink font-bold">%</span>
  </div>
- <div className="flex justify-between items-center text-[8.5px] text-slate-600 dark:text-slate-400 font-medium">
+ <div className="flex justify-between items-center text-[8.5px] text-muted font-medium">
  <span>{customGrowthRate === null ? `Preset avg: ${autoStockGrowthRate}%` : 'Manual Custom'}</span>
- <span className="font-bold text-emerald-600 dark:text-emerald-400">Total: {estimatedStockReturn}%/thn</span>
+ <span className="font-bold text-up ">Total: {estimatedStockReturn}%/thn</span>
  </div>
  </div>
  </div>
@@ -1314,25 +1314,25 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
  {/* Toggle SBN */}
  <button
  onClick={() => setSbnAvailable(!sbnAvailable)}
- className={`w-full py-2 px-3 rounded-lg text-xs font-bold transition-all border mt-2 ${
+ className={`w-full py-2 px-3 rounded-sm text-xs font-bold transition-all border mt-2 ${
  sbnAvailable
- ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
- : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/20'
+ ? 'bg-up-soft text-up border-up hover:bg-up-soft'
+ : 'bg-warn-soft text-warn border-warn hover:bg-warn-soft'
  }`}
  >
- {sbnAvailable ? `✅ SBN Tersedia (${(assetRatios.sbn * 100).toFixed(0)}%)` : '⚠️ SBN Kosong (Alihkan ke RDPU)'}
+ {sbnAvailable ? `✓ SBN Tersedia (${(assetRatios.sbn * 100).toFixed(0)}%)` : '▲ SBN Kosong (Alihkan ke RDPU)'}
  </button>
 
  {/* Tombol Simpan Parameter */}
  <button
  onClick={handleSaveParameters}
- className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold text-xs shadow-md shadow-blue-500/20 transition-all flex items-center justify-center gap-2 mt-3"
+ className="btn-primary w-full mt-3"
  >
- <span>💾 Simpan Parameter</span>
+ <span>⇩ Simpan Parameter</span>
  </button>
 
  {paramsSavedMsg && (
- <div className="p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-center text-xs font-bold animate-fade-in mt-2">
+ <div className="p-2.5 rounded-sm bg-up-soft border border-up text-up text-center text-xs font-bold animate-fade-in mt-2">
  ✓ Parameter berhasil disimpan!
  </div>
  )}
@@ -1347,43 +1347,43 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
  {/* 4 Highlight Cards */}
  <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-4">
  {/* Target Dana */}
- <div className="glass-panel p-4 rounded-2xl border border-indigo-500/30 bg-gradient-to-br from-indigo-50/80 dark:from-indigo-950/50 to-white dark:to-[#0a0f1a]">
- <span className="text-[9px] sm:text-[10px] font-extrabold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider block mb-1">🎯 Target Dana Pensiun</span>
- <div className="text-sm sm:text-lg font-black text-slate-900 dark:text-white mb-1 sm:mb-2 break-all">
+ <div className="glass-panel p-4 rounded-md border border-line to-white ">
+ <span className="text-[9px] sm:text-[10px] font-extrabold text-ink uppercase tracking-wider block mb-1">◎ Target Dana Pensiun</span>
+ <div className="text-sm sm:text-lg font-black text-ink mb-1 sm:mb-2 break-all">
  Rp {calculations.targetCorpusNominal.toLocaleString('id-ID', { maximumFractionDigits: 0 })}
  </div>
- <p className="text-[9px] sm:text-[10px] text-slate-700 dark:text-slate-300 font-medium leading-tight hidden sm:block">
+ <p className="text-[9px] sm:text-[10px] text-ink font-medium leading-tight hidden sm:block">
  Mencukupi kebutuhan <strong>Rp {calculations.futureMonthlyExpense.toLocaleString('id-ID', { maximumFractionDigits: 0 })}/bln</strong> di usia {targetAge} (inflasi {inflationRate}%).
  </p>
  </div>
 
  {/* Estimasi Terkumpul */}
- <div className="glass-panel p-4 rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-50/80 dark:from-emerald-950/50 to-white dark:to-[#0a0f1a]">
- <span className="text-[9px] sm:text-[10px] font-extrabold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider block mb-1">📅 Kapan Terkumpul?</span>
- <div className="text-sm sm:text-lg font-black text-emerald-700 dark:text-emerald-400 mb-1 sm:mb-2">
+ <div className="glass-panel p-4 rounded-md border border-up to-white ">
+ <span className="text-[9px] sm:text-[10px] font-extrabold text-up uppercase tracking-wider block mb-1">▦ Kapan Terkumpul?</span>
+ <div className="text-sm sm:text-lg font-black text-up mb-1 sm:mb-2">
  Tahun {calculations.estimatedAchievedYear}
  </div>
- <p className="text-[9px] sm:text-[10px] text-slate-700 dark:text-slate-300 font-medium leading-tight hidden sm:block">
+ <p className="text-[9px] sm:text-[10px] text-ink font-medium leading-tight hidden sm:block">
  Tercapai pada usia <strong>{calculations.estimatedAchievedAge} Thn</strong> ({calculations.monthsToTarget} bulan dari sekarang).
  </p>
  </div>
 
  {/* Proyeksi Saat Pensiun */}
- <div className="glass-panel p-4 rounded-2xl border border-purple-500/30 bg-gradient-to-br from-purple-50/80 dark:from-purple-950/50 to-white dark:to-[#0a0f1a] flex flex-col justify-between">
+ <div className="glass-panel p-4 rounded-md border border-line to-white flex flex-col justify-between">
  <div>
- <span className="text-[9px] sm:text-[10px] font-extrabold text-purple-700 dark:text-purple-400 uppercase tracking-wider block mb-1">📈 Proyeksi Aset Usia {targetAge}</span>
- <div className="text-sm sm:text-lg font-black text-purple-700 dark:text-purple-300 break-all">
+ <span className="text-[9px] sm:text-[10px] font-extrabold text-ink uppercase tracking-wider block mb-1">↗ Proyeksi Aset Usia {targetAge}</span>
+ <div className="text-sm sm:text-lg font-black text-ink break-all">
  Rp {calculations.projectedFutureCorpus.toLocaleString('id-ID', { maximumFractionDigits: 0 })}
  </div>
  </div>
  <div className="mt-3">
- <div className="flex justify-between text-[9px] text-slate-700 dark:text-slate-300 mb-1 font-bold">
+ <div className="flex justify-between text-[9px] text-ink mb-1 font-bold">
  <span>Pencapaian Target</span>
- <span className="text-purple-700 dark:text-purple-300 font-extrabold">{calculations.corpusAchievementPct}%</span>
+ <span className="text-ink font-extrabold">{calculations.corpusAchievementPct}%</span>
  </div>
- <div className="w-full bg-slate-200 dark:bg-white/10 rounded-full h-1.5 overflow-hidden">
+ <div className="w-full bg-sunken rounded-full h-1.5 overflow-hidden">
  <div
- className="bg-gradient-to-r from-indigo-500 to-purple-400 h-full rounded-full transition-all duration-500"
+ className="h-full rounded-full transition-all duration-500"
  style={{ width: `${Math.min(100, calculations.corpusAchievementPct)}%` }}
  ></div>
  </div>
@@ -1391,25 +1391,25 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
  </div>
 
  {/* Passive Income Pensiun */}
- <div className="glass-panel p-4 rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-50/80 dark:from-amber-950/50 to-white dark:to-[#0a0f1a] flex flex-col justify-between">
+ <div className="glass-panel p-4 rounded-md border border-warn to-white flex flex-col justify-between">
  <div>
  <div className="flex items-center justify-between">
- <span className="text-[9px] sm:text-[10px] font-extrabold text-amber-800 dark:text-amber-400 uppercase tracking-wider block mb-1">💵 Passive Income</span>
- <span className="text-[7.5px] sm:text-[8.5px] px-1 sm:px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-800 dark:text-amber-300 font-bold border border-amber-500/30">DRIP</span>
+ <span className="text-[9px] sm:text-[10px] font-extrabold text-warn uppercase tracking-wider block mb-1">¤ Passive Income</span>
+ <span className="text-[7.5px] sm:text-[8.5px] px-1 sm:px-1.5 py-0.5 rounded bg-warn-soft text-warn font-bold border border-warn">DRIP</span>
  </div>
- <div className="text-sm sm:text-lg font-black text-amber-800 dark:text-amber-300 break-all">
- Rp {calculations.totalPassiveMonthlyIncome ? calculations.totalPassiveMonthlyIncome.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : 0} <span className="text-[10px] sm:text-xs font-bold text-slate-700 dark:text-slate-300">/bln</span>
+ <div className="text-sm sm:text-lg font-black text-warn break-all">
+ Rp {calculations.totalPassiveMonthlyIncome ? calculations.totalPassiveMonthlyIncome.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : 0} <span className="text-[10px] sm:text-xs font-bold text-ink ">/bln</span>
  </div>
  </div>
- <div className="mt-2 space-y-0.5 text-[9.5px] text-slate-700 dark:text-slate-300 font-medium">
+ <div className="mt-2 space-y-0.5 text-[9.5px] text-ink font-medium">
  <div className="flex justify-between">
- <span>📈 Dividen Saham ({calculations.effectiveDivYield}%):</span>
- <span className="font-bold text-slate-900 dark:text-white">Rp {Math.round(calculations.monthlyDividendIncome || 0).toLocaleString('id-ID')}/bln</span>
+ <span>↗ Dividen Saham ({calculations.effectiveDivYield}%):</span>
+ <span className="font-bold text-ink ">Rp {Math.round(calculations.monthlyDividendIncome || 0).toLocaleString('id-ID')}/bln</span>
  </div>
  {sbnAvailable && (
  <div className="flex justify-between">
- <span>🏛️ Kupon SBN Ritel (6.5%):</span>
- <span className="font-bold text-slate-900 dark:text-white">Rp {Math.round(calculations.monthlySbnIncome || 0).toLocaleString('id-ID')}/bln</span>
+ <span>▥ Kupon SBN Ritel (6.5%):</span>
+ <span className="font-bold text-ink ">Rp {Math.round(calculations.monthlySbnIncome || 0).toLocaleString('id-ID')}/bln</span>
  </div>
  )}
  </div>
@@ -1417,36 +1417,36 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
  </div>
 
  {/* Sub-Tab Navigation Bar */}
- <div className="flex items-center gap-1.5 sm:gap-2 p-1 bg-slate-100 dark:bg-white/5 rounded-xl border border-slate-300 dark:border-white/10 w-full sm:w-fit">
+ <div className="flex items-center gap-1.5 sm:gap-2 p-1 bg-sunken rounded-sm border border-line w-full sm:w-fit">
  <button
  onClick={() => setActiveSubTab('calculator')}
- className={`flex-1 sm:flex-initial px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg text-[11px] sm:text-xs font-extrabold transition-all ${
+ className={`flex-1 sm:flex-initial px-3 sm:px-5 py-2 sm:py-2.5 rounded-sm text-[11px] sm:text-xs font-extrabold transition-all ${
  activeSubTab === 'calculator'
- ? 'bg-indigo-600 text-white shadow-lg'
- : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-white/10'
+ ? 'bg-accent text-on-accent shadow-lg'
+ : 'text-ink hover:text-ink hover:bg-sunken '
  }`}
  >
- 🧮 Kalkulator Alokasi Aset
+ ∑ Kalkulator Alokasi Aset
  </button>
  <button
  onClick={() => setActiveSubTab('tracker')}
- className={`flex-1 sm:flex-initial px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg text-[11px] sm:text-xs font-extrabold transition-all ${
+ className={`flex-1 sm:flex-initial px-3 sm:px-5 py-2 sm:py-2.5 rounded-sm text-[11px] sm:text-xs font-extrabold transition-all ${
  activeSubTab === 'tracker'
- ? 'bg-emerald-600 text-white shadow-lg'
- : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-white/10'
+ ? 'bg-up text-on-accent shadow-lg'
+ : 'text-ink hover:text-ink hover:bg-sunken '
  }`}
  >
- 📊 Tracker Eksekusi Pribadi
+ ▤ Tracker Eksekusi Pribadi
  </button>
  <button
  onClick={() => setActiveSubTab('rebalance')}
- className={`flex-1 sm:flex-initial px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg text-[11px] sm:text-xs font-extrabold transition-all ${
+ className={`flex-1 sm:flex-initial px-3 sm:px-5 py-2 sm:py-2.5 rounded-sm text-[11px] sm:text-xs font-extrabold transition-all ${
  activeSubTab === 'rebalance'
- ? 'bg-amber-600 text-white shadow-lg'
- : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-white/10'
+ ? 'bg-warn text-on-accent shadow-lg'
+ : 'text-ink hover:text-ink hover:bg-sunken '
  }`}
  >
- ⚖️ Evaluasi & Rebalancing
+ ⇄ Evaluasi & Rebalancing
  </button>
  </div>
 
@@ -1456,40 +1456,40 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
 
   {/* AI Portfolio Thesis & Knapsack Optimization Card */}
   {aiThesisData && (
-    <div className="glass-panel p-5 rounded-2xl border border-purple-500/30 bg-gradient-to-br from-purple-50/90 via-indigo-50/70 to-white dark:from-purple-950/40 dark:via-indigo-950/30 dark:to-slate-900 shadow-xl space-y-3 animate-in fade-in duration-300">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-purple-200 dark:border-purple-800/50 pb-3">
+    <div className="glass-panel p-5 rounded-md border border-line to-white shadow-xl space-y-3 animate-in fade-in duration-300">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-line pb-3">
         <div className="flex items-center gap-2.5">
-          <span className="text-xl">✨</span>
+          <span className="text-xl">✦</span>
           <div>
-            <h4 className="text-xs sm:text-sm font-extrabold text-purple-950 dark:text-purple-200 tracking-tight flex items-center gap-2">
+            <h4 className="text-xs sm:text-sm font-extrabold text-ink tracking-tight flex items-center gap-2">
               <span>Analisis & Tesis Portofolio Pensiun AI</span>
               {aiThesisData.isAiGenerated ? (
-                <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-500/30">
-                  🤖 Model AI Lokal
+                <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-sunken text-ink border border-line">
+                  ◈ Model AI Lokal
                 </span>
               ) : (
-                <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-500/20 text-slate-700 dark:text-slate-300 border border-slate-500/30">
-                  ⚙️ Kuantitatif Multi-Faktor
+                <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-sunken text-ink border border-line">
+                  ≡ Kuantitatif Multi-Faktor
                 </span>
               )}
             </h4>
-            <p className="text-[10.5px] text-slate-600 dark:text-slate-400 font-medium mt-0.5">
+            <p className="text-[10.5px] text-muted font-medium mt-0.5">
               Optimasi pemilihan saham & penyerapan lot anggaran pensiun
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
-          <div className="px-2.5 py-1 rounded-xl bg-purple-100 dark:bg-purple-900/40 border border-purple-200 dark:border-purple-800 text-[10.5px] font-extrabold text-purple-800 dark:text-purple-200 flex items-center gap-1.5">
-            <span>🎯 Penyerapan Modal:</span>
-            <span className="text-emerald-700 dark:text-emerald-300 font-black">{aiThesisData.utilizationPct}%</span>
+          <div className="px-2.5 py-1 rounded-sm bg-sunken border border-line text-[10.5px] font-extrabold text-ink flex items-center gap-1.5">
+            <span>◎ Penyerapan Modal:</span>
+            <span className="text-up font-black">{aiThesisData.utilizationPct}%</span>
           </div>
-          <div className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[10.5px] font-bold text-slate-700 dark:text-slate-300">
-            Sisa Kas: <span className="font-extrabold text-slate-900 dark:text-white">Rp {aiThesisData.remainingCash?.toLocaleString('id-ID')}</span>
+          <div className="px-2.5 py-1 rounded-sm bg-sunken border border-line text-[10.5px] font-bold text-ink ">
+            Sisa Kas: <span className="font-extrabold text-ink ">Rp {aiThesisData.remainingCash?.toLocaleString('id-ID')}</span>
           </div>
           <button
             onClick={() => setAiThesisData(null)}
-            className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-200 dark:hover:bg-white/10 text-xs cursor-pointer"
+            className="p-1 text-muted hover:text-muted rounded-sm hover:bg-sunken text-xs cursor-pointer"
             title="Tutup Ringkasan AI"
           >
             ✕
@@ -1497,14 +1497,14 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
         </div>
       </div>
 
-      <div className="space-y-2 text-xs leading-relaxed text-slate-800 dark:text-slate-200">
-        <div className="p-3 rounded-xl bg-white/70 dark:bg-slate-900/60 border border-purple-100 dark:border-purple-900/40 text-[11.5px] text-slate-800 dark:text-slate-200">
-          <span className="font-black text-purple-700 dark:text-purple-300 mr-1.5">💡 Tesis Investasi:</span>
+      <div className="space-y-2 text-xs leading-relaxed text-ink ">
+        <div className="p-3 rounded-sm bg-sunken border border-line text-[11.5px] text-ink ">
+          <span className="font-black text-ink mr-1.5">✦ Tesis Investasi:</span>
           {aiThesisData.thesis}
         </div>
         {aiThesisData.advice && (
-          <div className="p-3 rounded-xl bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/40 text-[11px] text-slate-700 dark:text-slate-300">
-            <span className="font-extrabold text-indigo-700 dark:text-indigo-300 mr-1.5">🧭 Nasihat Strategi:</span>
+          <div className="p-3 rounded-sm bg-sunken border border-line text-[11px] text-ink ">
+            <span className="font-extrabold text-ink mr-1.5">◎ Nasihat Strategi:</span>
             {aiThesisData.advice}
           </div>
         )}
@@ -1513,61 +1513,61 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
   )}
 
   {/* Langkah 1: Tabel Belanja Saham Preset Dinamis */}
-  <div className="glass-panel p-5 rounded-2xl border border-indigo-500/20 bg-indigo-50/60 dark:bg-indigo-950/20">
-    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 border-b border-slate-300 dark:border-white/10 mb-4 gap-2">
+  <div className="glass-panel p-5 rounded-md border border-line bg-sunken ">
+    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 border-b border-line mb-4 gap-2">
       <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center font-extrabold text-indigo-700 dark:text-indigo-400 text-sm">1</div>
+        <div className="w-8 h-8 rounded-sm bg-sunken border border-accent flex items-center justify-center font-extrabold text-ink text-sm">1</div>
         <div>
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">Langkah 1: Belanja Saham ({(assetRatios.stock * 100).toFixed(0)}%)</h3>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700">
+            <h3 className="text-sm font-extrabold text-ink ">Langkah 1: Belanja Saham ({(assetRatios.stock * 100).toFixed(0)}%)</h3>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sunken text-ink border border-line ">
               Budget: Rp {(totalBudget * assetRatios.stock).toLocaleString('id-ID')}
             </span>
           </div>
-          <p className="text-[11px] text-slate-700 dark:text-slate-300 font-medium">Rebalancing otomatis: Min. 1 Lot/saham, prioritas Growth & Return maksimal, minim sisa kas</p>
+          <p className="text-[11px] text-ink font-medium">Rebalancing otomatis: Min. 1 Lot/saham, prioritas Growth & Return maksimal, minim sisa kas</p>
         </div>
       </div>
       <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
         <button
           onClick={() => setShowCandidatesModal(true)}
-          className="px-3 py-1.5 text-[11px] font-extrabold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 rounded-lg shadow-sm hover:shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+          className="btn-secondary !px-3 !py-1.5 text-[11px] cursor-pointer"
           title="Buka daftar 30 saham kandidat pensiun terbaik berdasarkan skor fundamental & dividen"
         >
-          <span>🏆</span>
+          <span>★</span>
           <span>30 Kandidat Saham</span>
-          <span className="bg-white/20 text-[9px] px-1.5 py-0.2 rounded-full font-black">Top 30</span>
+          <span className="bg-sunken text-[9px] px-1.5 py-0.2 rounded-full font-black">Top 30</span>
         </button>
 
         <button
           onClick={handleResetAutoLots}
-          className={`px-3 py-1.5 text-[10.5px] font-extrabold rounded-lg border transition-all flex items-center gap-1.5 shadow-sm cursor-pointer ${
-            Object.keys(manualLots).length > 0
-              ? 'text-amber-800 dark:text-amber-200 bg-amber-100 dark:bg-amber-950/60 border-amber-300 dark:border-amber-700 hover:bg-amber-200'
-              : 'text-indigo-700 dark:text-indigo-300 bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900/50 dark:hover:bg-indigo-800/60 border-indigo-300 dark:border-indigo-700'
-          }`}
+          className={`px-3 py-1.5 text-[10.5px] font-extrabold rounded-sm border transition-all flex items-center gap-1.5 shadow-sm cursor-pointer ${
+ Object.keys(manualLots).length > 0
+ ? 'text-warn bg-warn-soft border-warn hover:bg-warn-soft'
+ : 'text-ink bg-sunken hover:bg-sunken border-line '
+ }`}
           title="Rebalance Backpropagation otomatis: Maksimalkan Growth & Target Return, pastikan min. 1 lot per saham"
         >
-          <span>🔄</span>
+          <span>↻</span>
           <span>Auto-Hitung (Rebalance)</span>
           {Object.keys(manualLots).length > 0 && (
-            <span className="text-[9px] bg-amber-200 dark:bg-amber-800/80 px-1.5 py-0.2 rounded-full font-black">
+            <span className="text-[9px] bg-warn-soft px-1.5 py-0.2 rounded-full font-black">
               {Object.keys(manualLots).length} Kustom
             </span>
           )}
         </button>
 
         {lastSyncTime && (
-          <span className="text-[9px] text-emerald-700 dark:text-emerald-400 font-bold px-2 py-1.5 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+          <span className="text-[9px] text-up font-bold px-2 py-1.5 bg-up-soft rounded-sm border border-up">
             Data: {lastSyncTime}
           </span>
         )}
       </div>
     </div>
 
-    <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-white/5">
-      <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800/30">
-        <thead className="bg-slate-100 dark:bg-white/[0.02]">
-          <tr className="text-left text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+    <div className="overflow-x-auto rounded-sm border border-line ">
+      <table className="min-w-full divide-y divide-line ">
+        <thead className="bg-sunken ">
+          <tr className="text-left text-[10px] font-bold text-ink uppercase tracking-wider">
             <th className="py-2.5 px-3">Saham</th>
             <th className="py-2.5 px-3 text-right">Harga Beli</th>
             <th className="py-2.5 px-3 text-center">Skor & Yield</th>
@@ -1578,31 +1578,31 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
             <th className="py-2.5 px-3 text-center">Aksi</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-200 dark:divide-slate-800/30 bg-white dark:bg-[#0a0f1a]/20">
+        <tbody className="divide-y divide-line bg-surface ">
           {calculations.calculatedStocks.map((st) => (
-            <tr key={st.ticker} className="hover:bg-slate-100/50 dark:hover:bg-white/[0.04] transition-colors">
+            <tr key={st.ticker} className="hover:bg-sunken transition-colors">
               <td className="py-3 px-3">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center font-bold text-indigo-700 dark:text-indigo-300 text-[11px]">
+                  <div className="w-8 h-8 rounded-sm bg-sunken border border-line flex items-center justify-center font-bold text-ink text-[11px]">
                     {st.ticker}
                   </div>
                   <div className="flex flex-col">
-                    <span className="font-extrabold text-slate-900 dark:text-white text-xs">{st.ticker}</span>
+                    <span className="font-extrabold text-ink text-xs">{st.ticker}</span>
                     <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="text-[9px] text-slate-600 dark:text-slate-400 font-medium truncate max-w-[120px]">{st.name}</span>
+                      <span className="text-[9px] text-muted font-medium truncate max-w-[120px]">{st.name}</span>
                       {isSyariahStock(st.ticker, st.sector) && (
-                        <span className="text-[8px] px-1 py-0.5 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-500/30 whitespace-nowrap leading-none" title="Saham Syariah (DES / ISSI)">
-                          🌙 Syariah
+                        <span className="text-[8px] px-1 py-0.5 rounded bg-up-soft text-up font-bold border border-up whitespace-nowrap leading-none" title="Saham Syariah (DES / ISSI)">
+                          ☾ Syariah
                         </span>
                       )}
                       {st.isDividendTrap && (
-                        <span className="text-[8px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold border border-amber-500/30 whitespace-nowrap leading-none" title="Peringatan: Ritel masuk jelang/pasca Dividen (Potensi Trap)">
-                          ⚠️ Div. Trap
+                        <span className="text-[8px] px-1 py-0.5 rounded bg-warn-soft text-warn font-bold border border-warn whitespace-nowrap leading-none" title="Peringatan: Ritel masuk jelang/pasca Dividen (Potensi Trap)">
+                          ▲ Div. Trap
                         </span>
                       )}
                       {st.role && (
-                        <span className="text-[8px] px-1 py-0.5 rounded bg-purple-500/20 text-purple-700 dark:text-purple-300 font-bold border border-purple-500/30 whitespace-nowrap leading-none" title={st.rationale || st.role}>
-                          ✨ {st.role}
+                        <span className="text-[8px] px-1 py-0.5 rounded bg-sunken text-ink font-bold border border-line whitespace-nowrap leading-none" title={st.rationale || st.role}>
+                          ✦ {st.role}
                         </span>
                       )}
                     </div>
@@ -1612,19 +1612,19 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
               <td className="py-3 px-3 text-right">
                 <div className="flex flex-col items-end gap-1">
                   <div className="flex items-center justify-end gap-1">
-                    <span className="text-[10px] text-slate-600 dark:text-slate-400 font-bold">Rp</span>
+                    <span className="text-[10px] text-muted font-bold">Rp</span>
                     <input
                       type="number"
                       value={st.price || ''}
                       onChange={(e) => handlePriceChange(st.ticker, e.target.value)}
-                      className="w-16 px-1.5 py-1 text-right bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded font-bold text-[11px] text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
+                      className="w-16 px-1.5 py-1 text-right bg-sunken border border-line rounded font-bold text-[11px] text-ink focus:outline-none focus:border-accent"
                     />
                   </div>
                 </div>
               </td>
               <td className="py-3 px-3 text-center">
-                <div className="text-[10px] font-extrabold text-emerald-700 dark:text-emerald-400">{st.dividendYield ? st.dividendYield.toFixed(1) + '%' : '-'}</div>
-                <div className="text-[9px] text-slate-600 dark:text-slate-400 font-bold">Skor: {st.finalPensionScore}</div>
+                <div className="text-[10px] font-extrabold text-up ">{st.dividendYield ? st.dividendYield.toFixed(1) + '%' : '-'}</div>
+                <div className="text-[9px] text-muted font-bold">Skor: {st.finalPensionScore}</div>
               </td>
               <td className="py-3 px-3 text-center">
                 <div className="flex flex-col items-center justify-center gap-1">
@@ -1633,7 +1633,7 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
                       type="button"
                       onClick={() => handleDecrementLot(st.ticker)}
                       disabled={!st.canDecrement}
-                      className="w-6 h-6 rounded-md bg-slate-200 hover:bg-rose-500 hover:text-white dark:bg-white/10 dark:hover:bg-rose-500 text-slate-800 dark:text-slate-200 font-black text-xs flex items-center justify-center transition-colors disabled:opacity-30 disabled:hover:bg-slate-200 dark:disabled:hover:bg-white/10 disabled:hover:text-inherit"
+                      className="w-6 h-6 rounded-md bg-sunken hover:bg-down hover:text-on-accent text-ink font-black text-xs flex items-center justify-center transition-colors disabled:opacity-30 disabled:hover:bg-sunken disabled:hover:text-inherit"
                       title="Kurangi 1 Lot (-)"
                     >
                       -
@@ -1644,32 +1644,32 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
                       max={st.maxLots}
                       value={st.lots === 0 && st.isManual ? 0 : (st.lots || '')}
                       onChange={(e) => handleLotChange(st.ticker, e.target.value)}
-                      className={`w-12 px-1 py-1 text-center border rounded-md font-extrabold text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 ${
-                        st.isManual
-                          ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-400 text-amber-900 dark:text-amber-200'
-                          : 'bg-slate-50 dark:bg-white/5 border-slate-300 dark:border-white/10 text-slate-900 dark:text-white'
-                      }`}
+                      className={`w-12 px-1 py-1 text-center border rounded-md font-extrabold text-xs focus:outline-none focus:ring-1 focus:ring-accent ${
+ st.isManual
+ ? 'bg-warn-soft border-warn text-warn '
+ : 'bg-sunken border-line text-ink '
+ }`}
                     />
                     <button
                       type="button"
                       onClick={() => handleIncrementLot(st.ticker)}
                       disabled={!st.canIncrement}
-                      className="w-6 h-6 rounded-md bg-slate-200 hover:bg-emerald-500 hover:text-white dark:bg-white/10 dark:hover:bg-emerald-500 text-slate-800 dark:text-slate-200 font-black text-xs flex items-center justify-center transition-colors disabled:opacity-30 disabled:hover:bg-slate-200 dark:disabled:hover:bg-white/10 disabled:hover:text-inherit"
+                      className="w-6 h-6 rounded-md bg-sunken hover:bg-up hover:text-on-accent text-ink font-black text-xs flex items-center justify-center transition-colors disabled:opacity-30 disabled:hover:bg-sunken disabled:hover:text-inherit"
                       title={st.canIncrement ? "Tambah 1 Lot (+)" : "Sisa anggaran saham tidak mencukupi untuk menambah lot"}
                     >
                       +
                     </button>
                   </div>
-                  <span className={`text-[8.5px] font-bold px-1.5 py-0.2 rounded ${st.isManual ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' : 'bg-slate-100 text-slate-600 dark:bg-white/5 dark:text-slate-400'}`}>
+                  <span className={`text-[8.5px] font-bold px-1.5 py-0.2 rounded ${st.isManual ? 'bg-warn-soft text-warn ' : 'bg-sunken text-muted '}`}>
                     {st.isManual ? 'Kustom' : 'Auto'} ({st.weightPct})
                   </span>
                 </div>
               </td>
               <td className="py-3 px-3 text-right">
-                <div className="text-[11px] font-extrabold text-slate-900 dark:text-white">Rp {st.cost.toLocaleString('id-ID')}</div>
+                <div className="text-[11px] font-extrabold text-ink ">Rp {st.cost.toLocaleString('id-ID')}</div>
               </td>
               <td className="py-3 px-3 text-center">
-                <button onClick={() => handleRemoveStock(st.ticker)} className="text-[10px] text-rose-600 dark:text-rose-400 hover:text-rose-700 font-bold px-2 py-1 rounded bg-rose-500/10 hover:bg-rose-500/20 transition-colors">
+                <button onClick={() => handleRemoveStock(st.ticker)} className="text-[10px] text-down hover:text-down font-bold px-2 py-1 rounded bg-down-soft hover:bg-down-soft transition-colors">
                   Hapus
                 </button>
               </td>
@@ -1680,28 +1680,28 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
     </div>
 
     {/* Real-Time Stock Shopping Budget Meter */}
-    <div className="mt-3 p-3 rounded-xl bg-slate-100/80 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 space-y-1.5">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center text-[11px] font-bold text-slate-700 dark:text-slate-300 gap-1">
+    <div className="mt-3 p-3 rounded-sm bg-sunken border border-line space-y-1.5">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center text-[11px] font-bold text-ink gap-1">
         <div className="flex items-center gap-2">
-          <span>🛒 Total Belanja Saham:</span>
-          <span className="font-extrabold text-slate-900 dark:text-white">
+          <span>▣ Total Belanja Saham:</span>
+          <span className="font-extrabold text-ink ">
             Rp {calculations.totalStockSpent.toLocaleString('id-ID')}
           </span>
-          <span className="text-[10px] font-semibold text-slate-500">
+          <span className="text-[10px] font-semibold text-muted">
             / Rp {calculations.stockAllocation.toLocaleString('id-ID')} ({((calculations.totalStockSpent / (calculations.stockAllocation || 1)) * 100).toFixed(1)}%)
           </span>
         </div>
         <div className="flex items-center gap-1.5 text-[10.5px]">
-          <span className="text-slate-500 dark:text-slate-400">Sisa Kas Saham:</span>
-          <span className="font-extrabold text-purple-700 dark:text-purple-300">
+          <span className="text-muted ">Sisa Kas Saham:</span>
+          <span className="font-extrabold text-ink ">
             Rp {Math.max(0, calculations.stockCashChange).toLocaleString('id-ID')}
           </span>
-          <span className="text-[9px] text-slate-400 font-normal">(dialihkan otomatis ke RDPU)</span>
+          <span className="text-[9px] text-muted font-normal">(dialihkan otomatis ke RDPU)</span>
         </div>
       </div>
-      <div className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+      <div className="w-full h-2 bg-sunken rounded-full overflow-hidden">
         <div
-          className="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-full transition-all duration-300"
+          className="h-full rounded-full transition-all duration-300"
           style={{ width: `${Math.min(100, (calculations.totalStockSpent / (calculations.stockAllocation || 1)) * 100)}%` }}
         />
       </div>
@@ -1715,14 +1715,14 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
             placeholder="Kode Saham..."
             value={customTickerInput}
             onChange={(e) => setCustomTickerInput(e.target.value)}
-            className="px-3 py-2 bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-white/10 rounded-lg text-xs text-slate-900 dark:text-white font-bold w-32 focus:outline-none focus:border-indigo-400 uppercase"
+            className="px-3 py-2 bg-surface border border-line rounded-sm text-xs text-ink font-bold w-32 focus:outline-none focus:border-accent uppercase"
             maxLength={4}
             onKeyDown={(e) => e.key === 'Enter' && handleAddCustomStock()}
           />
           <button
             onClick={handleAddCustomStock}
             disabled={addingCustomTicker || !customTickerInput.trim()}
-            className="px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs transition-all disabled:opacity-50 cursor-pointer"
+            className="px-3.5 py-2 rounded-sm bg-accent hover:bg-accent text-on-accent font-extrabold text-xs transition-all disabled:opacity-50 cursor-pointer"
           >
             {addingCustomTicker ? 'Menambahkan...' : 'Tambah'}
           </button>
@@ -1730,7 +1730,7 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
 
         {/* Quick-Add Favorite Bluechips */}
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[10px] text-slate-600 dark:text-slate-400 font-extrabold">Bluechip Pensiun (Real-time BEI):</span>
+          <span className="text-[10px] text-muted font-extrabold">Bluechip Pensiun (Real-time BEI):</span>
           {(bluechipOptions || ['BBRI', 'BMRI', 'BBCA', 'TLKM', 'ADRO', 'PGAS', 'KLBF', 'ASII']).map((t) => {
             const isAdded = presetStocks.some(st => st.ticker === t);
             return (
@@ -1739,10 +1739,10 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
                 onClick={() => !isAdded && handleAddCustomStockByTicker(t)}
                 disabled={isAdded || addingCustomTicker}
                 className={`text-[9.5px] px-2 py-0.5 rounded-md font-bold transition-all border ${
-                  isAdded
-                    ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 cursor-default font-extrabold'
-                    : 'bg-slate-100 hover:bg-indigo-500/20 dark:bg-white/5 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-white/10 hover:border-indigo-400'
-                }`}
+ isAdded
+ ? 'bg-up-soft text-up border-up cursor-default font-extrabold'
+ : 'bg-sunken hover:bg-sunken text-ink border-line hover:border-accent'
+ }`}
               >
                 {isAdded ? `✓ ${t}` : `+ ${t}`}
               </button>
@@ -1752,65 +1752,65 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
       </div>
 
       <div className="text-right self-end md:self-auto">
-        <div className="text-[10px] text-slate-600 dark:text-slate-400 font-bold">Subtotal Belanja Saham</div>
-        <div className="text-lg font-black text-slate-900 dark:text-white">Rp {calculations.totalStockSpent.toLocaleString('id-ID')}</div>
+        <div className="text-[10px] text-muted font-bold">Subtotal Belanja Saham</div>
+        <div className="text-lg font-black text-ink ">Rp {calculations.totalStockSpent.toLocaleString('id-ID')}</div>
       </div>
     </div>
   </div>
 
   {/* Langkah 2: Alokasi Pendapatan Tetap & Kas */}
- <div className="glass-panel p-5 rounded-2xl border border-purple-500/20 bg-purple-50/60 dark:bg-purple-950/20">
- <div className="flex items-center gap-3 pb-4 border-b border-slate-300 dark:border-white/10 mb-4">
- <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center font-extrabold text-purple-700 dark:text-purple-400 text-sm">2</div>
+ <div className="glass-panel p-5 rounded-md border border-line bg-sunken ">
+ <div className="flex items-center gap-3 pb-4 border-b border-line mb-4">
+ <div className="w-8 h-8 rounded-sm bg-sunken border border-accent flex items-center justify-center font-extrabold text-ink text-sm">2</div>
  <div>
- <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">Langkah 2: Instrumen Tetap & RDPU</h3>
- <p className="text-[11px] text-slate-700 dark:text-slate-300 font-medium">Beli instrumen rendah risiko dengan sisa anggaran</p>
+ <h3 className="text-sm font-extrabold text-ink ">Langkah 2: Instrumen Tetap & RDPU</h3>
+ <p className="text-[11px] text-ink font-medium">Beli instrumen rendah risiko dengan sisa anggaran</p>
  </div>
  </div>
 
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
  {/* SBN Ritel */}
- <div className={`p-4 rounded-xl border ${sbnAvailable ? 'bg-slate-100 dark:bg-white/5 border-slate-300 dark:border-white/10' : 'bg-amber-500/5 border-amber-500/20 opacity-60'}`}>
+ <div className={`p-4 rounded-sm border ${sbnAvailable ? 'bg-sunken border-line ' : 'bg-warn-soft border-warn opacity-60'}`}>
  <div className="flex justify-between items-start mb-2">
  <div className="flex items-center gap-2">
- <span className="text-xl">🏛️</span>
+ <span className="text-xl">▥</span>
  <div>
- <h4 className="text-[11px] font-bold text-slate-900 dark:text-white">SBN Ritel</h4>
- <div className="text-[9px] text-slate-600 dark:text-slate-400 font-bold">Porsi {sbnAvailable ? (assetRatios.sbn * 100).toFixed(0) + '%' : '0%'}</div>
+ <h4 className="text-[11px] font-bold text-ink ">SBN Ritel</h4>
+ <div className="text-[9px] text-muted font-bold">Porsi {sbnAvailable ? (assetRatios.sbn * 100).toFixed(0) + '%' : '0%'}</div>
  </div>
  </div>
  </div>
- <div className="text-lg font-black text-emerald-700 dark:text-emerald-400 mt-2">
+ <div className="text-lg font-black text-up mt-2">
  Rp {calculations.sbnAllocation.toLocaleString('id-ID')}
  </div>
  </div>
 
  {/* RDPU */}
- <div className="p-4 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 relative overflow-hidden">
+ <div className="p-4 rounded-sm bg-sunken border border-line relative overflow-hidden">
  <div className="flex justify-between items-start mb-2 relative z-10">
  <div className="flex items-center gap-2">
- <span className="text-xl">💵</span>
+ <span className="text-xl">¤</span>
  <div>
- <h4 className="text-[11px] font-bold text-slate-900 dark:text-white">RDPU Top-up</h4>
- <div className="text-[9px] text-slate-600 dark:text-slate-400 font-bold">Pokok {(assetRatios.rdpu * 100).toFixed(0)}% + Sisa Beli Saham</div>
+ <h4 className="text-[11px] font-bold text-ink ">RDPU Top-up</h4>
+ <div className="text-[9px] text-muted font-bold">Pokok {(assetRatios.rdpu * 100).toFixed(0)}% + Sisa Beli Saham</div>
  </div>
  </div>
  </div>
- <div className="text-lg font-black text-purple-700 dark:text-purple-300 mt-2 relative z-10">
+ <div className="text-lg font-black text-ink mt-2 relative z-10">
  Rp {calculations.finalRdpuTopup.toLocaleString('id-ID')}
  </div>
  
  {/* Background glow for leftover money */}
  {calculations.stockCashChange > 0 && (
- <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-purple-500/10 rounded-full blur-xl pointer-events-none"></div>
+ <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-sunken rounded-full blur-xl pointer-events-none"></div>
  )}
  </div>
  </div>
 
  {/* Grand Total Bar */}
- <div className="mt-4 p-3 rounded-xl bg-gradient-to-r from-emerald-50 dark:from-emerald-950/40 to-indigo-50 dark:to-indigo-950/40 border border-emerald-500/30 flex justify-between items-center">
- <span className="text-[11px] text-slate-700 dark:text-slate-300 font-bold">Total Alokasi Keseluruhan (100% Pas)</span>
- <span className="text-sm font-black text-slate-900 dark:text-white">Rp {calculations.grandTotalAllocated.toLocaleString('id-ID')}</span>
+ <div className="mt-4 p-3 rounded-sm border border-up flex justify-between items-center">
+ <span className="text-[11px] text-ink font-bold">Total Alokasi Keseluruhan (100% Pas)</span>
+ <span className="text-sm font-black text-ink ">Rp {calculations.grandTotalAllocated.toLocaleString('id-ID')}</span>
  </div>
  </div>
 
@@ -1843,11 +1843,11 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
  </div>
 
  {/* Disclaimer Box */}
- <div className="glass-panel p-4 rounded-xl border border-amber-500/30 bg-amber-50/60 dark:bg-amber-950/20 text-xs mt-6">
- <h4 className="font-extrabold text-amber-800 dark:text-amber-300 text-[11px] flex items-center gap-1.5 mb-1">
- <span>⚠️</span> Disclaimer
+ <div className="glass-panel p-4 rounded-sm border border-warn bg-warn-soft text-xs mt-6">
+ <h4 className="font-extrabold text-warn text-[11px] flex items-center gap-1.5 mb-1">
+ <span>▲</span> Disclaimer
  </h4>
- <p className="text-[10px] text-slate-700 dark:text-slate-300 font-medium leading-relaxed">
+ <p className="text-[10px] text-ink font-medium leading-relaxed">
  Preset saham dipilih berdasarkan algoritma fundamental dan dividen BEI. Hasil perhitungan murni untuk simulasi edukasi perencanaan keuangan, bukan rekomendasi beli/jual saham. (DYOR)
  </p>
  </div>
@@ -1864,46 +1864,46 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
   {/* ── MODAL 30 KANDIDAT SAHAM PENSIUN TERBAIK ────────────────────────── */}
   {showCandidatesModal && (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200"
+      className="modal-backdrop animate-in fade-in duration-200"
       onClick={() => setShowCandidatesModal(false)}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="candidates-modal-title"
-        className="bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden"
+        className="bg-surface border border-line rounded-md w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800/80 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/50">
+        <div className="p-4 sm:p-5 border-b border-line flex items-center justify-between bg-sunken ">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-xl shadow-lg shadow-emerald-500/20">
-              🏆
+            <div className="w-10 h-10 rounded-sm flex items-center justify-center text-xl shadow-lg ">
+              ★
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 id="candidates-modal-title" className="text-base font-black text-slate-900 dark:text-white">
+                <h3 id="candidates-modal-title" className="text-base font-black text-ink ">
                   30 Saham Pilihan Pensiun Terbaik
                 </h3>
-                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-up-soft text-up border border-up">
                   Top 30 BEI
                 </span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              <p className="text-xs text-muted font-medium">
                 Diurutkan berdasarkan <strong>Skor Kualitas Fundamental Pensiun (1-100)</strong> lalu <strong>Dividend Yield</strong>
               </p>
             </div>
           </div>
           <button
             onClick={() => setShowCandidatesModal(false)}
-            className="w-8 h-8 rounded-lg bg-slate-200/80 hover:bg-slate-300 dark:bg-white/10 dark:hover:bg-white/20 text-slate-700 dark:text-slate-200 flex items-center justify-center text-sm font-bold transition-colors cursor-pointer"
+            className="w-8 h-8 rounded-sm bg-sunken hover:bg-sunken text-ink flex items-center justify-center text-sm font-bold transition-colors cursor-pointer"
           >
             ✕
           </button>
         </div>
 
         {/* Filter Toolbar */}
-        <div className="p-3 sm:px-5 sm:py-3 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0b1329] flex flex-wrap items-center justify-between gap-2.5 text-xs">
+        <div className="p-3 sm:px-5 sm:py-3 border-b border-line bg-surface flex flex-wrap items-center justify-between gap-2.5 text-xs">
           <div className="flex items-center gap-2 flex-1 min-w-[220px]">
             <div className="relative flex-1">
               <input
@@ -1911,28 +1911,28 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
                 placeholder="Cari kode saham, nama, atau sektor..."
                 value={candidateSearch}
                 onChange={(e) => setCandidateSearch(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 bg-slate-100 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/80 rounded-lg text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:border-emerald-500"
+                className="w-full pl-8 pr-3 py-1.5 bg-sunken border border-line rounded-sm text-xs text-ink font-medium focus:outline-none focus:border-up"
               />
-              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🔍</span>
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted text-xs">⌕</span>
             </div>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => setCandidateSyariahOnly(!candidateSyariahOnly)}
-              className={`px-2.5 py-1.5 rounded-lg font-extrabold text-[11px] border transition-all flex items-center gap-1 cursor-pointer ${
-                candidateSyariahOnly
-                  ? 'bg-emerald-500 text-white border-emerald-600 shadow-sm'
-                  : 'bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-emerald-500'
-              }`}
+              className={`px-2.5 py-1.5 rounded-sm font-extrabold text-[11px] border transition-all flex items-center gap-1 cursor-pointer ${
+ candidateSyariahOnly
+ ? 'bg-up text-on-accent border-up shadow-sm'
+ : 'bg-sunken text-ink border-line hover:border-up'
+ }`}
             >
-              🌙 Syariah Saja
+              ☾ Syariah Saja
             </button>
 
             <select
               value={candidateMinYield}
               onChange={(e) => setCandidateMinYield(Number(e.target.value))}
-              className="px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-[11px] font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:border-emerald-500"
+              className="px-2.5 py-1.5 bg-sunken border border-line rounded-sm text-[11px] font-bold text-ink focus:outline-none focus:border-up"
             >
               <option value={0}>Semua Yield</option>
               <option value={4}>Min. Yield ≥ 4%</option>
@@ -1945,11 +1945,11 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
         {/* Candidate List Grid */}
         <div className="overflow-y-auto flex-1 p-3 sm:p-5">
           {filteredCandidates.length === 0 ? (
-            <div className="text-center py-12 text-slate-400">
+            <div className="text-center py-12 text-muted">
               <p className="text-sm font-bold">Tidak ada saham yang sesuai dengan filter.</p>
               <button
                 onClick={() => { setCandidateSearch(''); setCandidateSyariahOnly(false); setCandidateMinYield(0); }}
-                className="mt-2 text-xs text-emerald-600 font-bold hover:underline"
+                className="mt-2 text-xs text-up font-bold hover:underline"
               >
                 Reset Filter
               </button>
@@ -1962,68 +1962,68 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
                 return (
                   <div
                     key={st.ticker}
-                    className={`p-3.5 rounded-xl border transition-all flex flex-col justify-between gap-3 ${
-                      isAdded
-                        ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-400/50 dark:border-emerald-700/40 shadow-sm'
-                        : 'bg-slate-50/70 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800/80 hover:border-indigo-400 dark:hover:border-indigo-600'
-                    }`}
+                    className={`p-3.5 rounded-sm border transition-all flex flex-col justify-between gap-3 ${
+ isAdded
+ ? 'bg-up-soft border-up shadow-sm'
+ : 'bg-sunken border-line hover:border-accent '
+ }`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-xl bg-slate-200 dark:bg-slate-800 flex items-center justify-center font-black text-xs text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700">
+                        <div className="w-9 h-9 rounded-sm bg-sunken flex items-center justify-center font-black text-xs text-ink border border-line ">
                           #{idx + 1}
                         </div>
                         <div>
                           <div className="flex items-center gap-1.5">
-                            <span className="font-black text-sm text-slate-900 dark:text-white">{st.ticker}</span>
+                            <span className="font-black text-sm text-ink ">{st.ticker}</span>
                             {isSyariah && (
-                              <span className="text-[8.5px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-500/30 leading-none">
-                                🌙 Syariah
+                              <span className="text-[8.5px] px-1.5 py-0.5 rounded bg-up-soft text-up font-bold border border-up leading-none">
+                                ☾ Syariah
                               </span>
                             )}
                             {st.isDividendTrap && (
-                              <span className="text-[8.5px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 font-bold border border-amber-500/30 leading-none">
-                                ⚠️ Div. Trap
+                              <span className="text-[8.5px] px-1.5 py-0.5 rounded bg-warn-soft text-warn font-bold border border-warn leading-none">
+                                ▲ Div. Trap
                               </span>
                             )}
                           </div>
-                          <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate max-w-[190px]">
+                          <p className="text-[10px] text-muted font-medium truncate max-w-[190px]">
                             {st.name}
                           </p>
                         </div>
                       </div>
 
                       <div className="text-right">
-                        <span className="text-xs font-black text-slate-900 dark:text-white">
+                        <span className="text-xs font-black text-ink ">
                           Rp {Number(st.price || 0).toLocaleString('id-ID')}
                         </span>
-                        <div className="text-[9.5px] text-slate-400 font-medium">{st.sector || '-'}</div>
+                        <div className="text-[9.5px] text-muted font-medium">{st.sector || '-'}</div>
                       </div>
                     </div>
 
                     {/* Metrics Badge Grid */}
-                    <div className="grid grid-cols-4 gap-1.5 py-2 px-2.5 rounded-lg bg-white/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 text-center">
+                    <div className="grid grid-cols-4 gap-1.5 py-2 px-2.5 rounded-sm bg-surface border border-line text-center">
                       <div>
-                        <div className="text-[8.5px] text-slate-400 font-medium">Skor Pensiun</div>
-                        <div className="text-[11px] font-black text-indigo-600 dark:text-indigo-400">
+                        <div className="text-[8.5px] text-muted font-medium">Skor Pensiun</div>
+                        <div className="text-[11px] font-black text-ink ">
                           {st.finalPensionScore}
                         </div>
                       </div>
                       <div>
-                        <div className="text-[8.5px] text-slate-400 font-medium">Div. Yield</div>
-                        <div className="text-[11px] font-black text-emerald-600 dark:text-emerald-400">
+                        <div className="text-[8.5px] text-muted font-medium">Div. Yield</div>
+                        <div className="text-[11px] font-black text-up ">
                           {st.dividendYield ? `${Number(st.dividendYield).toFixed(1)}%` : '-'}
                         </div>
                       </div>
                       <div>
-                        <div className="text-[8.5px] text-slate-400 font-medium">ROE</div>
-                        <div className="text-[11px] font-black text-slate-700 dark:text-slate-300">
+                        <div className="text-[8.5px] text-muted font-medium">ROE</div>
+                        <div className="text-[11px] font-black text-ink ">
                           {st.metrics?.roe ? `${Number(st.metrics.roe).toFixed(1)}%` : '-'}
                         </div>
                       </div>
                       <div>
-                        <div className="text-[8.5px] text-slate-400 font-medium">DER</div>
-                        <div className="text-[11px] font-black text-slate-700 dark:text-slate-300">
+                        <div className="text-[8.5px] text-muted font-medium">DER</div>
+                        <div className="text-[11px] font-black text-ink ">
                           {st.metrics?.der != null ? `${Number(st.metrics.der).toFixed(2)}x` : '-'}
                         </div>
                       </div>
@@ -2033,11 +2033,11 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
                     <button
                       type="button"
                       onClick={() => handleToggleCandidate(st)}
-                      className={`w-full py-2 rounded-lg font-extrabold text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm cursor-pointer ${
-                        isAdded
-                          ? 'bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 dark:text-rose-300 dark:border-rose-800'
-                          : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20'
-                      }`}
+                      className={`w-full py-2 rounded-sm font-extrabold text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm cursor-pointer ${
+ isAdded
+ ? 'bg-down-soft hover:bg-down-soft text-down border border-down '
+ : 'bg-up hover:bg-up text-on-accent '
+ }`}
                     >
                       {isAdded ? (
                         <>
@@ -2058,13 +2058,13 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
         </div>
 
         {/* Modal Footer */}
-        <div className="p-3 sm:px-5 border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/60 flex items-center justify-between text-xs">
-          <span className="text-slate-500 font-medium text-[11px]">
+        <div className="p-3 sm:px-5 border-t border-line bg-sunken flex items-center justify-between text-xs">
+          <span className="text-muted font-medium text-[11px]">
             Menampilkan {filteredCandidates.length} dari {pensionCandidates.length} kandidat pensiun teratas.
           </span>
           <button
             onClick={() => setShowCandidatesModal(false)}
-            className="px-4 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold transition-colors cursor-pointer"
+            className="px-4 py-1.5 rounded-sm bg-sunken hover:bg-sunken text-ink font-bold transition-colors cursor-pointer"
           >
             Selesai / Tutup
           </button>
@@ -2076,16 +2076,16 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
   {/* ── TOAST NOTIFICATION ──────────────────────────────────────────── */}
  {toast && (
    <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5 duration-200">
-     <div className={`px-4 py-3 rounded-2xl shadow-2xl border text-xs font-bold flex items-center gap-2.5 backdrop-blur-md ${
-       toast.type === 'error'
-         ? 'bg-rose-50/95 dark:bg-rose-950/95 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200'
-         : toast.type === 'warning'
-         ? 'bg-amber-50/95 dark:bg-amber-950/95 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200'
-         : 'bg-emerald-50/95 dark:bg-emerald-950/95 border-emerald-200 dark:emerald-800 text-emerald-800 dark:text-emerald-200'
-     }`}>
-       <span>{toast.type === 'error' ? '❌' : toast.type === 'warning' ? '⚠️' : '✅'}</span>
+     <div className={`px-4 py-3 rounded-md shadow-2xl border text-xs font-bold flex items-center gap-2.5 ${
+ toast.type === 'error'
+ ? 'bg-down-soft border-down text-down '
+ : toast.type === 'warning'
+ ? 'bg-warn-soft border-warn text-warn '
+ : 'bg-up-soft border-up text-up '
+ }`}>
+       <span>{toast.type === 'error' ? '×' : toast.type === 'warning' ? '▲' : '✓'}</span>
        <span>{toast.message}</span>
-       <button onClick={() => setToast(null)} className="ml-2 text-slate-400 hover:text-slate-600 text-xs">✕</button>
+       <button onClick={() => setToast(null)} className="ml-2 text-muted hover:text-muted text-xs">✕</button>
      </div>
    </div>
  )}

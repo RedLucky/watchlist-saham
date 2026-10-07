@@ -10,16 +10,17 @@
 /** Token values used when CSS variables cannot be read (server render, tests). */
 export const FALLBACK_TOKENS = {
   light: {
-    ink: '#1a1a1a', muted: '#5e574b', line: '#d6ccb8', lineStrong: '#1a1a1a',
+    canvas: '#f4efe4', ink: '#1a1a1a', muted: '#5e574b', line: '#d6ccb8', lineStrong: '#1a1a1a',
     up: '#2f6b3a', down: '#a3302a', warn: '#80580f', accent: '#1a1a1a',
   },
   dark: {
-    ink: '#e8dfcc', muted: '#9c9384', line: '#2e2a22', lineStrong: '#6b6355',
+    canvas: '#0d0b08', ink: '#e8dfcc', muted: '#9c9384', line: '#2e2a22', lineStrong: '#6b6355',
     up: '#7bc96f', down: '#ff6b5a', warn: '#ffb000', accent: '#ffb000',
   },
 };
 
 const TOKEN_VARS = {
+  canvas: '--c-canvas',
   ink: '--c-ink', muted: '--c-muted', line: '--c-line', lineStrong: '--c-line-strong',
   up: '--c-up', down: '--c-down', warn: '--c-warn', accent: '--c-accent',
 };
@@ -102,4 +103,12 @@ export function buildChartPalette(tokens) {
 export function getCurrentChartPalette() {
   const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
   return buildChartPalette(readThemeTokens(isDark));
+}
+
+/**
+ * Whether the dark theme is currently applied to the document.
+ * @returns {boolean}
+ */
+export function isDarkTheme() {
+  return typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
 }
