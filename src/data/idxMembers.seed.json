@@ -1,0 +1,38 @@
+{
+  "_comment": "Curated IDX index membership. Source and verification date are recorded per index so the UI can show where the data came from. IDX re-evaluates membership a few times a year, so an index here goes stale after 60 days (STALE_AFTER_DAYS).",
+  "indices": [
+    {
+      "code": "LQ45",
+      "effectiveFrom": "2026-08-03",
+      "source": "seed",
+      "verifiedOn": "2026-10-07",
+      "verifiedFrom": [
+        "id.wikipedia.org/wiki/Indeks_LQ45 (tabel \"Efektif Agustus-Oktober 2026\")",
+        "investasi.kontan.co.id — pengumuman No. Peng-00148/BEI.POP/07-2026"
+      ],
+      "members": [
+        "AADI", "ADMR", "ADRO", "AKRA", "AMMN", "AMRT", "ANTM", "ASII", "BBCA",
+        "BBNI", "BBRI", "BBTN", "BMRI", "BRPT", "BUMI", "CPIN", "CUAN", "DEWA",
+        "EMTK", "ESSA", "EXCL", "GOTO", "HRTA", "ICBP", "INCO", "INDF", "INDY",
+        "INKP", "ISAT", "ITMG", "JPFA", "KLBF", "MAPI", "MBMA", "MDKA", "MEDC",
+        "NCKL", "PGAS", "PGEO", "PTBA", "SCMA", "TLKM", "UNTR", "UNVR", "WIFI"
+      ]
+    },
+    {
+      "code": "IDX30",
+      "effectiveFrom": "2026-08-03",
+      "source": "seed",
+      "verifiedOn": "2026-10-07",
+      "verifiedFrom": [
+        "stockwatch.id — Daftar Terbaru Penghuni Indeks IDX30 Periode Agustus-Oktober 2026",
+        "Cross-check: every member is also in LQ45, which the IDX methodology requires"
+      ],
+      "members": [
+        "AADI", "ADMR", "ADRO", "AMRT", "ANTM", "ASII", "BBCA", "BBNI", "BBRI",
+        "BMRI", "BRPT", "BUMI", "CPIN", "DEWA", "EMTK", "GOTO", "ICBP", "INCO",
+        "INDF", "INKP", "JPFA", "KLBF", "MBMA", "MDKA", "MEDC", "PGAS", "PGEO",
+        "TLKM", "UNTR", "UNVR"
+      ]
+    }
+  ]
+}
