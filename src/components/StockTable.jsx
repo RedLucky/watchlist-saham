@@ -5,8 +5,13 @@ import ScoreBadge from './ScoreBadge';
 import DetailPanel from './DetailPanel';
 import Tooltip from './Tooltip';
 import StockOwnershipModal from './StockOwnershipModal';
-import { getSignalBadgeClass, getRiskTone } from '@/lib/uiTones';
+import { getSignalBadgeClass, getRiskTone, getChangeTone } from '@/lib/uiTones';
 import { PageToolbar } from './ui/PageShell';
+
+/** Desktop column template shared by the header and every row so they stay aligned.
+ *  #  saham | harga | % chg | skor | ST+DEMA | area beli | target | cut loss | risiko | sektor  */
+const RANKING_GRID =
+  'md:grid-cols-[minmax(0,2.3fr)_minmax(0,0.9fr)_minmax(0,0.7fr)_minmax(0,0.6fr)_minmax(0,1fr)_minmax(0,1.15fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.9fr)_minmax(0,1.1fr)]';
 
 /**
  * Small triangle showing the sort state of a column header.
@@ -195,29 +200,33 @@ export default function StockTable({ stocks, loading, mode, style }) {
         </div>
 
       {/* Desktop column headers */}
-      <div className="hidden md:grid grid-cols-16 gap-3 px-5 py-2 bg-sunken border-b border-line-strong label-mono">
-        <button type="button" className="col-span-3 text-left hover:text-ink focus-ring" onClick={() => handleSort('ticker')} aria-label="Urutkan berdasarkan ticker">
+      <div className={`hidden md:grid ${RANKING_GRID} gap-3 px-5 py-2 bg-sunken border-b border-line-strong label-mono`}>
+        <button type="button" className="text-left hover:text-ink focus-ring" onClick={() => handleSort('ticker')} aria-label="Urutkan berdasarkan ticker">
           Saham <SortIcon active={sortBy === 'ticker'} asc={sortAsc} />
         </button>
-        <div className="col-span-2 text-right">Harga</div>
-        <div className="col-span-1 flex justify-center items-center gap-0.5">
+        <div className="text-right">Harga</div>
+        <div className="text-right">% Chg</div>
+        <div className="flex justify-center items-center gap-0.5">
           <Tooltip term="score">
             <button type="button" className="hover:text-ink focus-ring" onClick={() => handleSort('score')} aria-label="Urutkan berdasarkan skor">
               Skor <SortIcon active={sortBy === 'score'} asc={sortAsc} />
             </button>
           </Tooltip>
         </div>
-        <div className="col-span-2 flex justify-center"><Tooltip term="supertrendDema">ST+DEMA</Tooltip></div>
-        <div className="col-span-2 flex justify-end"><Tooltip term="entry">Area Beli</Tooltip></div>
-        <div className="col-span-2 flex justify-end"><Tooltip term="target">Target</Tooltip></div>
-        <div className="col-span-2 flex justify-end"><Tooltip term="stopLoss">Stop Loss</Tooltip></div>
-        <div className="col-span-2 flex justify-end items-center gap-0.5">
+        <div className="flex justify-center"><Tooltip term="supertrendDema">ST+DEMA</Tooltip></div>
+        <div className="text-right"><Tooltip term="entry">Area Beli</Tooltip></div>
+        <div className="text-right"><Tooltip term="target">Target</Tooltip></div>
+        <div className="text-right"><Tooltip term="stopLoss">Cut Loss</Tooltip></div>
+        <div className="text-right flex items-center justify-end gap-0.5">
           <Tooltip term="riskLevel">
             <button type="button" className="hover:text-ink focus-ring" onClick={() => handleSort('riskReward')} aria-label="Urutkan berdasarkan risk reward">
               Risiko <SortIcon active={sortBy === 'riskReward'} asc={sortAsc} />
             </button>
           </Tooltip>
         </div>
+        <button type="button" className="text-left hover:text-ink focus-ring" onClick={() => handleSort('sector')} aria-label="Urutkan berdasarkan sektor">
+          Sektor <SortIcon active={sortBy === 'sector'} asc={sortAsc} />
+        </button>
       </div>
 
       {/* Empty search result */}
@@ -236,6 +245,8 @@ export default function StockTable({ stocks, loading, mode, style }) {
           const isExpanded = expandedTicker === stock.ticker;
           const risk = getRiskTone(stock.riskLevel?.level);
           const signalBadge = getSignalBadgeClass(stock.supertrendDema?.signal);
+          const changePct = Number(stock.changePercent || 0);
+          const changeTone = getChangeTone(changePct);
           const toggle = () => setExpandedTicker(isExpanded ? null : stock.ticker);
 
           return (
@@ -257,12 +268,12 @@ export default function StockTable({ stocks, loading, mode, style }) {
                     toggle();
                   }
                 }}
-                className={`stock-row grid grid-cols-[1fr_auto] md:grid-cols-16 gap-x-3 gap-y-2 px-3 sm:px-5 py-3 items-center focus-ring ${
+                className={`stock-row grid grid-cols-[1fr_auto] gap-x-3 gap-y-2 px-3 sm:px-5 py-3 items-center focus-ring ${RANKING_GRID} ${
                   isExpanded ? 'bg-sunken' : ''
                 }`}
               >
                 {/* Stock identity */}
-                <div className="md:col-span-3 min-w-0">
+                <div className="min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="font-mono font-semibold text-ink text-sm">{stock.ticker}</span>
                     <button
@@ -287,12 +298,19 @@ export default function StockTable({ stocks, loading, mode, style }) {
                 </div>
 
                 {/* Price (desktop) */}
-                <div className="hidden md:block md:col-span-2 text-right font-mono text-sm font-semibold text-ink tabular-nums">
+                <div className="hidden md:block text-right font-mono text-sm font-semibold text-ink tabular-nums">
                   {formatPrice(stock.price)}
                 </div>
 
+                {/* Daily change (desktop) */}
+                <div className="hidden md:block text-right">
+                  <span className={`badge ${changeTone === 'text-up' ? 'badge-up' : changeTone === 'text-down' ? 'badge-down' : ''}`}>
+                    {changePct >= 0 ? '+' : ''}{changePct.toFixed(2)}%
+                  </span>
+                </div>
+
                 {/* Score */}
-                <div className="md:col-span-1 flex justify-end md:justify-center items-center gap-2">
+                <div className="flex justify-end md:justify-center items-center gap-2">
                   <ScoreBadge score={stock.score} size="sm" />
                   <span className={`md:hidden font-mono text-xs text-muted transition-transform ${isExpanded ? 'rotate-180' : ''}`} aria-hidden="true">▾</span>
                 </div>
@@ -314,7 +332,7 @@ export default function StockTable({ stocks, loading, mode, style }) {
                 </dl>
 
                 {/* Signal (desktop) */}
-                <div className="hidden md:flex md:col-span-2 flex-col items-center text-center">
+                <div className="hidden md:flex flex-col items-center text-center">
                   {stock.supertrendDema ? (
                     <>
                       <span className={`badge ${signalBadge}`}>{stock.supertrendDema.badge}</span>
@@ -326,7 +344,7 @@ export default function StockTable({ stocks, loading, mode, style }) {
                 </div>
 
                 {/* Entry (desktop) */}
-                <div className="hidden md:block md:col-span-2 text-right">
+                <div className="hidden md:block text-right">
                   <div className="font-mono text-sm text-ink tabular-nums">
                     {formatPrice(stock.entry?.low)} – {formatPrice(stock.entry?.high)}
                   </div>
@@ -334,19 +352,28 @@ export default function StockTable({ stocks, loading, mode, style }) {
                 </div>
 
                 {/* Target (desktop) */}
-                <div className="hidden md:block md:col-span-2 text-right">
+                <div className="hidden md:block text-right">
                   <div className="font-mono text-sm font-semibold text-up tabular-nums">{formatPrice(stock.target)}</div>
                   <div className="font-mono text-[10px] text-up">{formatPercentFromPrice(stock.price, stock.target, true)}</div>
                 </div>
 
                 {/* Stop loss (desktop) */}
-                <div className="hidden md:block md:col-span-2 text-right">
+                <div className="hidden md:block text-right">
                   <div className="font-mono text-sm font-semibold text-down tabular-nums">{formatPrice(stock.stopLoss)}</div>
                   <div className="font-mono text-[10px] text-down">{formatPercentFromPrice(stock.price, stock.stopLoss)}</div>
                 </div>
 
+                {/* Sector (desktop) */}
+                <div className="hidden md:flex items-center gap-1.5 min-w-0">
+                  <span className="text-xs text-muted truncate">{stock.sector || '-'}</span>
+                  {stock.isSyariah && <span className="badge badge-outline shrink-0" title="Saham comply syariat">☾</span>}
+                  {stock.isDividendTrap && (
+                    <span className="badge badge-warn shrink-0" title="Terindikasi jebakan dividen">◈</span>
+                  )}
+                </div>
+
                 {/* Risk (desktop) */}
-                <div className="hidden md:flex md:col-span-2 items-center justify-end gap-2">
+                <div className="hidden md:flex items-center justify-end gap-2">
                   <span className={`font-mono text-sm font-semibold ${risk.text}`}>{stock.riskReward}:1</span>
                   <span className={`badge ${risk.badge}`}>{stock.riskLevel?.level}</span>
                   <span className={`font-mono text-xs text-muted transition-transform ${isExpanded ? 'rotate-180' : ''}`} aria-hidden="true">▾</span>

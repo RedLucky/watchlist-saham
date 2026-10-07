@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import StockOwnershipModal from './StockOwnershipModal';
+import { PageShell, PageHeader } from './ui/PageShell';
+import { AutoGrid } from './ui/AutoGrid';
 
 // ── Formatting Helpers ────────────────────────────────────────────────────────
 
@@ -48,175 +50,160 @@ const formatPriceChange = (price, prevClose) => {
  return `${sign}${formatPrice(diff)}`;
 };
 
+/** Column template shared by the header, the skeleton and every row so they stay aligned.
+ *  #  rank | saham | sektor | volume | nilai transaksi | harga + perubahan  */
+const MOVER_GRID = 'grid items-center gap-3 grid-cols-[28px_minmax(0,2.4fr)_minmax(0,1fr)_minmax(0,0.9fr)_minmax(0,1fr)_minmax(0,1.2fr)]';
+
+/** Format a rupiah turnover compactly, e.g. 12,3 M / 850 jt. */
+const formatTurnoverShort = (val) => {
+  const v = Number(val);
+  if (!Number.isFinite(v) || v <= 0) return '-';
+  if (v >= 1_000_000_000_000) return `${(v / 1_000_000_000_000).toFixed(2)} T`;
+  if (v >= 1_000_000_000) return `${(v / 1_000_000_000).toFixed(1)} M`;
+  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(0)} jt`;
+  return v.toLocaleString('id-ID');
+};
+
+/**
+ * One row of a movers list: rank, ticker, sector, volume, turnover and price with its
+ * daily change. Clicking a row opens the stock.
+ */
 function MoverRow({ item, type, index, onSelectStock }) {
- const isTrending = type === 'trending';
- const isGainer = type === 'gainers';
- const isUnusual = type === 'unusual';
+  const isTrending = type === 'trending';
+  const isGainer = type === 'gainers';
+  const isUnusual = type === 'unusual';
 
- const pct = Number(item.changePercent);
- const changeColor =
- pct > 0 ? 'text-up' :
- pct < 0 ? 'text-down' : 'text-muted ';
+  const pct = Number(item.changePercent);
+  const changeColor = pct > 0 ? 'text-up' : pct < 0 ? 'text-down' : 'text-muted';
+  const pctBg = pct > 0 ? 'bg-up-soft border-up' : pct < 0 ? 'bg-down-soft border-down' : 'bg-sunken border-line';
 
- const pctBg =
- pct > 0 ? 'bg-up-soft border-up' :
- pct < 0 ? 'bg-down-soft border-down' : 'bg-sunken  border-line ';
+  const avatarStyle = isTrending ? 'text-warn' : isGainer ? 'text-up' : isUnusual ? 'text-ink' : 'text-down';
 
- // Avatar color per type
- const avatarStyle = isTrending
- ? '  text-warn '
- : isGainer
- ? '  text-up'
- : isUnusual
- ? '  text-ink'
- : '  text-down';
+  const priceChange = formatPriceChange(item.price, item.prevClose);
 
- const priceChange = formatPriceChange(item.price, item.prevClose);
+  return (
+    <div
+      onClick={() => onSelectStock && onSelectStock(item)}
+      className={`${MOVER_GRID} py-2.5 px-3 rounded-sm hover:bg-sunken transition-colors duration-150 group cursor-pointer animate-fade-in stagger-${Math.min(index + 1, 10)}`}
+      style={{ opacity: 0 }}
+    >
+      {/* Rank */}
+      <div className="text-xs text-muted font-mono text-right tabular-nums">{index + 1}</div>
 
- return (
- <div
- onClick={() => onSelectStock && onSelectStock(item)}
- className={`grid grid-cols-12 items-center gap-2 py-2.5 px-3 rounded-sm
- hover:bg-sunken transition-colors duration-150 group cursor-pointer
- animate-fade-in stagger-${Math.min(index + 1, 10)}`}
- style={{ opacity: 0 }}
- >
- {/* Rank */}
- <div className="col-span-1 text-xs text-muted font-mono text-right pr-1 tabular-nums">
- {index + 1}
- </div>
+      {/* Ticker + name + market cap */}
+      <div className="flex items-center gap-2.5 min-w-0">
+        <div className={`w-9 h-9 rounded-sm ${avatarStyle} border border-line flex items-center justify-center text-xs font-semibold shrink-0`}>
+          {item.ticker.substring(0, 2)}
+        </div>
+        <div className="min-w-0">
+          <div className="text-[15px] font-semibold text-ink leading-tight truncate">{item.ticker}</div>
+          <div className="text-xs text-muted leading-tight truncate">{item.name}</div>
+        </div>
+      </div>
 
- {/* Avatar + Ticker + Name */}
- <div className="col-span-4 flex items-center gap-2.5 min-w-0">
- <div className={`w-8 h-8 rounded-sm ${avatarStyle}
- flex items-center justify-center text-[11px] font-bold shrink-0 group-hover:scale-105 transition-transform`}>
- {item.ticker.substring(0, 2)}
- </div>
- <div className="min-w-0">
- <div className="text-[13px] font-bold text-ink leading-tight truncate flex items-center gap-1.5">
- {item.ticker}
- <span className="text-[9px] px-1 py-0.2 rounded bg-sunken text-ink border border-line opacity-0 group-hover:opacity-100 transition-opacity">
- ◫
- </span>
- </div>
- <div className="text-[11px] text-muted leading-tight truncate flex items-center gap-1">
- {item.name}
- </div>
- {item.marketCap != null && (
-   <div className="text-[9px] font-semibold text-ink mt-0.5">
-     MCap: {(item.marketCap / 1_000_000_000_000).toFixed(1)}T
-   </div>
- )}
- </div>
- </div>
+      {/* Sector */}
+      <div className="text-xs text-muted truncate">{item.sector || '-'}</div>
 
- {/* Volume (lembar) — metric utama Trending & info tambahan */}
- <div className="col-span-3 text-right">
- <div className="text-[12px] font-mono text-muted leading-tight">
- {formatVolume(item.volume)}
- </div>
- <div className="text-[11px] text-muted leading-tight">
- {isUnusual && item.volumeRatio
- ? <span className="text-ink font-bold">{item.volumeRatio}x avg</span>
- : formatTurnover(item.turnover)
- }
- </div>
- </div>
+      {/* Volume (lembar) */}
+      <div className="text-right">
+        <div className="text-sm font-mono text-ink tabular-nums">{formatVolume(item.volume)}</div>
+        {isUnusual && item.volumeRatio && (
+          <div className="text-xs font-mono text-warn tabular-nums">{item.volumeRatio}x avg</div>
+        )}
+      </div>
 
- {/* Harga + Perubahan + % */}
- <div className="col-span-4 text-right">
- <div className="text-[13px] font-semibold text-ink leading-tight tabular-nums">
- {formatPrice(item.price)}
- </div>
- <div className="flex items-center justify-end gap-1.5 mt-0.5">
- {priceChange && (
- <span className={`text-[11px] font-mono ${changeColor} leading-tight tabular-nums`}>
- {priceChange}
- </span>
- )}
- <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded border ${pctBg} ${changeColor} leading-tight inline-block`}>
- {formatPercent(item.changePercent)}
- </span>
- </div>
- </div>
- </div>
- );
+      {/* Transaction value */}
+      <div className="text-right">
+        <div className="text-sm font-mono text-ink tabular-nums">{formatTurnoverShort(item.turnover)}</div>
+        {item.marketCap != null && (
+          <div className="text-xs font-mono text-muted tabular-nums">
+            MCap {(item.marketCap / 1_000_000_000_000).toFixed(1)}T
+          </div>
+        )}
+      </div>
+
+      {/* Price + absolute and percentage change */}
+      <div className="text-right">
+        <div className="text-base font-semibold text-ink leading-tight tabular-nums">{formatPrice(item.price)}</div>
+        <div className="flex items-center justify-end gap-1.5 mt-0.5">
+          {priceChange && <span className={`text-xs font-mono ${changeColor} tabular-nums`}>{priceChange}</span>}
+          <span className={`text-xs font-bold px-2 py-0.5 rounded-sm border ${pctBg} ${changeColor} inline-block`}>
+            {formatPercent(item.changePercent)}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
 }
 
-function MoverCard({ title, subtitle, icon, items, type, accentGradient, borderColor, loading, onSelectStock }) {
- return (
- <div className={`glass rounded-md overflow-hidden flex flex-col border ${borderColor}`}
- style={{ minHeight: 0 }}
- >
- {/* Header */}
- <div className={`px-5 py-3.5 shrink-0 ${accentGradient} border-b border-line `}>
- <div className="flex items-center gap-2.5">
- <span className="text-lg leading-none">{icon}</span>
- <div>
- <h3 className="text-base font-bold text-ink leading-tight">{title}</h3>
- <p className="text-[11px] text-muted leading-tight">{subtitle}</p>
- </div>
- {!loading && (
- <span className="ml-auto text-xs text-muted font-mono">
- Top {items.length}
- </span>
- )}
- </div>
+/**
+ * Card for one movers list (trending / gainers / losers / unusual).
+ */
+function MoverCard({ title, subtitle, icon, items, type, loading, onSelectStock }) {
+  return (
+    <div className="card overflow-hidden flex flex-col">
+      {/* Header */}
+      <div className="px-4 py-3 shrink-0 border-b border-line">
+        <div className="flex items-center gap-2.5">
+          <span className="text-lg leading-none" aria-hidden="true">{icon}</span>
+          <div className="min-w-0">
+            <h3 className="text-lg font-semibold text-ink leading-tight">{title}</h3>
+            <p className="text-xs text-muted leading-tight">{subtitle}</p>
+          </div>
+          {!loading && <span className="ml-auto badge shrink-0">Top {items.length}</span>}
+        </div>
+      </div>
 
- {/* Column labels */}
- {!loading && items.length > 0 && (
- <div className="grid grid-cols-12 gap-2 mt-2.5 px-3">
- <div className="col-span-1"/>
- <div className="col-span-4 text-[11px] uppercase tracking-wider text-muted ">Saham</div>
- <div className="col-span-3 text-[11px] uppercase tracking-wider text-muted text-right">Vol / Nilai</div>
- <div className="col-span-4 text-[11px] uppercase tracking-wider text-muted text-right">Harga / ± / %</div>
- </div>
- )}
- </div>
+      {/* Column labels */}
+      {!loading && items.length > 0 && (
+        <div className={`${MOVER_GRID} px-3 py-2 bg-sunken border-b border-line label-mono`}>
+          <span className="text-right">#</span>
+          <span>Saham</span>
+          <span>Sektor</span>
+          <span className="text-right">Volume</span>
+          <span className="text-right">Nilai</span>
+          <span className="text-right">Harga / ± / %</span>
+        </div>
+      )}
 
- {/* Scrollable Body */}
- <div className="overflow-y-auto flex-1 px-3 py-1.5"
- style={{ maxHeight: '480px', scrollbarWidth: 'thin' }}
- >
- {loading ? (
- Array.from({ length: 8 }).map((_, i) => (
- <div key={i} className="grid grid-cols-12 items-center gap-2 py-2.5 px-3">
- <div className="col-span-1 skeleton h-3.5 w-5 rounded"/>
- <div className="col-span-4 flex items-center gap-2.5">
- <div className="skeleton w-8 h-8 rounded-sm shrink-0"/>
- <div className="space-y-1.5 flex-1">
- <div className="skeleton h-3.5 w-12 rounded"/>
- <div className="skeleton h-2.5 w-20 rounded"/>
- </div>
- </div>
- <div className="col-span-3 text-right space-y-1.5">
- <div className="skeleton h-3.5 w-14 rounded ml-auto"/>
- <div className="skeleton h-2.5 w-10 rounded ml-auto"/>
- </div>
- <div className="col-span-4 text-right space-y-1.5">
- <div className="skeleton h-3.5 w-16 rounded ml-auto"/>
- <div className="skeleton h-2.5 w-12 rounded ml-auto"/>
- </div>
- </div>
- ))
- ) : items.length === 0 ? (
- <div className="py-10 text-center text-xs text-muted ">
- Tidak ada data
- </div>
- ) : (
- items.map((item, index) => (
- <MoverRow
- key={item.ticker}
- item={item}
- type={type}
- index={index}
- onSelectStock={onSelectStock}
- />
- ))
- )}
- </div>
- </div>
- );
+      {/* Scrollable body */}
+      <div className="overflow-y-auto flex-1 px-2 py-1" style={{ maxHeight: '520px' }}>
+        {loading ? (
+          Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className={`${MOVER_GRID} py-2.5 px-3`}>
+              <div className="skeleton h-3.5 w-5 ml-auto rounded-sm" />
+              <div className="flex items-center gap-2.5">
+                <div className="skeleton w-9 h-9 rounded-sm shrink-0" />
+                <div className="space-y-1.5 flex-1">
+                  <div className="skeleton h-3.5 w-14 rounded" />
+                  <div className="skeleton h-2.5 w-24 rounded" />
+                </div>
+              </div>
+              <div className="skeleton h-3 w-16 rounded" />
+              <div className="flex flex-col gap-1 items-end">
+                <div className="skeleton h-3.5 w-16 rounded" />
+                <div className="skeleton h-2.5 w-12 rounded" />
+              </div>
+              <div className="flex flex-col gap-1 items-end">
+                <div className="skeleton h-3.5 w-16 rounded" />
+                <div className="skeleton h-2.5 w-12 rounded" />
+              </div>
+              <div className="flex flex-col gap-1 items-end">
+                <div className="skeleton h-4 w-20 rounded" />
+                <div className="skeleton h-3 w-14 rounded" />
+              </div>
+            </div>
+          ))
+        ) : items.length === 0 ? (
+          <div className="py-10 text-center text-xs text-muted">Tidak ada data</div>
+        ) : (
+          items.map((item, index) => (
+            <MoverRow key={item.ticker} item={item} type={type} index={index} onSelectStock={onSelectStock} />
+          ))
+        )}
+      </div>
+    </div>
+  );
 }
 
 // ── Main Export ───────────────────────────────────────────────────────────────
@@ -225,69 +212,58 @@ export default function MarketMovers({ data, loading }) {
  const [selectedOwnershipStock, setSelectedOwnershipStock] = useState(null);
 
  return (
- <section className="space-y-2">
- {/* Section Label */}
- <div className="flex items-center gap-2">
- <div className="w-1 h-4 rounded-full shrink-0"/>
- <h2 className="text-sm font-bold text-muted uppercase tracking-wider">
- Market Movers Hari Ini
- </h2>
- <span className="text-[10px] text-muted ">(data real-time dari BEI)</span>
- </div>
+ <PageShell>
+      <PageHeader
+        title="Market Movers"
+        subtitle="Saham yang paling aktif, naik, turun, dan volumenya di luar kebiasaalan hari ini"
+        badge={<span className="badge badge-outline">real-time BEI</span>}
+      />
 
- {/* 2-column grid */}
- <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
- <MoverCard
- title="Top Trending"
- subtitle="Saham paling aktif diperdagangkan (volume lembar)"
- icon="↑"
- type="trending"
- items={data?.trending ?? []}
- loading={loading}
- accentGradient=" "
- borderColor="border-warn"
- onSelectStock={setSelectedOwnershipStock}
- />
- <MoverCard
- title="Top Gainer"
- subtitle="Kenaikan % harga tertinggi hari ini"
- icon="↑"
- type="gainers"
- items={data?.gainers ?? []}
- loading={loading}
- accentGradient=" "
- borderColor="border-up"
- onSelectStock={setSelectedOwnershipStock}
- />
- <MoverCard
- title="Top Loser"
- subtitle="Penurunan % harga terdalam hari ini"
- icon="↘"
- type="losers"
- items={data?.losers ?? []}
- loading={loading}
- accentGradient=" "
- borderColor="border-down"
- onSelectStock={setSelectedOwnershipStock}
- />
- <MoverCard
- title="Unusual Volume"
- subtitle="Volume transaksi jauh di atas rata-rata 3 bulan"
- icon="»"
- type="unusual"
- items={data?.unusualVolume ?? []}
- loading={loading}
- accentGradient=" "
- borderColor="border-line"
- onSelectStock={setSelectedOwnershipStock}
- />
- </div>
+      {/* Cards grow to fill the width instead of stopping at two columns */}
+      <AutoGrid minWidth="520px" className="items-start">
+        <MoverCard
+          title="Top Trending"
+          subtitle="Paling aktif diperdagangkan (volume lembar)"
+          icon="↑"
+          type="trending"
+          items={data?.trending ?? []}
+          loading={loading}
+          onSelectStock={setSelectedOwnershipStock}
+        />
+        <MoverCard
+          title="Top Gainer"
+          subtitle="Kenaikan harga tertinggi hari ini"
+          icon="↑"
+          type="gainers"
+          items={data?.gainers ?? []}
+          loading={loading}
+          onSelectStock={setSelectedOwnershipStock}
+        />
+        <MoverCard
+          title="Top Loser"
+          subtitle="Penurunan terdalam hari ini"
+          icon="↘"
+          type="losers"
+          items={data?.losers ?? []}
+          loading={loading}
+          onSelectStock={setSelectedOwnershipStock}
+        />
+        <MoverCard
+          title="Unusual Volume"
+          subtitle="Volume jauh di atas rata-rata 3 bulan"
+          icon="»"
+          type="unusual"
+          items={data?.unusualVolume ?? []}
+          loading={loading}
+          onSelectStock={setSelectedOwnershipStock}
+        />
+      </AutoGrid>
 
- <StockOwnershipModal
+      <StockOwnershipModal
    stock={selectedOwnershipStock}
    isOpen={Boolean(selectedOwnershipStock)}
    onClose={() => setSelectedOwnershipStock(null)}
  />
- </section>
- );
+ </PageShell>
+  );
 }
