@@ -23,6 +23,7 @@ import CorporateCalendar from './CorporateCalendar';
 import AiConsultationPanel from './AiConsultationPanel';
 import AuthModal from './AuthModal';
 import { hasPreviousMonthKseiData } from '@/lib/navigation';
+import { PageShell, PageHeader, SectionTitle } from './ui/PageShell';
 
 export default function Dashboard() {
  const [user, setUser] = useState(null);
@@ -217,55 +218,54 @@ export default function Dashboard() {
         {/* Compact header for mobile/tablet */}
         <TopHeader activeTab={activeTab} />
 
-        {/* Main Content */}
-        <main className={`flex-1 w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-5 ${
-          activeTab === 'explorer' ? 'max-w-[1920px] 2xl:px-8' : 'max-w-7xl'
-        }`}>
+        {/* Main Content. Gutters live here so every page lines up; width is unrestricted. */}
+        <main className="flex-1 w-full px-3 sm:px-5 lg:px-6 py-4 sm:py-5">
           {error && (
-            <div role="alert" className="p-3 sm:p-4 rounded-sm bg-down-soft border border-down text-down text-xs sm:text-sm font-medium">
+            <div role="alert" className="mb-4 p-3 sm:p-4 rounded-sm bg-down-soft border border-down text-down text-xs sm:text-sm font-medium">
               <span aria-hidden="true">▲ </span>Gagal memuat data: {error}. Silakan coba segarkan halaman.
             </div>
           )}
 
           {/* TAB 1: WATCHLIST & ANALISIS SAHAM */}
           {activeTab === 'watchlist' && (
-            <div className="space-y-4 sm:space-y-5 animate-in fade-in duration-300">
-              {/* Page title */}
-              <div className="rule-double pb-2">
-                <h1 className="page-title">Analisis Saham</h1>
-                <p className="section-subtitle mt-0.5">Peringkat saham BEI berdasarkan scoring fundamental, teknikal & smart money</p>
-              </div>
+            <PageShell className="animate-in fade-in duration-300">
+              <PageHeader
+                title="Analisis Saham"
+                subtitle="Peringkat saham BEI berdasarkan scoring fundamental, teknikal & smart money"
+                badge={lastUpdated ? <span className="badge badge-outline">Diperbarui {lastUpdated}</span> : null}
+              />
 
-              {/* Market Condition 4-Card Cockpit */}
-              <MarketBadge market={market} />
+              {/* Market condition cards */}
+              <section>
+                <SectionTitle note="data real-time BEI">Kondisi Pasar</SectionTitle>
+                <MarketBadge market={market} />
+              </section>
 
-              {/* Style Selector (Scalping, Daily, Swing) & Strategy Mode */}
-              <div className="space-y-3 sm:space-y-4">
-                <section className="card p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <h2 className="section-title">Horison Waktu Trading</h2>
-                    <p className="section-subtitle mt-0.5">Atur bobot indikator teknikal vs fundamental sesuai lama Anda memegang saham</p>
-                  </div>
-                  <div className="w-full sm:w-80 shrink-0">
-                    <StyleSelector currentStyle={style} onStyleChange={setStyle} />
-                  </div>
-                </section>
+              {/* Strategy controls sit side by side on wide screens instead of stacked full width */}
+              <section className="grid gap-3 xl:grid-cols-2 xl:items-start">
+                <div className="card p-4 sm:p-5">
+                  <h2 className="section-title">Horison Waktu Trading</h2>
+                  <p className="section-subtitle mt-0.5 mb-3">Atur bobot indikator teknikal vs fundamental sesuai lama Anda memegang saham</p>
+                  <StyleSelector currentStyle={style} onStyleChange={setStyle} />
+                  {styleInfo?.description && (
+                    <p className="mt-2 text-[11px] text-muted leading-relaxed">{styleInfo.description}</p>
+                  )}
+                </div>
 
                 <ModeSelector currentMode={mode} onModeChange={setMode} />
+              </section>
 
-                {mode === 'custom' && (
-                  <CustomSliders onApply={setCustomWeights} />
-                )}
-              </div>
+              {mode === 'custom' && <CustomSliders onApply={setCustomWeights} />}
 
-  {/* Sector Bar & Bloomberg RRG */}
-  <SectorBar sectors={sectors} rrg={sectorRrg} />
+              <section>
+                <SectorBar sectors={sectors} rrg={sectorRrg} />
+              </section>
 
- {/* Main Stock Ranking Table */}
- <StockTable stocks={stocks} loading={loading} />
-
- </div>
- )}
+              <section>
+                <StockTable stocks={stocks} loading={loading} mode={mode} style={style} />
+              </section>
+            </PageShell>
+          )}
 
   {/* TAB 1.5: STOCK EXPLORER */}
   {activeTab === 'explorer' && (

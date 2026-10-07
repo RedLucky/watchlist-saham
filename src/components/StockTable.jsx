@@ -6,6 +6,7 @@ import DetailPanel from './DetailPanel';
 import Tooltip from './Tooltip';
 import StockOwnershipModal from './StockOwnershipModal';
 import { getSignalBadgeClass, getRiskTone } from '@/lib/uiTones';
+import { PageToolbar } from './ui/PageShell';
 
 /**
  * Small triangle showing the sort state of a column header.
@@ -138,60 +139,60 @@ export default function StockTable({ stocks, loading, mode, style }) {
   ];
 
   return (
-    <section className="card overflow-hidden">
-      {/* Header & controls */}
-      <div className="p-3 sm:p-5 border-b border-line space-y-3">
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div>
-            <h2 className="section-title">Pilihan Saham Teratas</h2>
-            <p className="section-subtitle mt-0.5">
-              Algoritma multi-faktor, proyeksi Benjamin Graham & sinyal tren IDX
-            </p>
-          </div>
+    <>
+      {/* Sticky controls: search and filters stay reachable while scrolling the ranking */}
+      <PageToolbar
+        meta={(
           <span className="badge" aria-live="polite">
             {filteredStocks.length} / {stocks.length} saham
           </span>
+        )}
+      >
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <label htmlFor="stock-table-search" className="sr-only">Cari saham</label>
+          <input
+            id="stock-table-search"
+            type="search"
+            placeholder="Cari ticker, nama emiten, atau sektor..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="input pr-9"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              aria-label="Hapus pencarian"
+              className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-muted hover:text-ink focus-ring rounded-sm"
+            >
+              <span className="font-mono" aria-hidden="true">×</span>
+            </button>
+          )}
         </div>
 
-        <div className="flex flex-col md:flex-row gap-2 md:items-center md:justify-between">
-          <div className="relative flex-1 md:max-w-sm">
-            <label htmlFor="stock-table-search" className="sr-only">Cari saham</label>
-            <input
-              id="stock-table-search"
-              type="search"
-              placeholder="Cari ticker, nama emiten, atau sektor..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="input pr-9"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                aria-label="Hapus pencarian"
-                className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-muted hover:text-ink focus-ring rounded-sm"
-              >
-                <span className="font-mono" aria-hidden="true">×</span>
-              </button>
-            )}
-          </div>
-
-          <div className="tabs" role="group" aria-label="Filter cepat">
-            {filters.map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => setFilterTab(f.id)}
-                aria-pressed={filterTab === f.id}
-                className="tab"
-              >
-                {f.label}
-                <span className="font-mono text-[10px] text-muted">{f.count}</span>
-              </button>
-            ))}
-          </div>
+        <div className="tabs" role="group" aria-label="Filter cepat">
+          {filters.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              onClick={() => setFilterTab(f.id)}
+              aria-pressed={filterTab === f.id}
+              className="tab"
+            >
+              {f.label}
+              <span className="font-mono text-[10px] text-muted">{f.count}</span>
+            </button>
+          ))}
         </div>
-      </div>
+      </PageToolbar>
+
+      <section className="card overflow-hidden">
+        <div className="px-3 sm:px-5 py-3 border-b border-line">
+          <h2 className="section-title">Pilihan Saham Teratas</h2>
+          <p className="section-subtitle mt-0.5">
+            Algoritma multi-faktor, proyeksi Benjamin Graham & sinyal tren IDX
+          </p>
+        </div>
 
       {/* Desktop column headers */}
       <div className="hidden md:grid grid-cols-16 gap-3 px-5 py-2 bg-sunken border-b border-line-strong label-mono">
@@ -367,6 +368,7 @@ export default function StockTable({ stocks, loading, mode, style }) {
         isOpen={Boolean(selectedOwnershipStock)}
         onClose={() => setSelectedOwnershipStock(null)}
       />
-    </section>
+      </section>
+    </>
   );
 }
