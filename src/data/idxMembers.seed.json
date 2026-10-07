@@ -33,6 +33,20 @@
         "INDF", "INKP", "JPFA", "KLBF", "MBMA", "MDKA", "MEDC", "PGAS", "PGEO",
         "TLKM", "UNTR", "UNVR"
       ]
+    },
+    {
+      "code": "HIDV20",
+      "effectiveFrom": "2026-08-05",
+      "source": "seed",
+      "verifiedOn": "2026-10-07",
+      "verifiedFrom": [
+        "fortuneidn.com — Daftar Saham IDX High Dividend 20 Terbaru (evaluasi minor Juli 2026, tabel lengkap dengan bobot)"
+      ],
+      "members": [
+        "BBRI", "BMRI", "BBCA", "ASII", "TLKM", "UNTR", "BBNI", "ADRO", "PTBA",
+        "ITMG", "PGAS", "ANTM", "INDF", "AKRA", "TAPG", "HMSP", "UNVR", "ACES",
+        "ERAA", "SCMA"
+      ]
     }
   ]
 }
