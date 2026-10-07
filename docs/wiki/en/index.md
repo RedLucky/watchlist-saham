@@ -9,6 +9,7 @@
 * [System Overview](./architecture/system-overview.md) — High-level stack overview (Next.js 16, Turbopack, Tailwind CSS, PostgreSQL, Prisma, IBM Plex).
 * [Data Pipeline & Sync](./architecture/data-pipeline.md) — Fast price synchronization, deep financial statement sync, Yahoo Finance integration, and round-robin queues.
 * [Database Models & Schemas](./architecture/database-models.md) — Complete Prisma schema definitions, BigInt serialization rules, relational integrity, and indices.
+* [App Shell & Navigation](./architecture/app-shell-navigation.md) — Desktop sidebar (collapsible), mobile header, slim bottom bar with "Lainnya" sheet, footer, and the shared menu config.
 * [Stock Explorer Pages](./architecture/stock-explorer.md) — Koleksi Saham card grid, Pencarian Saham IDX and Komparasi tabs, collection card helpers, and the click-to-analyse flow.
 * [Authentication & Admin Access](./architecture/authentication.md) — JWT session cookie, API proxy rules, admin API key, and database-backed admin role check (`verifyAdminAccess`).
 * [Local AI Engine & Queue](./architecture/ai-engine.md) — Self-hosted GGUF inference (llama.cpp), multi-core CPU tuning, live news aggregation, and async queue worker.

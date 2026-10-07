@@ -4,6 +4,13 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-10-07] feat | Kerangka Aplikasi Baru: Sidebar, Header Mobile, Bar Bawah Ramping
+- Sidebar, header mobile, bar bawah dan footer dibangun ulang dengan token "Bursa 1985"; ikon emoji diganti simbol Unicode.
+- Sidebar desktop bisa diciutkan menjadi rel ikon (diingat di `localStorage`).
+- Bar bawah mobile lebih ramping (56px, ikon 18px, label 10px): Analisis, Explorer, Screener, Portofolio + lembar "Lainnya" berisi halaman lain, link admin KSEI dan Logout.
+- Konfigurasi menu dan cek kesegaran data KSEI dipindah ke `src/lib/navigation.js` (diuji); periode KSEI kini diambil sekali di `Dashboard`, bukan di dua komponen.
+- Halaman baru: [Kerangka Aplikasi & Navigasi](./architecture/app-shell-navigation.md).
+
 ## [2026-10-07] feat | Fondasi Tema "Bursa 1985" (ADR 0001)
 - Token warna semantik baru di `src/app/globals.css` untuk mode terang ("Kertas Bursa") dan gelap ("Terminal Fosfor"), diekspos sebagai warna Tailwind (`canvas`, `surface`, `sunken`, `line`, `ink`, `muted`, `accent`, `up`, `down`, `warn`, …).
 - Font diganti ke IBM Plex Sans / Serif / Mono (`font-sans`, `font-serif`, `font-mono`); tema kini mengikuti perangkat secara default.

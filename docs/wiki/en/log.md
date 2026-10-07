@@ -4,6 +4,13 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-10-07] feat | New App Shell: Sidebar, Mobile Header, Slim Bottom Bar
+- Sidebar, mobile header, bottom bar and footer rebuilt with the "Bursa 1985" tokens; emoji icons replaced by Unicode symbols.
+- Desktop sidebar can collapse to an icon rail (remembered in `localStorage`).
+- Mobile bottom bar is slimmer (56px, 18px icons, 10px labels): Analisis, Explorer, Screener, Portofolio + "Lainnya" sheet with the other pages, KSEI admin link and Logout.
+- Menu config and KSEI freshness check moved to `src/lib/navigation.js` (tested); KSEI periods are fetched once in `Dashboard` instead of in two components.
+- New page: [App Shell & Navigation](./architecture/app-shell-navigation.md).
+
 ## [2026-10-07] feat | "Bursa 1985" Theme Foundation (ADR 0001)
 - New semantic colour tokens in `src/app/globals.css` for light ("Kertas Bursa") and dark ("Terminal Fosfor"), exposed as Tailwind colours (`canvas`, `surface`, `sunken`, `line`, `ink`, `muted`, `accent`, `up`, `down`, `warn`, …).
 - Fonts switched to IBM Plex Sans / Serif / Mono (`font-sans`, `font-serif`, `font-mono`); theme now follows the device by default.

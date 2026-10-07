@@ -22,7 +22,7 @@ import StockExplorer from './StockExplorer';
 import CorporateCalendar from './CorporateCalendar';
 import AiConsultationPanel from './AiConsultationPanel';
 import AuthModal from './AuthModal';
-import { ThemeToggle } from './ThemeToggle';
+import { hasPreviousMonthKseiData } from '@/lib/navigation';
 
 export default function Dashboard() {
  const [user, setUser] = useState(null);
@@ -44,6 +44,17 @@ export default function Dashboard() {
  const [lastUpdated, setLastUpdated] = useState(null);
  const [syncInfo, setSyncInfo] = useState(null);
  const [marketMovers, setMarketMovers] = useState(null);
+ // True when last month's KSEI ownership data has not been uploaded yet (badge in the navigation).
+ const [kseiWarning, setKseiWarning] = useState(false);
+
+ // Check KSEI data freshness once after login (shared by sidebar and mobile nav).
+ useEffect(() => {
+   if (!user) return;
+   fetch('/api/ksei/periods')
+     .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
+     .then((data) => setKseiWarning(!hasPreviousMonthKseiData(data.periods || [])))
+     .catch((err) => console.warn('[Dashboard] Cannot check KSEI periods', err));
+ }, [user]);
 
  // Check auth status on mount
  const checkAuth = useCallback(async () => {
@@ -164,11 +175,9 @@ export default function Dashboard() {
  // Auth Loading State
  if (checkingAuth) {
  return (
- <div className="min-h-screen bg-slate-50 dark:bg-[#0a0f1a] flex flex-col items-center justify-center space-y-4">
- <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-500 to-purple-600 animate-spin flex items-center justify-center">
- <div className="w-8 h-8 bg-slate-50 dark:bg-[#0a0f1a] rounded-xl"></div>
- </div>
- <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Memeriksa Sesi Pengguna...</p>
+ <div className="min-h-screen bg-canvas flex flex-col items-center justify-center gap-3" role="status" aria-live="polite">
+ <div className="w-8 h-8 rounded-full border-2 border-line border-t-ink animate-spin" aria-hidden="true"></div>
+ <p className="label-mono">Memeriksa sesi pengguna...</p>
  </div>
  );
  }
@@ -176,7 +185,7 @@ export default function Dashboard() {
  // MANDATORY AUTH GATE: If user is not logged in, force AuthModal (no close button)
  if (!user) {
  return (
- <div className="min-h-screen bg-slate-50 dark:bg-[#0a0f1a] flex items-center justify-center p-4">
+ <div className="min-h-screen bg-canvas flex items-center justify-center p-4">
  <AuthModal
  isOpen={true}
  onClose={null}
@@ -189,10 +198,10 @@ export default function Dashboard() {
  }
 
  return (
-    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#070b14] flex">
-      {/* Desktop Sidebar Navigation */}
-      <Sidebar 
-        activeTab={activeTab} 
+    <div className="min-h-screen bg-canvas flex">
+      {/* Desktop Sidebar Navigation (lg+) */}
+      <Sidebar
+        activeTab={activeTab}
         setActiveTab={setActiveTab}
         syncInfo={syncInfo}
         handleManualSync={handleManualSync}
@@ -200,20 +209,21 @@ export default function Dashboard() {
         handleLogout={handleLogout}
         fetchData={fetchData}
         loading={loading}
+        kseiWarning={kseiWarning}
       />
-      
-      {/* Main App Content Area */}
-      <div className="flex-1 flex flex-col min-h-screen w-full lg:w-[calc(100%-16rem)] relative pb-20 lg:pb-0">
-        {/* Top Header (Visible on Mobile with Logo, ThemeToggle, KSEI Upload, User Profile & Logout) */}
-        <TopHeader user={user} handleLogout={handleLogout} />
-        
+
+      {/* Main App Content Area. Bottom padding keeps content clear of the 56px mobile bar. */}
+      <div className="flex-1 min-w-0 flex flex-col min-h-screen relative pb-[calc(3.5rem+env(safe-area-inset-bottom))] lg:pb-0">
+        {/* Compact header for mobile/tablet */}
+        <TopHeader activeTab={activeTab} />
+
         {/* Main Content */}
-        <main className={`flex-1 w-full mx-auto px-4 sm:px-6 py-6 space-y-5 transition-all duration-300 ${
+        <main className={`flex-1 w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-5 ${
           activeTab === 'explorer' ? 'max-w-[1920px] 2xl:px-8' : 'max-w-7xl'
         }`}>
           {error && (
-            <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs sm:text-sm font-semibold">
-              ⚠️ Gagal memuat data: {error}. Silakan coba segarkan halaman.
+            <div role="alert" className="p-3 sm:p-4 rounded-sm bg-down-soft border border-down text-down text-xs sm:text-sm font-medium">
+              <span aria-hidden="true">▲ </span>Gagal memuat data: {error}. Silakan coba segarkan halaman.
             </div>
           )}
 
@@ -330,15 +340,25 @@ export default function Dashboard() {
  )}
  </main>
 
- {/* Footer */}
- <footer className="border-t border-slate-200 dark:border-slate-800/30 py-6 mt-12 bg-slate-50 dark:bg-[#0a0f1a]/50">
- <div className="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500 dark:text-slate-400 space-y-1">
- <p>⚡ IDX Watchlist — Platform Analisis Saham Pintar berbasis Algoritma Scoring Fundamental & Teknikal.</p>
- <p>⚠️ Data diperbarui secara berkala dari BEI/Yahoo Finance. Bukan merupakan ajakan untuk membeli atau menjual saham.</p>
- </div>
- </footer>
-        {/* Mobile Bottom Navigation */}
-        <MobileNav activeTab={activeTab} setActiveTab={setActiveTab} />
+        {/* Footer */}
+        <footer className="mt-10 border-t border-line">
+          <div className="max-w-7xl mx-auto px-4 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 text-[11px] text-muted">
+            <p>
+              <span className="font-serif font-semibold text-ink">IDX Watchlist</span>
+              {' '}— analisis saham berbasis scoring fundamental & teknikal.
+            </p>
+            <p>Data BEI/Yahoo Finance, diperbarui berkala. Bukan ajakan membeli atau menjual saham.</p>
+          </div>
+        </footer>
+
+        {/* Mobile Bottom Navigation (below lg) */}
+        <MobileNav
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          user={user}
+          handleLogout={handleLogout}
+          kseiWarning={kseiWarning}
+        />
       </div>
     </div>
   );
