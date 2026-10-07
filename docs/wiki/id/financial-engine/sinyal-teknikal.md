@@ -83,10 +83,10 @@ Tersedia pada komponen `src/components/StockChart.jsx` dengan dukungan API `/api
 * Agregasi candle instan di sisi klien memproses data harian menjadi `1D` (Harian), `1W` (Mingguan - jangkar hari Senin), dan `1M` (Bulanan - tanggal 1) tanpa roundtrip jaringan tambahan.
 
 ### 2. Hamparan Indikator Lengkap & Sub-Pane Khusus
-* **Moving Averages**: Cepat EMA/SMA 20, SMA 50, dan filter tren institusional SMA 200 (`#eab308`).
-* **Bollinger Bands (20, 2)**: Garis batas atas (`#38bdf8`), garis tengah basis, dan garis batas bawah dengan gaya putus-putus (`LineStyle.Dashed`).
+* **Moving Averages**: MA20 (ink, garis penuh), MA50 (muted, putus-putus), dan filter tren institusional MA200 (warn, tebal). Warna diambil dari token tema lewat `src/lib/chartTheme.js` dan mengikuti mode terang/gelap.
+* **Bollinger Bands (20, 2)**: Garis batas atas dan bawah (muted, titik-titik `LineStyle.Dotted`) serta garis tengah basis (muted, penuh).
 * **Sub-Pane RSI (14)**: Skala harga terpisah (`priceScaleId: 'rsi'`) dengan batas margin (`top: 0.82, bottom: 0.02`) dan garis ambang batas horizontal 70 (Overbought) dan 30 (Oversold).
-* **Sub-Pane MACD (12, 26, 9)**: Skala harga terpisah (`priceScaleId: 'macd'`) dengan garis MACD (`#38bdf8`), garis Sinyal (`#fb923c`), serta bilah histogram momentum berkode warna (`#22c55e` / `#ef4444`).
+* **Sub-Pane MACD (12, 26, 9)**: Skala harga terpisah (`priceScaleId: 'macd'`) dengan garis MACD (ink), garis Sinyal (warn, putus-putus), serta histogram momentum. Candle dan volume memakai token up/down.
 * **Penanda Pola Candlestick**: Marker visual di atas/bawah candle mendeteksi pola Bullish Engulfing, Hammer, Shooting Star, dan Doji via `setMarkers()`.
 
 ### 3. Legenda Presisi Dinamis & Tampilan Responsif

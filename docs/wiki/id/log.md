@@ -4,6 +4,11 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-10-07] feat | Migrasi Panel Analisis & Chart ke Bursa 1985
+- 11 panel Stock Explorer dan `DetailPanel` dipindah ke token tema dan simbol Unicode; header FA dan tombol "laporan lengkap" BI diperbaiki setelah gradien dihapus.
+- Warna `StockChart` kini diambil dari `src/lib/chartTheme.js` yang membaca token CSS: candle/volume memakai up/down; indikator memakai ink/muted/warn dengan gaya garis (MA50 putus-putus, Bollinger titik-titik, sinyal MACD putus-putus). Mengganti tema kini juga mewarnai ulang seri, bukan hanya grid. Marker pola dan judul garis harga tidak lagi berisi emoji. Modal pola memakai `.modal-*`.
+- Memperbarui [Indikator & Sinyal Teknikal](./financial-engine/sinyal-teknikal.md).
+
 ## [2026-10-07] feat | Migrasi Stock Explorer ke Bursa 1985
 - ~1.900 class palet, 8 gradien, 120 radius besar, dan 145 baris emoji UI di `StockExplorer.jsx` diganti token tema dan simbol Unicode (emoji koleksi pilihan pengguna tetap dipertahankan).
 - Judul halaman bergaya koran yang sticky + tab standar; tab cockpit memakai `.tabs/.tab` (`role="tab"`); kesembilan dialog memakai `.modal-*` (bottom sheet di HP); tombol banner mengikuti hierarki satu tombol utama.

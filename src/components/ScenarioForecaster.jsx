@@ -69,22 +69,22 @@ export default function ScenarioForecaster({ stockDetail }) {
   if (!stockDetail) return null;
 
   return (
-    <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm space-y-5">
+    <div className="bg-surface border border-line rounded-md p-4 md:p-6 shadow-sm space-y-5">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-3.5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-line pb-3.5">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xl">🎛️</span>
+            <span className="text-xl">≡</span>
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-bold text-slate-900 dark:text-white text-sm md:text-base">
+              <h3 className="font-bold text-ink text-sm md:text-base">
                 Interactive What-If Scenario Forecaster (SCEN)
               </h3>
-              <span className="px-2 py-0.5 text-[10px] font-black rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 uppercase tracking-wider">
+              <span className="px-2 py-0.5 text-[10px] font-black rounded-md bg-sunken text-ink border border-line uppercase tracking-wider">
                 Bloomberg SCEN
               </span>
             </div>
           </div>
-          <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+          <p className="text-xs text-muted mt-0.5">
             Simulator proyeksi: Geser parameter asumsi pertumbuhan untuk melihat dampaknya ke EPS, Fair Value Graham, dan dividen.
           </p>
         </div>
@@ -95,23 +95,23 @@ export default function ScenarioForecaster({ stockDetail }) {
             setNpmTarget(Math.round(Math.max(2, Math.min(50, currentNpm))));
             setPayoutRatio(Math.round(Math.max(10, Math.min(100, currentPayoutRatio))));
           }}
-          className="px-2.5 py-1 text-xs font-bold text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors self-start sm:self-auto"
+          className="px-2.5 py-1 text-xs font-bold text-muted hover:text-ink border border-line rounded-sm hover:bg-sunken transition-colors self-start sm:self-auto"
         >
           Reset Asumsi ↺
         </button>
       </div>
 
       {/* Sliders Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/60">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-sm bg-sunken border border-line ">
         {/* Slider 1: Revenue Growth */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs font-bold">
-            <span className="text-slate-600 dark:text-slate-300">Pertumbuhan Omset (YoY):</span>
+            <span className="text-muted ">Pertumbuhan Omset (YoY):</span>
             <span className={`font-mono px-2 py-0.5 rounded-md ${
-              revenueGrowth >= 15 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300' :
-              revenueGrowth >= 0 ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/80 dark:text-indigo-300' :
-              'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300'
-            }`}>
+ revenueGrowth >= 15 ? 'bg-up-soft text-up ' :
+ revenueGrowth >= 0 ? 'bg-sunken text-ink ' :
+ 'bg-down-soft text-down '
+ }`}>
               {revenueGrowth >= 0 ? '+' : ''}{revenueGrowth}%
             </span>
           </div>
@@ -122,9 +122,9 @@ export default function ScenarioForecaster({ stockDetail }) {
             step="1"
             value={revenueGrowth}
             onChange={(e) => setRevenueGrowth(Number(e.target.value))}
-            className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+            className="w-full h-1.5 bg-sunken rounded-sm appearance-none cursor-pointer accent-[var(--c-accent)]"
           />
-          <div className="flex justify-between text-[10px] text-slate-500 font-mono">
+          <div className="flex justify-between text-[10px] text-muted font-mono">
             <span>-20% (Krisis)</span>
             <span>+10% (Normal)</span>
             <span>+40% (Boom)</span>
@@ -134,8 +134,8 @@ export default function ScenarioForecaster({ stockDetail }) {
         {/* Slider 2: Net Profit Margin (NPM) */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs font-bold">
-            <span className="text-slate-600 dark:text-slate-300">Margin Laba Bersih (NPM):</span>
-            <span className="font-mono px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800 dark:bg-indigo-950/80 dark:text-indigo-300">
+            <span className="text-muted ">Margin Laba Bersih (NPM):</span>
+            <span className="font-mono px-2 py-0.5 rounded-md bg-sunken text-ink ">
               {npmTarget}%
             </span>
           </div>
@@ -146,9 +146,9 @@ export default function ScenarioForecaster({ stockDetail }) {
             step="0.5"
             value={npmTarget}
             onChange={(e) => setNpmTarget(Number(e.target.value))}
-            className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+            className="w-full h-1.5 bg-sunken rounded-sm appearance-none cursor-pointer accent-[var(--c-accent)]"
           />
-          <div className="flex justify-between text-[10px] text-slate-500 font-mono">
+          <div className="flex justify-between text-[10px] text-muted font-mono">
             <span>2%</span>
             <span>{currentNpm > 0 ? `${currentNpm.toFixed(1)}% (Saat ini)` : '15%'}</span>
             <span>45%</span>
@@ -158,8 +158,8 @@ export default function ScenarioForecaster({ stockDetail }) {
         {/* Slider 3: Dividend Payout Ratio (DPR) */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs font-bold">
-            <span className="text-slate-600 dark:text-slate-300">Payout Ratio Dividen (DPR):</span>
-            <span className="font-mono px-2 py-0.5 rounded-md bg-purple-100 text-purple-800 dark:bg-purple-950/80 dark:text-purple-300">
+            <span className="text-muted ">Payout Ratio Dividen (DPR):</span>
+            <span className="font-mono px-2 py-0.5 rounded-md bg-sunken text-ink ">
               {payoutRatio}%
             </span>
           </div>
@@ -170,9 +170,9 @@ export default function ScenarioForecaster({ stockDetail }) {
             step="5"
             value={payoutRatio}
             onChange={(e) => setPayoutRatio(Number(e.target.value))}
-            className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-purple-600"
+            className="w-full h-1.5 bg-sunken rounded-sm appearance-none cursor-pointer accent-[var(--c-accent)]"
           />
-          <div className="flex justify-between text-[10px] text-slate-500 font-mono">
+          <div className="flex justify-between text-[10px] text-muted font-mono">
             <span>10% (Minimal)</span>
             <span>50% (Moderat)</span>
             <span>95% (Maksimal)</span>
@@ -183,51 +183,51 @@ export default function ScenarioForecaster({ stockDetail }) {
       {/* Real-time Dynamic Outputs Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {/* Proj EPS */}
-        <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60">
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+        <div className="p-3.5 rounded-sm bg-sunken border border-line ">
+          <span className="text-[10px] font-bold text-muted uppercase tracking-wider block">
             Proyeksi EPS
           </span>
-          <span className="text-lg font-black font-mono text-slate-900 dark:text-white mt-0.5 block">
+          <span className="text-lg font-black font-mono text-ink mt-0.5 block">
             Rp {projected.projEps.toLocaleString('id-ID')}
           </span>
-          <span className="text-[10px] text-slate-500">Laba Bersih per Lembar</span>
+          <span className="text-[10px] text-muted">Laba Bersih per Lembar</span>
         </div>
 
         {/* Proj Target Price 12M */}
-        <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60">
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+        <div className="p-3.5 rounded-sm bg-sunken border border-line ">
+          <span className="text-[10px] font-bold text-muted uppercase tracking-wider block">
             Target Harga 12M
           </span>
-          <span className="text-lg font-black font-mono text-indigo-600 dark:text-indigo-400 mt-0.5 block">
+          <span className="text-lg font-black font-mono text-ink mt-0.5 block">
             Rp {projected.projTargetPrice ? Number(projected.projTargetPrice).toLocaleString('id-ID') : '-'}
           </span>
-          <span className={`text-[10px] font-bold ${projected.upsidePct >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+          <span className={`text-[10px] font-bold ${projected.upsidePct >= 0 ? 'text-up' : 'text-down'}`}>
             {projected.upsidePct >= 0 ? '+' : ''}{projected.upsidePct}% dari harga kini
           </span>
         </div>
 
         {/* Proj Fair Value Graham */}
-        <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60">
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+        <div className="p-3.5 rounded-sm bg-sunken border border-line ">
+          <span className="text-[10px] font-bold text-muted uppercase tracking-wider block">
             Nilai Wajar Graham
           </span>
-          <span className="text-lg font-black font-mono text-slate-900 dark:text-white mt-0.5 block">
+          <span className="text-lg font-black font-mono text-ink mt-0.5 block">
             Rp {projected.projFairValue ? Number(projected.projFairValue).toLocaleString('id-ID') : '-'}
           </span>
-          <span className={`text-[10px] font-bold ${projected.mosPct >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+          <span className={`text-[10px] font-bold ${projected.mosPct >= 0 ? 'text-up' : 'text-down'}`}>
             MoS: {projected.mosPct >= 0 ? '+' : ''}{projected.mosPct}%
           </span>
         </div>
 
         {/* Proj Dividend & Yield */}
-        <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60">
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+        <div className="p-3.5 rounded-sm bg-sunken border border-line ">
+          <span className="text-[10px] font-bold text-muted uppercase tracking-wider block">
             Estimasi Dividen (DPS)
           </span>
-          <span className="text-lg font-black font-mono text-purple-600 dark:text-purple-400 mt-0.5 block">
+          <span className="text-lg font-black font-mono text-ink mt-0.5 block">
             Rp {projected.projDps.toLocaleString('id-ID')}
           </span>
-          <span className="text-[10px] text-purple-600 dark:text-purple-400 font-bold">
+          <span className="text-[10px] text-ink font-bold">
             Yield Proyeksi: ~{projected.projYield}%
           </span>
         </div>

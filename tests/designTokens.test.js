@@ -28,6 +28,19 @@ const MIGRATED_FILES = [
   'src/components/SectorRrgPanel.jsx',
   // TASK-4102: Stock Explorer
   'src/components/StockExplorer.jsx',
+  // TASK-5527: Stock Explorer analysis panels & chart
+  'src/components/RelativeValuationPeers.jsx',
+  'src/components/ValuationBandsPanel.jsx',
+  'src/components/EconomicValuePanel.jsx',
+  'src/components/ScenarioForecaster.jsx',
+  'src/components/DividendTrapPanel.jsx',
+  'src/components/AutoRejectionLadderPanel.jsx',
+  'src/components/SmartMoneyLiquidityPanel.jsx',
+  'src/components/BloombergIntelligencePanel.jsx',
+  'src/components/MonthlySeasonalityPanel.jsx',
+  'src/components/FinancialMatrixPanel.jsx',
+  'src/components/DetailPanel.jsx',
+  'src/components/StockChart.jsx',
 ];
 
 /** Lines that handle user-chosen collection emoji (data, not UI icons) may contain emoji. */

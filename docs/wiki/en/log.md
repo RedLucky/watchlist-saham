@@ -4,6 +4,11 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-10-07] feat | Analysis Panels & Chart Migrated to Bursa 1985
+- 11 Stock Explorer panels and `DetailPanel` moved to theme tokens and Unicode symbols; FA header and BI "full report" button fixed after gradient removal.
+- `StockChart` colours now come from `src/lib/chartTheme.js`, which reads the CSS tokens: candles/volume use up/down; indicators use ink/muted/warn with line styles (MA50 dashed, Bollinger dotted, MACD signal dashed). Switching theme now also recolours series, not only the grid. Pattern markers and price-line titles no longer contain emoji. Pattern modal uses `.modal-*`.
+- Updated [Technical Indicators & Signals](./financial-engine/technical-signals.md).
+
 ## [2026-10-07] feat | Stock Explorer Migrated to Bursa 1985
 - ~1,900 palette classes, 8 gradients, 120 large radii and 145 lines of UI emoji in `StockExplorer.jsx` replaced by theme tokens and Unicode symbols (user-chosen collection emoji are kept).
 - Sticky newspaper-style page title + standard tabs; cockpit tabs use `.tabs/.tab` (`role="tab"`); all 9 dialogs use `.modal-*` (bottom sheet on phones); banner buttons follow one-primary hierarchy.

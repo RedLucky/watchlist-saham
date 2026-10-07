@@ -11,6 +11,7 @@ import {
 } from 'lightweight-charts';
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { analyzeCandlestickPatterns } from '@/lib/candlestickPatterns';
+import { getCurrentChartPalette } from '@/lib/chartTheme';
 
 /**
  * Format volume into compact human-readable text (K, M, B)
@@ -200,10 +201,11 @@ export default function StockChart({ ticker }) {
         setPatternAnalysis(detectedPatterns);
 
         // Styling
-        const isDark = typeof window !== 'undefined' && document.documentElement.classList.contains('dark');
-        const textColor = isDark ? '#94a3b8' : '#475569';
-        const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
-        const borderColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)';
+        // Colours come from the Bursa 1985 theme tokens (src/lib/chartTheme.js).
+        const palette = getCurrentChartPalette();
+        const textColor = palette.text;
+        const gridColor = palette.grid;
+        const borderColor = palette.border;
         const containerWidth = chartContainerRef.current?.clientWidth || 800;
         const chartHeight = isFullscreen ? 580 : 420;
 
@@ -251,13 +253,13 @@ export default function StockChart({ ticker }) {
 
         // 1. Candlestick Series
         const candlestickSeries = chart.addSeries(CandlestickSeries, {
-          upColor: '#10b981',
-          downColor: '#ef4444',
+          upColor: palette.up,
+          downColor: palette.down,
           borderVisible: true,
-          borderUpColor: '#10b981',
-          borderDownColor: '#ef4444',
-          wickUpColor: '#10b981',
-          wickDownColor: '#ef4444',
+          borderUpColor: palette.up,
+          borderDownColor: palette.down,
+          wickUpColor: palette.up,
+          wickDownColor: palette.down,
         });
         candlestickSeries.setData(data);
         candlestickSeriesRef.current = candlestickSeries;
@@ -267,9 +269,9 @@ export default function StockChart({ ticker }) {
           const markers = detectedPatterns.allDetected.slice(-25).map(p => ({
             time: p.time,
             position: p.direction === 'bullish' ? 'belowBar' : 'aboveBar',
-            color: p.direction === 'bullish' ? '#10b981' : p.direction === 'bearish' ? '#ef4444' : '#f59e0b',
+            color: p.direction === 'bullish' ? palette.up : p.direction === 'bearish' ? palette.down : palette.warn,
             shape: p.direction === 'bullish' ? 'arrowUp' : p.direction === 'bearish' ? 'arrowDown' : 'circle',
-            text: `${p.emoji} ${p.shortName || p.name.split(' ')[0]}`,
+            text: p.shortName || p.name.split(' ')[0],
             size: 1.2,
           }));
           createSeriesMarkers(candlestickSeries, markers);
@@ -287,14 +289,14 @@ export default function StockChart({ ticker }) {
         const volumeData = data.map(d => ({
           time: d.time,
           value: d.value,
-          color: d.close >= d.open ? 'rgba(16, 185, 129, 0.35)' : 'rgba(239, 68, 68, 0.35)',
+          color: d.close >= d.open ? palette.volumeUp : palette.volumeDown,
         }));
         volumeSeries.setData(volumeData);
         volumeSeriesRef.current = volumeSeries;
 
-        // 4. Moving Averages: MA20 (Blue), MA50 (Purple), MA200 (Amber)
+        // 4. Moving Averages: MA20 (ink, solid), MA50 (muted, dashed), MA200 (warn, thick)
         const ma20Series = chart.addSeries(LineSeries, {
-          color: '#3b82f6',
+          color: palette.ma20,
           lineWidth: 1.5,
           title: 'MA20',
           visible: indicatorsRef.current.ma20,
@@ -303,8 +305,9 @@ export default function StockChart({ ticker }) {
         ma20SeriesRef.current = ma20Series;
 
         const ma50Series = chart.addSeries(LineSeries, {
-          color: '#a855f7',
+          color: palette.ma50,
           lineWidth: 1.5,
+          lineStyle: LineStyle.Dashed,
           title: 'MA50',
           visible: indicatorsRef.current.ma50,
         });
@@ -312,7 +315,7 @@ export default function StockChart({ ticker }) {
         ma50SeriesRef.current = ma50Series;
 
         const ma200Series = chart.addSeries(LineSeries, {
-          color: '#f59e0b',
+          color: palette.ma200,
           lineWidth: 2,
           title: 'MA200',
           visible: indicatorsRef.current.ma200,
@@ -322,9 +325,9 @@ export default function StockChart({ ticker }) {
 
         // 5. Bollinger Bands Series (Upper, Mid, Lower)
         const bbUpperSeries = chart.addSeries(LineSeries, {
-          color: 'rgba(6, 182, 212, 0.8)',
+          color: palette.bbBand,
           lineWidth: 1,
-          lineStyle: LineStyle.Dashed,
+          lineStyle: LineStyle.Dotted,
           title: 'BB Upper',
           visible: indicatorsRef.current.bollinger,
         });
@@ -332,7 +335,7 @@ export default function StockChart({ ticker }) {
         bbUpperSeriesRef.current = bbUpperSeries;
 
         const bbMidSeries = chart.addSeries(LineSeries, {
-          color: 'rgba(6, 182, 212, 0.5)',
+          color: palette.bbMid,
           lineWidth: 1,
           lineStyle: LineStyle.Solid,
           title: 'BB Mid',
@@ -342,9 +345,9 @@ export default function StockChart({ ticker }) {
         bbMidSeriesRef.current = bbMidSeries;
 
         const bbLowerSeries = chart.addSeries(LineSeries, {
-          color: 'rgba(6, 182, 212, 0.8)',
+          color: palette.bbBand,
           lineWidth: 1,
-          lineStyle: LineStyle.Dashed,
+          lineStyle: LineStyle.Dotted,
           title: 'BB Lower',
           visible: indicatorsRef.current.bollinger,
         });
@@ -353,7 +356,7 @@ export default function StockChart({ ticker }) {
 
         // 6. RSI (14) Secondary Overlay Sub-Pane
         const rsiSeries = chart.addSeries(LineSeries, {
-          color: '#8b5cf6',
+          color: palette.rsi,
           lineWidth: 1.5,
           title: 'RSI(14)',
           priceScaleId: 'rsi',
@@ -366,7 +369,7 @@ export default function StockChart({ ticker }) {
         rsiSeries.setData(rsi || []);
         rsiSeries.createPriceLine({
           price: 70,
-          color: 'rgba(239, 68, 68, 0.6)',
+          color: palette.rsiOverbought,
           lineWidth: 1,
           lineStyle: LineStyle.Dashed,
           axisLabelVisible: true,
@@ -374,7 +377,7 @@ export default function StockChart({ ticker }) {
         });
         rsiSeries.createPriceLine({
           price: 30,
-          color: 'rgba(16, 185, 129, 0.6)',
+          color: palette.rsiOversold,
           lineWidth: 1,
           lineStyle: LineStyle.Dashed,
           axisLabelVisible: true,
@@ -396,7 +399,7 @@ export default function StockChart({ ticker }) {
         macdHistSeriesRef.current = macdHistSeries;
 
         const macdSeries = chart.addSeries(LineSeries, {
-          color: '#3b82f6',
+          color: palette.macd,
           lineWidth: 1.5,
           priceScaleId: 'macd',
           title: 'MACD',
@@ -410,8 +413,9 @@ export default function StockChart({ ticker }) {
         macdSeriesRef.current = macdSeries;
 
         const macdSignalSeries = chart.addSeries(LineSeries, {
-          color: '#f97316',
+          color: palette.macdSignal,
           lineWidth: 1.5,
+          lineStyle: LineStyle.Dashed,
           priceScaleId: 'macd',
           title: 'Signal',
           visible: indicatorsRef.current.macd,
@@ -427,7 +431,7 @@ export default function StockChart({ ticker }) {
         if (chartAnalytics?.support) {
           candlestickSeries.createPriceLine({
             price: chartAnalytics.support,
-            color: '#10b981',
+            color: palette.up,
             lineWidth: 1,
             lineStyle: LineStyle.Dashed,
             axisLabelVisible: true,
@@ -437,7 +441,7 @@ export default function StockChart({ ticker }) {
         if (chartAnalytics?.resistance) {
           candlestickSeries.createPriceLine({
             price: chartAnalytics.resistance,
-            color: '#ef4444',
+            color: palette.down,
             lineWidth: 1,
             lineStyle: LineStyle.Dashed,
             axisLabelVisible: true,
@@ -508,18 +512,32 @@ export default function StockChart({ ticker }) {
 
         // 11. Theme Change Observer (Dark/Light Mutation)
         themeObserver = new MutationObserver(() => {
-          const isNowDark = document.documentElement.classList.contains('dark');
-          const tColor = isNowDark ? '#94a3b8' : '#475569';
-          const gColor = isNowDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
-          const bColor = isNowDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)';
+          const p = getCurrentChartPalette();
           if (chart) {
             chart.applyOptions({
-              layout: { textColor: tColor },
-              grid: { vertLines: { color: gColor }, horzLines: { color: gColor } },
-              rightPriceScale: { borderColor: bColor },
-              timeScale: { borderColor: bColor },
+              layout: { textColor: p.text },
+              grid: { vertLines: { color: p.grid }, horzLines: { color: p.grid } },
+              rightPriceScale: { borderColor: p.border },
+              timeScale: { borderColor: p.border },
             });
           }
+          // Series colours follow the theme too (candles, volume and indicator lines).
+          candlestickSeries.applyOptions({
+            upColor: p.up, downColor: p.down, borderUpColor: p.up, borderDownColor: p.down, wickUpColor: p.up, wickDownColor: p.down,
+          });
+          volumeSeries.setData(volumeSeries.data().map((bar) => {
+            const candle = candlestickSeries.data().find((c) => c.time === bar.time);
+            return { ...bar, color: candle && candle.close >= candle.open ? p.volumeUp : p.volumeDown };
+          }));
+          ma20Series.applyOptions({ color: p.ma20 });
+          ma50Series.applyOptions({ color: p.ma50 });
+          ma200Series.applyOptions({ color: p.ma200 });
+          bbUpperSeries.applyOptions({ color: p.bbBand });
+          bbMidSeries.applyOptions({ color: p.bbMid });
+          bbLowerSeries.applyOptions({ color: p.bbBand });
+          rsiSeries.applyOptions({ color: p.rsi });
+          macdSeries.applyOptions({ color: p.macd });
+          macdSignalSeries.applyOptions({ color: p.macdSignal });
         });
         themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
 
@@ -564,12 +582,13 @@ export default function StockChart({ ticker }) {
     if (!candlestickSeriesRef.current || !volumeSeriesRef.current || !rawDataRef.current.length) return;
 
     const aggregated = aggregateCandles(rawDataRef.current, tf);
+    const { volumeUp, volumeDown } = getCurrentChartPalette();
     candlestickSeriesRef.current.setData(aggregated);
 
     const volData = aggregated.map(d => ({
       time: d.time,
       value: d.value,
-      color: d.close >= d.open ? 'rgba(16, 185, 129, 0.35)' : 'rgba(239, 68, 68, 0.35)',
+      color: d.close >= d.open ? volumeUp : volumeDown,
     }));
     volumeSeriesRef.current.setData(volData);
 
@@ -627,14 +646,16 @@ export default function StockChart({ ticker }) {
     });
     dynamicPriceLinesRef.current = [];
 
+    const palette = getCurrentChartPalette();
+
     if (pattern.entryPrice) {
       const entryLine = candlestickSeriesRef.current.createPriceLine({
         price: pattern.entryPrice,
-        color: '#3b82f6',
+        color: palette.macd,
         lineWidth: 2,
         lineStyle: LineStyle.Solid,
         axisLabelVisible: true,
-        title: pattern.direction === 'bearish' ? `🚪 Exit (${pattern.shortName})` : `🎯 Entry (${pattern.shortName})`,
+        title: pattern.direction === 'bearish' ? `Exit (${pattern.shortName})` : `Entry (${pattern.shortName})`,
       });
       dynamicPriceLinesRef.current.push(entryLine);
     }
@@ -642,11 +663,11 @@ export default function StockChart({ ticker }) {
     if (pattern.stopLossPrice) {
       const slLine = candlestickSeriesRef.current.createPriceLine({
         price: pattern.stopLossPrice,
-        color: '#ef4444',
+        color: palette.down,
         lineWidth: 2,
         lineStyle: LineStyle.Dashed,
         axisLabelVisible: true,
-        title: pattern.direction === 'bearish' ? '⚠️ Cut Loss Darurat' : '🛡️ Stop Loss',
+        title: pattern.direction === 'bearish' ? 'Cut Loss Darurat' : 'Stop Loss',
       });
       dynamicPriceLinesRef.current.push(slLine);
     }
@@ -655,11 +676,11 @@ export default function StockChart({ ticker }) {
       const isBearish = pattern.direction === 'bearish';
       const tpLine = candlestickSeriesRef.current.createPriceLine({
         price: pattern.takeProfitPrice,
-        color: isBearish ? '#f59e0b' : '#10b981',
+        color: isBearish ? palette.warn : palette.up,
         lineWidth: 2,
         lineStyle: LineStyle.Dashed,
         axisLabelVisible: true,
-        title: isBearish ? '📉 Target Penurunan (Support)' : '🚀 Target Take Profit',
+        title: isBearish ? 'Target Penurunan (Support)' : 'Target Take Profit',
       });
       dynamicPriceLinesRef.current.push(tpLine);
     }
@@ -676,16 +697,16 @@ export default function StockChart({ ticker }) {
   const currentPattern = patternAnalysis?.currentPattern;
 
   return (
-    <div className={`w-full relative rounded-2xl overflow-hidden glass border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0d1321] transition-all duration-300 ${
-      isFullscreen ? 'fixed inset-4 z-50 p-4 shadow-2xl bg-white dark:bg-slate-900 border-2 border-indigo-500 flex flex-col justify-between' : ''
-    }`}>
+    <div className={`w-full relative rounded-md overflow-hidden border border-line bg-surface transition-all duration-300 ${
+ isFullscreen ? 'fixed inset-4 z-50 p-4 shadow-2xl bg-surface border-2 border-accent flex flex-col justify-between' : ''
+ }`}>
       {/* ── TOP TOOLBAR & LIVE FLOATING OHLCV LEGEND ─────────────────────── */}
-      <div className="px-4 py-3 border-b border-slate-200 dark:border-white/10 flex flex-col gap-2.5 bg-slate-50/90 dark:bg-white/[0.02]">
+      <div className="px-4 py-3 border-b border-line flex flex-col gap-2.5 bg-sunken ">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           {/* Title & Pattern Badge */}
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-extrabold text-slate-900 dark:text-white text-sm flex items-center gap-1.5">
-              <span>📈</span>
+            <h3 className="font-extrabold text-ink text-sm flex items-center gap-1.5">
+              <span>↗</span>
               <span>TradingView Pro — {ticker}</span>
             </h3>
 
@@ -693,16 +714,16 @@ export default function StockChart({ ticker }) {
               <span
                 onClick={() => setShowPatternModal(true)}
                 className={`cursor-pointer inline-flex items-center gap-1 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full transition-all hover:scale-105 shadow-sm ${
-                  currentPattern.direction === 'bullish'
-                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/40'
-                    : currentPattern.direction === 'bearish'
-                    ? 'bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-400 border border-rose-300 dark:border-rose-500/40'
-                    : 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-400 border border-amber-300 dark:border-amber-500/40'
-                }`}
+ currentPattern.direction === 'bullish'
+ ? 'bg-up-soft text-up border border-up '
+ : currentPattern.direction === 'bearish'
+ ? 'bg-down-soft text-down border border-down '
+ : 'bg-warn-soft text-warn border border-warn '
+ }`}
               >
                 <span>{currentPattern.emoji}</span>
                 <span>Pola: {currentPattern.name}</span>
-                <span className="font-bold">({currentPattern.direction === 'bullish' ? '▲ Bullish' : currentPattern.direction === 'bearish' ? '▼ Bearish' : '⚖️ Netral'})</span>
+                <span className="font-bold">({currentPattern.direction === 'bullish' ? '▲ Bullish' : currentPattern.direction === 'bearish' ? '▼ Bearish' : '⇄ Netral'})</span>
               </span>
             )}
           </div>
@@ -710,7 +731,7 @@ export default function StockChart({ ticker }) {
           {/* Timeframe & Range Selectors */}
           <div className="flex items-center gap-2 flex-wrap">
             {/* Multi-Timeframe Selector (1D, 1W, 1M) */}
-            <div className="flex items-center bg-slate-200/90 dark:bg-slate-800/90 rounded-xl p-0.5 border border-slate-300 dark:border-slate-700/60 shadow-inner">
+            <div className="flex items-center bg-sunken rounded-sm p-0.5 border border-line shadow-inner">
               {[
                 { id: '1D', label: '1D' },
                 { id: '1W', label: '1W' },
@@ -719,11 +740,11 @@ export default function StockChart({ ticker }) {
                 <button
                   key={tf.id}
                   onClick={() => handleTimeframeChange(tf.id)}
-                  className={`px-2 py-0.5 text-[10px] font-black rounded-lg transition-all ${
-                    selectedTimeframe === tf.id
-                      ? 'bg-indigo-600 text-white shadow-sm'
-                      : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
-                  }`}
+                  className={`px-2 py-0.5 text-[10px] font-black rounded-sm transition-all ${
+ selectedTimeframe === tf.id
+ ? 'bg-accent text-on-accent shadow-sm'
+ : 'text-muted hover:text-ink '
+ }`}
                   title={`Agregasi Lilin ${tf.label}`}
                 >
                   {tf.label}
@@ -732,7 +753,7 @@ export default function StockChart({ ticker }) {
             </div>
 
             {/* Range Selector (1B, 3B, 6B, 1T, 3T, 5T) */}
-            <div className="flex items-center bg-slate-200/90 dark:bg-slate-800/90 rounded-xl p-0.5 border border-slate-300 dark:border-slate-700/60 shadow-inner">
+            <div className="flex items-center bg-sunken rounded-sm p-0.5 border border-line shadow-inner">
               {[
                 { id: '1M', label: '1B' },
                 { id: '3M', label: '3B' },
@@ -744,11 +765,11 @@ export default function StockChart({ ticker }) {
                 <button
                   key={r.id}
                   onClick={() => handleRangeChange(r.id)}
-                  className={`px-2 py-0.5 text-[10px] font-black rounded-lg transition-all ${
-                    selectedRange === r.id
-                      ? 'bg-indigo-600 text-white shadow-sm'
-                      : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
-                  }`}
+                  className={`px-2 py-0.5 text-[10px] font-black rounded-sm transition-all ${
+ selectedRange === r.id
+ ? 'bg-accent text-on-accent shadow-sm'
+ : 'text-muted hover:text-ink '
+ }`}
                 >
                   {r.label}
                 </button>
@@ -758,24 +779,24 @@ export default function StockChart({ ticker }) {
             {/* Fit zoom button */}
             <button
               onClick={handleFitContent}
-              className="px-2 py-1 bg-slate-200/80 dark:bg-slate-800/80 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-bold rounded-lg transition-all border border-slate-300 dark:border-slate-700"
+              className="px-2 py-1 bg-sunken hover:bg-sunken text-ink text-[10px] font-bold rounded-sm transition-all border border-line "
               title="Reset Zoom / Pas ke Layar"
             >
-              🔄 Fit
+              ↻ Fit
             </button>
 
             {/* Candlestick Pattern Detail Modal Trigger */}
             <button
               onClick={() => setShowPatternModal(true)}
-              className="px-2.5 py-1 bg-amber-500/15 hover:bg-amber-500/25 text-amber-900 dark:text-amber-300 border border-amber-400/60 text-[11px] font-black rounded-lg transition-all flex items-center gap-1"
+              className="px-2.5 py-1 bg-warn-soft hover:bg-warn-soft text-warn border border-warn text-[11px] font-black rounded-sm transition-all flex items-center gap-1"
             >
-              <span>🕯️</span> Pola
+              <span>▮</span> Pola
             </button>
 
             {/* Fullscreen Toggle Button */}
             <button
               onClick={() => setIsFullscreen(!isFullscreen)}
-              className="px-2 py-1 bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-700 dark:text-indigo-300 border border-indigo-400/50 text-[11px] font-black rounded-lg transition-all"
+              className="px-2 py-1 bg-sunken hover:bg-surface text-ink border border-line text-[11px] font-black rounded-sm transition-all"
               title={isFullscreen ? 'Keluar Layar Penuh' : 'Mode Layar Penuh'}
             >
               {isFullscreen ? '✕ Keluar' : '⛶ Zoom'}
@@ -784,129 +805,129 @@ export default function StockChart({ ticker }) {
         </div>
 
         {/* ── LIVE INTERACTIVE OHLCV FLOATING LEGEND ──────────────────────── */}
-        <div className="flex items-center gap-3 text-xs font-mono overflow-x-auto whitespace-nowrap pt-1 text-slate-600 dark:text-slate-400">
+        <div className="flex items-center gap-3 text-xs font-mono overflow-x-auto whitespace-nowrap pt-1 text-muted ">
           {hoverData ? (
             <>
-              <span className="font-bold text-slate-800 dark:text-slate-200">{hoverData.time}</span>
-              <span>O: <strong className="text-slate-900 dark:text-white">{formatPrice(hoverData.open)}</strong></span>
-              <span>H: <strong className="text-slate-900 dark:text-white">{formatPrice(hoverData.high)}</strong></span>
-              <span>L: <strong className="text-slate-900 dark:text-white">{formatPrice(hoverData.low)}</strong></span>
-              <span>C: <strong className={hoverData.changePct >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}>{formatPrice(hoverData.close)}</strong></span>
-              <span className={`font-bold ${hoverData.changePct >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+              <span className="font-bold text-ink ">{hoverData.time}</span>
+              <span>O: <strong className="text-ink ">{formatPrice(hoverData.open)}</strong></span>
+              <span>H: <strong className="text-ink ">{formatPrice(hoverData.high)}</strong></span>
+              <span>L: <strong className="text-ink ">{formatPrice(hoverData.low)}</strong></span>
+              <span>C: <strong className={hoverData.changePct >= 0 ? 'text-up ' : 'text-down '}>{formatPrice(hoverData.close)}</strong></span>
+              <span className={`font-bold ${hoverData.changePct >= 0 ? 'text-up ' : 'text-down '}`}>
                 {hoverData.changePct >= 0 ? '+' : ''}{hoverData.changePct.toFixed(2)}%
               </span>
-              <span>Vol: <strong className="text-slate-800 dark:text-slate-200">{formatVolumeCompact(hoverData.volume)}</strong></span>
+              <span>Vol: <strong className="text-ink ">{formatVolumeCompact(hoverData.volume)}</strong></span>
             </>
           ) : (
-            <span className="text-[11px] text-slate-400">Arahkan kursor atau sentuh lilin untuk melihat data OHLCV & indikator.</span>
+            <span className="text-[11px] text-muted">Arahkan kursor atau sentuh lilin untuk melihat data OHLCV & indikator.</span>
           )}
         </div>
 
         {/* ── INTERACTIVE INDICATOR TOGGLE PILLS ──────────────────────────── */}
         <div className="flex items-center gap-1.5 overflow-x-auto whitespace-nowrap pt-1 pb-0.5 text-[10px]">
-          <span className="text-slate-400 font-bold uppercase tracking-wider text-[9px] mr-1">Indikator:</span>
+          <span className="text-muted font-bold uppercase tracking-wider text-[9px] mr-1">Indikator:</span>
 
           <button
             onClick={() => toggleIndicator('ma20')}
             className={`px-2 py-0.5 rounded-md font-bold transition-all flex items-center gap-1 border ${
-              indicators.ma20
-                ? 'bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/40 shadow-xs'
-                : 'bg-slate-100 dark:bg-white/5 text-slate-400 border-transparent opacity-60'
-            }`}
+ indicators.ma20
+ ? 'bg-sunken text-ink border-accent shadow-xs'
+ : 'bg-sunken text-muted border-transparent opacity-60'
+ }`}
           >
-            <span className="w-2 h-0.5 bg-[#3b82f6]"></span> MA20
+            <span className="w-3 h-0.5 bg-ink" aria-hidden="true"></span> MA20
           </button>
 
           <button
             onClick={() => toggleIndicator('ma50')}
             className={`px-2 py-0.5 rounded-md font-bold transition-all flex items-center gap-1 border ${
-              indicators.ma50
-                ? 'bg-purple-500/20 text-purple-700 dark:text-purple-300 border-purple-500/40 shadow-xs'
-                : 'bg-slate-100 dark:bg-white/5 text-slate-400 border-transparent opacity-60'
-            }`}
+ indicators.ma50
+ ? 'bg-sunken text-ink border-accent shadow-xs'
+ : 'bg-sunken text-muted border-transparent opacity-60'
+ }`}
           >
-            <span className="w-2 h-0.5 bg-[#a855f7]"></span> MA50
+            <span className="w-3 border-t border-dashed border-muted" aria-hidden="true"></span> MA50
           </button>
 
           <button
             onClick={() => toggleIndicator('ma200')}
             className={`px-2 py-0.5 rounded-md font-bold transition-all flex items-center gap-1 border ${
-              indicators.ma200
-                ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/40 shadow-xs'
-                : 'bg-slate-100 dark:bg-white/5 text-slate-400 border-transparent opacity-60'
-            }`}
+ indicators.ma200
+ ? 'bg-warn-soft text-warn border-warn shadow-xs'
+ : 'bg-sunken text-muted border-transparent opacity-60'
+ }`}
             title="Moving Average 200 Hari (Tren Jangka Panjang Institusi)"
           >
-            <span className="w-2 h-0.5 bg-[#f59e0b]"></span> MA200 (Tren)
+            <span className="w-3 h-0.5 bg-warn" aria-hidden="true"></span> MA200 (Tren)
           </button>
 
           <button
             onClick={() => toggleIndicator('bollinger')}
             className={`px-2 py-0.5 rounded-md font-bold transition-all flex items-center gap-1 border ${
-              indicators.bollinger
-                ? 'bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border-cyan-500/40 shadow-xs'
-                : 'bg-slate-100 dark:bg-white/5 text-slate-400 border-transparent opacity-60'
-            }`}
+ indicators.bollinger
+ ? 'bg-sunken text-ink border-accent shadow-xs'
+ : 'bg-sunken text-muted border-transparent opacity-60'
+ }`}
             title="Bollinger Bands (20, 2)"
           >
-            <span className="w-2 h-0.5 bg-[#06b6d4]"></span> Bollinger Bands
+            <span className="w-3 border-t border-dotted border-muted" aria-hidden="true"></span> Bollinger Bands
           </button>
 
           <button
             onClick={() => toggleIndicator('rsi')}
             className={`px-2 py-0.5 rounded-md font-bold transition-all flex items-center gap-1 border ${
-              indicators.rsi
-                ? 'bg-violet-500/20 text-violet-700 dark:text-violet-300 border-violet-500/40 shadow-xs'
-                : 'bg-slate-100 dark:bg-white/5 text-slate-400 border-transparent opacity-60'
-            }`}
+ indicators.rsi
+ ? 'bg-sunken text-ink border-accent shadow-xs'
+ : 'bg-sunken text-muted border-transparent opacity-60'
+ }`}
             title="Relative Strength Index (14) dengan Zona 70 Overbought & 30 Oversold"
           >
-            <span className="w-2 h-2 rounded-full bg-[#8b5cf6]"></span> RSI (14)
+            <span className="w-2 h-2 rounded-full bg-ink" aria-hidden="true"></span> RSI (14)
           </button>
 
           <button
             onClick={() => toggleIndicator('macd')}
             className={`px-2 py-0.5 rounded-md font-bold transition-all flex items-center gap-1 border ${
-              indicators.macd
-                ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 shadow-xs'
-                : 'bg-slate-100 dark:bg-white/5 text-slate-400 border-transparent opacity-60'
-            }`}
+ indicators.macd
+ ? 'bg-up-soft text-up border-up shadow-xs'
+ : 'bg-sunken text-muted border-transparent opacity-60'
+ }`}
             title="MACD (12, 26, 9) Histogram & Signal Line"
           >
-            <span className="w-2 h-2 rounded-full bg-[#10b981]"></span> MACD
+            <span className="w-2 h-2 rounded-full bg-warn" aria-hidden="true"></span> MACD
           </button>
         </div>
       </div>
 
       {/* ── TECHNICAL ANALYTICS CHIPS ────────────────────────────────────── */}
       {analytics && !loading && (
-        <div className="px-4 py-2 border-b border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.01]">
+        <div className="px-4 py-2 border-b border-line bg-sunken ">
           <div className="flex gap-2 overflow-x-auto text-[11px] pb-0.5 snap-x">
-            <div className="rounded-lg bg-slate-100 dark:bg-white/5 px-2.5 py-1.5 min-w-[150px] shrink-0">
-              <span className="text-slate-500 dark:text-slate-400 block text-[10px]">Arah Tren (Slope 20H)</span>
-              <span className="font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-1">
-                {analytics.trend?.direction === 'up' ? '🟢 Bullish Uptrend' : analytics.trend?.direction === 'down' ? '🔴 Bearish Downtrend' : '🟡 Sideways'}
-                <span className="text-[10px] text-slate-400">({analytics.trend?.confidence || 0}%)</span>
+            <div className="rounded-sm bg-sunken px-2.5 py-1.5 min-w-[150px] shrink-0">
+              <span className="text-muted block text-[10px]">Arah Tren (Slope 20H)</span>
+              <span className="font-extrabold text-ink flex items-center gap-1">
+                {analytics.trend?.direction === 'up' ? '● Bullish Uptrend' : analytics.trend?.direction === 'down' ? '● Bearish Downtrend' : '● Sideways'}
+                <span className="text-[10px] text-muted">({analytics.trend?.confidence || 0}%)</span>
               </span>
             </div>
 
-            <div className="rounded-lg bg-slate-100 dark:bg-white/5 px-2.5 py-1.5 min-w-[140px] shrink-0">
-              <span className="text-slate-500 dark:text-slate-400 block text-[10px]">Support 20H</span>
-              <span className="font-extrabold text-emerald-600 dark:text-emerald-400">
+            <div className="rounded-sm bg-sunken px-2.5 py-1.5 min-w-[140px] shrink-0">
+              <span className="text-muted block text-[10px]">Support 20H</span>
+              <span className="font-extrabold text-up ">
                 Rp {formatPrice(analytics.support)}
               </span>
             </div>
 
-            <div className="rounded-lg bg-slate-100 dark:bg-white/5 px-2.5 py-1.5 min-w-[140px] shrink-0">
-              <span className="text-slate-500 dark:text-slate-400 block text-[10px]">Resistance 20H</span>
-              <span className="font-extrabold text-rose-600 dark:text-rose-400">
+            <div className="rounded-sm bg-sunken px-2.5 py-1.5 min-w-[140px] shrink-0">
+              <span className="text-muted block text-[10px]">Resistance 20H</span>
+              <span className="font-extrabold text-down ">
                 Rp {formatPrice(analytics.resistance)}
               </span>
             </div>
 
-            <div className="rounded-lg bg-slate-100 dark:bg-white/5 px-2.5 py-1.5 min-w-[140px] shrink-0">
-              <span className="text-slate-500 dark:text-slate-400 block text-[10px]">Rentang Breakout 60H</span>
-              <span className="font-bold text-slate-700 dark:text-slate-300">
+            <div className="rounded-sm bg-sunken px-2.5 py-1.5 min-w-[140px] shrink-0">
+              <span className="text-muted block text-[10px]">Rentang Breakout 60H</span>
+              <span className="font-bold text-ink ">
                 {formatPrice(analytics.bounds?.rangeLow)} – {formatPrice(analytics.bounds?.rangeHigh)}
               </span>
             </div>
@@ -917,17 +938,17 @@ export default function StockChart({ ticker }) {
       {/* ── MAIN CHART CONTAINER ─────────────────────────────────────────── */}
       <div className="relative w-full">
         {loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white/70 dark:bg-slate-900/70 backdrop-blur-xs z-20">
+          <div className="absolute inset-0 flex items-center justify-center bg-sunken z-20">
             <div className="flex flex-col items-center gap-2">
-              <div className="w-8 h-8 rounded-full border-3 border-indigo-600 border-t-transparent animate-spin"></div>
-              <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Memuat Grafik TradingView...</span>
+              <div className="w-8 h-8 rounded-full border-3 border-accent border-t-transparent animate-spin"></div>
+              <span className="text-xs font-bold text-muted ">Memuat Grafik TradingView...</span>
             </div>
           </div>
         )}
 
         {error && (
-          <div className="p-8 text-center text-rose-500 space-y-2">
-            <span className="text-3xl block">⚠️</span>
+          <div className="p-8 text-center text-down space-y-2">
+            <span className="text-3xl block">▲</span>
             <p className="text-xs font-bold">{error}</p>
           </div>
         )}
@@ -940,15 +961,15 @@ export default function StockChart({ ticker }) {
 
       {/* ── MODAL: RINCIAN POLA CANDLESTICK ──────────────────────────────── */}
       {showPatternModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-5 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
-            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
-              <h4 className="font-black text-slate-900 dark:text-white text-base flex items-center gap-2">
-                <span>🕯️</span> Deteksi Pola Candlestick ({ticker})
+        <div className="modal-backdrop animate-fade-in">
+          <div className="modal-panel sm:max-w-lg p-4 sm:p-5 space-y-4">
+            <div className="flex justify-between items-center border-b border-line pb-3">
+              <h4 className="font-black text-ink text-base flex items-center gap-2">
+                <span>▮</span> Deteksi Pola Candlestick ({ticker})
               </h4>
               <button
                 onClick={() => setShowPatternModal(false)}
-                className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500 text-sm font-bold"
+                className="w-7 h-7 rounded-sm bg-sunken hover:bg-sunken flex items-center justify-center text-muted text-sm font-bold"
               >
                 ✕
               </button>
@@ -957,40 +978,40 @@ export default function StockChart({ ticker }) {
             {currentPattern ? (
               <div className="space-y-4">
                 {/* Pattern Overview */}
-                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/60 space-y-2.5">
+                <div className="p-4 rounded-sm bg-sunken border border-line space-y-2.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-2xl">{currentPattern.emoji}</span>
                       <div>
-                        <h5 className="font-black text-slate-900 dark:text-white text-sm">{currentPattern.name}</h5>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400">Terdeteksi pada: {currentPattern.time}</p>
+                        <h5 className="font-black text-ink text-sm">{currentPattern.name}</h5>
+                        <p className="text-[11px] text-muted ">Terdeteksi pada: {currentPattern.time}</p>
                       </div>
                     </div>
                     <span className={`text-xs font-black px-2.5 py-1 rounded-full ${
-                      currentPattern.direction === 'bullish'
-                        ? 'bg-emerald-500 text-white'
-                        : currentPattern.direction === 'bearish'
-                        ? 'bg-rose-500 text-white'
-                        : 'bg-amber-500 text-white'
-                    }`}>
+ currentPattern.direction === 'bullish'
+ ? 'bg-up text-on-accent'
+ : currentPattern.direction === 'bearish'
+ ? 'bg-down text-on-accent'
+ : 'bg-warn text-on-accent'
+ }`}>
                       {currentPattern.directionLabel}
                     </span>
                   </div>
 
-                  <div className="space-y-1.5 bg-white/60 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200/60 dark:border-slate-800/60">
+                  <div className="space-y-1.5 bg-sunken p-3 rounded-sm border border-line ">
                     <div className="flex justify-between text-xs">
-                      <span className="text-slate-600 dark:text-slate-400 font-medium">Tingkat Keandalan:</span>
-                      <span className="font-bold text-slate-900 dark:text-white">{currentPattern.reliabilityLevel}</span>
+                      <span className="text-muted font-medium">Tingkat Keandalan:</span>
+                      <span className="font-bold text-ink ">{currentPattern.reliabilityLevel}</span>
                     </div>
-                    <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
+                    <div className="w-full bg-sunken rounded-full h-2 overflow-hidden">
                       <div
                         className={`h-2 rounded-full ${
-                          currentPattern.direction === 'bullish'
-                            ? 'bg-emerald-500'
-                            : currentPattern.direction === 'bearish'
-                            ? 'bg-rose-500'
-                            : 'bg-amber-500'
-                        }`}
+ currentPattern.direction === 'bullish'
+ ? 'bg-up'
+ : currentPattern.direction === 'bearish'
+ ? 'bg-down'
+ : 'bg-warn'
+ }`}
                         style={{ width: `${currentPattern.reliability}%` }}
                       ></div>
                     </div>
@@ -998,12 +1019,12 @@ export default function StockChart({ ticker }) {
                 </div>
 
                 {/* Market Psychology */}
-                <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700/60 space-y-1.5">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-white">
-                    <span>🧠</span>
+                <div className="bg-sunken p-4 rounded-sm border border-line space-y-1.5">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-ink ">
+                    <span>◈</span>
                     <span>Psikologi & Aksi Pasar:</span>
                   </div>
-                  <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                  <p className="text-xs text-ink leading-relaxed">
                     {currentPattern.psychology}
                   </p>
                 </div>
@@ -1011,34 +1032,34 @@ export default function StockChart({ ticker }) {
                 {/* Trading Recommendations */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <h5 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                      📋 Rekomendasi Rencana Trading
+                    <h5 className="text-xs font-bold uppercase tracking-wider text-muted ">
+                      ▤ Rekomendasi Rencana Trading
                     </h5>
                     {(currentPattern.entryPrice || currentPattern.takeProfitPrice) && (
                       <button
                         onClick={() => handleDrawPatternLevels(currentPattern)}
-                        className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
+                        className="text-xs font-bold text-ink hover:underline flex items-center gap-1 cursor-pointer"
                       >
-                        📈 Gambar Level Entry/SL/TP di Grafik
+                        ↗ Gambar Level Entry/SL/TP di Grafik
                       </button>
                     )}
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                    <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700/60">
-                      <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Saran Tindakan</span>
-                      <span className="font-bold text-indigo-600 dark:text-indigo-400">{currentPattern.action}</span>
+                    <div className="p-3 bg-sunken rounded-sm border border-line ">
+                      <span className="text-muted block text-[11px]">Saran Tindakan</span>
+                      <span className="font-bold text-ink ">{currentPattern.action}</span>
                     </div>
-                    <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700/60">
-                      <span className="text-slate-500 dark:text-slate-400 block text-[11px]">{currentPattern.entryLabel || 'Area Entry'}</span>
-                      <span className="font-bold text-slate-900 dark:text-white">{currentPattern.entryRange}</span>
+                    <div className="p-3 bg-sunken rounded-sm border border-line ">
+                      <span className="text-muted block text-[11px]">{currentPattern.entryLabel || 'Area Entry'}</span>
+                      <span className="font-bold text-ink ">{currentPattern.entryRange}</span>
                     </div>
-                    <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700/60">
-                      <span className="text-slate-500 dark:text-slate-400 block text-[11px]">{currentPattern.slLabel || 'Stop Loss'}</span>
-                      <span className="font-bold text-rose-600 dark:text-rose-400">{currentPattern.stopLoss}</span>
+                    <div className="p-3 bg-sunken rounded-sm border border-line ">
+                      <span className="text-muted block text-[11px]">{currentPattern.slLabel || 'Stop Loss'}</span>
+                      <span className="font-bold text-down ">{currentPattern.stopLoss}</span>
                     </div>
-                    <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700/60">
-                      <span className="text-slate-500 dark:text-slate-400 block text-[11px]">{currentPattern.tpLabel || 'Target Take Profit'}</span>
-                      <span className={`font-bold ${currentPattern.direction === 'bearish' ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                    <div className="p-3 bg-sunken rounded-sm border border-line ">
+                      <span className="text-muted block text-[11px]">{currentPattern.tpLabel || 'Target Take Profit'}</span>
+                      <span className={`font-bold ${currentPattern.direction === 'bearish' ? 'text-warn ' : 'text-up '}`}>
                         {currentPattern.takeProfit}
                       </span>
                     </div>
@@ -1047,33 +1068,33 @@ export default function StockChart({ ticker }) {
 
                 {/* History of Detected Patterns */}
                 {patternAnalysis?.historyPatterns?.length > 1 && (
-                  <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
-                    <h5 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                      🕒 Riwayat Pola Sebelumnya (Klik untuk gambar level)
+                  <div className="space-y-2 pt-2 border-t border-line ">
+                    <h5 className="text-xs font-bold uppercase tracking-wider text-muted ">
+                      ◷ Riwayat Pola Sebelumnya (Klik untuk gambar level)
                     </h5>
                     <div className="space-y-1.5">
                       {patternAnalysis.historyPatterns.slice(1, 8).map((hist, idx) => (
                         <div
                           key={idx}
                           onClick={() => handleDrawPatternLevels(hist)}
-                          className="cursor-pointer flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-800/40 hover:bg-indigo-50 dark:hover:bg-slate-700/50 border border-slate-200 dark:border-slate-700/40 text-xs transition-colors group"
+                          className="cursor-pointer flex items-center justify-between p-2 rounded-sm bg-sunken hover:bg-sunken border border-line text-xs transition-colors group"
                         >
                           <div className="flex items-center gap-2">
                             <span>{hist.emoji}</span>
-                            <span className="font-bold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600">{hist.name}</span>
-                            <span className="text-[10px] text-slate-400">({hist.time})</span>
+                            <span className="font-bold text-ink group-hover:text-ink">{hist.name}</span>
+                            <span className="text-[10px] text-muted">({hist.time})</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                              hist.direction === 'bullish'
-                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                                : hist.direction === 'bearish'
-                                ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
-                                : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
-                            }`}>
-                              {hist.direction === 'bullish' ? '▲ Bullish' : hist.direction === 'bearish' ? '▼ Bearish' : '⚖️ Netral'}
+ hist.direction === 'bullish'
+ ? 'bg-up-soft text-up '
+ : hist.direction === 'bearish'
+ ? 'bg-down-soft text-down '
+ : 'bg-warn-soft text-warn '
+ }`}>
+                              {hist.direction === 'bullish' ? '▲ Bullish' : hist.direction === 'bearish' ? '▼ Bearish' : '⇄ Netral'}
                             </span>
-                            <span className="text-[10px] text-indigo-500 opacity-0 group-hover:opacity-100 font-bold">Gambar ➔</span>
+                            <span className="text-[10px] text-ink opacity-0 group-hover:opacity-100 font-bold">Gambar ➔</span>
                           </div>
                         </div>
                       ))}
@@ -1082,13 +1103,13 @@ export default function StockChart({ ticker }) {
                 )}
               </div>
             ) : (
-              <div className="text-center py-6 text-xs text-slate-500">Memuat analisis pola...</div>
+              <div className="text-center py-6 text-xs text-muted">Memuat analisis pola...</div>
             )}
 
             <div className="flex justify-end pt-2">
               <button
                 onClick={() => setShowPatternModal(false)}
-                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer"
+                className="px-5 py-2 bg-accent hover:bg-accent text-on-accent text-xs font-bold rounded-sm shadow-sm transition-all cursor-pointer"
               >
                 Tutup
               </button>

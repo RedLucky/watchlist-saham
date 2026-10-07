@@ -77,7 +77,7 @@ export default function RelativeValuationPeers({
 
     if (current.roe != null && stats.highestRoe != null) {
       if (current.roe === stats.highestRoe) {
-        insights.push(`ROE tertinggi di antara kompetitor (${Number(current.roe).toFixed(1)}%) 👑`);
+        insights.push(`ROE tertinggi di antara kompetitor (${Number(current.roe).toFixed(1)}%) ★`);
       } else {
         insights.push(`ROE ${Number(current.roe).toFixed(1)}% (tertinggi: ${Number(stats.highestRoe).toFixed(1)}%)`);
       }
@@ -85,7 +85,7 @@ export default function RelativeValuationPeers({
 
     if (current.per != null && stats.medianPer != null) {
       if (current.per < stats.medianPer) {
-        insights.push(`Valuasi PER ${Number(current.per).toFixed(1)}x berada di bawah median peers (${Number(stats.medianPer).toFixed(1)}x) ✨`);
+        insights.push(`Valuasi PER ${Number(current.per).toFixed(1)}x berada di bawah median peers (${Number(stats.medianPer).toFixed(1)}x) ✦`);
       } else {
         insights.push(`Valuasi PER ${Number(current.per).toFixed(1)}x di atas median peers (${Number(stats.medianPer).toFixed(1)}x)`);
       }
@@ -93,7 +93,7 @@ export default function RelativeValuationPeers({
 
     if (current.dividendYield > 0 && stats.highestYield > 0) {
       if (current.dividendYield === stats.highestYield) {
-        insights.push(`Dividend yield tertinggi (${Number(current.dividendYield).toFixed(1)}%) 💰`);
+        insights.push(`Dividend yield tertinggi (${Number(current.dividendYield).toFixed(1)}%) ¤`);
       } else {
         insights.push(`Yield dividen ${Number(current.dividendYield).toFixed(1)}%`);
       }
@@ -105,53 +105,53 @@ export default function RelativeValuationPeers({
   if (!currentStock) return null;
 
   return (
-    <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm space-y-4">
+    <div className="bg-surface border border-line rounded-md p-4 md:p-6 shadow-sm space-y-4">
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-line pb-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xl">🏛️</span>
+            <span className="text-xl">▥</span>
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-bold text-slate-900 dark:text-white text-sm md:text-base">
+              <h3 className="font-bold text-ink text-sm md:text-base">
                 Relative Valuation (RV) — Matriks Peers Sektor
               </h3>
-              <span className="px-2 py-0.5 text-[10px] font-black rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 uppercase tracking-wider">
+              <span className="px-2 py-0.5 text-[10px] font-black rounded-md bg-warn-soft text-warn border border-warn uppercase tracking-wider">
                 Bloomberg RV
               </span>
             </div>
           </div>
-          <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
-            Komparasi valuasi & profitabilitas {currentStock.ticker} terhadap kompetitor di sektor <strong className="text-slate-700 dark:text-slate-300">{currentStock.sector}</strong>
-            {currentStock.subSector && <span> (Sub-sektor: <strong className="text-slate-700 dark:text-slate-300 capitalize">{currentStock.subSector}</strong>)</span>}
+          <p className="text-xs text-muted mt-0.5">
+            Komparasi valuasi & profitabilitas {currentStock.ticker} terhadap kompetitor di sektor <strong className="text-ink ">{currentStock.sector}</strong>
+            {currentStock.subSector && <span> (Sub-sektor: <strong className="text-ink capitalize">{currentStock.subSector}</strong>)</span>}
           </p>
         </div>
 
         {onAddAllToCompare && allPeers.length > 1 && (
           <button
             onClick={() => onAddAllToCompare(allPeers.map(p => p.ticker))}
-            className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 self-start sm:self-auto"
+            className="px-3 py-1.5 bg-sunken hover:bg-sunken text-ink border border-line text-xs font-bold rounded-sm transition-all flex items-center justify-center gap-1.5 self-start sm:self-auto"
             title="Buka seluruh saham pembanding di tab Komparasi Head-to-Head"
           >
-            <span>⚖️</span> Buka Komparasi Lengkap
+            <span>⇄</span> Buka Komparasi Lengkap
           </button>
         )}
       </div>
 
       {/* Automated Relative Insight Banner */}
-      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
-        <span className="text-sm flex-shrink-0">💡</span>
+      <div className="p-3 rounded-sm bg-sunken border border-line flex items-center gap-2 text-xs text-ink ">
+        <span className="text-sm flex-shrink-0">✦</span>
         <div className="flex-1 font-medium leading-relaxed">
-          <span className="font-bold text-indigo-600 dark:text-indigo-400 mr-1.5">Ringkasan Posisi Relatif:</span>
+          <span className="font-bold text-ink mr-1.5">Ringkasan Posisi Relatif:</span>
           {insight}
         </div>
       </div>
 
       {/* Matrix Table */}
-      <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+      <div className="overflow-x-auto rounded-sm border border-line ">
         <table className="w-full text-left text-xs border-collapse">
           <thead>
-            <tr className="bg-slate-100/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-300 font-bold border-b border-slate-200 dark:border-slate-700">
-              <th className="p-2.5 sm:p-3 min-w-[140px] sticky left-0 bg-slate-100 dark:bg-slate-800 z-10">Emiten</th>
+            <tr className="bg-sunken text-ink font-bold border-b border-line ">
+              <th className="p-2.5 sm:p-3 min-w-[140px] sticky left-0 bg-sunken z-10">Emiten</th>
               <th className="p-2.5 sm:p-3 text-right">Harga (Rp)</th>
               <th className="p-2.5 sm:p-3 text-right">Market Cap</th>
               <th className="p-2.5 sm:p-3 text-right" title="Price to Earnings Ratio">PER (TTM)</th>
@@ -164,7 +164,7 @@ export default function RelativeValuationPeers({
               <th className="p-2.5 sm:p-3 text-center">Skor</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-800 dark:text-slate-200">
+          <tbody className="divide-y divide-line text-ink ">
             {allPeers.map((p) => {
               const isTarget = p.isTarget;
               const isUp = (p.changePercent || 0) >= 0;
@@ -178,89 +178,89 @@ export default function RelativeValuationPeers({
                 <tr
                   key={p.ticker}
                   className={`transition-colors ${
-                    isTarget
-                      ? 'bg-indigo-50/70 dark:bg-indigo-950/40 font-semibold'
-                      : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'
-                  }`}
+ isTarget
+ ? 'bg-sunken font-semibold'
+ : 'hover:bg-sunken '
+ }`}
                 >
                   {/* Ticker & Name */}
-                  <td className={`p-2.5 sm:p-3 sticky left-0 z-10 ${isTarget ? 'bg-indigo-50 dark:bg-indigo-950/70' : 'bg-white dark:bg-slate-900'}`}>
+                  <td className={`p-2.5 sm:p-3 sticky left-0 z-10 ${isTarget ? 'bg-sunken ' : 'bg-surface '}`}>
                     <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => onSelectTicker && onSelectTicker(p.ticker)}
                         className={`font-black hover:underline cursor-pointer flex items-center gap-1 ${
-                          isTarget ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-900 dark:text-white'
-                        }`}
+ isTarget ? 'text-ink ' : 'text-ink '
+ }`}
                         title="Klik untuk menganalisis saham ini"
                       >
                         <span>{p.ticker}</span>
                         {isTarget && (
-                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-indigo-600 text-white font-bold">
+                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-accent text-on-accent font-bold">
                             Target
                           </span>
                         )}
                       </button>
                     </div>
-                    <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate max-w-[130px]" title={p.name}>
+                    <div className="text-[10px] text-muted truncate max-w-[130px]" title={p.name}>
                       {p.name}
                     </div>
                   </td>
 
                   {/* Price & Change */}
                   <td className="p-2.5 sm:p-3 text-right font-mono">
-                    <div className="font-bold text-slate-900 dark:text-white">
+                    <div className="font-bold text-ink ">
                       Rp {p.price ? Number(p.price).toLocaleString('id-ID') : '-'}
                     </div>
                     {p.changePercent != null && (
-                      <span className={`text-[10px] font-bold ${isUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                      <span className={`text-[10px] font-bold ${isUp ? 'text-up ' : 'text-down '}`}>
                         {isUp ? '+' : ''}{Number(p.changePercent).toFixed(2)}%
                       </span>
                     )}
                   </td>
 
                   {/* Market Cap */}
-                  <td className="p-2.5 sm:p-3 text-right font-mono text-slate-700 dark:text-slate-300">
+                  <td className="p-2.5 sm:p-3 text-right font-mono text-ink ">
                     {p.marketCap ? `Rp ${(p.marketCap / 1e12).toFixed(1)} T` : '-'}
                   </td>
 
                   {/* PER */}
-                  <td className={`p-2.5 sm:p-3 text-right font-mono ${isBestPer ? 'text-emerald-600 dark:text-emerald-400 font-black' : ''}`}>
+                  <td className={`p-2.5 sm:p-3 text-right font-mono ${isBestPer ? 'text-up font-black' : ''}`}>
                     {p.per != null ? `${Number(p.per).toFixed(1)}x` : '-'}
-                    {isBestPer && <span className="ml-1 text-[10px]" title="PER Termurah">✨</span>}
+                    {isBestPer && <span className="ml-1 text-[10px]" title="PER Termurah">✦</span>}
                   </td>
 
                   {/* PBV */}
-                  <td className={`p-2.5 sm:p-3 text-right font-mono ${isBestPbv ? 'text-emerald-600 dark:text-emerald-400 font-black' : ''}`}>
+                  <td className={`p-2.5 sm:p-3 text-right font-mono ${isBestPbv ? 'text-up font-black' : ''}`}>
                     {p.pbv != null ? `${Number(p.pbv).toFixed(2)}x` : '-'}
-                    {isBestPbv && <span className="ml-1 text-[10px]" title="PBV Termurah">💎</span>}
+                    {isBestPbv && <span className="ml-1 text-[10px]" title="PBV Termurah">◆</span>}
                   </td>
 
                   {/* ROE */}
-                  <td className={`p-2.5 sm:p-3 text-right font-mono ${isBestRoe ? 'text-emerald-600 dark:text-emerald-400 font-black' : ''}`}>
+                  <td className={`p-2.5 sm:p-3 text-right font-mono ${isBestRoe ? 'text-up font-black' : ''}`}>
                     {p.roe != null ? `${Number(p.roe).toFixed(1)}%` : '-'}
-                    {isBestRoe && <span className="ml-1 text-[10px]" title="ROE Tertinggi">👑</span>}
+                    {isBestRoe && <span className="ml-1 text-[10px]" title="ROE Tertinggi">★</span>}
                   </td>
 
                   {/* NPM */}
-                  <td className="p-2.5 sm:p-3 text-right font-mono text-slate-700 dark:text-slate-300">
+                  <td className="p-2.5 sm:p-3 text-right font-mono text-ink ">
                     {p.npm != null ? `${Number(p.npm).toFixed(1)}%` : '-'}
                   </td>
 
                   {/* Dividend Yield */}
-                  <td className={`p-2.5 sm:p-3 text-right font-mono ${isBestYield ? 'text-emerald-600 dark:text-emerald-400 font-black' : ''}`}>
+                  <td className={`p-2.5 sm:p-3 text-right font-mono ${isBestYield ? 'text-up font-black' : ''}`}>
                     {p.dividendYield > 0 ? `${Number(p.dividendYield).toFixed(1)}%` : '-'}
-                    {isBestYield && <span className="ml-1 text-[10px]" title="Yield Tertinggi">💰</span>}
+                    {isBestYield && <span className="ml-1 text-[10px]" title="Yield Tertinggi">¤</span>}
                   </td>
 
                   {/* DER */}
-                  <td className="p-2.5 sm:p-3 text-right font-mono text-slate-700 dark:text-slate-300">
+                  <td className="p-2.5 sm:p-3 text-right font-mono text-ink ">
                     {p.der != null ? Number(p.der).toFixed(2) : '-'}
                   </td>
 
                   {/* MoS Graham */}
                   <td className="p-2.5 sm:p-3 text-right font-mono">
                     {p.marginOfSafety != null ? (
-                      <span className={`font-bold ${p.marginOfSafety >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                      <span className={`font-bold ${p.marginOfSafety >= 0 ? 'text-up ' : 'text-down '}`}>
                         {p.marginOfSafety >= 0 ? '+' : ''}{p.marginOfSafety}%
                       </span>
                     ) : '-'}
@@ -269,14 +269,14 @@ export default function RelativeValuationPeers({
                   {/* Composite Score */}
                   <td className="p-2.5 sm:p-3 text-center">
                     <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-black ${
-                      isBestScore
-                        ? 'bg-emerald-500 text-white shadow-xs'
-                        : (p.score || 0) >= 70
-                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300'
-                        : (p.score || 0) >= 50
-                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300'
-                        : 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300'
-                    }`}>
+ isBestScore
+ ? 'bg-up text-on-accent shadow-xs'
+ : (p.score || 0) >= 70
+ ? 'bg-up-soft text-up '
+ : (p.score || 0) >= 50
+ ? 'bg-sunken text-ink '
+ : 'bg-sunken text-ink '
+ }`}>
                       {p.score || 0}
                     </span>
                   </td>

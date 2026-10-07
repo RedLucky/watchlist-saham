@@ -87,8 +87,8 @@ export default function FinancialMatrixPanel({ stockDetail }) {
 
   if (!stockDetail) {
     return (
-      <div className="p-8 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
-        <p className="text-slate-500 text-sm">Pilih saham terlebih dahulu untuk melihat matriks laporan keuangan multi-tahun.</p>
+      <div className="p-8 text-center bg-surface border border-line rounded-md">
+        <p className="text-muted text-sm">Pilih saham terlebih dahulu untuk melihat matriks laporan keuangan multi-tahun.</p>
       </div>
     );
   }
@@ -96,30 +96,30 @@ export default function FinancialMatrixPanel({ stockDetail }) {
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Header Panel */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-5 rounded-2xl border border-indigo-900/50 shadow-md">
+      <div className="card p-4 sm:p-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xl">📊</span>
+              <span className="text-xl">▤</span>
               <h2 className="text-lg md:text-xl font-black tracking-tight">
                 Bloomberg FA: Matriks Laporan Keuangan Multi-Tahun
               </h2>
-              <span className="px-2 py-0.5 text-[10px] font-black rounded-md bg-indigo-500/30 text-indigo-300 border border-indigo-500/40">
+              <span className="px-2 py-0.5 text-[10px] font-black rounded-md bg-sunken text-ink border border-accent">
                 FA MODE
               </span>
             </div>
-            <p className="text-xs text-slate-300 mt-1">
+            <p className="text-xs text-muted mt-1">
               Komparasi neraca, laba rugi, arus kas, dan profitabilitas emiten {stockDetail.ticker} ({stockDetail.name})
             </p>
           </div>
-          <div className="flex items-center gap-3 bg-white/10 px-3 py-2 rounded-xl border border-white/10 backdrop-blur-md">
+          <div className="flex items-center gap-3 bg-sunken px-3 py-2 rounded-sm border border-line ">
             <div>
-              <span className="text-[10px] text-slate-400 block font-bold">HARGA SAHAM</span>
-              <span className="text-sm font-black text-white">Rp {Number(stockDetail.price || 0).toLocaleString('id-ID')}</span>
+              <span className="text-[10px] text-muted block font-bold">HARGA SAHAM</span>
+              <span className="text-sm font-black text-ink">Rp {Number(stockDetail.price || 0).toLocaleString('id-ID')}</span>
             </div>
-            <div className="border-l border-white/20 pl-3">
-              <span className="text-[10px] text-slate-400 block font-bold">MARKET CAP</span>
-              <span className="text-sm font-black text-cyan-300">{formatFinancialRp(f.marketCap || 0)}</span>
+            <div className="border-l border-line pl-3">
+              <span className="text-[10px] text-muted block font-bold">MARKET CAP</span>
+              <span className="text-sm font-black text-ink">{formatFinancialRp(f.marketCap || 0)}</span>
             </div>
           </div>
         </div>
@@ -129,18 +129,18 @@ export default function FinancialMatrixPanel({ stockDetail }) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         
         {/* 1. Laporan Laba Rugi (Income Statement) */}
-        <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-4">
-          <div className="flex items-center gap-2 pb-3 border-b border-slate-200 dark:border-slate-800">
-            <span className="text-base">📈</span>
-            <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
+        <div className="bg-surface border border-line rounded-md p-5 shadow-xs space-y-4">
+          <div className="flex items-center gap-2 pb-3 border-b border-line ">
+            <span className="text-base">↗</span>
+            <h3 className="text-xs font-black uppercase tracking-wider text-ink ">
               1. Laporan Laba Rugi (Income Statement)
             </h3>
           </div>
-          <div className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+          <div className="divide-y divide-line text-xs">
             {statementRows.incomeStatement.map((row, idx) => (
               <div key={idx} className="py-2.5 flex items-center justify-between">
-                <span className="text-slate-600 dark:text-slate-400 font-medium">{row.label}</span>
-                <span className={`font-bold font-mono ${row.isProfit ? (row.current >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400') : 'text-slate-900 dark:text-slate-100'}`}>
+                <span className="text-muted font-medium">{row.label}</span>
+                <span className={`font-bold font-mono ${row.isProfit ? (row.current >= 0 ? 'text-up ' : 'text-down ') : 'text-ink '}`}>
                   {row.isRaw ? row.current : formatFinancialRp(row.current)}
                 </span>
               </div>
@@ -149,18 +149,18 @@ export default function FinancialMatrixPanel({ stockDetail }) {
         </div>
 
         {/* 2. Neraca Keuangan (Balance Sheet) */}
-        <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-4">
-          <div className="flex items-center gap-2 pb-3 border-b border-slate-200 dark:border-slate-800">
-            <span className="text-base">🏛️</span>
-            <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
+        <div className="bg-surface border border-line rounded-md p-5 shadow-xs space-y-4">
+          <div className="flex items-center gap-2 pb-3 border-b border-line ">
+            <span className="text-base">▥</span>
+            <h3 className="text-xs font-black uppercase tracking-wider text-ink ">
               2. Neraca Keuangan (Balance Sheet)
             </h3>
           </div>
-          <div className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+          <div className="divide-y divide-line text-xs">
             {statementRows.balanceSheet.map((row, idx) => (
               <div key={idx} className="py-2.5 flex items-center justify-between">
-                <span className="text-slate-600 dark:text-slate-400 font-medium">{row.label}</span>
-                <span className="font-bold font-mono text-slate-900 dark:text-slate-100">
+                <span className="text-muted font-medium">{row.label}</span>
+                <span className="font-bold font-mono text-ink ">
                   {row.isRaw ? row.current : formatFinancialRp(row.current)}
                 </span>
               </div>
@@ -169,18 +169,18 @@ export default function FinancialMatrixPanel({ stockDetail }) {
         </div>
 
         {/* 3. Arus Kas & Kebijakan Dividen (Cash Flow & Dividend) */}
-        <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-4">
-          <div className="flex items-center gap-2 pb-3 border-b border-slate-200 dark:border-slate-800">
-            <span className="text-base">💵</span>
-            <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
+        <div className="bg-surface border border-line rounded-md p-5 shadow-xs space-y-4">
+          <div className="flex items-center gap-2 pb-3 border-b border-line ">
+            <span className="text-base">¤</span>
+            <h3 className="text-xs font-black uppercase tracking-wider text-ink ">
               3. Arus Kas & Dividen (Cash Flow & Dividend)
             </h3>
           </div>
-          <div className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+          <div className="divide-y divide-line text-xs">
             {statementRows.cashFlow.map((row, idx) => (
               <div key={idx} className="py-2.5 flex items-center justify-between">
-                <span className="text-slate-600 dark:text-slate-400 font-medium">{row.label}</span>
-                <span className={`font-bold font-mono ${row.isProfit ? (row.current >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400') : 'text-slate-900 dark:text-slate-100'}`}>
+                <span className="text-muted font-medium">{row.label}</span>
+                <span className={`font-bold font-mono ${row.isProfit ? (row.current >= 0 ? 'text-up ' : 'text-down ') : 'text-ink '}`}>
                   {row.isRaw ? row.current : formatFinancialRp(row.current)}
                 </span>
               </div>
@@ -189,18 +189,18 @@ export default function FinancialMatrixPanel({ stockDetail }) {
         </div>
 
         {/* 4. Rasio Profitabilitas & Efisiensi Modal */}
-        <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-4">
-          <div className="flex items-center gap-2 pb-3 border-b border-slate-200 dark:border-slate-800">
-            <span className="text-base">🎯</span>
-            <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
+        <div className="bg-surface border border-line rounded-md p-5 shadow-xs space-y-4">
+          <div className="flex items-center gap-2 pb-3 border-b border-line ">
+            <span className="text-base">◎</span>
+            <h3 className="text-xs font-black uppercase tracking-wider text-ink ">
               4. Profitabilitas & Valuasi Pasar
             </h3>
           </div>
-          <div className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+          <div className="divide-y divide-line text-xs">
             {statementRows.returns.map((row, idx) => (
               <div key={idx} className="py-2.5 flex items-center justify-between">
-                <span className="text-slate-600 dark:text-slate-400 font-medium">{row.label}</span>
-                <span className="font-bold font-mono text-indigo-600 dark:text-cyan-400">
+                <span className="text-muted font-medium">{row.label}</span>
+                <span className="font-bold font-mono text-ink ">
                   {row.isRaw ? row.current : formatFinancialRp(row.current)}
                 </span>
               </div>
