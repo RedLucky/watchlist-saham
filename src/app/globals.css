@@ -303,6 +303,7 @@ body {
     white-space: nowrap;
   }
   .badge-up { background-color: var(--c-up-soft); color: var(--c-up); border-color: transparent; }
+  .badge-accent { background-color: var(--c-accent); color: var(--c-on-accent); border-color: transparent; }
   .badge-down { background-color: var(--c-down-soft); color: var(--c-down); border-color: transparent; }
   .badge-warn { background-color: var(--c-warn-soft); color: var(--c-warn); border-color: transparent; }
   .badge-outline { background-color: transparent; }

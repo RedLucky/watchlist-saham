@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { AutoGrid } from './AutoGrid';
 
 /**
  * Compact key-figure card. Columns grow with the viewport, so a row of these fills the
@@ -56,12 +57,5 @@ export function StatCard({ label, value, hint, tone = 'neutral', onClick, classN
  * @param {string} [props.className] - Extra classes.
  */
 export function StatGrid({ children, minWidth = '240px', className = '' }) {
-  return (
-    <div
-      className={`grid gap-2 sm:gap-3 ${className}`}
-      style={{ gridTemplateColumns: `repeat(auto-fill, minmax(min(${minWidth}, 100%), 1fr))` }}
-    >
-      {children}
-    </div>
-  );
+  return <AutoGrid minWidth={minWidth} className={className}>{children}</AutoGrid>;
 }

@@ -4,6 +4,9 @@ import React, { useState, useEffect, useMemo, useCallback, Fragment } from 'reac
 import ScoreBadge from './ScoreBadge';
 import StockOwnershipModal from './StockOwnershipModal';
 import AiScreenerBar from './AiScreenerBar';
+import { PageShell, PageHeader, PageToolbar, SectionTitle } from './ui/PageShell';
+import { AutoGrid } from './ui/AutoGrid';
+import { StatCard } from './ui/StatCard';
 
 export default function StockScreener() {
   const [activeTab, setActiveTab] = useState('pick');
@@ -893,7 +896,13 @@ export default function StockScreener() {
   };
 
   return (
-    <div className="space-y-6">
+    <PageShell>
+      <PageHeader
+        title="Stock Screener"
+        subtitle="Saring saham BEI dengan kriteria valuasi, kualitas, dividen, dan momentum"
+        badge={<span className="badge badge-outline">{data.length} emiten</span>}
+      />
+
       {/* ── AI NATURAL LANGUAGE SCREENER BAR ── */}
       <AiScreenerBar
         onSearch={handleAiSearch}
@@ -902,19 +911,23 @@ export default function StockScreener() {
         onClear={handleClearAi}
       />
 
-      {/* ── 1. HERO CATEGORY SELECTOR ────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+      {/* ── 1. STRATEGY SELECTOR (columns grow with the viewport) ──────────── */}
+      <section>
+        <SectionTitle note="pilih satu strategi">Filter Strategi</SectionTitle>
+        <AutoGrid minWidth="210px">
         {tabs.map((tab) => {
           const isActive = !aiResult && activeTab === tab.id;
           return (
             <button
               key={tab.id}
+              type="button"
+              aria-pressed={isActive}
               onClick={() => {
                 setActiveTab(tab.id);
                 setExpandedRow(null);
                 setAiResult(null);
               }}
-              className={`p-3.5 rounded-md text-left transition-all duration-200 cursor-pointer border flex flex-col justify-between relative overflow-hidden group ${
+              className={`p-3.5 rounded-sm text-left transition-colors cursor-pointer border flex flex-col justify-between relative overflow-hidden group focus-ring ${
  isActive
  ? 'bg-accent border-accent text-on-accent'
  : 'bg-surface hover:bg-sunken text-ink border-line hover:border-line-strong'
@@ -922,8 +935,8 @@ export default function StockScreener() {
             >
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xl">{tab.icon}</span>
-                  <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-wider ${
+                  <span className="text-xl" aria-hidden="true">{tab.icon}</span>
+                  <span className={`text-[9px] px-2 py-0.5 rounded-sm font-mono uppercase tracking-wider ${
  isActive
  ? 'border border-on-accent/40 text-on-accent'
  : 'bg-sunken text-muted'
@@ -931,208 +944,138 @@ export default function StockScreener() {
                     {tab.tag}
                   </span>
                 </div>
-                <h3 className={`text-xs sm:text-sm font-black tracking-tight leading-snug ${
+                <h3 className={`text-xs sm:text-sm font-semibold tracking-tight leading-snug ${
  isActive ? 'text-on-accent' : 'text-ink '
  }`}>
                   {tab.label}
                 </h3>
               </div>
               <div className="mt-2.5 pt-2 border-t border-line flex items-center justify-between text-[10px]">
-                <span className={`font-semibold ${isActive ? 'text-on-accent' : 'text-muted'}`}>
-                  {isActive ? 'Aktif' : 'Pilih Tab'}
+                <span className={`font-medium ${isActive ? 'text-on-accent' : 'text-muted'}`}>
+                  {isActive ? 'Aktif' : 'Pilih'}
                 </span>
-                <span className={`font-bold ${isActive ? 'text-on-accent' : 'text-ink '}`}>
+                <span className={`font-mono ${isActive ? 'text-on-accent' : 'text-ink '}`} aria-hidden="true">
                   →
                 </span>
               </div>
             </button>
           );
         })}
-      </div>
+        </AutoGrid>
+      </section>
 
-      {/* ── 2. EXECUTIVE KPI INTELLIGENCE BAR ────────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {/* KPI 1: Avg Dividend Yield */}
-        <div className="p-4 rounded-md bg-surface border border-line shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[10px] font-black uppercase tracking-wider text-muted block">
-              Rata-Rata Div Yield
-            </span>
-            <div className="text-xl font-mono font-black text-up mt-0.5">
-              {kpiStats.avgYield}%
-            </div>
-            <span className="text-[10px] text-muted font-semibold">
-              Koleksi Screener Aktif
-            </span>
-          </div>
-          <div className="w-10 h-10 rounded-sm bg-up-soft border border-up flex items-center justify-center text-lg">
-            ¤
-          </div>
-        </div>
+      {/* ── 2. KPI SUMMARY ─────────────────────────────────────────────────── */}
+      <section>
+        <SectionTitle note="dari hasil filter aktif">Ringkasan Koleksi</SectionTitle>
+        <AutoGrid minWidth="230px">
+          <StatCard
+            label="Rata-Rata Div Yield"
+            value={`${kpiStats.avgYield}%`}
+            hint="Koleksi screener aktif"
+            tone="up"
+          />
+          <StatCard
+            label="Median PER Saham"
+            value={`${kpiStats.medianPER}x`}
+            hint="Level valuasi tengah"
+          />
+          <StatCard
+            label="Rata-Rata CAGR Laba"
+            value={`${Number(kpiStats.avgCAGR) >= 0 ? '+' : ''}${kpiStats.avgCAGR}%`}
+            hint="Pertumbuhan compound"
+            tone={Number(kpiStats.avgCAGR) >= 0 ? 'up' : 'down'}
+          />
+          <StatCard
+            label="Rasio Syariah"
+            value={`${kpiStats.syariahPercent}%`}
+            hint={`Total MCap: Rp ${kpiStats.mCapTrillion}T`}
+          />
+        </AutoGrid>
+      </section>
 
-        {/* KPI 2: Median PER */}
-        <div className="p-4 rounded-md bg-surface border border-line shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[10px] font-black uppercase tracking-wider text-muted block">
-              Median PER Saham
-            </span>
-            <div className="text-xl font-mono font-black text-ink mt-0.5">
-              {kpiStats.medianPER}x
-            </div>
-            <span className="text-[10px] text-muted font-semibold">
-              Level Valuasi Tengah
-            </span>
-          </div>
-          <div className="w-10 h-10 rounded-sm bg-sunken border border-line flex items-center justify-center text-lg">
-            •
-          </div>
-        </div>
-
-        {/* KPI 3: Avg Profit Growth (CAGR) */}
-        <div className="p-4 rounded-md bg-surface border border-line shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[10px] font-black uppercase tracking-wider text-muted block">
-              Rata-Rata CAGR Laba
-            </span>
-            <div className={`text-xl font-mono font-black mt-0.5 ${
- Number(kpiStats.avgCAGR) >= 0 ? 'text-up ' : 'text-down '
- }`}>
-              {Number(kpiStats.avgCAGR) >= 0 ? '+' : ''}{kpiStats.avgCAGR}%
-            </div>
-            <span className="text-[10px] text-muted font-semibold">
-              Pertumbuhan Compound
-            </span>
-          </div>
-          <div className="w-10 h-10 rounded-sm bg-sunken border border-line flex items-center justify-center text-lg">
-            ↗
-          </div>
-        </div>
-
-        {/* KPI 4: Syariah & Market Cap */}
-        <div className="p-4 rounded-md bg-surface border border-line shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[10px] font-black uppercase tracking-wider text-muted block">
-              Rasio Syariah & MCap
-            </span>
-            <div className="text-xl font-mono font-black text-ink mt-0.5">
-              {kpiStats.syariahPercent}%
-            </div>
-            <span className="text-[10px] text-muted font-semibold">
-              Total MCap: Rp {kpiStats.mCapTrillion}T
-            </span>
-          </div>
-          <div className="w-10 h-10 rounded-sm bg-sunken border border-line flex items-center justify-center text-lg">
-            ☾
-          </div>
-        </div>
-      </div>
-
-      {/* ── 3. SEARCH, SECTOR & CONTROLS TOOLBAR ─────────────────────────────── */}
-      <div className="p-4 rounded-md bg-surface border border-line shadow-xs space-y-3">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          {/* Search Bar */}
-          <div className="relative flex-1 max-w-md">
-            <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted text-sm">
-              ⌕
-            </span>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari kode saham (BBCA), nama perusahaan, atau sektor..."
-              className="w-full pl-9 pr-8 py-2 bg-sunken border border-line rounded-sm text-xs font-semibold text-ink placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted hover:text-muted text-xs cursor-pointer"
-              >
-                ✕
-              </button>
-            )}
-          </div>
-
-          {/* Sector Selector & View Switcher */}
-          <div className="flex items-center gap-2 flex-wrap justify-between md:justify-end">
-            <select
-              value={selectedSector}
-              onChange={(e) => setSelectedSector(e.target.value)}
-              className="px-3 py-2 bg-sunken border border-line rounded-sm text-xs font-bold text-ink focus:outline-none focus:ring-2 focus:ring-accent cursor-pointer"
-            >
-              <option value="ALL">Semua Sektor ({data.length})</option>
-              {availableSectors.map((sec) => (
-                <option key={sec} value={sec}>
-                  {sec}
-                </option>
-              ))}
-            </select>
-
-            {/* View Mode Switcher */}
-            <div className="flex items-center p-1 bg-sunken rounded-sm border border-line ">
-              <button
-                onClick={() => setViewMode('table')}
-                title="Tampilan Tabel Finansial"
-                className={`px-3 py-1 rounded-sm text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
- viewMode === 'table'
- ? 'bg-surface text-ink shadow-xs'
- : 'text-muted hover:text-ink '
- }`}
-              >
-                <span>▤</span> Tabel
-              </button>
-              <button
-                onClick={() => setViewMode('cards')}
-                title="Tampilan Grid Kartu Visual"
-                className={`px-3 py-1 rounded-sm text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
- viewMode === 'cards'
- ? 'bg-surface text-ink shadow-xs'
- : 'text-muted hover:text-ink '
- }`}
-              >
-                <span>▤</span> Kartu
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Filter Chips Row */}
-        <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] pt-1">
-          <span className="text-[10px] font-black uppercase text-muted tracking-wider shrink-0 mr-1">
-            Filter Cepat:
+      {/* ── 3. STICKY TOOLBAR: SEARCH, SECTOR, QUICK FILTERS, VIEW ────────── */}
+      <PageToolbar
+        meta={(
+          <span className="badge" aria-live="polite">
+            {filteredAndSortedData.length} hasil
           </span>
-          <button
-            onClick={() => setSyariahOnly(!syariahOnly)}
-            className={`px-2.5 py-1 rounded-sm text-[11px] font-bold transition-all border shrink-0 cursor-pointer flex items-center gap-1 ${
- syariahOnly
- ? 'bg-up text-on-accent border-up shadow-xs font-black'
- : 'bg-sunken text-ink border-line hover:bg-sunken'
- }`}
-          >
-            <span>☾</span> Hanya Syariah
-          </button>
-          <button
-            onClick={() => setDividendStreakOnly(!dividendStreakOnly)}
-            className={`px-2.5 py-1 rounded-sm text-[11px] font-bold transition-all border shrink-0 cursor-pointer flex items-center gap-1 ${
- dividendStreakOnly
- ? 'bg-accent text-on-accent border-accent shadow-xs font-black'
- : 'bg-sunken text-ink border-line hover:bg-sunken'
- }`}
-          >
-            <span>★</span> Rutin Dividen ≥3th
-          </button>
-          <button
-            onClick={() => setHighScoreOnly(!highScoreOnly)}
-            className={`px-2.5 py-1 rounded-sm text-[11px] font-bold transition-all border shrink-0 cursor-pointer flex items-center gap-1 ${
- highScoreOnly
- ? 'bg-warn text-on-accent border-warn shadow-xs font-black'
- : 'bg-sunken text-ink border-line hover:bg-sunken'
- }`}
-          >
-            <span>★</span> Skor Tinggi (≥75)
-          </button>
+        )}
+      >
+        <div className="relative min-w-[190px] max-w-xs flex-1">
+          <label htmlFor="screener-search" className="sr-only">Cari saham</label>
+          <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted font-mono text-sm" aria-hidden="true">
+            ⌕
+          </span>
+          <input
+            id="screener-search"
+            type="search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Cari kode, nama, atau sektor..."
+            className="input pl-9 pr-8"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              aria-label="Hapus pencarian"
+              className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-muted hover:text-ink focus-ring rounded-sm"
+            >
+              <span className="font-mono" aria-hidden="true">✕</span>
+            </button>
+          )}
+        </div>
 
+        <label htmlFor="screener-sector" className="sr-only">Sektor</label>
+        <select
+          id="screener-sector"
+          value={selectedSector}
+          onChange={(e) => setSelectedSector(e.target.value)}
+          className="select w-auto min-h-9 py-1 text-xs"
+        >
+          <option value="ALL">Semua Sektor ({data.length})</option>
+          {availableSectors.map((sec) => (
+            <option key={sec} value={sec}>
+              {sec}
+            </option>
+          ))}
+        </select>
+
+        {/* Quick filter chips */}
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setSyariahOnly(!syariahOnly)}
+            aria-pressed={syariahOnly}
+            className={`badge min-h-8 cursor-pointer ${
+ syariahOnly ? 'badge-up' : 'hover:bg-sunken'
+            }`}
+          >
+            <span aria-hidden="true">☾</span> Syariah
+          </button>
+          <button
+            type="button"
+            onClick={() => setDividendStreakOnly(!dividendStreakOnly)}
+            aria-pressed={dividendStreakOnly}
+            className={`badge min-h-8 cursor-pointer ${
+ dividendStreakOnly ? 'badge-accent' : 'hover:bg-sunken'
+            }`}
+          >
+            <span aria-hidden="true">★</span> Dividen ≥3th
+          </button>
+          <button
+            type="button"
+            onClick={() => setHighScoreOnly(!highScoreOnly)}
+            aria-pressed={highScoreOnly}
+            className={`badge min-h-8 cursor-pointer ${
+ highScoreOnly ? 'badge-warn' : 'hover:bg-sunken'
+            }`}
+          >
+            <span aria-hidden="true">★</span> Skor ≥75
+          </button>
           {(searchQuery || selectedSector !== 'ALL' || syariahOnly || dividendStreakOnly || highScoreOnly) && (
             <button
+              type="button"
               onClick={() => {
                 setSearchQuery('');
                 setSelectedSector('ALL');
@@ -1140,13 +1083,34 @@ export default function StockScreener() {
                 setDividendStreakOnly(false);
                 setHighScoreOnly(false);
               }}
-              className="text-[10px] font-bold text-down hover:underline shrink-0 ml-auto cursor-pointer"
+              aria-label="Reset semua filter"
+              className="btn-ghost !min-h-8 !px-2"
             >
-              Reset Semua Filter
+              Reset
             </button>
           )}
         </div>
-      </div>
+
+        {/* View switch */}
+        <div className="tabs" role="group" aria-label="Tampilan hasil">
+          <button
+            type="button"
+            onClick={() => setViewMode('table')}
+            aria-pressed={viewMode === 'table'}
+            className="tab"
+          >
+            <span className="font-mono" aria-hidden="true">▤</span> Tabel
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('cards')}
+            aria-pressed={viewMode === 'cards'}
+            className="tab"
+          >
+            <span className="font-mono" aria-hidden="true">▤</span> Kartu
+          </button>
+        </div>
+      </PageToolbar>
 
       {/* ── 4. DATA PRESENTATION (GRID CARDS OR DENSE TABLE) ────────────────── */}
       {loading ? (
@@ -1428,6 +1392,6 @@ export default function StockScreener() {
         isOpen={Boolean(selectedOwnershipStock)}
         onClose={() => setSelectedOwnershipStock(null)}
       />
-    </div>
+    </PageShell>
   );
 }

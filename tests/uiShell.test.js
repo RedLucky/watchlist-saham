@@ -12,7 +12,7 @@ const files = readdirSync(uiDir).filter((f) => f.endsWith('.jsx'));
 const sources = Object.fromEntries(files.map((f) => [f, readFileSync(new URL(f, uiDir), 'utf8')]));
 
 test('shell components exist', () => {
-  assert.deepEqual(files.sort(), ['PageShell.jsx', 'StatCard.jsx', 'TechnicalSummary.jsx']);
+  assert.deepEqual(files.sort(), ['AutoGrid.jsx', 'PageShell.jsx', 'StatCard.jsx', 'TechnicalSummary.jsx']);
 });
 
 test('PageShell has no max-width cap so content fills the screen', () => {
@@ -36,8 +36,9 @@ test('PageToolbar is sticky below the mobile header and has full-bleed gutters',
 
 test('StatGrid adds columns with the viewport instead of a fixed count', () => {
   const grid = /export function StatGrid[\s\S]*?\n}/.exec(sources['StatCard.jsx'])[0];
-  assert.match(grid, /auto-fill/, 'grid must use auto-fill');
+  assert.match(grid, /AutoGrid/, 'StatGrid must delegate to AutoGrid');
   assert.ok(!/grid-cols-\d/.test(grid), 'grid must not use a fixed column count');
+  assert.match(sources['AutoGrid.jsx'], /auto-fill/, 'AutoGrid must use auto-fill');
 });
 
 test('shell components only use theme tokens', () => {
