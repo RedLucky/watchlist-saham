@@ -2085,12 +2085,12 @@ export default function StockExplorer({ user }) {
                             </div>
                             {targetProgress != null && (
                               <div
-                                className="relative h-1.5 rounded-full "
+                                className="relative h-1.5 rounded-full target-track "
                                 role="img"
                                 aria-label={`Posisi harga ${Math.round(targetProgress)}% di antara target beli dan target jual`}
                               >
                                 <span
-                                  className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-accent ring-2 ring-line "
+                                  className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-ink ring-2 ring-surface "
                                   style={{ left: `${targetProgress}%` }}
                                 />
                               </div>

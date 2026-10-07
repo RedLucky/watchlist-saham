@@ -403,6 +403,12 @@ body {
     border-top: 1px solid var(--c-line);
   }
 
+  /* Price position between the buy target (left) and the sell target (right).
+     Defined here so it uses the theme tokens instead of a hard-coded palette. */
+  .target-track {
+    background-image: linear-gradient(to right, var(--c-down), var(--c-up));
+  }
+
   /* ── Scroll areas & tables ──────────────────────────────────────────── */
   .scroll-area {
     overflow: auto;
