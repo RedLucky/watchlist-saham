@@ -57,7 +57,19 @@ Use these Tailwind names instead of palette colours (`indigo-600`, `slate-400`, 
 
 Icons are Unicode symbols (`▲ ▼ ↻ × ⇅ ◎ …`), never colour emoji.
 
-## 4. Guard tests
+## 4. Tone helpers (`src/lib/uiTones.js`)
+
+So that "buy" or "high risk" looks the same on every page:
+
+* `getSignalBadgeClass(signal)` — BUY/STRONG_BUY → `badge-up`, SELL/STRONG_SELL → `badge-down`, others → `badge-warn`.
+* `getRiskTone(level)` — Rendah → up, Sedang → ink, Menengah → warn, others → down (`{ text, badge }`).
+* `getChangeTone(change)` — positive → `text-up`, negative → `text-down`, zero/unknown → `text-muted`.
+
+## 5. Responsive tables
+
+Wide data lists (e.g. `StockTable`) show a column grid from `md` (768px) and one card per row below it, with the key numbers in a small 3-column strip. Rows that expand are `role="button"` with `aria-expanded` and work with Enter/Space.
+
+## 6. Guard tests
 
 * `tests/themeTokens.test.js` — both themes define the same tokens; text colours reach WCAG AA (4.5:1).
 * `tests/designTokens.test.js` — migrated files contain no palette colours, gradients, glass blur, large radius, hard-coded hex colours or colour emoji. Add a file to `MIGRATED_FILES` when you migrate it.

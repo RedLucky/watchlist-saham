@@ -23,6 +23,9 @@ const MIGRATED_FILES = [
   'src/components/MarketBadge.jsx',
   'src/components/SectorBar.jsx',
   'src/components/AuthModal.jsx',
+  // TASK-8835: Analisis Saham page
+  'src/components/StockTable.jsx',
+  'src/components/SectorRrgPanel.jsx',
 ];
 
 /** Patterns that belong to the old look and must not appear in migrated files. */

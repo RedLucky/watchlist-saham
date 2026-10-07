@@ -57,7 +57,19 @@ Gunakan nama Tailwind berikut, bukan warna palet (`indigo-600`, `slate-400`, …
 
 Ikon berupa simbol Unicode (`▲ ▼ ↻ × ⇅ ◎ …`), tidak pernah emoji berwarna.
 
-## 4. Test penjaga
+## 4. Helper warna (`src/lib/uiTones.js`)
+
+Agar "beli" atau "risiko tinggi" tampil sama di setiap halaman:
+
+* `getSignalBadgeClass(signal)` — BUY/STRONG_BUY → `badge-up`, SELL/STRONG_SELL → `badge-down`, lainnya → `badge-warn`.
+* `getRiskTone(level)` — Rendah → up, Sedang → ink, Menengah → warn, lainnya → down (`{ text, badge }`).
+* `getChangeTone(change)` — positif → `text-up`, negatif → `text-down`, nol/tidak diketahui → `text-muted`.
+
+## 5. Tabel responsif
+
+Daftar data yang lebar (mis. `StockTable`) tampil sebagai grid kolom mulai `md` (768px) dan satu kartu per baris di bawahnya, dengan angka kunci dalam strip kecil 3 kolom. Baris yang bisa dibuka adalah `role="button"` dengan `aria-expanded` dan bisa dipakai dengan Enter/Space.
+
+## 6. Test penjaga
 
 * `tests/themeTokens.test.js` — kedua tema mendefinisikan token yang sama; warna teks mencapai WCAG AA (4.5:1).
 * `tests/designTokens.test.js` — file yang sudah dimigrasi tidak berisi warna palet, gradien, blur kaca, radius besar, warna hex hard-coded, atau emoji berwarna. Tambahkan file ke `MIGRATED_FILES` saat dimigrasi.

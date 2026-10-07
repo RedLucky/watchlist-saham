@@ -4,6 +4,11 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-10-07] feat | Migrasi Halaman Analisis Saham (StockTable, RRG)
+- `StockTable`: gaya token, filter cepat berupa segmented tab, tombol urut di header, baris bisa dibuka dengan keyboard; grid kolom desktop mulai 768px, kartu di HP dengan strip level trading 3 kolom.
+- `SectorRrgPanel`: filter kuadran berupa tab, legenda dan kartu sektor yang rata.
+- `src/lib/uiTones.js` baru (warna sinyal, risiko, dan perubahan) beserta test; didokumentasikan di [Design System](./architecture/design-system.md).
+
 ## [2026-10-07] feat | Class UI Standar & Migrasi Komponen Bersama
 - Menambahkan class standar di `globals.css`: judul (`.page-title`, `.section-title`), tombol (`.btn-ghost`, `.btn-icon`), form (`.field-label`, `.input`, `.select`, `.checkbox`), `.badge-*`, `.alert-*`, `.tabs/.tab`, `.modal-*` (bottom sheet di HP), `.scroll-area`, `.table-base`.
 - Dimigrasi ke token: `ScoreBadge`, `ScoreBar` (kini punya bar sungguhan + role progressbar), `Tooltip` (bisa difokus keyboard), `StyleSelector`, `ModeSelector`, `CustomSliders`, `MarketBadge` (2 kolom di HP), `SectorBar`, `AuthModal` (field berlabel, bottom sheet di HP), dan header Analisis Saham di `Dashboard`.

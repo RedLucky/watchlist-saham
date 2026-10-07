@@ -4,6 +4,11 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-10-07] feat | Analisis Saham Page Migrated (StockTable, RRG)
+- `StockTable`: token styling, segmented quick filters, sortable header buttons, keyboard-expandable rows; desktop column grid from 768px, phone cards with a 3-column trade-level strip.
+- `SectorRrgPanel`: quadrant filter as tabs, flat legend and sector cards.
+- New `src/lib/uiTones.js` (signal, risk and change colours) with tests; documented in [Design System](./architecture/design-system.md).
+
 ## [2026-10-07] feat | Standard UI Classes & Shared Components Migrated
 - Added standard classes to `globals.css`: headings (`.page-title`, `.section-title`), buttons (`.btn-ghost`, `.btn-icon`), forms (`.field-label`, `.input`, `.select`, `.checkbox`), `.badge-*`, `.alert-*`, `.tabs/.tab`, `.modal-*` (bottom sheet on phones), `.scroll-area`, `.table-base`.
 - Migrated to tokens: `ScoreBadge`, `ScoreBar` (now has a real bar + progressbar role), `Tooltip` (keyboard focusable), `StyleSelector`, `ModeSelector`, `CustomSliders`, `MarketBadge` (2 columns on phones), `SectorBar`, `AuthModal` (labelled fields, bottom sheet on phones), and the Analisis Saham header in `Dashboard`.
