@@ -39,6 +39,22 @@ const STARTER_PROMPTS = [
   }
 ];
 
+/**
+ * Builds the optimistic user message shown while the AI is still thinking.
+ * Lives at module scope because Date.now() must not run during render.
+ *
+ * @param {string} content - Message text.
+ * @returns {{ id: string, role: string, content: string, createdAt: string }}
+ */
+function createTempMessage(content) {
+  return {
+    id: 'temp-' + Date.now(),
+    role: 'user',
+    content,
+    createdAt: new Date().toISOString(),
+  };
+}
+
 export default function AiConsultationPanel({ user = null, stocks = [] }) {
   const [sessions, setSessions] = useState([]);
   const [activeSessionId, setActiveSessionId] = useState(null);
@@ -66,6 +82,21 @@ export default function AiConsultationPanel({ user = null, stocks = [] }) {
     }
   };
 
+  // 2. Fetch specific session messages (declared before fetchSessions, which calls it)
+  const selectSession = async (sessionId) => {
+    try {
+      setActiveSessionId(sessionId);
+      setError(null);
+      const res = await fetch(`/api/ai/chat?sessionId=${sessionId}`);
+      const data = await res.json();
+      if (data.success && data.session) {
+        setMessages(data.session.messages || []);
+      }
+    } catch (err) {
+      setError('Gagal memuat pesan sesi: ' + err.message);
+    }
+  };
+
   // 1. Fetch all user sessions on mount
   const fetchSessions = async () => {
     try {
@@ -85,24 +116,10 @@ export default function AiConsultationPanel({ user = null, stocks = [] }) {
     }
   };
 
+  // Declared after fetchSessions so the call below is never a temporal-dead-zone access.
   useEffect(() => {
-    fetchSessions();
+    void fetchSessions();
   }, []);
-
-  // 2. Fetch specific session messages
-  const selectSession = async (sessionId) => {
-    try {
-      setActiveSessionId(sessionId);
-      setError(null);
-      const res = await fetch(`/api/ai/chat?sessionId=${sessionId}`);
-      const data = await res.json();
-      if (data.success && data.session) {
-        setMessages(data.session.messages || []);
-      }
-    } catch (err) {
-      setError('Gagal memuat pesan sesi: ' + err.message);
-    }
-  };
 
   // 3. Create a new consultation session
   const handleNewSession = () => {
@@ -145,12 +162,7 @@ export default function AiConsultationPanel({ user = null, stocks = [] }) {
     setLoading(true);
 
     // Optimistic UI for user message
-    const tempUserMsg = {
-      id: 'temp-' + Date.now(),
-      role: 'user',
-      content: text,
-      createdAt: new Date().toISOString()
-    };
+    const tempUserMsg = createTempMessage(text);
     setMessages(prev => [...prev, tempUserMsg]);
 
     try {
@@ -658,7 +670,7 @@ export default function AiConsultationPanel({ user = null, stocks = [] }) {
           ) : sessions.length === 0 ? (
             <div className="p-6 text-center text-xs text-muted space-y-1">
               <p>Belum ada riwayat sesi.</p>
-              <p className="text-[10px] text-muted">Klik "Sesi Baru" untuk mulai konsultasi.</p>
+              <p className="text-[10px] text-muted">Klik &quot;Sesi Baru&quot; untuk mulai konsultasi.</p>
             </div>
           ) : (
             sessions.map(s => {

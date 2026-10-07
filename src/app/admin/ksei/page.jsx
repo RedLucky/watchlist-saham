@@ -16,18 +16,6 @@ export default function KseiAdminPage() {
   const [currentUser, setCurrentUser] = useState(null);
   const [adminKey, setAdminKey] = useState('');
 
-  // Fetch auth & existing stored periods
-  useEffect(() => {
-    fetch('/api/auth/me')
-      .then(res => res.ok ? res.json() : null)
-      .then(data => {
-        if (data?.user) setCurrentUser(data.user);
-      })
-      .catch(() => {});
-
-    fetchStoredPeriods();
-  }, []);
-
   const fetchStoredPeriods = async () => {
     try {
       setLoadingPeriods(true);
@@ -43,6 +31,19 @@ export default function KseiAdminPage() {
       setLoadingPeriods(false);
     }
   };
+
+  // Fetch auth & existing stored periods. Declared after fetchStoredPeriods so the call
+  // below is never a temporal-dead-zone access.
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.user) setCurrentUser(data.user);
+      })
+      .catch(() => {});
+
+    void fetchStoredPeriods();
+  }, []);
 
   // Preview parser
   const handleParsePreview = (text) => {

@@ -13,10 +13,6 @@ export default function KseiUploadPanel() {
   const [totalStocksWithKsei, setTotalStocksWithKsei] = useState(0);
   const [loadingPeriods, setLoadingPeriods] = useState(true);
 
-  useEffect(() => {
-    fetchStoredPeriods();
-  }, []);
-
   const fetchStoredPeriods = async () => {
     try {
       setLoadingPeriods(true);
@@ -32,6 +28,11 @@ export default function KseiUploadPanel() {
       setLoadingPeriods(false);
     }
   };
+
+  // Declared after fetchStoredPeriods so the call below is never a temporal-dead-zone access.
+  useEffect(() => {
+    void fetchStoredPeriods();
+  }, []);
 
   const handleParsePreview = (text) => {
     if (!text || text.trim().length === 0) {
