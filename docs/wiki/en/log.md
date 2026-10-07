@@ -4,6 +4,9 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-10-07] style | Koleksi Saham: 5 Cards per Row
+- Collection card grid now shows up to 5 cards per row on wide screens (`2xl:grid-cols-5`), stepping down to 4 / 3 / 2 / 1 on smaller screens.
+
 ## [2026-10-07] feat | Stock Explorer Split into Koleksi, Pencarian & Komparasi Tabs
 - Replaced the collapsible collection sidebar with three page tabs: `Koleksi Saham` (default), `Pencarian Saham IDX`, `Komparasi`.
 - Koleksi page redesigned: collection chips, toolbar, summary stats (count, average change, buy/sell targets hit) and a responsive card grid with target progress bar and always-visible actions.

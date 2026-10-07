@@ -4,6 +4,9 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-10-07] style | Koleksi Saham: 5 Kartu per Baris
+- Grid kartu koleksi kini menampilkan hingga 5 kartu per baris di layar lebar (`2xl:grid-cols-5`), turun menjadi 4 / 3 / 2 / 1 di layar lebih kecil.
+
 ## [2026-10-07] feat | Stock Explorer Dipecah menjadi Tab Koleksi, Pencarian & Komparasi
 - Sidebar koleksi yang bisa diciutkan diganti tiga tab halaman: `Koleksi Saham` (default), `Pencarian Saham IDX`, `Komparasi`.
 - Halaman Koleksi didesain ulang: chip koleksi, toolbar, statistik ringkasan (jumlah, rata-rata perubahan, target beli/jual tercapai), dan grid kartu responsif dengan bar progres target serta tombol aksi yang selalu terlihat.

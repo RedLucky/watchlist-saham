@@ -1943,7 +1943,7 @@ export default function StockExplorer({ user }) {
 
               {/* Card grid */}
               {loadingItems && collectionItems.length === 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4" aria-busy="true" aria-label="Memuat saham koleksi">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4" aria-busy="true" aria-label="Memuat saham koleksi">
                   {[1, 2, 3, 4].map((idx) => (
                     <div key={idx} className="animate-pulse rounded-2xl p-4 bg-slate-100 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 space-y-3 h-44">
                       <div className="flex justify-between items-center">
@@ -1971,7 +1971,7 @@ export default function StockExplorer({ user }) {
                   </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
                   {collectionItems.map((item, index) => {
                     const s = item.stock || {};
                     const price = s.price || 0;

@@ -26,7 +26,7 @@ A full-width page for the user's collections (watchlists).
 | Collection toolbar | Name, description, *Publik* badge, *Live 30s* status, refresh / edit / share link / delete |
 | Summary row | Number of stocks (up/down), average daily % change, buy targets hit, sell targets hit |
 | Sort bar | `CollectionSortDropdown` (see [Collection Sorter Engine](../trading-system/collection-sorter-engine.md)) + drag-and-drop hint |
-| Card grid | 1–4 columns. Ticker, composite score, daily change, name/sector, price, target-hit banner, price position between buy and sell target, notes, action buttons |
+| Card grid | Up to 5 cards per row on wide screens (1 / 2 / 3 / 4 / 5 columns at base / sm / lg / xl / 2xl). Ticker, composite score, daily change, name/sector, price, target-hit banner, price position between buy and sell target, notes, action buttons |
 
 Card actions (always visible, also on mobile): 🎯 monitor in Win Rate, ⚖️ add to Komparasi, 📦 move to another collection, ✏️ edit notes/targets, ✕ remove.
 

@@ -26,7 +26,7 @@ Halaman full-width untuk koleksi (watchlist) pengguna.
 | Toolbar koleksi | Nama, deskripsi, lencana *Publik*, status *Live 30s*, refresh / edit / salin link / hapus |
 | Baris ringkasan | Jumlah emiten (naik/turun), rata-rata % perubahan harian, target beli tercapai, target jual tercapai |
 | Bar urutan | `CollectionSortDropdown` (lihat [Collection Sorter Engine](../trading-system/collection-sorter-engine.md)) + petunjuk geser-dan-lepas |
-| Grid kartu | 1–4 kolom. Ticker, skor komposit, perubahan harian, nama/sektor, harga, banner target tercapai, posisi harga di antara target beli dan jual, catatan, tombol aksi |
+| Grid kartu | Hingga 5 kartu per baris di layar lebar (1 / 2 / 3 / 4 / 5 kolom pada base / sm / lg / xl / 2xl). Ticker, skor komposit, perubahan harian, nama/sektor, harga, banner target tercapai, posisi harga di antara target beli dan jual, catatan, tombol aksi |
 
 Aksi kartu (selalu terlihat, juga di mobile): 🎯 pantau di Win Rate, ⚖️ tambah ke Komparasi, 📦 pindah ke koleksi lain, ✏️ edit catatan/target, ✕ hapus.
 
