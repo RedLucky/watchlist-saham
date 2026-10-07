@@ -89,11 +89,14 @@ Setiap entri mencatat `effectiveFrom` (kapan IDX menerbitkannya), `source`, `ver
 asal setiap ticker alih-alih percaya begitu saja. Menjalankan ulang aman; ia mengganti daftar
 anggota tiap indeks yang ada di seed.
 
-Pada saat dokumen ini ditulis hanya LQ45 dan IDX30 yang terisi. IDX Value 30, High Dividend 20, dan
-ISSI **tidak** diisi: daftar resminya berada di PDF
+Sudah terisi: **LQ45** (45, berlaku 2026-08-03), **IDX30** (30, 2026-08-03), dan
+**HIDV20** (20, 2026-08-05).
+
+Masih kosong: **IDX Value 30** dan **ISSI**. Daftar resminya berada di PDF
 [Fact Sheet Indeks](https://www.idx.co.id/id/data-pasar/laporan-statistik/fact-sheet-indeks) bulanan
-di domain terlindungi yang sama, dan tidak ada satu pun daftar yang dimasukkan tanpa sumber yang
-bisa diverifikasi.
+di domain terlindungi, dan ISSI juga membutuhkan *Sharia Securities List* milik OJK yang
+diterbitkan terpisah oleh DSN-MUI/OJK. Tidak ada daftar yang dimasukkan tanpa sumber yang bisa
+diverifikasi.
 
 ### Cadangan manual
 

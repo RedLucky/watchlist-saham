@@ -39,6 +39,38 @@ export const TRACKED_INDEX_CODES = TRACKED_INDICES.map((i) => i.code);
 /** Membership older than this many days is shown as "stale" in the UI. */
 export const STALE_AFTER_DAYS = 60;
 
+/** Rows shown per page on the index member table. */
+export const PAGE_SIZE = 20;
+
+/**
+ * Slices a list for a given page and reports the paging numbers the UI needs.
+ *
+ * The page number is clamped instead of trusted: after removing the last row of the last page
+ * the stored page would point past the end, and an empty table would look like missing data.
+ *
+ * @param {Array} items - Full list, e.g. index members.
+ * @param {number} page - Requested page, 1-based.
+ * @param {number} [pageSize=PAGE_SIZE] - Rows per page.
+ * @returns {{ rows: Array, page: number, totalPages: number, total: number, from: number, to: number }}
+ */
+export function paginate(items, page, pageSize = PAGE_SIZE) {
+  const list = Array.isArray(items) ? items : [];
+  const size = Math.max(1, Number(pageSize) || PAGE_SIZE);
+  const total = list.length;
+  const totalPages = Math.max(1, Math.ceil(total / size));
+  const current = Math.min(Math.max(1, Number(page) || 1), totalPages);
+  const start = (current - 1) * size;
+  const rows = list.slice(start, start + size);
+  return {
+    rows,
+    page: current,
+    totalPages,
+    total,
+    from: total === 0 ? 0 : start + 1,
+    to: total === 0 ? 0 : start + rows.length,
+  };
+}
+
 /**
  * Normalises and validates an index code coming from a URL or form.
  *

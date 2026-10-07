@@ -6,7 +6,7 @@ import { PageShell, PageHeader, SectionTitle } from './ui/PageShell';
 import { AutoGrid } from './ui/AutoGrid';
 import { StatCard } from './ui/StatCard';
 import { IndexBadgeList, invalidateIndexCache } from './IndexBadges';
-import { TRACKED_INDICES, isStaleSync, STALE_AFTER_DAYS } from '@/lib/idxIndices';
+import { TRACKED_INDICES, isStaleSync, STALE_AFTER_DAYS, paginate, PAGE_SIZE } from '@/lib/idxIndices';
 
 /** Formats a timestamp as a short Indonesian date, e.g. "7 Okt 2026". */
 function formatTanggal(value) {
@@ -34,6 +34,18 @@ export default function IndexDirectory() {
   const [notice, setNotice] = useState(null);
   const [newTicker, setNewTicker] = useState('');
   const [saving, setSaving] = useState(false);
+  const [page, setPage] = useState(1);
+
+  /**
+   * Switches to another index and returns to page 1. Resetting here rather than in an effect
+   * keeps the reset in the same event as the change that causes it, so no cascading render.
+   * @param {string} code - Index code to show.
+   * @returns {void}
+   */
+  const selectIndex = (code) => {
+    setActiveCode(code);
+    setPage(1);
+  };
 
   /** Refetches the member list of the selected index without changing the selection. */
   const reloadDetail = useCallback(async () => {
@@ -68,6 +80,7 @@ export default function IndexDirectory() {
       setNotice(res.ok ? { ok: true, message: json.message } : { ok: false, message: json.error });
       if (res.ok) {
         setNewTicker('');
+        setPage(1);
         invalidateIndexCache();
         await Promise.all([reloadDetail(), reloadIndices()]);
       }
@@ -88,6 +101,7 @@ export default function IndexDirectory() {
     const json = await res.json();
     setNotice(res.ok ? { ok: true, message: json.message } : { ok: false, message: json.error });
     if (res.ok) {
+      setPage(1);
       invalidateIndexCache();
       await Promise.all([reloadDetail(), reloadIndices()]);
     }
@@ -142,6 +156,7 @@ export default function IndexDirectory() {
   const stale = detail ? isStaleSync(detail.lastSyncedAt) : false;
   const members = detail?.code === activeCode ? detail.members : [];
   const tracked = members.filter((m) => m.tracked).length;
+  const pager = paginate(members, page, PAGE_SIZE);
 
   return (
     <PageShell className="animate-fade-in">
@@ -177,7 +192,7 @@ export default function IndexDirectory() {
               value={stored ? `${stored.memberCount} saham` : 'Belum ada data'}
               hint={stored ? `Diperbarui ${formatTanggal(stored.lastSyncedAt)}` : meta.description}
               tone={activeCode === meta.code ? 'accent' : isStale ? 'warn' : 'neutral'}
-              onClick={() => setActiveCode(meta.code)}
+              onClick={() => selectIndex(meta.code)}
             />
           );
         })}
@@ -233,7 +248,7 @@ export default function IndexDirectory() {
             </p>
           </div>
         ) : (
-          <div className="scroll-area">
+          <div className="scroll-area" style={{ maxHeight: 'min(60vh, 560px)' }}>
             <table className="table-base">
               <thead>
                 <tr>
@@ -247,7 +262,7 @@ export default function IndexDirectory() {
                 </tr>
               </thead>
               <tbody>
-                {members.map((member) => (
+                {pager.rows.map((member) => (
                   <tr key={member.ticker}>
                     <td className="num text-muted">{member.position ?? '-'}</td>
                     <td>
@@ -289,6 +304,40 @@ export default function IndexDirectory() {
               </tbody>
             </table>
           </div>
+        )}
+
+        {members.length > PAGE_SIZE && (
+          <nav
+            className="mt-3 flex items-center justify-between gap-2"
+            aria-label="Paginasi anggota indeks"
+          >
+            <span className="text-xs text-muted">
+              Menampilkan {pager.from}–{pager.to} dari {pager.total} saham
+            </span>
+            <span className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={pager.page <= 1}
+                className="btn-secondary !min-h-8 !px-2.5"
+                aria-label="Halaman sebelumnya"
+              >
+                ‹
+              </button>
+              <span className="text-xs text-muted tabular-nums">
+                {pager.page} / {pager.totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.min(pager.totalPages, p + 1))}
+                disabled={pager.page >= pager.totalPages}
+                className="btn-secondary !min-h-8 !px-2.5"
+                aria-label="Halaman berikutnya"
+              >
+                ›
+              </button>
+            </span>
+          </nav>
         )}
       </section>
     </PageShell>

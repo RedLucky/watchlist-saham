@@ -112,3 +112,45 @@ test('parseMembershipText', async (t) => {
     assert.deepEqual(rows, [{ indexCode: 'LQ45', ticker: 'BBCA' }]);
   });
 });
+test('paginate', async (t) => {
+  const { paginate, PAGE_SIZE } = await import('../src/lib/idxIndices.js');
+  const make = (n) => Array.from({ length: n }, (_, i) => i + 1);
+
+  await t.test('memotong daftar sesuai ukuran halaman', () => {
+    const r = paginate(make(45), 1, 20);
+    assert.equal(r.rows.length, 20);
+    assert.deepEqual([r.from, r.to], [1, 20]);
+    assert.equal(r.totalPages, 3);
+  });
+
+  await t.test('halaman terakhir berisi sisa baris', () => {
+    const r = paginate(make(45), 3, 20);
+    assert.equal(r.rows.length, 5);
+    assert.deepEqual([r.from, r.to], [41, 45]);
+  });
+
+  await t.test('halaman melebihi batas dijepit ke halaman terakhir', () => {
+    const r = paginate(make(45), 99, 20);
+    assert.equal(r.page, 3);
+    assert.equal(r.rows.length, 5);
+  });
+
+  await t.test('halaman di bawah 1 dikembalikan ke 1', () => {
+    assert.equal(paginate(make(45), 0, 20).page, 1);
+    assert.equal(paginate(make(45), -3, 20).page, 1);
+  });
+
+  await t.test('daftar kosong menghasilkan satu halaman kosong', () => {
+    const r = paginate([], 1, 20);
+    assert.deepEqual({ rows: r.rows, total: r.total, totalPages: r.totalPages, from: r.from, to: r.to },
+      { rows: [], total: 0, totalPages: 1, from: 0, to: 0 });
+  });
+
+  await t.test('ukuran halaman tidak valid jatuh ke default', () => {
+    assert.equal(paginate(make(45), 1, 0).rows.length, PAGE_SIZE);
+  });
+
+  await t.test('input bukan array aman', () => {
+    assert.equal(paginate(undefined, 1, 20).total, 0);
+  });
+});

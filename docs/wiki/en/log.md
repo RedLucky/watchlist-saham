@@ -4,6 +4,14 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-10-07] feat | IDXHIDIV20 Seeded And The Member Table Gains Pagination And Its Own Scroll
+- High Dividend 20 seeded (20 members, effective 2026-08-05) from Fortune Indonesia's table of the July 2026 minor review, which lists every constituent with its index weight. BEI confirmed the review changed weights only, not membership.
+- The member table now shows 20 rows per page with prev/next controls and a "menampilkan X–Y dari Z" counter, so ISSI's much longer membership will not produce an endless page.
+- The table scrolls inside its own container (`max-height: min(60vh, 560px)`) with a sticky header. `.scroll-area` already sets `overscroll-behavior: contain`, so scrolling the table no longer chains to the page behind it.
+- New `paginate(items, page, pageSize)` helper in `src/lib/idxIndices.js`. It clamps the page number instead of trusting it: after deleting the last row of the last page, the stored page would point past the end and an empty table would look like missing data.
+- Switching index resets to page 1 inside the same click handler rather than in an effect, avoiding the cascading render the lint rule rejects.
+- 8 new unit tests for `paginate`. Build clean, 592 tests pass, no new lint errors.
+
 ## [2026-10-07] fix | Indeks BEI Stopped Erroring And No Longer Asks For An Admin Key
 - **Bug:** `/api/indices/LQ45` returned a Prisma error for every index. The query selected a `score` field, but `StockData` has no such column — the composite score is computed on the fly from the `fundamentals` and `technicals` JSON. The Skor column is removed rather than duplicating that weighting, which would let the index page and `/api/screener` drift apart.
 - The admin key input is gone from the add/remove form; those calls rely on the session cookie. The key field stays only on `/admin/indeks`, the admin entry point.

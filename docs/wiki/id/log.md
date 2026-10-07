@@ -4,6 +4,14 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-10-07] feat | IDXHIDIV20 DiisiDan Tabel Anggota Dapat Paginasi & Scroll Sendiri
+- High Dividend 20 diisi (20 anggota, berlaku 2026-08-05) dari tabel Fortune Indonesia untuk evaluasi minor Juli 2026, yang mencantumkan setiap konstituen beserta bobot indeksnya. BEI mengonfirmasi evaluasi itu hanya mengubah bobot, bukan keanggotaan.
+- Tabel anggota kini menampilkan 20 baris per halaman dengan tombol sebelumnya/berikutnya dan penghitung "menampilkan X–Y dari Z", sehingga keanggotaan ISSI yang jauh lebih panjang tidak menghasilkan halaman yang tak berujung.
+- Tabel menggulir di dalam wadahnya sendiri (`max-height: min(60vh, 560px)`) dengan header lengket. `.scroll-area` sudah mengatur `overscroll-behavior: contain`, jadi menggulir tabel tidak lagi ikut menarik halaman di belakangnya.
+- Pembantu baru `paginate(items, page, pageSize)` di `src/lib/idxIndices.js`. Nomor halaman dijepit, bukan dipercaya: setelah menghapus baris terakhir di halaman terakhir, halaman tersimpan akan menunjuk melewati ujung dan tabel kosong akan terlihat seperti data hilang.
+- Pindah indeks mengembalikan ke halaman 1 di dalam handler klik yang sama, bukan di dalam effect, sehingga menghindari render berantai yang ditolak aturan lint.
+- 8 unit test baru untuk `paginate`. Build bersih, 592 test lulus, tidak ada error lint baru.
+
 ## [2026-10-07] fix | Indeks BEI Berhenti Error Dan Tidak Lagi Meminta Admin Key
 - **Bug:** `/api/indices/LQ45` mengembalikan error Prisma untuk semua indeks. Query-nya memilih field `score`, padahal `StockData` tidak punya kolom tersebut — skor komposit dihitung on-the-fly dari JSON `fundamentals` dan `technicals`. Kolom Skor dihapus, bukan menggandakan bobot itu, karena itu akan membuat halaman indeks dan `/api/screener` menyimpang.
 - Input admin key dihapus dari form tambah/hapus; pemanggilan itu memakai cookie sesi. Field key tetap ada hanya di `/admin/indeks`, pintu masuk admin.

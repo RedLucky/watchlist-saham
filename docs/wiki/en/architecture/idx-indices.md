@@ -95,10 +95,13 @@ Each entry records `effectiveFrom` (when IDX published it), `source`, `verifiedO
 every ticker rather than trusting a number. Re-running is safe; it replaces the member list of
 each seeded index.
 
-At the time of writing only LQ45 and IDX30 are seeded. IDX Value 30, High Dividend 20 and ISSI
-were **not** filled in: their authoritative lists live in the monthly
-[Fact Sheet Index](https://www.idx.co.id/id/data-pasar/laporan-statistik/fact-sheet-indeks) PDFs
-on the same protected domain, and no list was entered without a verifiable source.
+Seeded so far: **LQ45** (45, effective 2026-08-03), **IDX30** (30, 2026-08-03) and
+**HIDV20** (20, 2026-08-05).
+
+Still missing: **IDX Value 30** and **ISSI**. Their authoritative lists live in the monthly
+[Fact Sheet Index](https://www.idx.co.id/id/data-pasar/laporan-statistik/fact-sheet-indeks) PDFs on
+the protected domain, and ISSI additionally requires the OJK *Sharia Securities List*, which is
+published separately by DSN-MUI/OJK. No list was entered without a verifiable source.
 
 ### Manual fallback
 
