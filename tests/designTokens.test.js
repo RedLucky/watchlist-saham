@@ -50,6 +50,10 @@ const MIGRATED_FILES = [
   'src/components/AlphaLegend/SectorMetricsTab.jsx',
   'src/components/AlphaLegend/TopInvestorsTab.jsx',
   'src/data/alphaLegendSectors.js',
+  // TASK-1846: Corporate Actions & AI Consultation
+  'src/components/CorporateCalendar.jsx',
+  'src/components/CorporateActionsPanel.jsx',
+  'src/components/AiConsultationPanel.jsx',
 ];
 
 /** Lines that handle user-chosen collection emoji (data, not UI icons) may contain emoji. */

@@ -4,6 +4,11 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-10-07] feat | Corporate Calendar & AI Consultation Migrated to Bursa 1985
+- `CorporateCalendar`, `CorporateActionsPanel` and `AiConsultationPanel` moved to theme tokens and Unicode symbols.
+- Calendar category filter and Grid/Timeline switch now use `.tabs`; the day-detail dialog uses `.modal-*` with `role="dialog"` and a close button label.
+- AI chat: user bubble keeps the accent background (it lost its gradient), avatars and empty-state icon use token backgrounds, send button and header action use `.btn-primary`.
+
 ## [2026-10-07] feat | Market Movers, Screener & Alpha Legends Migrated to Bursa 1985
 - `MarketMovers`, `StockScreener`, `AiScreenerBar` and the 4 Alpha Legends components moved to theme tokens and Unicode symbols.
 - Icons in `src/data/alphaLegendSectors.js` (35 sectors) and the investor list replaced by text symbols, so sector chips follow the theme colour.

@@ -4,6 +4,11 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-10-07] feat | Migrasi Kalender Korporasi & Konsultasi AI ke Bursa 1985
+- `CorporateCalendar`, `CorporateActionsPanel`, dan `AiConsultationPanel` dipindah ke token tema dan simbol Unicode.
+- Filter kategori kalender dan sakelar Grid/Timeline kini memakai `.tabs`; dialog detail hari memakai `.modal-*` dengan `role="dialog"` dan label tombol tutup.
+- Obrolan AI: gelembung user tetap memakai latar aksen (sebelumnya kehilangan gradien), avatar dan ikon empty state memakai latar token, tombol kirim dan aksi header memakai `.btn-primary`.
+
 ## [2026-10-07] feat | Migrasi Market Movers, Screener & Alpha Legends ke Bursa 1985
 - `MarketMovers`, `StockScreener`, `AiScreenerBar`, dan 4 komponen Alpha Legends dipindah ke token tema dan simbol Unicode.
 - Ikon di `src/data/alphaLegendSectors.js` (35 sektor) dan daftar investor diganti simbol teks, sehingga chip sektor mengikuti warna tema.
