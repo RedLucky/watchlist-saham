@@ -40,6 +40,38 @@ export const TRACKED_INDEX_CODES = TRACKED_INDICES.map((i) => i.code);
 export const STALE_AFTER_DAYS = 60;
 
 /**
+ * Normalises and validates an index code coming from a URL or form.
+ *
+ * @param {string} code - Raw code, e.g. "lq45".
+ * @returns {string} Upper-case tracked code, e.g. "LQ45".
+ * @throws {Error} When the code is not one of the tracked indices.
+ */
+export function assertIndexCode(code) {
+  const normalised = String(code || '').trim().toUpperCase();
+  if (!TRACKED_INDEX_CODES.includes(normalised)) {
+    throw new Error(
+      `Kode indeks "${code}" tidak dikenal. Yang tersedia: ${TRACKED_INDEX_CODES.join(', ')}`,
+    );
+  }
+  return normalised;
+}
+
+/**
+ * Normalises and validates a single stock ticker.
+ *
+ * @param {string} ticker - Raw ticker, e.g. " bbca ".
+ * @returns {string} Upper-case ticker, e.g. "BBCA".
+ * @throws {Error} When the ticker is empty or not a valid IDX symbol.
+ */
+export function assertTicker(ticker) {
+  const normalised = String(ticker || '').trim().toUpperCase();
+  if (!/^[A-Z]{1,6}$/.test(normalised)) {
+    throw new Error(`Ticker "${ticker}" tidak valid. Gunakan kode saham IDX, contoh: BBCA`);
+  }
+  return normalised;
+}
+
+/**
  * Whether the stored membership is old enough to warn the user.
  * @param {Date|string|number|null|undefined} lastSyncedAt
  * @param {Date} [now=new Date()]

@@ -96,6 +96,24 @@ LQ45?", not "what indices is BBCA in?".
 | `/api/indices` | GET | `{ indices: [...], byTicker: { BBCA: ['IDX30','LQ45'] } }` |
 | `/api/indices` | POST | Admin upload; body `{ defaultIndex, text }` |
 | `/api/indices/[code]` | GET | One index plus its members enriched with price, change and score from `StockData` |
+| `/api/indices/[code]` | POST | Admin; adds one ticker (`{ ticker }`) |
+| `/api/indices/[code]` | DELETE | Admin; removes one ticker (`?ticker=BBCA`) |
+
+### Editing membership from the page
+
+The Indeks BEI page is where membership is maintained, not only read:
+
+- An admin key field plus a ticker field add one stock to the selected index.
+- Every row has a `Hapus` button that removes that stock from the index.
+- Both actions go through `src/lib/idxStore.js`, which validates the code and ticker *before*
+  touching the database, so a typo never reaches Prisma.
+- Adding a stock that is already a member is a no-op and deliberately does **not** stamp a fresh
+  `lastSyncedAt`: an accidental re-add must not make a stale list look freshly verified.
+- After any edit the badge cache is dropped via `invalidateIndexCache()`, otherwise the labels
+  elsewhere in the app would keep showing membership from before the edit.
+
+The bulk upload page `/admin/indeks` is linked from the page header, because typing 200 ISSI
+tickers one at a time is not realistic.
 
 `byTicker` exists so a table of 50 rows needs one request, not 50. Each member also reports
 `tracked`, which is false when the index member is not in our own database — the page then shows how

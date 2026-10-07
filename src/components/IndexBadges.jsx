@@ -11,6 +11,16 @@ let cache = null;
 let pending = null;
 
 /**
+ * Drops the cached map so the next badge refetches. Call this after adding or removing a member,
+ * otherwise the labels across the app keep showing the membership from before the edit.
+ * @returns {void}
+ */
+export function invalidateIndexCache() {
+  cache = null;
+  pending = null;
+}
+
+/**
  * Fetches the ticker → index-codes map once per session (cached module-wide).
  * @returns {Promise<{ byTicker: Record<string, string[]>, indices: Array<object> }>}
  */

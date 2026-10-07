@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyAdminAccess } from '@/lib/auth';
+import { addConstituent, removeConstituent } from '@/lib/idxStore';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,6 +67,68 @@ export async function GET(request, context) {
     return NextResponse.json(
       { error: error.message || 'Gagal memuat anggota indeks' },
       { status: 500 },
+    );
+  }
+}
+
+/**
+ * POST /api/indices/[code] — admin-only; adds one stock to the index.
+ *
+ * @param {Request} request
+ * @param {{ params: Promise<{ code: string }> }} context
+ * @returns {Promise<NextResponse>}
+ */
+export async function POST(request, context) {
+  try {
+    const auth = await verifyAdminAccess(request);
+    if (!auth.authorized) {
+      return NextResponse.json({ error: auth.error }, { status: 401 });
+    }
+    const { code } = await context.params;
+    const body = await request.json();
+    const result = await addConstituent(code, body.ticker);
+    return NextResponse.json({
+      message: result.added
+        ? `${result.ticker} ditambahkan ke ${result.indexCode}.`
+        : `${result.ticker} sudah ada di ${result.indexCode}.`,
+      ...result,
+    });
+  } catch (error) {
+    console.error('[API /api/indices/[code] POST Error]:', error);
+    return NextResponse.json(
+      { error: error.message || 'Gagal menambahkan anggota indeks' },
+      { status: 400 },
+    );
+  }
+}
+
+/**
+ * DELETE /api/indices/[code]?ticker=BBCA — admin-only; removes one stock from the index.
+ *
+ * @param {Request} request
+ * @param {{ params: Promise<{ code: string }> }} context
+ * @returns {Promise<NextResponse>}
+ */
+export async function DELETE(request, context) {
+  try {
+    const auth = await verifyAdminAccess(request);
+    if (!auth.authorized) {
+      return NextResponse.json({ error: auth.error }, { status: 401 });
+    }
+    const { code } = await context.params;
+    const ticker = new URL(request.url).searchParams.get('ticker');
+    const result = await removeConstituent(code, ticker);
+    return NextResponse.json({
+      message: result.removed
+        ? `${result.ticker} dihapus dari ${result.indexCode}.`
+        : `${result.ticker} tidak ada di ${result.indexCode}.`,
+      ...result,
+    });
+  } catch (error) {
+    console.error('[API /api/indices/[code] DELETE Error]:', error);
+    return NextResponse.json(
+      { error: error.message || 'Gagal menghapus anggota indeks' },
+      { status: 400 },
     );
   }
 }

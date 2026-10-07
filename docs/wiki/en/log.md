@@ -4,6 +4,15 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-10-07] fix | Index Membership Can Be Added And Removed From The Indeks BEI Page
+- **Problem:** the page was read-only, so with an empty database there was no way to register or remove a stock, and `/admin/indeks` had no link pointing to it from anywhere in the UI.
+- `src/lib/idxStore.js` (new): `ensureIndexRow`, `addConstituent`, `removeConstituent`. Both validate the index code and ticker *before* touching the database, and every function takes an optional Prisma client so tests never need a real database.
+- `POST /api/indices/[code]` and `DELETE /api/indices/[code]?ticker=` — both admin-gated with `verifyAdminAccess`.
+- Re-adding an existing member is a no-op that deliberately does not stamp a new `lastSyncedAt`, so an accidental re-add cannot make a stale list look freshly verified.
+- `IndexDirectory.jsx` gains an admin key field, a ticker field, a per-row `Hapus` button, and a link to the bulk upload page. After an edit it calls `invalidateIndexCache()` so badges across the app stop showing pre-edit membership.
+- A 404 for an index nobody has filled in is no longer shown as an error; it renders the normal empty state.
+- 17 unit tests in `tests/idxStore.test.js` using an in-memory fake Prisma client. Verified end to end against the real database (add, re-add, add to a second index, remove), then left the tables empty.
+
 ## [2026-10-07] feat | IDX Index Membership, the Indeks BEI Page & Compact Index Labels
 - New Prisma models `IdxIndex` and `IdxConstituent` plus migration `20261007120000_add_idx_indices`; two tables instead of JSON because the common question is "who is in LQ45?".
 - `src/scripts/sync-indices.js` scrapes the five tracked indices with Puppeteer, mirroring `sync-ksei.js`. A failed index logs a warning and keeps the previous membership, because an empty index looks authoritative while a stale one does not.

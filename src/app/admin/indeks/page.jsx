@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { PageShell, PageHeader, SectionTitle } from '@/components/ui/PageShell';
 import { TRACKED_INDICES, isStaleSync, STALE_AFTER_DAYS } from '@/lib/idxIndices';
 
@@ -80,7 +81,12 @@ export default function IndexUploadAdminPage() {
     <PageShell>
       <PageHeader
         title="Unggah Data Indeks"
-        subtitle="Cadangan manual untukanggota indeks BEI ketika scraper tidak dapat dijalankan"
+        subtitle="Cadangan manual untuk anggota indeks BEI ketika scraper tidak dapat dijalankan"
+        actions={
+          <Link href="/" className="btn-secondary">
+            Kembali ke aplikasi
+          </Link>
+        }
       />
 
       <section>

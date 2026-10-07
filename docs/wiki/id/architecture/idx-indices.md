@@ -84,6 +84,25 @@ Dua tabel, bukan satu JSON di `StockData`, karena pertanyaan utamanya adalah "si
 | `/api/indices` | GET | `{ indices: [...], byTicker: { BBCA: ['IDX30','LQ45'] } }` |
 | `/api/indices` | POST | Unggahan admin; body `{ defaultIndex, text }` |
 | `/api/indices/[code]` | GET | Satu indeks beserta anggotanya, dilengkapi harga, perubahan, dan skor dari `StockData` |
+| `/api/indices/[code]` | POST | Admin; menambah satu ticker (`{ ticker }`) |
+| `/api/indices/[code]` | DELETE | Admin; menghapus satu ticker (`?ticker=BBCA`) |
+
+### Mengubah keanggotaan dari halaman
+
+Halaman Indeks BEI adalah tempat keanggotaan dikelola, bukan hanya dibaca:
+
+- Field admin key dan field ticker menambah satu saham ke indeks yang dipilih.
+- Setiap baris punya tombol `Hapus` untuk mengeluarkan saham itu dari indeks.
+- Kedua aksi memakai `src/lib/idxStore.js`, yang memvalidasi kode dan ticker *sebelum* menyentuh
+  database, jadi salah ketik tidak pernah sampai ke Prisma.
+- Menambah saham yang sudah jadi anggota tidak melakukan apa-apa dan sengaja **tidak** menandai
+  `lastSyncedAt` baru: menambahkan ulang karena tidak sengaja tidak boleh membuat daftar basi terlihat
+  baru saja diverifikasi.
+- Setelah setiap perubahan, cache label dibuang lewat `invalidateIndexCache()`, kalau tidak label
+  di halaman lain akan tetap menampilkan keanggotaan dari sebelum perubahan.
+
+Halaman unggah massal `/admin/indeks` ditautkan dari header halaman, karena mengetik 200 ticker
+ISSI satu per satu jelas tidak realistis.
 
 `byTicker` ada supaya tabel berisi 50 baris hanya butuh satu permintaan, bukan 50. Setiap anggota juga melaporkan `tracked`, yang bernilai false bila anggota indeks itu tidak ada di database kita — halaman lalu menunjukkan berapa bagian indeks yang benar-benar bisa dianalisis.
 

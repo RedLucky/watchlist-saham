@@ -4,6 +4,15 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-10-07] fix | Keanggotaan Indeks Bisa Ditambah Dan Dihapus Dari Halaman Indeks BEI
+- **Masalah:** halaman hanya bisa dibaca, jadi dengan database kosong tidak ada cara mendaftarkan atau menghapus saham, dan `/admin/indeks` tidak ditautkan dari mana pun di UI.
+- `src/lib/idxStore.js` (baru): `ensureIndexRow`, `addConstituent`, `removeConstituent`. Keduanya memvalidasi kode indeks dan ticker *sebelum* menyentuh database, dan setiap fungsi menerima Prisma client opsional supaya test tidak perlu database sungguhan.
+- `POST /api/indices/[code]` dan `DELETE /api/indices/[code]?ticker=` — keduanya dilindungi `verifyAdminAccess`.
+- Menambah anggota yang sudah ada tidak melakukan apa-apa dan sengaja tidak menandai `lastSyncedAt` baru, sehingga menambah ulang karena tidak sengaja tidak bisa membuat daftar basi terlihat baru saja diverifikasi.
+- `IndexDirectory.jsx` mendapat field admin key, field ticker, tombol `Hapus` per baris, dan tautan ke halaman unggah massal. Setelah perubahan, ia memanggil `invalidateIndexCache()` supaya label di seluruh aplikasi berhenti menampilkan keanggotaan dari sebelum perubahan.
+- 404 untuk indeks yang belum diisi tidak lagi ditampilkan sebagai error; ia memakai empty state biasa.
+- 17 unit test di `tests/idxStore.test.js` memakai Prisma client palsu berbasis memori. Diverifikasi langsung ke database sungguhan (tambah, tambah lagi, tambah ke indeks kedua, hapus), lalu tabel dikosongkan kembali.
+
 ## [2026-10-07] feat | Keanggotaan Indeks IDX, Halaman Indeks BEI & Label Indeks Ringkas
 - Model Prisma baru `IdxIndex` dan `IdxConstituent` plus migrasi `20261007120000_add_idx_indices`; dua tabel, bukan JSON, karena pertanyaan yang paling sering adalah "siapa anggota LQ45?".
 - `src/scripts/sync-indices.js` mengambil lima indeks dengan Puppeteer, meniru `sync-ksei.js`. Indeks yang gagal hanya memberi peringatan dan mempertahankan keanggotaan lama, karena indeks kosong terlihat benar sedangkan indeks basi tidak.
