@@ -1,6 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { PageShell, PageHeader, SectionTitle } from './ui/PageShell';
+import { AutoGrid } from './ui/AutoGrid';
+import { StatCard } from './ui/StatCard';
+import { TechnicalSummary } from './ui/TechnicalSummary';
 
 export default function PortfolioPanel() {
   const [portfolioData, setPortfolioData] = useState(null);
@@ -59,44 +63,39 @@ export default function PortfolioPanel() {
   const riskAnalytics = portfolioData?.riskAnalytics;
 
   return (
-  <div className="space-y-6 animate-fade-in">
-  {/* Summary Cards */}
-  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-  <div className="p-4 rounded-sm bg-sunken border border-line ">
-  <div className="text-xs text-muted ">Total Investasi (Modal)</div>
-  <div className="text-xl font-bold text-ink mt-1">{formatCurrency(summary.totalInvested)}</div>
-  </div>
-  <div className="p-4 rounded-sm bg-sunken border border-line ">
-  <div className="text-xs text-muted ">Nilai Portofolio Saat Ini</div>
-  <div className="text-xl font-bold text-ink mt-1">{formatCurrency(summary.totalCurrentValue)}</div>
-  </div>
-  <div className="p-4 rounded-sm bg-sunken border border-line ">
-  <div className="text-xs text-muted ">Floating PnL (Floating Profit)</div>
-  <div className={`text-xl font-bold mt-1 ${summary.totalFloatingPnL >= 0 ? 'text-up' : 'text-down'}`}>
-  {formatCurrency(summary.totalFloatingPnL)}
-  </div>
-  </div>
-  <div className="p-4 rounded-sm bg-sunken border border-line ">
-  <div className="text-xs text-muted ">Total Return (%)</div>
-  <div className={`text-xl font-bold mt-1 ${(summary.totalReturnPercent ?? 0) >= 0 ? 'text-up' : 'text-down'}`}>
-  {(summary.totalReturnPercent ?? 0).toFixed(2)}%
-  </div>
-  </div>
-  </div>
+  <PageShell className="animate-fade-in">
+    <PageHeader
+      title="Portofolio Saya"
+      subtitle="Posisi saham, unrealised & realised PnL, dan simulasi risiko"
+      badge={<span className="badge badge-outline">{positions.length} posisi aktif</span>}
+    />
 
-  {/* Realized PnL Summary */}
-  <div className="p-4 rounded-sm bg-sunken border border-line flex items-center justify-between">
-  <div>
-  <span className="text-sm font-medium text-ink ">Total Keuntungan Realisasi (Closed PnL): </span>
-  <span className={`text-base font-bold ml-2 ${summary.realizedPnL >= 0 ? 'text-up' : 'text-down'}`}>
-  {formatCurrency(summary.realizedPnL)}
-  </span>
-  </div>
-  <div className="text-xs text-muted ">
-  Jumlah Saham Aktif: <strong className="text-ink ">{positions.length}</strong>
-  </div>
-  </div>
+    {/* ── RINGKASAN ── */}
+    <AutoGrid minWidth="220px">
+      <StatCard label="Total Investasi" value={formatCurrency(summary.totalInvested)} hint="Modal outlay" />
+      <StatCard label="Nilai Portofolio" value={formatCurrency(summary.totalCurrentValue)} hint="Berdasarkan harga terkini" />
+      <StatCard
+        label="Floating PnL"
+        value={formatCurrency(summary.totalFloatingPnL)}
+        hint="Belum direalisasi"
+        tone={summary.totalFloatingPnL >= 0 ? 'up' : 'down'}
+      />
+      <StatCard
+        label="Total Return"
+        value={`${(summary.totalReturnPercent ?? 0).toFixed(2)}%`}
+        hint="Terhadap modal"
+        tone={(summary.totalReturnPercent ?? 0) >= 0 ? 'up' : 'down'}
+      />
+      <StatCard
+        label="Realised PnL"
+        value={formatCurrency(summary.realizedPnL)}
+        hint="Dari posisi yang sudah dijual"
+        tone={summary.realizedPnL >= 0 ? 'up' : 'down'}
+      />
+    </AutoGrid>
 
+    {/* ── RISIKO PORTFOLIO (RINGKASAN TEKNIS) ── */}
+    <TechnicalSummary title="Ringkasan Teknis" badge={<span className="badge badge-outline">PORT / MARS</span>}>
   {/* ── BLOOMBERG PORT & MARS: PORTFOLIO RISK & STRESS TESTING COCKPIT ── */}
   {riskAnalytics && (
     <div className="bg-surface border border-line rounded-md p-4 md:p-6 shadow-sm space-y-5">
@@ -225,13 +224,13 @@ export default function PortfolioPanel() {
       </div>
     </div>
   )}
+    </TechnicalSummary>
 
-  {/* Positions Table */}
-  <div className="rounded-sm border border-line overflow-hidden bg-sunken ">
-  <div className="p-4 border-b border-line font-semibold text-ink ">
-  Daftar Saham yang Dimiliki
-  </div>
-  <div className="overflow-x-auto">
+    {/* ── DAFTAR SAHAM ── */}
+    <section>
+      <SectionTitle note={`${positions.length} posisi`}>Daftar Saham yang Dimiliki</SectionTitle>
+      <div className="card overflow-hidden">
+  <div className="scroll-area">
   {positions.length > 0 ? (
   <table className="w-full text-left border-collapse">
   <thead>
@@ -278,9 +277,10 @@ export default function PortfolioPanel() {
   </div>
   )}
   </div>
-  </div>
+      </div>
+    </section>
 
-  {/* ── MODAL: CUSTOM CONFIRMATION DIALOG ──────────────────────────── */}
+    {/* ── MODAL: CUSTOM CONFIRMATION DIALOG ──────────────────────────── */}
   {confirmDialog && confirmDialog.isOpen && (
     <div className="modal-backdrop animate-in fade-in">
       <div className="modal-panel p-4 sm:p-5 space-y-4" role="dialog" aria-modal="true" aria-labelledby="portfolio-sell-title">
@@ -317,6 +317,6 @@ export default function PortfolioPanel() {
       </div>
     </div>
   )}
-  </div>
+  </PageShell>
   );
 }

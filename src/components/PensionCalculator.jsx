@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import PensionTracker from './PensionTracker';
+import { PageShell, PageHeader } from './ui/PageShell';
 import PensionRebalance from './PensionRebalance';
 import AuthModal from './AuthModal';
 import { isSyariahStock } from '../lib/sectorUniverse';
@@ -1000,7 +1001,13 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
   };
 
  return (
- <div className="space-y-6 max-w-[1400px] mx-auto pb-12">
+ <PageShell className="pb-12">
+
+  <PageHeader
+    title="Kalkulator Pensiun"
+    subtitle="Rekomendasi alokasi aset dan target dana pensiun dari profil risiko serta preset saham"
+    badge={<span className="badge badge-outline">SBN + Saham + RDPU</span>}
+  />
  
   {/* Top User Auth Bar */}
   <div className="flex justify-between items-center bg-surface p-3.5 rounded-md border border-line shadow-2xs">
@@ -1043,22 +1050,9 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
   </div>
   </div>
 
-  {/* Header Banner */}
-  <div className="glass-panel p-4 sm:p-6 rounded-md border border-line relative overflow-hidden to-white ">
-  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 sm:gap-4">
-  <div>
-  <div className="flex items-center gap-2 mb-1">
-  <span className="text-xl sm:text-2xl">◷</span>
-  <h2 className="text-base sm:text-xl font-black text-ink tracking-tight">
-  Kalkulator Alokasi & Target Dana Pensiun
-  </h2>
- </div>
- <p className="text-[11px] sm:text-xs text-muted font-medium max-w-2xl">
- Rekomendasi preset saham dinamis ter-update dari database (Analisis Fundamental, Valuasi PER/PBV & Dividen Yield/Streak).
- </p>
- </div>
-
- <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+  {/* Action bar: preset, AI optimisation, candidates, save */}
+  <div className="card p-3 sm:p-4">
+  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
   <button
     onClick={handleAiOptimize}
     disabled={isAiOptimizing || loadingPreset}
@@ -1093,7 +1087,6 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
  >
  {copied ? '✓ Tersalin!' : '▤ Salin Order'}
  </button>
- </div>
  </div>
  </div>
 
@@ -2089,6 +2082,6 @@ Target Dana Pensiun (${targetAge} Thn): Rp ${calculations.targetCorpusNominal.to
      </div>
    </div>
  )}
- </div>
+ </PageShell>
  );
 }

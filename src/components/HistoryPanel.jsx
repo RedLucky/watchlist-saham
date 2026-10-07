@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { PageShell, PageHeader, PageToolbar } from './ui/PageShell';
 
 function getPageNumbers(current, total) {
   if (total <= 7) {
@@ -168,16 +169,12 @@ export default function HistoryPanel() {
   };
 
   return (
-    <div className="rounded-md p-5 sm:p-6 bg-surface border border-line shadow-xs space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-base sm:text-lg font-black text-ink flex items-center gap-2">
-          <span>◷</span> Rekam Jejak Sinyal & Win Rate Riil
-        </h2>
-        <p className="text-xs text-muted font-medium mt-0.5">
-          Perbandingan akurasi otomatis antara <strong>Rekomendasi Sistem (Bot Discord)</strong> dan <strong>Pantauan Manual Anda</strong>.
-        </p>
-      </div>
+    <PageShell className="animate-fade-in">
+      <PageHeader
+        title="Riwayat & Win Rate"
+        subtitle="Akurasi rekomendasi sistem Discord dibandingkan pantauan manual Anda"
+        badge={<span className="badge badge-outline">{recommendations.length} sinyal</span>}
+      />
 
       {/* Dual Comparative Win Rate Cards: Sistem vs User */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -342,10 +339,12 @@ export default function HistoryPanel() {
         </div>
       </div>
 
-      {/* Filter Tabs (Sumber & Status) */}
-      <div className="space-y-2.5 pt-2 border-t border-line ">
-        {/* Source Filter Tabs */}
-        <div className="flex items-center gap-2">
+      {/* Sticky filters */}
+      <PageToolbar meta={(
+        <span className="badge" aria-live="polite">
+          {recommendations.length} sinyal
+        </span>
+      )}>
           <span className="label-mono">Sumber</span>
           <div className="tabs" role="group" aria-label="Filter sumber">
           {[
@@ -367,10 +366,7 @@ export default function HistoryPanel() {
             </button>
           ))}
           </div>
-        </div>
 
-        {/* Status Filter Tabs */}
-        <div className="flex items-center gap-2">
           <span className="label-mono">Status</span>
           <div className="tabs" role="group" aria-label="Filter status">
           {[
@@ -393,8 +389,7 @@ export default function HistoryPanel() {
             </button>
           ))}
           </div>
-        </div>
-      </div>
+      </PageToolbar>
 
       {recommendations.length > 0 ? (
         <div className="space-y-3">
@@ -556,6 +551,6 @@ export default function HistoryPanel() {
           </p>
         </div>
       )}
-    </div>
+    </PageShell>
   );
 }

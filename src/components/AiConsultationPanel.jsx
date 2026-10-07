@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import katex from 'katex';
+import { PageShell, PageHeader } from './ui/PageShell';
 
 const renderLatexToHtml = (latex = '', displayMode = false) => {
   try {
@@ -623,15 +624,21 @@ export default function AiConsultationPanel({ user = null, stocks = [] }) {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-5 h-[calc(100vh-140px)] min-h-[620px]">
-      {/* ── LEFT SIDEBAR: Sessions List (280px) ── */}
-      <div className="w-full lg:w-72 flex-shrink-0 flex flex-col bg-surface border border-line rounded-md shadow-xs overflow-hidden">
+    <PageShell className="pb-6">
+      <PageHeader
+        title="Konsultasi AI"
+        subtitle="Tanyakan analitik soal saham BEI — jawaban dihitung dari data lokal, bukan dugaan"
+        badge={<span className="badge badge-outline">Lokal · llama.cpp</span>}
+      />
+
+    <div className="flex flex-col lg:flex-row gap-4 h-[calc(100vh-190px)] min-h-[560px]">
+      {/* ── LEFT SIDEBAR: Sessions List ── */}
+      <div className="w-full lg:w-72 flex-shrink-0 flex flex-col card overflow-hidden">
         {/* Header with New Session Button */}
-        <div className="p-4 border-b border-line flex items-center justify-between gap-2">
+        <div className="p-3 border-b border-line flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="text-xl">◈</span>
             <div>
-              <h3 className="text-sm font-extrabold text-ink ">Konsultasi AI</h3>
+              <h3 className="text-sm font-semibold text-ink ">Riwayat Percakapan</h3>
               <p className="text-[10px] text-muted">Analisis Kuantitatif IDX</p>
             </div>
           </div>
@@ -928,6 +935,7 @@ export default function AiConsultationPanel({ user = null, stocks = [] }) {
         </div>
       </div>
     </div>
+    </PageShell>
   );
 }
 
