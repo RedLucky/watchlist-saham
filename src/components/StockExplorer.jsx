@@ -20,6 +20,25 @@ import {
   calculateTargetSellFromPercent,
   calculateTargetPercentFromPrices,
 } from '@/lib/tradeSetup';
+import {
+  getCompositeScore,
+  getScoreTone,
+  getTargetStatus,
+  getTargetProgress,
+  summarizeCollection,
+} from '@/lib/collectionCardUtils';
+
+/** Tailwind classes for each score band returned by getScoreTone (collection cards). */
+const SCORE_TONE_CLASSES = {
+  excellent: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300',
+  good: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
+  fair: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
+  poor: 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300',
+};
+
+/** Shared look for the square icon buttons in the Koleksi toolbar. */
+const TOOLBAR_BUTTON_CLASS = 'w-9 h-9 flex items-center justify-center text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500';
+const TOOLBAR_BUTTON_HOVER = 'hover:bg-slate-100 dark:hover:bg-slate-700 hover:border-indigo-300 dark:hover:border-indigo-700';
 
 function getNominalChange(price, changePercent) {
   if (!price || changePercent == null || !Number.isFinite(price) || !Number.isFinite(changePercent)) return 0;
@@ -761,6 +780,9 @@ export default function StockExplorer({ user }) {
   const [copiedShareCode, setCopiedShareCode] = useState(null);
   const [isSilentRefreshing, setIsSilentRefreshing] = useState(false);
   const [lastRefreshedAt, setLastRefreshedAt] = useState(null);
+
+  // Summary numbers (count, target hits, average change) for the Koleksi page.
+  const collectionSummary = useMemo(() => summarizeCollection(collectionItems), [collectionItems]);
 
   const searchInputRef = useRef(null);
   const searchDropdownRef = useRef(null);
@@ -1718,330 +1740,415 @@ export default function StockExplorer({ user }) {
 
       {/* ── 2. PAGE: KOLEKSI SAHAM ───────────────────────────────────────── */}
       {activeTab === 'collections' && (
-            <section className="w-full bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm space-y-4 animate-in fade-in duration-300">
-              {/* Sidebar Header */}
-              <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-xl">📂</span>
-                  <div>
-                    <h2 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-                      <span>Koleksi Saham</span>
-                      <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-mono">
-                        {collections.length}
+        <section className="w-full space-y-5 animate-in fade-in duration-300">
+          {/* Page header + collection picker chips */}
+          <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="min-w-0">
+                <h2 className="text-base md:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                  <span aria-hidden="true">📂</span>
+                  <span>Koleksi Saham</span>
+                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-mono">
+                    {collections.length}
+                  </span>
+                </h2>
+                <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 mt-1">
+                  Kelompokkan saham favorit, pantau target beli & jual secara live, lalu klik kartu untuk analisis lengkap.
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setNewCollectionName('');
+                  setNewCollectionDesc('');
+                  setNewCollectionEmoji('📁');
+                  setShowCreateModal(true);
+                }}
+                className="shrink-0 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-sm transition-colors flex items-center justify-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+              >
+                <span aria-hidden="true">+</span> Buat Koleksi
+              </button>
+            </div>
+
+            {loadingCollections && collections.length === 0 ? (
+              <div className="flex gap-2" aria-busy="true" aria-label="Memuat koleksi">
+                {[1, 2, 3].map((idx) => (
+                  <div key={idx} className="h-10 w-36 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
+                ))}
+              </div>
+            ) : collections.length === 0 ? (
+              <div className="text-center py-10 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl px-4">
+                <span className="text-4xl block mb-2" aria-hidden="true">📁</span>
+                <p className="text-sm font-bold text-slate-800 dark:text-slate-200">Belum ada koleksi</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+                  Klik &quot;+ Buat Koleksi&quot; untuk mengelompokkan saham favorit Anda, misalnya &quot;Dividen&quot; atau &quot;Swing Minggu Ini&quot;.
+                </p>
+              </div>
+            ) : (
+              <div role="tablist" aria-label="Pilih koleksi" className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+                {collections.map((col) => {
+                  const isActive = selectedCollection?.id === col.id;
+                  return (
+                    <button
+                      key={col.id}
+                      role="tab"
+                      aria-selected={isActive}
+                      onClick={() => setSelectedCollection(col)}
+                      className={`shrink-0 flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+                        isActive
+                          ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm'
+                          : 'bg-slate-50 dark:bg-slate-800/70 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-indigo-300 dark:hover:border-indigo-700'
+                      }`}
+                    >
+                      <span aria-hidden="true">{col.emoji || '📁'}</span>
+                      <span className="max-w-[160px] truncate">{col.name}</span>
+                      <span
+                        className={`px-1.5 py-0.5 text-[10px] leading-none rounded-full font-mono ${
+                          isActive ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                        }`}
+                      >
+                        {col._count?.items ?? col.items?.length ?? 0}
                       </span>
-                    </h2>
-                  </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Selected collection workspace */}
+          {selectedCollection && (
+            <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm space-y-5">
+              {/* Collection toolbar */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="text-base md:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2 flex-wrap">
+                    <span aria-hidden="true">{selectedCollection.emoji || '📁'}</span>
+                    <span className="truncate">{selectedCollection.name}</span>
+                    {selectedCollection.isPublic && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 font-bold">
+                        Publik
+                      </span>
+                    )}
+                  </h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 line-clamp-2">
+                    {selectedCollection.description || `${collectionItems.length} saham tersimpan`}
+                  </p>
                 </div>
 
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2 flex-wrap shrink-0">
+                  <span
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-900 text-[11px] font-bold text-emerald-700 dark:text-emerald-300"
+                    title={lastRefreshedAt ? `Terakhir diperbarui ${lastRefreshedAt.toLocaleTimeString('id-ID')}` : 'Harga diperbarui otomatis setiap 30 detik'}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full bg-emerald-500 ${isSilentRefreshing ? 'animate-ping' : 'animate-pulse'}`} aria-hidden="true"></span>
+                    <span>{isSilentRefreshing ? 'Sinkronisasi...' : 'Live 30s'}</span>
+                  </span>
+                  <button
+                    onClick={() => fetchCollectionItems(selectedCollection.id, true, false)}
+                    aria-label="Refresh harga saham koleksi"
+                    title="Refresh harga saham koleksi"
+                    className={`${TOOLBAR_BUTTON_CLASS} ${TOOLBAR_BUTTON_HOVER}`}
+                  >
+                    <span aria-hidden="true">🔄</span>
+                  </button>
                   <button
                     onClick={() => {
-                      setNewCollectionName('');
-                      setNewCollectionDesc('');
-                      setNewCollectionEmoji('📁');
-                      setShowCreateModal(true);
+                      setEditingCollection(selectedCollection);
+                      setNewCollectionName(selectedCollection.name);
+                      setNewCollectionEmoji(selectedCollection.emoji || '📁');
+                      setNewCollectionDesc(selectedCollection.description || '');
+                      setIsCollectionPublic(selectedCollection.isPublic || false);
+                      setShowEditModal(true);
                     }}
-                    className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold rounded-lg shadow-sm transition-all flex items-center gap-1"
-                    title="Buat Koleksi Baru"
+                    aria-label="Edit nama, emoji & status publik"
+                    title="Edit nama, emoji & status publik"
+                    className={`${TOOLBAR_BUTTON_CLASS} ${TOOLBAR_BUTTON_HOVER}`}
                   >
-                    <span>+</span> Buat
+                    <span aria-hidden="true">✏️</span>
+                  </button>
+                  {selectedCollection.shareCode && (
+                    <button
+                      onClick={() => handleCopyShareLink(selectedCollection.shareCode)}
+                      aria-label="Salin link bagikan"
+                      title="Salin link bagikan"
+                      className={`${TOOLBAR_BUTTON_CLASS} ${TOOLBAR_BUTTON_HOVER}`}
+                    >
+                      <span aria-hidden="true">{copiedShareCode === selectedCollection.shareCode ? '✅' : '🔗'}</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleDeleteCollection(selectedCollection.id, selectedCollection.name)}
+                    aria-label="Hapus koleksi ini"
+                    title="Hapus koleksi ini"
+                    className={`${TOOLBAR_BUTTON_CLASS} hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:border-rose-300 dark:hover:border-rose-800`}
+                  >
+                    <span aria-hidden="true">🗑️</span>
                   </button>
                 </div>
               </div>
 
-              {/* Collection Selector & Actions */}
-              {loadingCollections ? (
-                <div className="text-center py-4 text-xs text-slate-500 dark:text-slate-400">Memuat koleksi...</div>
-              ) : collections.length === 0 ? (
-                <div className="text-center py-6 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-4">
-                  <span className="text-2xl block mb-1">📁</span>
-                  <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">Belum ada koleksi</p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                    Klik &quot;+ Buat&quot; untuk mengelompokkan saham favorit Anda.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {/* Collection Dropdown Picker & Action Icons */}
-                  <div className="flex items-center gap-1.5">
-                    <div className="relative flex-1">
-                      <select
-                        value={selectedCollection?.id || ''}
-                        onChange={(e) => {
-                          const col = collections.find(c => c.id === Number(e.target.value));
-                          if (col) setSelectedCollection(col);
-                        }}
-                        className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none pr-8 cursor-pointer"
-                      >
-                        {collections.map((col) => (
-                          <option key={col.id} value={col.id}>
-                            {col.emoji || '📁'} {col.name} ({col._count?.items ?? col.items?.length ?? 0})
-                          </option>
-                        ))}
-                      </select>
-                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-xs text-slate-400">
-                        ▼
-                      </span>
-                    </div>
-
-                    {selectedCollection && (
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          onClick={() => fetchCollectionItems(selectedCollection.id, true, false)}
-                          className="p-1.5 text-slate-500 hover:text-indigo-600 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors"
-                          title="Refresh harga saham koleksi"
-                        >
-                          🔄
-                        </button>
-                        <button
-                          onClick={() => {
-                            setEditingCollection(selectedCollection);
-                            setNewCollectionName(selectedCollection.name);
-                            setNewCollectionEmoji(selectedCollection.emoji || '📁');
-                            setNewCollectionDesc(selectedCollection.description || '');
-                            setIsCollectionPublic(selectedCollection.isPublic || false);
-                            setShowEditModal(true);
-                          }}
-                          className="p-1.5 text-slate-500 hover:text-indigo-600 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors"
-                          title="Edit Nama, Emoji & Publik"
-                        >
-                          ✏️
-                        </button>
-                        {selectedCollection.shareCode && (
-                          <button
-                            onClick={() => handleCopyShareLink(selectedCollection.shareCode)}
-                            className="p-1.5 text-slate-500 hover:text-indigo-600 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors"
-                            title="Salin Link Bagikan"
-                          >
-                            🔗
-                          </button>
-                        )}
-                        <button
-                          onClick={() => handleDeleteCollection(selectedCollection.id, selectedCollection.name)}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 bg-slate-50 dark:bg-slate-800/80 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors"
-                          title="Hapus Koleksi Ini"
-                        >
-                          🗑️
-                        </button>
-                      </div>
-                    )}
+              {/* Summary stats */}
+              {collectionItems.length > 0 && (
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 p-3">
+                    <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Jumlah Emiten</p>
+                    <p className="text-xl font-black text-slate-900 dark:text-white tabular-nums">{collectionSummary.count}</p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 tabular-nums">
+                      <span className="text-emerald-600 dark:text-emerald-400 font-bold">{collectionSummary.gainers} naik</span>
+                      {' · '}
+                      <span className="text-rose-600 dark:text-rose-400 font-bold">{collectionSummary.losers} turun</span>
+                    </p>
                   </div>
-
-                  {/* Selected Collection Meta & Sync Status */}
-                  {selectedCollection && (
-                    <div className="flex items-center justify-between text-[11px] px-1 text-slate-500 dark:text-slate-400">
-                      <span className="truncate max-w-[180px]">
-                        {selectedCollection.description || `${collectionItems.length} saham tersimpan`}
-                      </span>
-                      <span className="inline-flex items-center gap-1 font-bold text-emerald-600 dark:text-emerald-400 shrink-0">
-                        <span className={`w-1.5 h-1.5 rounded-full bg-emerald-500 ${isSilentRefreshing ? 'animate-ping' : 'animate-pulse'}`}></span>
-                        <span>{isSilentRefreshing ? 'Sync...' : 'Live 30s'}</span>
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Auto-Sort Toolbar */}
-                  {selectedCollection && collectionItems.length > 1 && (
-                    <div className="flex items-center justify-between pt-1 pb-0.5 px-0.5 border-t border-slate-100 dark:border-slate-800/80">
-                      <CollectionSortDropdown
-                        items={collectionItems}
-                        onApplySort={handleApplySort}
-                      />
-                      <span className="text-[10px] text-slate-400 font-mono">
-                        {collectionItems.length} emiten
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Compact Stock List (Vertically Scrollable & Draggable) */}
-                  {selectedCollection && (
-                    <div className="space-y-2 max-h-[calc(100vh-270px)] min-h-[180px] overflow-y-auto pr-1">
-                      {loadingItems && collectionItems.length === 0 ? (
-                        <div className="space-y-2">
-                          {[1, 2, 3].map((idx) => (
-                            <div key={idx} className="animate-pulse rounded-xl p-3 bg-slate-100 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 space-y-2 h-20">
-                              <div className="flex justify-between items-center">
-                                <div className="h-4 w-16 bg-slate-200 dark:bg-slate-700 rounded"></div>
-                                <div className="h-4 w-12 bg-slate-200 dark:bg-slate-700 rounded"></div>
-                              </div>
-                              <div className="h-3 w-24 bg-slate-200 dark:bg-slate-700 rounded"></div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : collectionItems.length === 0 ? (
-                        <div className="text-center py-6 text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 p-3">
-                          Koleksi ini masih kosong. Cari saham lalu klik &quot;Simpan ke Koleksi&quot;.
-                        </div>
-                      ) : (
-                        collectionItems.map((item, index) => {
-                          const s = item.stock || {};
-                          const price = s.price || 0;
-                          const isItemUp = (s.changePercent || 0) >= 0;
-
-                          const isCurrentSelected = stockDetail?.ticker === item.ticker;
-                          const liveCompScore = (isCurrentSelected && scores?.fundamental != null)
-                            ? Math.round(((scores.fundamental ?? 50) * 0.45) + ((scores.technical ?? 50) * 0.35) + ((scores.trending ?? 50) * 0.10) + ((scores.smartMoney ?? 50) * 0.10))
-                            : null;
-                          const score = liveCompScore ?? s.score;
-
-                          const isTargetBuyHit = item.targetBuy != null && price > 0 && price <= item.targetBuy;
-                          const isTargetSellHit = item.targetSell != null && price > 0 && price >= item.targetSell;
-
-                          const isDragging = draggedItemIndex === index;
-                          const isDragOver = dragOverIndex === index && draggedItemIndex !== index;
-
-                          let cardBorder = isCurrentSelected
-                            ? 'border-indigo-500 bg-indigo-50/80 dark:bg-indigo-950/40 ring-2 ring-indigo-500/20'
-                            : 'border-slate-200 dark:border-slate-700/80 bg-slate-50/60 dark:bg-slate-800/60 hover:border-indigo-300 dark:hover:border-slate-600';
-
-                          if (isTargetBuyHit) {
-                            cardBorder = 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/40 ring-1 ring-emerald-500/30';
-                          } else if (isTargetSellHit) {
-                            cardBorder = 'border-rose-500 bg-rose-50/70 dark:bg-rose-950/40 ring-1 ring-rose-500/30';
-                          }
-
-                          return (
-                            <div
-                              key={item.id}
-                              draggable={true}
-                              onDragStart={(e) => handleDragStart(e, index)}
-                              onDragOver={(e) => handleDragOver(e, index)}
-                              onDragEnd={handleDragEnd}
-                              onDrop={(e) => handleDrop(e, index)}
-                              onClick={() => handleOpenFromCollection(item.ticker)}
-                              className={`cursor-pointer rounded-xl p-2.5 border transition-all text-left relative group select-none ${cardBorder} ${
-                                isDragging ? 'opacity-30 scale-95 border-dashed border-indigo-500' : ''
-                              } ${
-                                isDragOver ? 'ring-2 ring-indigo-500 scale-[1.01]' : ''
-                              }`}
-                            >
-                              {/* Top Row: Drag Handle, Ticker, Sector, Score, Quick Action Icons */}
-                              <div className="flex items-center justify-between gap-1 mb-1">
-                                <div className="flex items-center gap-1.5 min-w-0">
-                                  <span
-                                    className="cursor-grab active:cursor-grabbing text-slate-400 hover:text-indigo-600 text-xs px-0.5 select-none"
-                                    title="Tahan & geser untuk atur urutan"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    ⠿
-                                  </span>
-                                  <span className="font-black text-xs md:text-sm text-slate-900 dark:text-white group-hover:text-indigo-600 transition-colors">
-                                    {item.ticker}
-                                  </span>
-                                  {score != null && (
-                                    <span
-                                      className={`text-[10px] font-mono font-black px-1.5 py-0.2 rounded ${
-                                        score >= 80
-                                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                                          : score >= 65
-                                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
-                                          : score >= 50
-                                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
-                                          : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
-                                      }`}
-                                      title={`Skor Komposit: ${score}`}
-                                    >
-                                      {score}
-                                    </span>
-                                  )}
-                                </div>
-
-                                {/* Quick Item Actions */}
-                                <div className="flex items-center gap-0.5 shrink-0 opacity-80 group-hover:opacity-100 transition-opacity">
-                                  <button
-                                    onClick={(e) => handleOpenMonitorModal(s, item.ticker, e)}
-                                    className="text-[11px] p-0.5 text-slate-400 hover:text-emerald-600"
-                                    title="Pantau di Win Rate"
-                                  >
-                                    🎯
-                                  </button>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleAddToCompare(item.ticker);
-                                    }}
-                                    className="text-[11px] p-0.5 text-slate-400 hover:text-indigo-600"
-                                    title="Tambah ke Komparasi"
-                                  >
-                                    ⚖️
-                                  </button>
-                                  <button
-                                    onClick={(e) => handleOpenMoveModal(item, e)}
-                                    className="text-[11px] p-0.5 text-slate-400 hover:text-blue-600"
-                                    title="Pindahkan Koleksi"
-                                  >
-                                    📦
-                                  </button>
-                                  <button
-                                    onClick={(e) => handleOpenEditItemModal(item, e)}
-                                    className="text-[11px] p-0.5 text-slate-400 hover:text-amber-600"
-                                    title="Edit Catatan & Target"
-                                  >
-                                    ✏️
-                                  </button>
-                                  <button
-                                    onClick={(e) => handleRemoveStockFromCollection(selectedCollection.id, item.ticker, e)}
-                                    className="text-[11px] p-0.5 text-slate-400 hover:text-rose-600"
-                                    title="Hapus dari Koleksi"
-                                  >
-                                    ✕
-                                  </button>
-                                </div>
-                              </div>
-
-                              {/* Middle Row: Price & Change */}
-                              <div className="flex items-baseline justify-between">
-                                <span className="text-xs font-black text-slate-900 dark:text-white">
-                                  Rp {price ? price.toLocaleString('id-ID') : '-'}
-                                </span>
-                                <span
-                                  className={`text-[10px] font-bold px-1 py-0.2 rounded flex items-center gap-0.5 ${
-                                    isItemUp
-                                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300'
-                                      : 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300'
-                                  }`}
-                                >
-                                  <span>{isItemUp ? '+' : ''}{s.changePercent ? Number(s.changePercent).toFixed(2) : 0}%</span>
-                                </span>
-                              </div>
-
-                              {/* Target Badges if hit */}
-                              {isTargetBuyHit && (
-                                <div className="mt-1 px-1.5 py-0.5 bg-emerald-500 text-white text-[9px] font-black rounded flex items-center justify-between">
-                                  <span>🎯 TARGET BUY!</span>
-                                  <span>≤ Rp {item.targetBuy.toLocaleString('id-ID')}</span>
-                                </div>
-                              )}
-                              {isTargetSellHit && (
-                                <div className="mt-1 px-1.5 py-0.5 bg-rose-500 text-white text-[9px] font-black rounded flex items-center justify-between">
-                                  <span>🚀 TARGET SELL!</span>
-                                  <span>≥ Rp {item.targetSell.toLocaleString('id-ID')}</span>
-                                </div>
-                              )}
-
-                              {/* Target Buy & Sell Info */}
-                              {(item.targetBuy != null || item.targetSell != null) && !isTargetBuyHit && !isTargetSellHit && (
-                                <div className="mt-1 flex items-center justify-between text-[9px] text-slate-500 dark:text-slate-400">
-                                  <span>B: {item.targetBuy ? `Rp ${item.targetBuy.toLocaleString('id-ID')}` : '-'}</span>
-                                  <span>J: {item.targetSell ? `Rp ${item.targetSell.toLocaleString('id-ID')}` : '-'}</span>
-                                </div>
-                              )}
-
-                              {/* Notes Preview */}
-                              {item.notes && (
-                                <p className="mt-1 text-[10px] text-slate-600 dark:text-slate-400 truncate bg-slate-100/60 dark:bg-slate-900/60 px-1.5 py-0.5 rounded">
-                                  📝 {item.notes}
-                                </p>
-                              )}
-                            </div>
-                          );
-                        })
-                      )}
-                    </div>
-                  )}
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 p-3">
+                    <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Rata-rata Perubahan Hari Ini</p>
+                    <p
+                      className={`text-xl font-black tabular-nums ${
+                        collectionSummary.avgChange == null
+                          ? 'text-slate-400'
+                          : collectionSummary.avgChange >= 0
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-rose-600 dark:text-rose-400'
+                      }`}
+                    >
+                      {collectionSummary.avgChange == null
+                        ? '-'
+                        : `${collectionSummary.avgChange >= 0 ? '+' : ''}${collectionSummary.avgChange.toFixed(2)}%`}
+                    </p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Rata-rata sederhana semua emiten</p>
+                  </div>
+                  <div className={`rounded-xl border p-3 ${collectionSummary.buyHits > 0 ? 'border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40' : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40'}`}>
+                    <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">🎯 Target Beli Tercapai</p>
+                    <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums">{collectionSummary.buyHits}</p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Harga ≤ target beli</p>
+                  </div>
+                  <div className={`rounded-xl border p-3 ${collectionSummary.sellHits > 0 ? 'border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40' : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40'}`}>
+                    <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">🚀 Target Jual Tercapai</p>
+                    <p className="text-xl font-black text-rose-600 dark:text-rose-400 tabular-nums">{collectionSummary.sellHits}</p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Harga ≥ target jual</p>
+                  </div>
                 </div>
               )}
-            </section>
+
+              {/* Sort toolbar */}
+              {collectionItems.length > 1 && (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-t border-slate-100 dark:border-slate-800 pt-4">
+                  <div className="w-full sm:w-72">
+                    <CollectionSortDropdown items={collectionItems} onApplySort={handleApplySort} />
+                  </div>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                    <span aria-hidden="true">⠿</span> Tahan & geser kartu untuk mengatur urutan manual
+                  </span>
+                </div>
+              )}
+
+              {/* Card grid */}
+              {loadingItems && collectionItems.length === 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4" aria-busy="true" aria-label="Memuat saham koleksi">
+                  {[1, 2, 3, 4].map((idx) => (
+                    <div key={idx} className="animate-pulse rounded-2xl p-4 bg-slate-100 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 space-y-3 h-44">
+                      <div className="flex justify-between items-center">
+                        <div className="h-5 w-20 bg-slate-200 dark:bg-slate-700 rounded"></div>
+                        <div className="h-5 w-14 bg-slate-200 dark:bg-slate-700 rounded"></div>
+                      </div>
+                      <div className="h-3 w-32 bg-slate-200 dark:bg-slate-700 rounded"></div>
+                      <div className="h-7 w-28 bg-slate-200 dark:bg-slate-700 rounded"></div>
+                      <div className="h-2 w-full bg-slate-200 dark:bg-slate-700 rounded"></div>
+                    </div>
+                  ))}
+                </div>
+              ) : collectionItems.length === 0 ? (
+                <div className="text-center py-10 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 px-4">
+                  <span className="text-3xl block mb-2" aria-hidden="true">🔍</span>
+                  <p className="text-sm font-bold text-slate-800 dark:text-slate-200">Koleksi ini masih kosong</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Cari saham di tab Pencarian Saham IDX, lalu klik &quot;Simpan ke Koleksi&quot;.
+                  </p>
+                  <button
+                    onClick={() => setActiveTab('explorer')}
+                    className="mt-4 px-4 py-2 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                  >
+                    Buka Pencarian Saham
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+                  {collectionItems.map((item, index) => {
+                    const s = item.stock || {};
+                    const price = s.price || 0;
+                    const changePct = Number(s.changePercent || 0);
+                    const isItemUp = changePct >= 0;
+
+                    const isCurrentSelected = stockDetail?.ticker === item.ticker;
+                    // Use the freshly loaded detail scores for the stock currently open in Pencarian.
+                    const liveCompScore = (isCurrentSelected && scores?.fundamental != null) ? getCompositeScore(scores) : null;
+                    const score = liveCompScore ?? s.score;
+                    const scoreTone = getScoreTone(score);
+
+                    const { isBuyHit: isTargetBuyHit, isSellHit: isTargetSellHit } = getTargetStatus(price, item.targetBuy, item.targetSell);
+                    const targetProgress = getTargetProgress(price, item.targetBuy, item.targetSell);
+
+                    const isDragging = draggedItemIndex === index;
+                    const isDragOver = dragOverIndex === index && draggedItemIndex !== index;
+
+                    let cardBorder = isCurrentSelected
+                      ? 'border-indigo-400 dark:border-indigo-500 ring-2 ring-indigo-500/20'
+                      : 'border-slate-200 dark:border-slate-700/80 hover:border-indigo-300 dark:hover:border-indigo-700';
+                    if (isTargetBuyHit) {
+                      cardBorder = 'border-emerald-400 dark:border-emerald-600 ring-1 ring-emerald-500/30';
+                    } else if (isTargetSellHit) {
+                      cardBorder = 'border-rose-400 dark:border-rose-600 ring-1 ring-rose-500/30';
+                    }
+
+                    return (
+                      <div
+                        key={item.id}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Buka analisis lengkap ${item.ticker}`}
+                        draggable={true}
+                        onDragStart={(e) => handleDragStart(e, index)}
+                        onDragOver={(e) => handleDragOver(e, index)}
+                        onDragEnd={handleDragEnd}
+                        onDrop={(e) => handleDrop(e, index)}
+                        onClick={() => handleOpenFromCollection(item.ticker)}
+                        onKeyDown={(e) => {
+                          // Only react when the card itself is focused, not one of its action buttons.
+                          if (e.target !== e.currentTarget) return;
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleOpenFromCollection(item.ticker);
+                          }
+                        }}
+                        className={`group relative flex flex-col rounded-2xl border bg-white dark:bg-slate-800/50 p-4 cursor-pointer select-none transition-[border-color,box-shadow,opacity] hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${cardBorder} ${
+                          isDragging ? 'opacity-40 border-dashed border-indigo-500' : ''
+                        } ${isDragOver ? 'ring-2 ring-indigo-500' : ''}`}
+                      >
+                        {/* Header: drag handle, ticker, score, daily change */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span
+                              className="cursor-grab active:cursor-grabbing text-slate-400 hover:text-indigo-600 text-sm px-0.5"
+                              title="Tahan & geser untuk atur urutan"
+                              aria-hidden="true"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              ⠿
+                            </span>
+                            <span className="font-black text-base text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                              {item.ticker}
+                            </span>
+                            {scoreTone && (
+                              <span className={`text-[10px] font-mono font-black px-1.5 py-0.5 rounded ${SCORE_TONE_CLASSES[scoreTone]}`} title={`Skor Komposit: ${score}`}>
+                                {score}
+                              </span>
+                            )}
+                          </div>
+                          <span
+                            className={`shrink-0 text-[11px] font-bold px-1.5 py-0.5 rounded tabular-nums ${
+                              isItemUp
+                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300'
+                                : 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300'
+                            }`}
+                          >
+                            {isItemUp ? '▲ +' : '▼ '}{changePct.toFixed(2)}%
+                          </span>
+                        </div>
+
+                        {(s.name || s.sector) && (
+                          <p className="mt-0.5 pl-5 text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                            {s.name}{s.name && s.sector ? ' · ' : ''}{s.sector}
+                          </p>
+                        )}
+
+                        {/* Price */}
+                        <div className="mt-3 flex items-baseline gap-2">
+                          <span className="text-xl font-black text-slate-900 dark:text-white tabular-nums">
+                            Rp {price ? price.toLocaleString('id-ID') : '-'}
+                          </span>
+                          {price > 0 && s.changePercent != null && (
+                            <span className={`text-[11px] font-bold tabular-nums ${isItemUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                              {isItemUp ? '+' : ''}{getNominalChange(price, changePct).toLocaleString('id-ID')}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Target hit banners */}
+                        {isTargetBuyHit && (
+                          <div className="mt-3 px-2 py-1 bg-emerald-600 text-white text-[10px] font-black rounded-lg flex items-center justify-between">
+                            <span>🎯 TARGET BELI TERCAPAI</span>
+                            <span className="tabular-nums">≤ Rp {item.targetBuy.toLocaleString('id-ID')}</span>
+                          </div>
+                        )}
+                        {isTargetSellHit && (
+                          <div className="mt-3 px-2 py-1 bg-rose-600 text-white text-[10px] font-black rounded-lg flex items-center justify-between">
+                            <span>🚀 TARGET JUAL TERCAPAI</span>
+                            <span className="tabular-nums">≥ Rp {item.targetSell.toLocaleString('id-ID')}</span>
+                          </div>
+                        )}
+
+                        {/* Target buy / sell with progress between them */}
+                        {(item.targetBuy != null || item.targetSell != null) && !isTargetBuyHit && !isTargetSellHit && (
+                          <div className="mt-3 space-y-1.5">
+                            <div className="flex items-center justify-between text-[11px] tabular-nums">
+                              <span className="text-slate-500 dark:text-slate-400">
+                                Beli <span className="font-bold text-emerald-700 dark:text-emerald-400">{item.targetBuy ? `Rp ${item.targetBuy.toLocaleString('id-ID')}` : '-'}</span>
+                              </span>
+                              <span className="text-slate-500 dark:text-slate-400">
+                                Jual <span className="font-bold text-rose-700 dark:text-rose-400">{item.targetSell ? `Rp ${item.targetSell.toLocaleString('id-ID')}` : '-'}</span>
+                              </span>
+                            </div>
+                            {targetProgress != null && (
+                              <div
+                                className="relative h-1.5 rounded-full bg-gradient-to-r from-emerald-200 via-slate-200 to-rose-200 dark:from-emerald-900 dark:via-slate-700 dark:to-rose-900"
+                                role="img"
+                                aria-label={`Posisi harga ${Math.round(targetProgress)}% di antara target beli dan target jual`}
+                              >
+                                <span
+                                  className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-indigo-600 ring-2 ring-white dark:ring-slate-900"
+                                  style={{ left: `${targetProgress}%` }}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Notes */}
+                        {item.notes && (
+                          <p className="mt-3 text-[11px] text-slate-600 dark:text-slate-300 line-clamp-2 bg-slate-50 dark:bg-slate-900/60 px-2 py-1 rounded-lg">
+                            <span aria-hidden="true">📝 </span>{item.notes}
+                          </p>
+                        )}
+
+                        {/* Actions */}
+                        <div className="mt-auto pt-3">
+                          <div className="flex items-center justify-between gap-1 border-t border-slate-100 dark:border-slate-700/60 pt-2">
+                            {[
+                              { key: 'monitor', icon: '🎯', label: `Pantau ${item.ticker} di Win Rate`, hover: 'hover:bg-emerald-50 dark:hover:bg-emerald-950/40', onClick: (e) => handleOpenMonitorModal(s, item.ticker, e) },
+                              { key: 'compare', icon: '⚖️', label: `Tambah ${item.ticker} ke Komparasi`, hover: 'hover:bg-indigo-50 dark:hover:bg-indigo-950/40', onClick: (e) => { e.stopPropagation(); handleAddToCompare(item.ticker); } },
+                              { key: 'move', icon: '📦', label: `Pindahkan ${item.ticker} ke koleksi lain`, hover: 'hover:bg-blue-50 dark:hover:bg-blue-950/40', onClick: (e) => handleOpenMoveModal(item, e) },
+                              { key: 'edit', icon: '✏️', label: `Edit catatan & target ${item.ticker}`, hover: 'hover:bg-amber-50 dark:hover:bg-amber-950/40', onClick: (e) => handleOpenEditItemModal(item, e) },
+                              { key: 'remove', icon: '✕', label: `Hapus ${item.ticker} dari koleksi`, hover: 'hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600', onClick: (e) => handleRemoveStockFromCollection(selectedCollection.id, item.ticker, e) },
+                            ].map((action) => (
+                              <button
+                                key={action.key}
+                                onClick={action.onClick}
+                                aria-label={action.label}
+                                title={action.label}
+                                className={`flex-1 h-8 flex items-center justify-center text-xs text-slate-500 dark:text-slate-400 rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${action.hover}`}
+                              >
+                                <span aria-hidden="true">{action.icon}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </section>
       )}
 
       {/* ── 3. PAGE: PENCARIAN SAHAM IDX & ANALYTICAL WORKSPACE ─────────── */}
