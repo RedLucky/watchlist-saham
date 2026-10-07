@@ -3,6 +3,7 @@ const { exec } = require('child_process');
 
 let isPriceSyncRunning = false;
 let isDailyScraperRunning = false;
+let isIndexSyncRunning = false;
 
 function runPriceSync() {
   if (isPriceSyncRunning) {
@@ -68,11 +69,35 @@ function runDailyScrapers() {
   kseiProc.stderr.on('data', (data) => console.error(data.trim()));
 }
 
+/**
+ * Runs the IDX index membership sync (LQ45, IDX30, IDX Value 30, High Dividend 20, ISSI).
+ * A guard flag stops overlapping runs if the previous one is still scraping.
+ */
+function runIndexSync() {
+  if (isIndexSyncRunning) {
+    console.warn(`\n[IDX-SYNC-SKIP] Sinkronisasi indeks sebelumnya masih berjalan, melewati jadwal ini.`);
+    return;
+  }
+  isIndexSyncRunning = true;
+  const proc = exec('node --max-old-space-size=896 src/scripts/sync-indices.js', (err) => {
+    isIndexSyncRunning = false;
+    if (err) {
+      console.error(`[IDX-SYNC-ERR] Gagal sinkronisasi indeks: ${err.message}`);
+    } else {
+      console.log(`[IDX-SYNC-SUCCESS] Sinkronisasi indeks selesai.`);
+    }
+  });
+
+  proc.stdout.on('data', (data) => console.log(data.trim()));
+  proc.stderr.on('data', (data) => console.error(data.trim()));
+}
+
 console.log('🤖 Scraper & Price Sync Cron Scheduler Started (Alpine Minimalist)!');
 console.log('Jadwal:');
 console.log('  - Sync Harga Saham: Setiap 5 Menit');
 console.log('  - Sync KSEI & Ownership: Setiap Hari pukul 10:00 WIB');
 console.log('  - Rekomendasi Saham Discord: Setiap Hari pukul 18:00 WIB');
+console.log('  - Keanggotaan Indeks BEI: Setiap Senin pukul 09:00 WIB');
 
 // 1. Jalankan sinkronisasi harga pertama kali saat boot
 console.log('\n[Boot] Menjalankan initial Price Sync...');
@@ -81,6 +106,10 @@ runPriceSync();
 // 2. Jalankan initial KSEI & Ownership sync
 console.log('[Boot] Menjalankan initial KSEI & Ownership Scraper...');
 runDailyScrapers();
+
+// 3. Jalankan initial sinkronisasi indeks agar label indeks tersedia setelah deploy
+console.log('[Boot] Menjalankan initial Sinkronisasi Indeks BEI...');
+runIndexSync();
 
 // Jadwal Cron: Setiap 5 Menit -> Sync Harga Saham ("*/5 * * * *")
 cron.schedule('*/5 * * * *', () => {
@@ -98,6 +127,20 @@ cron.schedule('0 10 * * *', () => {
   onMissedExecution: (date) => {
     console.warn(`\n[${new Date().toISOString()}] [CRON-DAILY-MISSED] Jadwal 10:00 WIB terlewat pada ${date}, menjalankan pemulihan...`);
     runDailyScrapers();
+  }
+});
+
+// Jadwal Cron: Setiap Senin pukul 09:00 WIB -> Sinkronisasi Keanggotaan Indeks BEI ("0 9 * * 1")
+// Mingguan sudah cukup: IDX hanya menilai ulang keanggotaan indeks beberapa kali setahun.
+cron.schedule('0 9 * * 1', () => {
+  console.log(`\n[${new Date().toISOString()}] [CRON-INDEX] Jadwal Senin 09:00 WIB Terpicu! Sinkronisasi indeks BEI...`);
+  runIndexSync();
+}, {
+  timezone: "Asia/Jakarta",
+  missedExecutionTolerance: 300000,
+  onMissedExecution: (date) => {
+    console.warn(`\n[${new Date().toISOString()}] [CRON-INDEX-MISSED] Jadwal indeks terlewat pada ${date}, menjalankan pemulihan...`);
+    runIndexSync();
   }
 });
 
