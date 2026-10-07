@@ -4,6 +4,11 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-10-07] feat | Migrasi Stock Explorer ke Bursa 1985
+- ~1.900 class palet, 8 gradien, 120 radius besar, dan 145 baris emoji UI di `StockExplorer.jsx` diganti token tema dan simbol Unicode (emoji koleksi pilihan pengguna tetap dipertahankan).
+- Judul halaman bergaya koran yang sticky + tab standar; tab cockpit memakai `.tabs/.tab` (`role="tab"`); kesembilan dialog memakai `.modal-*` (bottom sheet di HP); tombol banner mengikuti hierarki satu tombol utama.
+- Test penjaga kini mencakup `StockExplorer.jsx` dan menangkap radius sisi (`rounded-r-xl`).
+
 ## [2026-10-07] feat | Migrasi Halaman Analisis Saham (StockTable, RRG)
 - `StockTable`: gaya token, filter cepat berupa segmented tab, tombol urut di header, baris bisa dibuka dengan keyboard; grid kolom desktop mulai 768px, kartu di HP dengan strip level trading 3 kolom.
 - `SectorRrgPanel`: filter kuadran berupa tab, legenda dan kartu sektor yang rata.

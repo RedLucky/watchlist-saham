@@ -30,15 +30,15 @@ import {
 
 /** Tailwind classes for each score band returned by getScoreTone (collection cards). */
 const SCORE_TONE_CLASSES = {
-  excellent: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300',
-  good: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
-  fair: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
-  poor: 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300',
+  excellent: 'bg-up-soft text-up  ',
+  good: 'bg-sunken text-ink  ',
+  fair: 'bg-warn-soft text-warn  ',
+  poor: 'bg-down-soft text-down  ',
 };
 
 /** Shared look for the square icon buttons in the Koleksi toolbar. */
-const TOOLBAR_BUTTON_CLASS = 'w-9 h-9 flex items-center justify-center text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500';
-const TOOLBAR_BUTTON_HOVER = 'hover:bg-slate-100 dark:hover:bg-slate-700 hover:border-indigo-300 dark:hover:border-indigo-700';
+const TOOLBAR_BUTTON_CLASS = 'w-9 h-9 flex items-center justify-center text-sm rounded-sm border border-line  bg-sunken  transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent';
+const TOOLBAR_BUTTON_HOVER = 'hover:bg-sunken  hover:border-line-strong ';
 
 function getNominalChange(price, changePercent) {
   if (!price || changePercent == null || !Number.isFinite(price) || !Number.isFinite(changePercent)) return 0;
@@ -47,7 +47,7 @@ function getNominalChange(price, changePercent) {
 }
 
 function getAlgorithmicRecommendation({ stockDetail, scores }) {
-  if (!stockDetail) return { label: 'Analisis Data...', desc: 'Sedang memuat data emiten', bgClass: 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200' };
+  if (!stockDetail) return { label: 'Analisis Data...', desc: 'Sedang memuat data emiten', bgClass: 'bg-sunken  text-ink ' };
   
   const f = stockDetail.fundamentals || {};
   const t = stockDetail.technicals || {};
@@ -65,80 +65,80 @@ function getAlgorithmicRecommendation({ stockDetail, scores }) {
   // 1. Strong Accumulate
   if (composite >= 75 || (composite >= 70 && ((b.bfiScore || 0) >= 2 || b.smartMoneyStatus?.includes('Inflow')))) {
     return {
-      label: 'Strong Accumulate 🚀',
+      label: 'Strong Accumulate ↑',
       desc: 'Sinergi fundamental solid, akumulasi smart money, dan tren teknikal prima.',
-      bgClass: 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700/60'
+      bgClass: 'bg-up-soft text-up   border border-up '
     };
   }
 
   // 2. Value Buy / Undervalued Gems
   if ((proj.marginOfSafety || 0) >= 20 && (f.piotroskiFScore || 0) >= 5 && (f.der || 0) <= 2) {
     return {
-      label: 'Value Buy (Undervalued) 💎',
+      label: 'Value Buy (Undervalued) ◆',
       desc: `Diskon MoS +${proj.marginOfSafety}% di bawah Nilai Wajar (Fair Value Rp ${proj.fairValue?.toLocaleString('id-ID') || '-'}) dengan neraca aman.`,
-      bgClass: 'bg-cyan-100 text-cyan-900 dark:bg-cyan-950/80 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-700/60'
+      bgClass: 'bg-sunken text-ink   border border-line '
     };
   }
 
   // 3. Breakout / Momentum Speculative
   if (tScore >= 70 && (vol.isBreakoutVolume || (vol.volumeSpikeRatio || 0) >= 1.5)) {
     return {
-      label: 'Breakout / Momentum Buy ⚡',
+      label: 'Breakout / Momentum Buy »',
       desc: `Konfirmasi breakout dengan lonjakan volume ${vol.volumeSpikeRatio || 1.5}x di atas rata-rata.`,
-      bgClass: 'bg-indigo-100 text-indigo-900 dark:bg-indigo-950/80 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700/60'
+      bgClass: 'bg-sunken text-ink   border border-line '
     };
   }
 
   // 4. Dividend Play / Income
   if ((f.dividendYield || 0) >= 4.5 && (f.payoutRatio || 0) <= 85) {
     return {
-      label: 'Dividend Aristocrat 🏛️',
+      label: 'Dividend Aristocrat ▥',
       desc: `Yield dividen tinggi ${f.dividendYield.toFixed(1)}% dengan payout ratio sehat dan konsisten.`,
-      bgClass: 'bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60'
+      bgClass: 'bg-warn-soft text-warn   border border-warn '
     };
   }
 
   // 5. Buy on Weakness / Pullback
   if (composite >= 55 && (t.rsi14 || 50) <= 45 && !b.smartMoneyStatus?.includes('Outflow')) {
     return {
-      label: 'Buy on Weakness (Pullback) 🎯',
+      label: 'Buy on Weakness (Pullback) ◎',
       desc: 'Harga sedang terkoreksi sehat mendekati area support MA20/MA50 untuk entry bertahap.',
-      bgClass: 'bg-teal-100 text-teal-900 dark:bg-teal-950/80 dark:text-teal-300 border border-teal-300 dark:border-teal-700/60'
+      bgClass: 'bg-up-soft text-up   border border-up '
     };
   }
 
   // 6. Take Profit / Overbought
   if ((t.rsi14 || 50) >= 75 || (proj.marginOfSafety || 0) < -35) {
     return {
-      label: 'Take Profit / Overbought 💰',
+      label: 'Take Profit / Overbought ¤',
       desc: `RSI jenuh beli (${t.rsi14 ? t.rsi14.toFixed(1) : 75}) atau valuasi telah melampaui harga wajar.`,
-      bgClass: 'bg-orange-100 text-orange-900 dark:bg-orange-950/80 dark:text-orange-300 border border-orange-300 dark:border-orange-700/60'
+      bgClass: 'bg-warn-soft text-warn   border border-warn '
     };
   }
 
   // 7. Waspada Distribusi
   if (b.smartMoneyStatus?.includes('Outflow') || (b.bfiScore || 0) <= -2.5) {
     return {
-      label: 'Waspada Distribusi ⚠️',
+      label: 'Waspada Distribusi ▲',
       desc: 'Terdeteksi pelepasan posisi (net outflow) oleh institusi / smart money.',
-      bgClass: 'bg-rose-100 text-rose-900 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-300 dark:border-rose-700/60'
+      bgClass: 'bg-down-soft text-down   border border-down '
     };
   }
 
   // 8. Avoid / Sell
   if (composite < 40 || ((f.altmanZScore || 3) < 1.5 && (f.der || 0) > 3)) {
     return {
-      label: 'Avoid / High Risk 🔴',
+      label: 'Avoid / High Risk ●',
       desc: 'Fundamental dan teknikal berisiko tinggi dengan rasio utang/kesehatan keuangan rawan.',
-      bgClass: 'bg-red-100 text-red-900 dark:bg-red-950/80 dark:text-red-300 border border-red-300 dark:border-red-700/60'
+      bgClass: 'bg-down-soft text-down   border border-down '
     };
   }
 
   // 9. Default Watchlist / Neutral
   return {
-    label: 'Watchlist / Hold 🔍',
+    label: 'Watchlist / Hold ⌕',
     desc: 'Metrik dalam rentang netral. Pantau perkembangan volume dan sinyal teknikal lanjutan.',
-    bgClass: 'bg-slate-100 text-slate-800 dark:bg-slate-800/90 dark:text-slate-200 border border-slate-300 dark:border-slate-700'
+    bgClass: 'bg-sunken text-ink   border border-line '
   };
 }
 
@@ -239,7 +239,7 @@ function renderAiMarkdown(content) {
             href={linkMatch[2]}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-indigo-600 dark:text-indigo-400 hover:underline font-medium inline-flex items-center gap-0.5"
+            className="text-ink hover:underline font-medium inline-flex items-center gap-0.5"
           >
             <span>{linkMatch[1]}</span>
             <span className="text-[10px]">↗</span>
@@ -252,7 +252,7 @@ function renderAiMarkdown(content) {
         return (
           <code
             key={i}
-            className="px-1.5 py-0.5 rounded font-mono text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 border border-slate-200/60 dark:border-slate-700/60"
+            className="px-1.5 py-0.5 rounded font-mono text-[11px] font-semibold bg-sunken text-ink border border-line "
           >
             {part.slice(1, -1)}
           </code>
@@ -265,7 +265,7 @@ function renderAiMarkdown(content) {
         return (
           <span
             key={i}
-            className="font-mono px-1 py-0.5 rounded bg-indigo-50/70 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-[11px] font-medium"
+            className="font-mono px-1 py-0.5 rounded bg-sunken text-ink text-[11px] font-medium"
           >
             {mathMatch[1]}
           </span>
@@ -278,7 +278,7 @@ function renderAiMarkdown(content) {
         (part.startsWith('___') && part.endsWith('___') && part.length >= 6)
       ) {
         return (
-          <strong key={i} className="font-black italic text-slate-900 dark:text-white">
+          <strong key={i} className="font-black italic text-ink ">
             {part.slice(3, -3)}
           </strong>
         );
@@ -290,7 +290,7 @@ function renderAiMarkdown(content) {
         (part.startsWith('__') && part.endsWith('__') && part.length >= 4)
       ) {
         return (
-          <strong key={i} className="font-bold text-slate-900 dark:text-white">
+          <strong key={i} className="font-bold text-ink ">
             {part.slice(2, -2)}
           </strong>
         );
@@ -302,7 +302,7 @@ function renderAiMarkdown(content) {
         (part.startsWith('_') && part.endsWith('_') && part.length >= 2)
       ) {
         return (
-          <em key={i} className="italic text-slate-800 dark:text-slate-200">
+          <em key={i} className="italic text-ink ">
             {part.slice(1, -1)}
           </em>
         );
@@ -311,7 +311,7 @@ function renderAiMarkdown(content) {
       // 7. Strikethrough: ~~text~~
       if (part.startsWith('~~') && part.endsWith('~~') && part.length >= 4) {
         return (
-          <del key={i} className="line-through text-slate-400 dark:text-slate-500">
+          <del key={i} className="line-through text-muted ">
             {part.slice(2, -2)}
           </del>
         );
@@ -320,7 +320,7 @@ function renderAiMarkdown(content) {
       // 8. Defensive unclosed bold at end of text
       if (part.startsWith('**') && !part.endsWith('**') && part.length > 2) {
         return (
-          <strong key={i} className="font-bold text-slate-900 dark:text-white">
+          <strong key={i} className="font-bold text-ink ">
             {part.slice(2)}
           </strong>
         );
@@ -352,22 +352,22 @@ function renderAiMarkdown(content) {
     const dataLines = tableLines.slice(1).filter((l) => !/^\|?[\s\-:|]+\|?$/.test(l.trim()));
 
     elements.push(
-      <div key={`table-${elements.length}`} className="my-3 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+      <div key={`table-${elements.length}`} className="my-3 overflow-x-auto rounded-sm border border-line shadow-xs">
         <table className="w-full text-left text-xs border-collapse">
-          <thead className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold">
+          <thead className="bg-sunken text-ink font-bold">
             <tr>
               {headers.map((h, hIdx) => (
-                <th key={hIdx} className="px-3 py-2 border-b border-slate-200 dark:border-slate-700">
+                <th key={hIdx} className="px-3 py-2 border-b border-line ">
                   {renderInline(h)}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
+          <tbody className="divide-y divide-line text-ink ">
             {dataLines.map((row, rIdx) => {
               const cells = parseCells(row);
               return (
-                <tr key={rIdx} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                <tr key={rIdx} className="hover:bg-sunken transition-colors">
                   {cells.map((c, cIdx) => (
                     <td key={cIdx} className="px-3 py-2 font-medium">
                       {renderInline(c)}
@@ -389,7 +389,7 @@ function renderAiMarkdown(content) {
     elements.push(
       <pre
         key={`code-${elements.length}`}
-        className="my-3 p-3 rounded-xl bg-slate-900 text-emerald-400 font-mono text-xs overflow-x-auto border border-slate-800"
+        className="my-3 p-3 rounded-sm bg-sunken text-ink font-mono text-xs overflow-x-auto border border-line"
       >
         <code>{codeObj.lines.join('\n')}</code>
       </pre>
@@ -432,7 +432,7 @@ function renderAiMarkdown(content) {
 
     // 4. Horizontal Separators (---, ***, ___)
     if (/^(\-{3,}|\*{3,}|_{3,})$/.test(trimmed)) {
-      elements.push(<hr key={`hr-${i}`} className="my-3.5 border-t border-slate-200 dark:border-slate-800" />);
+      elements.push(<hr key={`hr-${i}`} className="my-3.5 border-t border-line " />);
       continue;
     }
 
@@ -445,13 +445,13 @@ function renderAiMarkdown(content) {
       elements.push(
         <div
           key={`skor-${i}`}
-          className="p-3 my-2.5 rounded-2xl bg-gradient-to-r from-violet-500/10 via-indigo-500/10 to-purple-500/10 border border-violet-200 dark:border-violet-800/70 flex items-center justify-between shadow-xs"
+          className="p-3 my-2.5 rounded-md border border-line flex items-center justify-between shadow-xs"
         >
           <div className="flex items-center gap-2">
-            <span className="text-base">⭐</span>
-            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Rating Konsensus AI</span>
+            <span className="text-base">★</span>
+            <span className="text-xs font-bold text-ink ">Rating Konsensus AI</span>
           </div>
-          <div className="text-xs sm:text-sm font-black text-violet-700 dark:text-violet-300 font-mono tracking-wide">
+          <div className="text-xs sm:text-sm font-black text-ink font-mono tracking-wide">
             {renderInline(unbolded)}
           </div>
         </div>
@@ -466,15 +466,15 @@ function renderAiMarkdown(content) {
       elements.push(
         <div
           key={`kesimpulan-${i}`}
-          className={`p-3.5 my-2.5 rounded-2xl border flex items-center gap-2.5 shadow-sm ${
-            isBuy
-              ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/80 text-emerald-900 dark:text-emerald-100'
-              : isSell
-              ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/80 text-rose-900 dark:text-rose-100'
-              : 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/80 text-amber-900 dark:text-amber-100'
-          }`}
+          className={`p-3.5 my-2.5 rounded-md border flex items-center gap-2.5 shadow-sm ${
+ isBuy
+ ? 'bg-up-soft border-up text-up '
+ : isSell
+ ? 'bg-down-soft border-down text-down '
+ : 'bg-warn-soft border-warn text-warn '
+ }`}
         >
-          <span className="text-base">{isBuy ? '🚀' : isSell ? '⚠️' : '⚖️'}</span>
+          <span className="text-base">{isBuy ? '↑' : isSell ? '▲' : '⇄'}</span>
           <div className="text-xs sm:text-sm font-extrabold tracking-wide">
             {renderInline(unbolded)}
           </div>
@@ -488,7 +488,7 @@ function renderAiMarkdown(content) {
       elements.push(
         <div
           key={`alasan-${i}`}
-          className="p-3 my-1.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50 text-xs leading-relaxed text-indigo-950 dark:text-indigo-200 font-medium"
+          className="p-3 my-1.5 rounded-md bg-sunken border border-line text-xs leading-relaxed text-ink font-medium"
         >
           {renderInline(unbolded)}
         </div>
@@ -499,9 +499,9 @@ function renderAiMarkdown(content) {
     // 6. Headers (# H1, ## H2, ### H3, #### H4, ##### H5)
     if (trimmed.startsWith('# ')) {
       elements.push(
-        <div key={`h1-${i}`} className="pt-2 pb-2 mb-2 border-b-2 border-indigo-500/30">
-          <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white flex items-center gap-2 tracking-tight">
-            <span>📑</span>
+        <div key={`h1-${i}`} className="pt-2 pb-2 mb-2 border-b-2 border-line">
+          <h3 className="text-sm sm:text-base font-black text-ink flex items-center gap-2 tracking-tight">
+            <span>▤</span>
             <span>{renderInline(trimmed.replace(/^#\s+/, ''))}</span>
           </h3>
         </div>
@@ -512,18 +512,18 @@ function renderAiMarkdown(content) {
     if (trimmed.startsWith('## ')) {
       const title = trimmed.replace(/^##\s+/, '');
       const lower = title.toLowerCase();
-      let icon = '📌';
-      if (lower.includes('unit bisnis') || lower.includes('strategis')) icon = '🏢';
-      else if (lower.includes('pasar') || lower.includes('siklus') || lower.includes('market-fit')) icon = '🔄';
-      else if (lower.includes('moat') || lower.includes('kompetitor') || lower.includes('keunggulan')) icon = '🛡️';
-      else if (lower.includes('valuasi') || lower.includes('fundamental') || lower.includes('harga wajar')) icon = '📊';
-      else if (lower.includes('tren') || lower.includes('teknikal') || lower.includes('momentum')) icon = '📈';
-      else if (lower.includes('berita') || lower.includes('sentimen') || lower.includes('katalis')) icon = '📰';
-      else if (lower.includes('prospek') || lower.includes('rekomendasi') || lower.includes('kesimpulan')) icon = '🎯';
+      let icon = '•';
+      if (lower.includes('unit bisnis') || lower.includes('strategis')) icon = '▥';
+      else if (lower.includes('pasar') || lower.includes('siklus') || lower.includes('market-fit')) icon = '↻';
+      else if (lower.includes('moat') || lower.includes('kompetitor') || lower.includes('keunggulan')) icon = '◇';
+      else if (lower.includes('valuasi') || lower.includes('fundamental') || lower.includes('harga wajar')) icon = '▤';
+      else if (lower.includes('tren') || lower.includes('teknikal') || lower.includes('momentum')) icon = '↗';
+      else if (lower.includes('berita') || lower.includes('sentimen') || lower.includes('katalis')) icon = '▤';
+      else if (lower.includes('prospek') || lower.includes('rekomendasi') || lower.includes('kesimpulan')) icon = '◎';
 
       elements.push(
-        <div key={`h2-${i}`} className="pt-4 pb-1.5 border-b border-slate-200 dark:border-slate-800">
-          <h4 className="text-xs sm:text-sm font-black text-indigo-600 dark:text-indigo-400 flex items-center gap-2 uppercase tracking-wide">
+        <div key={`h2-${i}`} className="pt-4 pb-1.5 border-b border-line ">
+          <h4 className="text-xs sm:text-sm font-black text-ink flex items-center gap-2 uppercase tracking-wide">
             <span className="text-sm">{icon}</span>
             <span>{renderInline(title)}</span>
           </h4>
@@ -534,7 +534,7 @@ function renderAiMarkdown(content) {
 
     if (trimmed.startsWith('### ')) {
       elements.push(
-        <h5 key={`h3-${i}`} className="text-xs font-bold text-slate-900 dark:text-slate-100 pt-2 pb-0.5">
+        <h5 key={`h3-${i}`} className="text-xs font-bold text-ink pt-2 pb-0.5">
           {renderInline(trimmed.replace(/^###\s+/, ''))}
         </h5>
       );
@@ -543,7 +543,7 @@ function renderAiMarkdown(content) {
 
     if (trimmed.startsWith('#### ') || trimmed.startsWith('##### ')) {
       elements.push(
-        <h6 key={`h4-${i}`} className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 pt-1.5 pb-0.5">
+        <h6 key={`h4-${i}`} className="text-[11px] font-bold uppercase tracking-wider text-muted pt-1.5 pb-0.5">
           {renderInline(trimmed.replace(/^#+\s+/, ''))}
         </h6>
       );
@@ -555,7 +555,7 @@ function renderAiMarkdown(content) {
       elements.push(
         <blockquote
           key={`bq-${i}`}
-          className="p-2.5 my-2 rounded-r-xl border-l-4 border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/30 text-xs italic text-slate-700 dark:text-slate-300"
+          className="p-2.5 my-2 rounded-r-sm border-l-4 border-accent bg-sunken text-xs italic text-ink "
         >
           {renderInline(trimmed.replace(/^>\s*/, ''))}
         </blockquote>
@@ -570,10 +570,10 @@ function renderAiMarkdown(content) {
       const isSub = indent >= 2;
       elements.push(
         <div key={`num-${i}`} className={`flex items-start gap-2 my-0.5 ${isSub ? 'pl-6' : 'pl-2'}`}>
-          <span className="text-indigo-600 dark:text-indigo-400 font-bold text-xs mt-0.5 min-w-[16px]">
+          <span className="text-ink font-bold text-xs mt-0.5 min-w-[16px]">
             {numMatch[1]}
           </span>
-          <span className="flex-1 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+          <span className="flex-1 text-xs text-ink leading-relaxed">
             {renderInline(numMatch[2])}
           </span>
         </div>
@@ -588,10 +588,10 @@ function renderAiMarkdown(content) {
       const isSub = indent >= 2;
       elements.push(
         <div key={`bullet-${i}`} className={`flex items-start gap-2 my-0.5 ${isSub ? 'pl-6' : 'pl-2'}`}>
-          <span className={`text-xs mt-0.5 font-bold ${isSub ? 'text-slate-400 dark:text-slate-500' : 'text-indigo-500 dark:text-indigo-400'}`}>
+          <span className={`text-xs mt-0.5 font-bold ${isSub ? 'text-muted ' : 'text-ink '}`}>
             {isSub ? '◦' : '•'}
           </span>
-          <span className="flex-1 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+          <span className="flex-1 text-xs text-ink leading-relaxed">
             {renderInline(bulletMatch[2])}
           </span>
         </div>
@@ -601,7 +601,7 @@ function renderAiMarkdown(content) {
 
     // 10. Standard Paragraph
     elements.push(
-      <p key={`p-${i}`} className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+      <p key={`p-${i}`} className="text-xs text-ink leading-relaxed">
         {renderInline(trimmed)}
       </p>
     );
@@ -1038,7 +1038,7 @@ export default function StockExplorer({ user }) {
           if (aiData.research) {
             setAiResearch(aiData.research);
             setAiStatus('COMPLETED');
-            showToast(`✨ Riset AI untuk ${selectedStock} telah selesai!`, 'success');
+            showToast(`✦ Riset AI untuk ${selectedStock} telah selesai!`, 'success');
           } else if (aiData.queue?.status) {
             setAiStatus(aiData.queue.status);
           }
@@ -1064,18 +1064,18 @@ export default function StockExplorer({ user }) {
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
         setAiStatus(data.queue?.status || 'PENDING');
-        showToast('✅ Berhasil ditambahkan ke antrian AI', 'success');
+        showToast('✓ Berhasil ditambahkan ke antrian AI', 'success');
       } else {
         if (data.research) {
           setAiResearch(data.research);
           setAiStatus('COMPLETED');
         }
         if (res.status === 401) {
-          showToast('🔒 Sesi telah kedaluwarsa atau Anda belum login. Silakan login terlebih dahulu.', 'error');
+          showToast('⊘ Sesi telah kedaluwarsa atau Anda belum login. Silakan login terlebih dahulu.', 'error');
         } else if (res.status === 429) {
-          showToast('ℹ️ ' + (data.error || 'Riset AI masih valid (< 30 hari)'), 'info');
+          showToast('ⓘ ' + (data.error || 'Riset AI masih valid (< 30 hari)'), 'info');
         } else {
-          showToast('❌ ' + (data.error || `Gagal antri AI (Status HTTP ${res.status})`), 'error');
+          showToast('× ' + (data.error || `Gagal antri AI (Status HTTP ${res.status})`), 'error');
         }
       }
     } catch (err) {
@@ -1084,8 +1084,8 @@ export default function StockExplorer({ user }) {
       const isNetworkError = msg.includes('failed to fetch') || msg.includes('network') || msg.includes('load failed');
       showToast(
         isNetworkError
-          ? '❌ Gagal menghubungi server web. Pastikan server lokal (port 3050) atau container Docker (port 3010) aktif.'
-          : `❌ Terjadi kesalahan: ${err.message}`,
+          ? '× Gagal menghubungi server web. Pastikan server lokal (port 3050) atau container Docker (port 3010) aktif.'
+          : `× Terjadi kesalahan: ${err.message}`,
         'error'
       );
     } finally {
@@ -1200,7 +1200,7 @@ export default function StockExplorer({ user }) {
       setNewCollectionEmoji('📁');
       await fetchCollections();
       setSelectedCollection(created);
-      showToast(`✅ Koleksi "${created.name}" berhasil dibuat!`, 'success');
+      showToast(`✓ Koleksi "${created.name}" berhasil dibuat!`, 'success');
     } catch (err) {
       showToast('Terjadi kesalahan saat membuat koleksi', 'error');
     }
@@ -1234,7 +1234,7 @@ export default function StockExplorer({ user }) {
       setEditingCollection(null);
       await fetchCollections();
       setSelectedCollection(updated);
-      showToast(`✅ Koleksi "${updated.name}" berhasil diperbarui!`, 'success');
+      showToast(`✓ Koleksi "${updated.name}" berhasil diperbarui!`, 'success');
     } catch (err) {
       showToast('Terjadi kesalahan saat memperbarui koleksi', 'error');
     }
@@ -1243,7 +1243,7 @@ export default function StockExplorer({ user }) {
   const handleDeleteCollection = (collectionId, name) => {
     setConfirmDialog({
       isOpen: true,
-      title: '🗑️ Hapus Koleksi?',
+      title: '⌫ Hapus Koleksi?',
       message: `Apakah Anda yakin ingin menghapus koleksi "${name}"? Semua saham dan catatan di dalamnya akan ikut terhapus.`,
       confirmLabel: 'Ya, Hapus Koleksi',
       cancelLabel: 'Batal',
@@ -1298,7 +1298,7 @@ export default function StockExplorer({ user }) {
         const targetCol = collections.find(c => c.id.toString() === targetCollectionId.toString());
         setDuplicateModal({
           isOpen: true,
-          title: '⚠️ Saham Sudah Terdaftar di Koleksi',
+          title: '▲ Saham Sudah Terdaftar di Koleksi',
           ticker: selectedStock,
           targetName: targetCol?.name || 'Koleksi Terpilih',
           message: `Saham ${selectedStock} sudah terdaftar di koleksi "${targetCol?.name || 'Koleksi'}". Apakah Anda ingin tetap memperbarui catatan dan target harga untuk saham ini?`,
@@ -1325,7 +1325,7 @@ export default function StockExplorer({ user }) {
       setSaveTargetBuy('');
       setSaveTargetSell('');
       setSaveTargetPercent('');
-      showToast(data.updated ? `✅ Catatan saham ${selectedStock} berhasil diperbarui!` : `✅ Saham ${selectedStock} berhasil disimpan ke koleksi!`, 'success');
+      showToast(data.updated ? `✓ Catatan saham ${selectedStock} berhasil diperbarui!` : `✓ Saham ${selectedStock} berhasil disimpan ke koleksi!`, 'success');
       await fetchCollections();
       if (selectedCollection?.id === parseInt(targetCollectionId, 10)) {
         fetchCollectionItems(selectedCollection.id, true);
@@ -1366,7 +1366,7 @@ export default function StockExplorer({ user }) {
         // Stock already exists in target collection -> Show custom confirmation modal!
         setDuplicateModal({
           isOpen: true,
-          title: '⚠️ Saham Sudah Ada di Koleksi Tujuan',
+          title: '▲ Saham Sudah Ada di Koleksi Tujuan',
           ticker: movingItem.ticker,
           targetName: data.targetCollectionName || 'Koleksi Tujuan',
           message: `Saham ${movingItem.ticker} sudah terdaftar di koleksi "${data.targetCollectionName}". Jika Anda memindahkan, data di koleksi asal akan dihapus dan catatan di koleksi tujuan akan disinkronkan. Apakah Anda ingin tetap melanjutkan?`,
@@ -1392,7 +1392,7 @@ export default function StockExplorer({ user }) {
 
       setShowMoveModal(false);
       setMovingItem(null);
-      showToast(data.message || `✅ Saham ${movingItem.ticker} berhasil dipindahkan!`, 'success');
+      showToast(data.message || `✓ Saham ${movingItem.ticker} berhasil dipindahkan!`, 'success');
       await fetchCollections();
       fetchCollectionItems(selectedCollection.id, true);
     } catch (err) {
@@ -1474,10 +1474,10 @@ export default function StockExplorer({ user }) {
       }
 
       if (data.message === 'Already saved today') {
-        showToast(`⚠️ Saham ${monitorModal.ticker} (${monitorStyle}) sudah dipantau hari ini`, 'warning');
+        showToast(`▲ Saham ${monitorModal.ticker} (${monitorStyle}) sudah dipantau hari ini`, 'warning');
       } else {
         const statusText = monitorAlreadyBought ? 'Posisi Aktif' : 'Antri Beli';
-        showToast(`🎯 Saham ${monitorModal.ticker} mulai dipantau (${statusText}) di Win Rate Dashboard pada harga Rp ${entryPrice.toLocaleString('id-ID')}!`, 'success');
+        showToast(`◎ Saham ${monitorModal.ticker} mulai dipantau (${statusText}) di Win Rate Dashboard pada harga Rp ${entryPrice.toLocaleString('id-ID')}!`, 'success');
       }
 
       setMonitorModal(null);
@@ -1539,7 +1539,7 @@ export default function StockExplorer({ user }) {
     if (e) e.stopPropagation();
     setConfirmDialog({
       isOpen: true,
-      title: '🗑️ Hapus Saham dari Koleksi?',
+      title: '⌫ Hapus Saham dari Koleksi?',
       message: `Hapus saham ${ticker} dari koleksi ini?`,
       confirmLabel: 'Ya, Hapus Saham',
       cancelLabel: 'Batal',
@@ -1687,50 +1687,36 @@ export default function StockExplorer({ user }) {
   }, [dynamicFairValue, stockDetail?.price, proj.marginOfSafety]);
 
   return (
-    <div className="space-y-6 pb-12 w-full">
-      {/* ── TOP HEADER & MODE NAVIGATION TABS (STICKY / FIXED) ─────────── */}
-      <div className="sticky top-0 z-30 bg-white/95 dark:bg-[#070b14]/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-5 shadow-md transition-all">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">🧭</span>
-              <h1 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                Stock Explorer
-              </h1>
-            </div>
-            <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 mt-1">
-              Riset komprehensif fundamental, valuasi, volume teknikal, bandarmologi & komparasi multi-saham
+    <div className="space-y-4 sm:space-y-6 pb-12 w-full">
+      {/* ── PAGE TITLE & PAGE TABS (sticky; below the 48px mobile header) ─── */}
+      <div className="sticky top-12 lg:top-0 z-30 -mx-3 sm:mx-0 px-3 sm:px-0 pt-2 pb-3 bg-canvas rule-double">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="page-title">Stock Explorer</h1>
+            <p className="section-subtitle mt-0.5 hidden sm:block">
+              Riset fundamental, valuasi, volume teknikal, bandarmologi & komparasi multi-saham
             </p>
           </div>
 
           {/* Page Tabs: Koleksi | Pencarian | Komparasi */}
-          <div
-            role="tablist"
-            aria-label="Halaman Stock Explorer"
-            className="flex items-center p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 w-full sm:w-auto overflow-x-auto"
-          >
+          <div role="tablist" aria-label="Halaman Stock Explorer" className="tabs w-full md:w-auto">
             {[
-              { id: 'collections', icon: '📂', label: 'Koleksi Saham', badge: collections.length > 0 ? collections.length : null },
-              { id: 'explorer', icon: '🔍', label: 'Pencarian Saham IDX', badge: null },
-              { id: 'compare', icon: '⚖️', label: 'Komparasi', badge: compareList.length > 0 ? `${compareList.length}/6` : null },
+              { id: 'collections', icon: '▤', label: 'Koleksi', badge: collections.length > 0 ? collections.length : null },
+              { id: 'explorer', icon: '⌕', label: 'Pencarian', badge: null },
+              { id: 'compare', icon: '⇄', label: 'Komparasi', badge: compareList.length > 0 ? `${compareList.length}/6` : null },
             ].map((tab) => (
               <button
                 key={tab.id}
+                type="button"
                 role="tab"
                 aria-selected={activeTab === tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 sm:flex-none whitespace-nowrap px-3 md:px-4 py-2 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
-                  activeTab === tab.id
-                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
+                className="tab"
               >
-                <span aria-hidden="true">{tab.icon}</span>
+                <span className="font-mono" aria-hidden="true">{tab.icon}</span>
                 <span>{tab.label}</span>
                 {tab.badge != null && (
-                  <span className="px-1.5 py-0.5 text-[10px] leading-none rounded-full bg-indigo-600 text-white font-mono">
-                    {tab.badge}
-                  </span>
+                  <span className="font-mono text-[10px] text-muted">{tab.badge}</span>
                 )}
               </button>
             ))}
@@ -1742,17 +1728,17 @@ export default function StockExplorer({ user }) {
       {activeTab === 'collections' && (
         <section className="w-full space-y-5 animate-in fade-in duration-300">
           {/* Page header + collection picker chips */}
-          <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm space-y-4">
+          <div className="bg-surface border border-line rounded-md p-4 md:p-6 shadow-sm space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="min-w-0">
-                <h2 className="text-base md:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
-                  <span aria-hidden="true">📂</span>
+                <h2 className="text-base md:text-lg font-black text-ink flex items-center gap-2">
+                  <span aria-hidden="true">▤</span>
                   <span>Koleksi Saham</span>
-                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-mono">
+                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-sunken text-ink font-mono">
                     {collections.length}
                   </span>
                 </h2>
-                <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 mt-1">
+                <p className="text-xs md:text-sm text-muted mt-1">
                   Kelompokkan saham favorit, pantau target beli & jual secara live, lalu klik kartu untuk analisis lengkap.
                 </p>
               </div>
@@ -1763,7 +1749,7 @@ export default function StockExplorer({ user }) {
                   setNewCollectionEmoji('📁');
                   setShowCreateModal(true);
                 }}
-                className="shrink-0 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-sm transition-colors flex items-center justify-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+                className="shrink-0 px-4 py-2.5 bg-accent hover:bg-accent text-on-accent text-xs font-bold rounded-sm shadow-sm transition-colors flex items-center justify-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 "
               >
                 <span aria-hidden="true">+</span> Buat Koleksi
               </button>
@@ -1772,14 +1758,14 @@ export default function StockExplorer({ user }) {
             {loadingCollections && collections.length === 0 ? (
               <div className="flex gap-2" aria-busy="true" aria-label="Memuat koleksi">
                 {[1, 2, 3].map((idx) => (
-                  <div key={idx} className="h-10 w-36 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
+                  <div key={idx} className="h-10 w-36 rounded-sm bg-sunken animate-pulse" />
                 ))}
               </div>
             ) : collections.length === 0 ? (
-              <div className="text-center py-10 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl px-4">
-                <span className="text-4xl block mb-2" aria-hidden="true">📁</span>
-                <p className="text-sm font-bold text-slate-800 dark:text-slate-200">Belum ada koleksi</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+              <div className="text-center py-10 border-2 border-dashed border-line rounded-md px-4">
+                <span className="text-4xl block mb-2" aria-hidden="true">▤</span>
+                <p className="text-sm font-bold text-ink ">Belum ada koleksi</p>
+                <p className="text-xs text-muted mt-1 max-w-sm mx-auto">
                   Klik &quot;+ Buat Koleksi&quot; untuk mengelompokkan saham favorit Anda, misalnya &quot;Dividen&quot; atau &quot;Swing Minggu Ini&quot;.
                 </p>
               </div>
@@ -1793,18 +1779,18 @@ export default function StockExplorer({ user }) {
                       role="tab"
                       aria-selected={isActive}
                       onClick={() => setSelectedCollection(col)}
-                      className={`shrink-0 flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
-                        isActive
-                          ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm'
-                          : 'bg-slate-50 dark:bg-slate-800/70 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-indigo-300 dark:hover:border-indigo-700'
-                      }`}
+                      className={`shrink-0 flex items-center gap-2 px-3.5 py-2 rounded-sm border text-xs font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+ isActive
+ ? 'bg-accent border-accent text-on-accent shadow-sm'
+ : 'bg-sunken border-line text-ink hover:border-line-strong '
+ }`}
                     >
                       <span aria-hidden="true">{col.emoji || '📁'}</span>
                       <span className="max-w-[160px] truncate">{col.name}</span>
                       <span
                         className={`px-1.5 py-0.5 text-[10px] leading-none rounded-full font-mono ${
-                          isActive ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-                        }`}
+ isActive ? 'border border-on-accent/40 text-on-accent' : 'bg-surface text-muted '
+ }`}
                       >
                         {col._count?.items ?? col.items?.length ?? 0}
                       </span>
@@ -1817,30 +1803,30 @@ export default function StockExplorer({ user }) {
 
           {/* Selected collection workspace */}
           {selectedCollection && (
-            <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm space-y-5">
+            <div className="bg-surface border border-line rounded-md p-4 md:p-6 shadow-sm space-y-5">
               {/* Collection toolbar */}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <h3 className="text-base md:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2 flex-wrap">
+                  <h3 className="text-base md:text-lg font-black text-ink flex items-center gap-2 flex-wrap">
                     <span aria-hidden="true">{selectedCollection.emoji || '📁'}</span>
                     <span className="truncate">{selectedCollection.name}</span>
                     {selectedCollection.isPublic && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 font-bold">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-sunken text-ink font-bold">
                         Publik
                       </span>
                     )}
                   </h3>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 line-clamp-2">
+                  <p className="text-xs text-muted mt-0.5 line-clamp-2">
                     {selectedCollection.description || `${collectionItems.length} saham tersimpan`}
                   </p>
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap shrink-0">
                   <span
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-900 text-[11px] font-bold text-emerald-700 dark:text-emerald-300"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm bg-up-soft border border-up text-[11px] font-bold text-up "
                     title={lastRefreshedAt ? `Terakhir diperbarui ${lastRefreshedAt.toLocaleTimeString('id-ID')}` : 'Harga diperbarui otomatis setiap 30 detik'}
                   >
-                    <span className={`w-1.5 h-1.5 rounded-full bg-emerald-500 ${isSilentRefreshing ? 'animate-ping' : 'animate-pulse'}`} aria-hidden="true"></span>
+                    <span className={`w-1.5 h-1.5 rounded-full bg-up ${isSilentRefreshing ? 'animate-ping' : 'animate-pulse'}`} aria-hidden="true"></span>
                     <span>{isSilentRefreshing ? 'Sinkronisasi...' : 'Live 30s'}</span>
                   </span>
                   <button
@@ -1849,7 +1835,7 @@ export default function StockExplorer({ user }) {
                     title="Refresh harga saham koleksi"
                     className={`${TOOLBAR_BUTTON_CLASS} ${TOOLBAR_BUTTON_HOVER}`}
                   >
-                    <span aria-hidden="true">🔄</span>
+                    <span aria-hidden="true">↻</span>
                   </button>
                   <button
                     onClick={() => {
@@ -1864,7 +1850,7 @@ export default function StockExplorer({ user }) {
                     title="Edit nama, emoji & status publik"
                     className={`${TOOLBAR_BUTTON_CLASS} ${TOOLBAR_BUTTON_HOVER}`}
                   >
-                    <span aria-hidden="true">✏️</span>
+                    <span aria-hidden="true">✎</span>
                   </button>
                   {selectedCollection.shareCode && (
                     <button
@@ -1873,16 +1859,16 @@ export default function StockExplorer({ user }) {
                       title="Salin link bagikan"
                       className={`${TOOLBAR_BUTTON_CLASS} ${TOOLBAR_BUTTON_HOVER}`}
                     >
-                      <span aria-hidden="true">{copiedShareCode === selectedCollection.shareCode ? '✅' : '🔗'}</span>
+                      <span aria-hidden="true">{copiedShareCode === selectedCollection.shareCode ? '✓' : '⧉'}</span>
                     </button>
                   )}
                   <button
                     onClick={() => handleDeleteCollection(selectedCollection.id, selectedCollection.name)}
                     aria-label="Hapus koleksi ini"
                     title="Hapus koleksi ini"
-                    className={`${TOOLBAR_BUTTON_CLASS} hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:border-rose-300 dark:hover:border-rose-800`}
+                    className={`${TOOLBAR_BUTTON_CLASS} hover:bg-down-soft hover:border-down `}
                   >
-                    <span aria-hidden="true">🗑️</span>
+                    <span aria-hidden="true">⌫</span>
                   </button>
                 </div>
               </div>
@@ -1890,52 +1876,52 @@ export default function StockExplorer({ user }) {
               {/* Summary stats */}
               {collectionItems.length > 0 && (
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                  <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 p-3">
-                    <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Jumlah Emiten</p>
-                    <p className="text-xl font-black text-slate-900 dark:text-white tabular-nums">{collectionSummary.count}</p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 tabular-nums">
-                      <span className="text-emerald-600 dark:text-emerald-400 font-bold">{collectionSummary.gainers} naik</span>
+                  <div className="rounded-sm border border-line bg-sunken p-3">
+                    <p className="text-[11px] font-semibold text-muted ">Jumlah Emiten</p>
+                    <p className="text-xl font-black text-ink tabular-nums">{collectionSummary.count}</p>
+                    <p className="text-[11px] text-muted tabular-nums">
+                      <span className="text-up font-bold">{collectionSummary.gainers} naik</span>
                       {' · '}
-                      <span className="text-rose-600 dark:text-rose-400 font-bold">{collectionSummary.losers} turun</span>
+                      <span className="text-down font-bold">{collectionSummary.losers} turun</span>
                     </p>
                   </div>
-                  <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 p-3">
-                    <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Rata-rata Perubahan Hari Ini</p>
+                  <div className="rounded-sm border border-line bg-sunken p-3">
+                    <p className="text-[11px] font-semibold text-muted ">Rata-rata Perubahan Hari Ini</p>
                     <p
                       className={`text-xl font-black tabular-nums ${
-                        collectionSummary.avgChange == null
-                          ? 'text-slate-400'
-                          : collectionSummary.avgChange >= 0
-                          ? 'text-emerald-600 dark:text-emerald-400'
-                          : 'text-rose-600 dark:text-rose-400'
-                      }`}
+ collectionSummary.avgChange == null
+ ? 'text-muted'
+ : collectionSummary.avgChange >= 0
+ ? 'text-up '
+ : 'text-down '
+ }`}
                     >
                       {collectionSummary.avgChange == null
                         ? '-'
                         : `${collectionSummary.avgChange >= 0 ? '+' : ''}${collectionSummary.avgChange.toFixed(2)}%`}
                     </p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Rata-rata sederhana semua emiten</p>
+                    <p className="text-[11px] text-muted ">Rata-rata sederhana semua emiten</p>
                   </div>
-                  <div className={`rounded-xl border p-3 ${collectionSummary.buyHits > 0 ? 'border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40' : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40'}`}>
-                    <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">🎯 Target Beli Tercapai</p>
-                    <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums">{collectionSummary.buyHits}</p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Harga ≤ target beli</p>
+                  <div className={`rounded-sm border p-3 ${collectionSummary.buyHits > 0 ? 'border-up bg-up-soft ' : 'border-line bg-sunken '}`}>
+                    <p className="text-[11px] font-semibold text-muted ">◎ Target Beli Tercapai</p>
+                    <p className="text-xl font-black text-up tabular-nums">{collectionSummary.buyHits}</p>
+                    <p className="text-[11px] text-muted ">Harga ≤ target beli</p>
                   </div>
-                  <div className={`rounded-xl border p-3 ${collectionSummary.sellHits > 0 ? 'border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40' : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40'}`}>
-                    <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">🚀 Target Jual Tercapai</p>
-                    <p className="text-xl font-black text-rose-600 dark:text-rose-400 tabular-nums">{collectionSummary.sellHits}</p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Harga ≥ target jual</p>
+                  <div className={`rounded-sm border p-3 ${collectionSummary.sellHits > 0 ? 'border-down bg-down-soft ' : 'border-line bg-sunken '}`}>
+                    <p className="text-[11px] font-semibold text-muted ">↑ Target Jual Tercapai</p>
+                    <p className="text-xl font-black text-down tabular-nums">{collectionSummary.sellHits}</p>
+                    <p className="text-[11px] text-muted ">Harga ≥ target jual</p>
                   </div>
                 </div>
               )}
 
               {/* Sort toolbar */}
               {collectionItems.length > 1 && (
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-t border-slate-100 dark:border-slate-800 pt-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-t border-line pt-4">
                   <div className="w-full sm:w-72">
                     <CollectionSortDropdown items={collectionItems} onApplySort={handleApplySort} />
                   </div>
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                  <span className="text-[11px] text-muted ">
                     <span aria-hidden="true">⠿</span> Tahan & geser kartu untuk mengatur urutan manual
                   </span>
                 </div>
@@ -1945,27 +1931,27 @@ export default function StockExplorer({ user }) {
               {loadingItems && collectionItems.length === 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4" aria-busy="true" aria-label="Memuat saham koleksi">
                   {[1, 2, 3, 4].map((idx) => (
-                    <div key={idx} className="animate-pulse rounded-2xl p-4 bg-slate-100 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 space-y-3 h-44">
+                    <div key={idx} className="animate-pulse rounded-md p-4 bg-sunken border border-line space-y-3 h-44">
                       <div className="flex justify-between items-center">
-                        <div className="h-5 w-20 bg-slate-200 dark:bg-slate-700 rounded"></div>
-                        <div className="h-5 w-14 bg-slate-200 dark:bg-slate-700 rounded"></div>
+                        <div className="h-5 w-20 bg-sunken rounded"></div>
+                        <div className="h-5 w-14 bg-sunken rounded"></div>
                       </div>
-                      <div className="h-3 w-32 bg-slate-200 dark:bg-slate-700 rounded"></div>
-                      <div className="h-7 w-28 bg-slate-200 dark:bg-slate-700 rounded"></div>
-                      <div className="h-2 w-full bg-slate-200 dark:bg-slate-700 rounded"></div>
+                      <div className="h-3 w-32 bg-sunken rounded"></div>
+                      <div className="h-7 w-28 bg-sunken rounded"></div>
+                      <div className="h-2 w-full bg-sunken rounded"></div>
                     </div>
                   ))}
                 </div>
               ) : collectionItems.length === 0 ? (
-                <div className="text-center py-10 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 px-4">
-                  <span className="text-3xl block mb-2" aria-hidden="true">🔍</span>
-                  <p className="text-sm font-bold text-slate-800 dark:text-slate-200">Koleksi ini masih kosong</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                <div className="text-center py-10 bg-sunken rounded-md border border-dashed border-line px-4">
+                  <span className="text-3xl block mb-2" aria-hidden="true">⌕</span>
+                  <p className="text-sm font-bold text-ink ">Koleksi ini masih kosong</p>
+                  <p className="text-xs text-muted mt-1">
                     Cari saham di tab Pencarian Saham IDX, lalu klik &quot;Simpan ke Koleksi&quot;.
                   </p>
                   <button
                     onClick={() => setActiveTab('explorer')}
-                    className="mt-4 px-4 py-2 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                    className="mt-4 px-4 py-2 text-xs font-bold rounded-sm bg-accent hover:bg-accent text-on-accent transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                   >
                     Buka Pencarian Saham
                   </button>
@@ -1991,12 +1977,12 @@ export default function StockExplorer({ user }) {
                     const isDragOver = dragOverIndex === index && draggedItemIndex !== index;
 
                     let cardBorder = isCurrentSelected
-                      ? 'border-indigo-400 dark:border-indigo-500 ring-2 ring-indigo-500/20'
-                      : 'border-slate-200 dark:border-slate-700/80 hover:border-indigo-300 dark:hover:border-indigo-700';
+                      ? 'border-accent  ring-2 ring-accent'
+                      : 'border-line  hover:border-line-strong ';
                     if (isTargetBuyHit) {
-                      cardBorder = 'border-emerald-400 dark:border-emerald-600 ring-1 ring-emerald-500/30';
+                      cardBorder = 'border-up  ring-1 ring-up';
                     } else if (isTargetSellHit) {
-                      cardBorder = 'border-rose-400 dark:border-rose-600 ring-1 ring-rose-500/30';
+                      cardBorder = 'border-down  ring-1 ring-down';
                     }
 
                     return (
@@ -2019,22 +2005,22 @@ export default function StockExplorer({ user }) {
                             handleOpenFromCollection(item.ticker);
                           }
                         }}
-                        className={`group relative flex flex-col rounded-2xl border bg-white dark:bg-slate-800/50 p-4 cursor-pointer select-none transition-[border-color,box-shadow,opacity] hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${cardBorder} ${
-                          isDragging ? 'opacity-40 border-dashed border-indigo-500' : ''
-                        } ${isDragOver ? 'ring-2 ring-indigo-500' : ''}`}
+                        className={`group relative flex flex-col rounded-md border bg-surface p-4 cursor-pointer select-none transition-[border-color,box-shadow,opacity] hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${cardBorder} ${
+ isDragging ? 'opacity-40 border-dashed border-accent' : ''
+ } ${isDragOver ? 'ring-2 ring-accent' : ''}`}
                       >
                         {/* Header: drag handle, ticker, score, daily change */}
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-center gap-1.5 min-w-0">
                             <span
-                              className="cursor-grab active:cursor-grabbing text-slate-400 hover:text-indigo-600 text-sm px-0.5"
+                              className="cursor-grab active:cursor-grabbing text-muted hover:text-ink text-sm px-0.5"
                               title="Tahan & geser untuk atur urutan"
                               aria-hidden="true"
                               onClick={(e) => e.stopPropagation()}
                             >
                               ⠿
                             </span>
-                            <span className="font-black text-base text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                            <span className="font-black text-base text-ink group-hover:text-ink transition-colors">
                               {item.ticker}
                             </span>
                             {scoreTone && (
@@ -2045,28 +2031,28 @@ export default function StockExplorer({ user }) {
                           </div>
                           <span
                             className={`shrink-0 text-[11px] font-bold px-1.5 py-0.5 rounded tabular-nums ${
-                              isItemUp
-                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300'
-                                : 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300'
-                            }`}
+ isItemUp
+ ? 'bg-up-soft text-up '
+ : 'bg-down-soft text-down '
+ }`}
                           >
                             {isItemUp ? '▲ +' : '▼ '}{changePct.toFixed(2)}%
                           </span>
                         </div>
 
                         {(s.name || s.sector) && (
-                          <p className="mt-0.5 pl-5 text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                          <p className="mt-0.5 pl-5 text-[11px] text-muted truncate">
                             {s.name}{s.name && s.sector ? ' · ' : ''}{s.sector}
                           </p>
                         )}
 
                         {/* Price */}
                         <div className="mt-3 flex items-baseline gap-2">
-                          <span className="text-xl font-black text-slate-900 dark:text-white tabular-nums">
+                          <span className="text-xl font-black text-ink tabular-nums">
                             Rp {price ? price.toLocaleString('id-ID') : '-'}
                           </span>
                           {price > 0 && s.changePercent != null && (
-                            <span className={`text-[11px] font-bold tabular-nums ${isItemUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                            <span className={`text-[11px] font-bold tabular-nums ${isItemUp ? 'text-up ' : 'text-down '}`}>
                               {isItemUp ? '+' : ''}{getNominalChange(price, changePct).toLocaleString('id-ID')}
                             </span>
                           )}
@@ -2074,14 +2060,14 @@ export default function StockExplorer({ user }) {
 
                         {/* Target hit banners */}
                         {isTargetBuyHit && (
-                          <div className="mt-3 px-2 py-1 bg-emerald-600 text-white text-[10px] font-black rounded-lg flex items-center justify-between">
-                            <span>🎯 TARGET BELI TERCAPAI</span>
+                          <div className="mt-3 px-2 py-1 bg-up text-on-accent text-[10px] font-black rounded-sm flex items-center justify-between">
+                            <span>◎ TARGET BELI TERCAPAI</span>
                             <span className="tabular-nums">≤ Rp {item.targetBuy.toLocaleString('id-ID')}</span>
                           </div>
                         )}
                         {isTargetSellHit && (
-                          <div className="mt-3 px-2 py-1 bg-rose-600 text-white text-[10px] font-black rounded-lg flex items-center justify-between">
-                            <span>🚀 TARGET JUAL TERCAPAI</span>
+                          <div className="mt-3 px-2 py-1 bg-down text-on-accent text-[10px] font-black rounded-sm flex items-center justify-between">
+                            <span>↑ TARGET JUAL TERCAPAI</span>
                             <span className="tabular-nums">≥ Rp {item.targetSell.toLocaleString('id-ID')}</span>
                           </div>
                         )}
@@ -2090,21 +2076,21 @@ export default function StockExplorer({ user }) {
                         {(item.targetBuy != null || item.targetSell != null) && !isTargetBuyHit && !isTargetSellHit && (
                           <div className="mt-3 space-y-1.5">
                             <div className="flex items-center justify-between text-[11px] tabular-nums">
-                              <span className="text-slate-500 dark:text-slate-400">
-                                Beli <span className="font-bold text-emerald-700 dark:text-emerald-400">{item.targetBuy ? `Rp ${item.targetBuy.toLocaleString('id-ID')}` : '-'}</span>
+                              <span className="text-muted ">
+                                Beli <span className="font-bold text-up ">{item.targetBuy ? `Rp ${item.targetBuy.toLocaleString('id-ID')}` : '-'}</span>
                               </span>
-                              <span className="text-slate-500 dark:text-slate-400">
-                                Jual <span className="font-bold text-rose-700 dark:text-rose-400">{item.targetSell ? `Rp ${item.targetSell.toLocaleString('id-ID')}` : '-'}</span>
+                              <span className="text-muted ">
+                                Jual <span className="font-bold text-down ">{item.targetSell ? `Rp ${item.targetSell.toLocaleString('id-ID')}` : '-'}</span>
                               </span>
                             </div>
                             {targetProgress != null && (
                               <div
-                                className="relative h-1.5 rounded-full bg-gradient-to-r from-emerald-200 via-slate-200 to-rose-200 dark:from-emerald-900 dark:via-slate-700 dark:to-rose-900"
+                                className="relative h-1.5 rounded-full "
                                 role="img"
                                 aria-label={`Posisi harga ${Math.round(targetProgress)}% di antara target beli dan target jual`}
                               >
                                 <span
-                                  className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-indigo-600 ring-2 ring-white dark:ring-slate-900"
+                                  className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-accent ring-2 ring-line "
                                   style={{ left: `${targetProgress}%` }}
                                 />
                               </div>
@@ -2114,27 +2100,27 @@ export default function StockExplorer({ user }) {
 
                         {/* Notes */}
                         {item.notes && (
-                          <p className="mt-3 text-[11px] text-slate-600 dark:text-slate-300 line-clamp-2 bg-slate-50 dark:bg-slate-900/60 px-2 py-1 rounded-lg">
-                            <span aria-hidden="true">📝 </span>{item.notes}
+                          <p className="mt-3 text-[11px] text-muted line-clamp-2 bg-sunken px-2 py-1 rounded-sm">
+                            <span aria-hidden="true">✎ </span>{item.notes}
                           </p>
                         )}
 
                         {/* Actions */}
                         <div className="mt-auto pt-3">
-                          <div className="flex items-center justify-between gap-1 border-t border-slate-100 dark:border-slate-700/60 pt-2">
+                          <div className="flex items-center justify-between gap-1 border-t border-line pt-2">
                             {[
-                              { key: 'monitor', icon: '🎯', label: `Pantau ${item.ticker} di Win Rate`, hover: 'hover:bg-emerald-50 dark:hover:bg-emerald-950/40', onClick: (e) => handleOpenMonitorModal(s, item.ticker, e) },
-                              { key: 'compare', icon: '⚖️', label: `Tambah ${item.ticker} ke Komparasi`, hover: 'hover:bg-indigo-50 dark:hover:bg-indigo-950/40', onClick: (e) => { e.stopPropagation(); handleAddToCompare(item.ticker); } },
-                              { key: 'move', icon: '📦', label: `Pindahkan ${item.ticker} ke koleksi lain`, hover: 'hover:bg-blue-50 dark:hover:bg-blue-950/40', onClick: (e) => handleOpenMoveModal(item, e) },
-                              { key: 'edit', icon: '✏️', label: `Edit catatan & target ${item.ticker}`, hover: 'hover:bg-amber-50 dark:hover:bg-amber-950/40', onClick: (e) => handleOpenEditItemModal(item, e) },
-                              { key: 'remove', icon: '✕', label: `Hapus ${item.ticker} dari koleksi`, hover: 'hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600', onClick: (e) => handleRemoveStockFromCollection(selectedCollection.id, item.ticker, e) },
+                              { key: 'monitor', icon: '◎', label: `Pantau ${item.ticker} di Win Rate`, hover: 'hover:bg-up-soft ', onClick: (e) => handleOpenMonitorModal(s, item.ticker, e) },
+                              { key: 'compare', icon: '⇄', label: `Tambah ${item.ticker} ke Komparasi`, hover: 'hover:bg-sunken ', onClick: (e) => { e.stopPropagation(); handleAddToCompare(item.ticker); } },
+                              { key: 'move', icon: '⇢', label: `Pindahkan ${item.ticker} ke koleksi lain`, hover: 'hover:bg-sunken ', onClick: (e) => handleOpenMoveModal(item, e) },
+                              { key: 'edit', icon: '✎', label: `Edit catatan & target ${item.ticker}`, hover: 'hover:bg-warn-soft ', onClick: (e) => handleOpenEditItemModal(item, e) },
+                              { key: 'remove', icon: '✕', label: `Hapus ${item.ticker} dari koleksi`, hover: 'hover:bg-down-soft  hover:text-down', onClick: (e) => handleRemoveStockFromCollection(selectedCollection.id, item.ticker, e) },
                             ].map((action) => (
                               <button
                                 key={action.key}
                                 onClick={action.onClick}
                                 aria-label={action.label}
                                 title={action.label}
-                                className={`flex-1 h-8 flex items-center justify-center text-xs text-slate-500 dark:text-slate-400 rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${action.hover}`}
+                                className={`flex-1 h-8 flex items-center justify-center text-xs text-muted rounded-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${action.hover}`}
                               >
                                 <span aria-hidden="true">{action.icon}</span>
                               </button>
@@ -2155,15 +2141,13 @@ export default function StockExplorer({ user }) {
       {activeTab === 'explorer' && (
           <main className="w-full min-w-0 space-y-6 animate-in fade-in duration-300">
             {/* SEARCH BAR */}
-            <div className="relative bg-white dark:bg-slate-900/90 backdrop-blur border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm">
-              {/* Thin accent line on top of the card */}
-              <div className="absolute inset-x-0 top-0 h-1 rounded-t-2xl bg-gradient-to-r from-indigo-500 via-sky-500 to-emerald-500" aria-hidden="true" />
+            <div className="relative bg-surface border border-line rounded-md p-4 md:p-6 shadow-sm">
 
               {/* Back to the collection the stock was opened from */}
               {backToCollection && (
                 <button
                   onClick={() => setActiveTab('collections')}
-                  className="mb-4 px-3 py-1.5 text-xs font-bold rounded-xl border transition-colors inline-flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                  className="mb-4 px-3 py-1.5 text-xs font-bold rounded-sm border transition-colors inline-flex items-center gap-1.5 bg-sunken hover:bg-sunken text-ink border-line focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                   title={`Kembali ke koleksi ${backToCollection.name}`}
                 >
                   <span aria-hidden="true">←</span>
@@ -2176,14 +2160,14 @@ export default function StockExplorer({ user }) {
 
               <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-11 h-11 shrink-0 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/80 dark:border-indigo-800/60 flex items-center justify-center text-xl" aria-hidden="true">
-                    🔍
+                  <div className="w-11 h-11 shrink-0 rounded-sm bg-sunken border border-line flex items-center justify-center text-xl" aria-hidden="true">
+                    ⌕
                   </div>
                   <div className="min-w-0">
-                    <h2 className="font-black text-base md:text-lg text-slate-900 dark:text-white">
+                    <h2 className="font-black text-base md:text-lg text-ink ">
                       Pencarian Saham IDX
                     </h2>
-                    <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400">
+                    <p className="text-xs md:text-sm text-muted ">
                       Cari kode ticker atau nama perusahaan, misal BBCA, BBRI, ASII, ADRO, TLKM
                     </p>
                   </div>
@@ -2193,8 +2177,8 @@ export default function StockExplorer({ user }) {
                 <div className="relative w-full lg:w-[28rem]">
                   <label htmlFor="idx-stock-search" className="sr-only">Cari saham IDX</label>
                   <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400" aria-hidden="true">
-                      🔍
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted" aria-hidden="true">
+                      ⌕
                     </span>
                     <input
                       id="idx-stock-search"
@@ -2210,13 +2194,13 @@ export default function StockExplorer({ user }) {
                         }
                       }}
                       placeholder="Ketik kode saham atau nama emiten..."
-                      className="w-full pl-11 pr-11 py-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-base font-semibold text-slate-900 dark:text-white placeholder:font-normal placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow"
+                      className="w-full pl-11 pr-11 py-3 bg-sunken border border-line rounded-sm text-base font-semibold text-ink placeholder:font-normal placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-shadow"
                     />
                     {searchQuery && (
                       <button
                         onClick={() => { setSearchQuery(''); setSuggestions([]); searchInputRef.current?.focus(); }}
                         aria-label="Hapus pencarian"
-                        className="absolute inset-y-0 right-0 w-11 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-r-xl"
+                        className="absolute inset-y-0 right-0 w-11 flex items-center justify-center text-muted hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-r-sm"
                       >
                         <span aria-hidden="true">✕</span>
                       </button>
@@ -2227,9 +2211,9 @@ export default function StockExplorer({ user }) {
                   {suggestions.length > 0 && (
                     <div
                       ref={searchDropdownRef}
-                      className="absolute z-50 left-0 right-0 mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl overflow-hidden"
+                      className="absolute z-50 left-0 right-0 mt-2 bg-surface border border-line rounded-sm shadow-2xl overflow-hidden"
                     >
-                      <p className="px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-700/60">
+                      <p className="px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-muted bg-sunken border-b border-line ">
                         {suggestions.length} hasil teratas
                       </p>
                       <div className="max-h-80 overflow-y-auto">
@@ -2240,23 +2224,23 @@ export default function StockExplorer({ user }) {
                             <button
                               key={s.ticker}
                               onClick={() => handlePickSuggestion(s.ticker)}
-                              className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-indigo-50 dark:hover:bg-slate-700/60 focus:outline-none focus-visible:bg-indigo-50 dark:focus-visible:bg-slate-700/60 border-b border-slate-100 dark:border-slate-700/50 last:border-0 transition-colors"
+                              className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-sunken focus:outline-none focus-visible:bg-sunken border-b border-line last:border-0 transition-colors"
                             >
-                              <span className="w-14 shrink-0 text-center py-1 rounded-lg bg-slate-100 dark:bg-slate-900 text-xs font-black text-slate-900 dark:text-white">
+                              <span className="w-14 shrink-0 text-center py-1 rounded-sm bg-sunken text-xs font-black text-ink ">
                                 {s.ticker}
                               </span>
                               <span className="flex-1 min-w-0">
-                                <span className="block text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">{s.name}</span>
+                                <span className="block text-xs font-semibold text-ink truncate">{s.name}</span>
                                 {s.sector && (
-                                  <span className="block text-[10px] text-slate-500 dark:text-slate-400 truncate">{s.sector}</span>
+                                  <span className="block text-[10px] text-muted truncate">{s.sector}</span>
                                 )}
                               </span>
                               <span className="text-right shrink-0 tabular-nums">
-                                <span className="block text-xs font-black text-slate-900 dark:text-slate-100">
+                                <span className="block text-xs font-black text-ink ">
                                   Rp {s.price?.toLocaleString('id-ID') || '-'}
                                 </span>
                                 {s.changePercent != null && (
-                                  <span className={`block text-[10px] font-bold ${isSuggUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                  <span className={`block text-[10px] font-bold ${isSuggUp ? 'text-up ' : 'text-down '}`}>
                                     {isSuggUp ? '+' : ''}{suggChange.toLocaleString('id-ID')} ({isSuggUp ? '+' : ''}{Number(s.changePercent).toFixed(2)}%)
                                   </span>
                                 )}
@@ -2274,19 +2258,19 @@ export default function StockExplorer({ user }) {
           {/* ── 3. STOCK DETAIL CONTAINER ─────────────────────────────────── */}
           <div ref={detailSectionRef}>
             {loadingDetail ? (
-              <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-12 text-center shadow-sm">
-                <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-indigo-500 border-t-transparent mb-4"></div>
-                <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">
-                  Mengambil data lengkap untuk <span className="text-indigo-600 dark:text-indigo-400 font-bold">{selectedStock}</span>...
+              <div className="bg-surface border border-line rounded-md p-12 text-center shadow-sm">
+                <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-accent border-t-transparent mb-4"></div>
+                <p className="text-sm font-semibold text-muted ">
+                  Mengambil data lengkap untuk <span className="text-ink font-bold">{selectedStock}</span>...
                 </p>
-                <p className="text-xs text-slate-400 mt-1">Fundamental, valuasi, volume teknikal, bandarmologi & proyeksi</p>
+                <p className="text-xs text-muted mt-1">Fundamental, valuasi, volume teknikal, bandarmologi & proyeksi</p>
               </div>
             ) : detailError ? (
-              <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-2xl p-6 text-center">
-                <p className="text-red-700 dark:text-red-300 font-semibold">{detailError}</p>
+              <div className="bg-down-soft border border-down rounded-md p-6 text-center">
+                <p className="text-down font-semibold">{detailError}</p>
                 <button
                   onClick={() => handleSelectStock(selectedStock)}
-                  className="mt-3 px-4 py-1.5 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700"
+                  className="mt-3 px-4 py-1.5 bg-down text-on-accent text-xs font-bold rounded-sm hover:bg-down"
                 >
                   Coba Lagi
                 </button>
@@ -2294,26 +2278,26 @@ export default function StockExplorer({ user }) {
             ) : stockDetail ? (
               <div className="space-y-6">
                 {/* Stock Main Banner */}
-                <div className="bg-white dark:bg-gradient-to-r dark:from-slate-900 dark:via-indigo-950 dark:to-slate-900 rounded-2xl p-5 md:p-6 shadow-sm dark:shadow-xl border border-slate-200 dark:border-indigo-500/20">
+                <div className="bg-surface rounded-md p-5 md:p-6 shadow-sm border border-line ">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2.5 flex-wrap">
-                        <span className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+                        <span className="text-2xl md:text-3xl font-black tracking-tight text-ink ">
                           {stockDetail.ticker}
                         </span>
-                        <span className="px-2.5 py-0.5 text-xs font-bold rounded-full bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30">
+                        <span className="px-2.5 py-0.5 text-xs font-bold rounded-full bg-sunken text-ink border border-line ">
                           {stockDetail.sector || 'IDX'}
                         </span>
                         {stockDetail.subSector && (
-                          <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                          <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-sunken text-ink border border-line ">
                             {stockDetail.subSector}
                           </span>
                         )}
                       </div>
-                      <h2 className="text-sm md:text-base text-slate-700 dark:text-slate-300 font-semibold">
+                      <h2 className="text-sm md:text-base text-ink font-semibold">
                         {stockDetail.name}
                       </h2>
-                      <div className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-2 pt-1 font-medium">
+                      <div className="text-xs text-muted flex items-center gap-2 pt-1 font-medium">
                         <span>Market Cap: {f.marketCap ? `Rp ${(f.marketCap / 1e12).toFixed(2)} T` : '-'}</span>
                         <span>•</span>
                         <span>Saham Beredar: {f.sharesOutstanding ? `${(f.sharesOutstanding / 1e9).toFixed(2)} M lembar` : '-'}</span>
@@ -2323,7 +2307,7 @@ export default function StockExplorer({ user }) {
                     {/* Price & Action Buttons */}
                     <div className="flex items-center gap-4 justify-between md:justify-end flex-wrap">
                       <div className="text-right">
-                        <div className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white">
+                        <div className="text-2xl md:text-3xl font-black text-ink ">
                           Rp {stockDetail.price?.toLocaleString('id-ID')}
                         </div>
                         <div className="flex items-center justify-end gap-1.5 mt-1">
@@ -2332,10 +2316,10 @@ export default function StockExplorer({ user }) {
                             return (
                               <span
                                 className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-bold ${
-                                  isUp 
-                                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30' 
-                                    : 'bg-rose-50 text-rose-800 border border-rose-300 dark:bg-rose-500/20 dark:text-rose-300 dark:border-rose-500/30'
-                                }`}
+ isUp 
+ ? 'bg-up-soft text-up border border-up ' 
+ : 'bg-down-soft text-down border border-down '
+ }`}
                               >
                                 <span>{isUp ? '▲' : '▼'}</span>
                                 <span>{isUp ? '+' : ''}{nominal.toLocaleString('id-ID')}</span>
@@ -2346,37 +2330,35 @@ export default function StockExplorer({ user }) {
                         </div>
                       </div>
 
-                      <div className="flex flex-col sm:flex-row gap-2">
+                      <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
                         <button
                           onClick={() => handleOpenMonitorModal(stockDetail)}
-                          className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 whitespace-nowrap"
+                          className="btn-secondary whitespace-nowrap"
                           title="Pantau pergerakan saham ini dan catat ke Win Rate Dashboard"
                         >
-                          <span>🎯</span> Pantau Win Rate
+                          <span>◎</span> Pantau Win Rate
                         </button>
                         <button
                           onClick={() => handleAddToCompare(stockDetail.ticker)}
-                          className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm transition-all flex items-center justify-center gap-1.5 whitespace-nowrap"
+                          className="btn-secondary whitespace-nowrap"
                         >
-                          <span>⚖️</span> Bandingkan
+                          <span>⇄</span> Bandingkan
                         </button>
 
                         {aiStatus === 'COMPLETED' || aiResearch ? (
                           <button
                             onClick={() => setShowAiModal(true)}
-                            className="px-3.5 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 whitespace-nowrap"
+                            className="btn-secondary whitespace-nowrap"
                           >
-                            <span>✨</span> Lihat Riset AI
+                            <span aria-hidden="true">✦</span> Lihat Riset AI
                           </button>
                         ) : (
                           <button
                             onClick={() => handleAnalyzeAi(false)}
                             disabled={isAiLoading || aiStatus === 'PENDING' || aiStatus === 'PROCESSING'}
-                            className={`px-3.5 py-2 text-xs font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
-                              aiStatus ? 'bg-slate-300 text-slate-600 cursor-not-allowed dark:bg-slate-700 dark:text-slate-400' : 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white'
-                            }`}
+                            className="btn-secondary whitespace-nowrap"
                           >
-                            <span>🤖</span> {isAiLoading ? 'Loading...' : aiStatus === 'PENDING' ? 'Antri AI...' : aiStatus === 'PROCESSING' ? 'AI Menganalisis...' : 'Analyze with AI'}
+                            <span aria-hidden="true">◈</span> {isAiLoading ? 'Loading...' : aiStatus === 'PENDING' ? 'Antri AI...' : aiStatus === 'PROCESSING' ? 'AI Menganalisis...' : 'Analyze with AI'}
                           </button>
                         )}
 
@@ -2389,16 +2371,16 @@ export default function StockExplorer({ user }) {
                               setShowSaveModal(true);
                             }
                           }}
-                          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 whitespace-nowrap"
+                          className="btn-primary whitespace-nowrap"
                         >
-                          <span>💾</span> Simpan ke Koleksi
+                          <span aria-hidden="true">⇩</span> Simpan ke Koleksi
                         </button>
                         <button
                           onClick={() => handleSelectStock(stockDetail.ticker, false)}
-                          className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-white/10 dark:hover:bg-white/20 dark:text-slate-200 text-xs font-bold rounded-xl transition-all border border-slate-200 dark:border-white/10 text-center flex items-center justify-center gap-1"
+                          className="btn-ghost justify-center"
                           title="Refresh data & sinkronisasi"
                         >
-                          🔄 Refresh
+                          <span className="font-mono" aria-hidden="true">↻</span> Refresh
                         </button>
                       </div>
                     </div>
@@ -2408,46 +2390,46 @@ export default function StockExplorer({ user }) {
                 {/* ── 8-CARD ANALYSIS GRID (4 COLUMNS × 2 ROWS) ────────────────── */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {/* CARD 1: VALUASI */}
-                  <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm hover:border-indigo-400/50 transition-all flex flex-col justify-between">
+                  <div className="bg-surface border border-line rounded-md p-4 shadow-sm hover:border-accent transition-all flex flex-col justify-between">
                     <div>
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-lg">📊</span>
-                          <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                          <span className="text-lg">▤</span>
+                          <h3 className="font-bold text-xs uppercase tracking-wider text-ink ">
                             Valuasi Harga
                           </h3>
                         </div>
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          (dynamicMoS || 0) > 15 
-                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300' 
-                            : (dynamicMoS || 0) < -15 
-                            ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300' 
-                            : 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300'
-                        }`}>
-                          {(dynamicMoS || 0) > 15 ? 'Undervalued ✅' : (dynamicMoS || 0) < -15 ? 'Overvalued 🔴' : 'Wajar ⚠️'}
+ (dynamicMoS || 0) > 15 
+ ? 'bg-up-soft text-up ' 
+ : (dynamicMoS || 0) < -15 
+ ? 'bg-down-soft text-down ' 
+ : 'bg-warn-soft text-warn '
+ }`}>
+                          {(dynamicMoS || 0) > 15 ? 'Undervalued ✓' : (dynamicMoS || 0) < -15 ? 'Overvalued ●' : 'Wajar ▲'}
                         </span>
                       </div>
 
                       <div className="space-y-2 text-xs">
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">EPS (Laba / Lembar):</span>
-                          <span className="font-bold text-emerald-600 dark:text-emerald-400">{f.eps != null ? `Rp ${Number(f.eps).toLocaleString('id-ID')}` : '-'}</span>
+                          <span className="text-muted ">EPS (Laba / Lembar):</span>
+                          <span className="font-bold text-up ">{f.eps != null ? `Rp ${Number(f.eps).toLocaleString('id-ID')}` : '-'}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">PER (TTM) / Fwd PE:</span>
-                          <span className="font-bold text-slate-900 dark:text-slate-100">
+                          <span className="text-muted ">PER (TTM) / Fwd PE:</span>
+                          <span className="font-bold text-ink ">
                             {f.per != null ? `${Number(f.per).toFixed(1)}x` : '-'} {f.forwardPE != null ? ` / ${Number(f.forwardPE).toFixed(1)}x` : ''}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">PBV / Book Value:</span>
-                          <span className="font-bold text-slate-900 dark:text-slate-100">
+                          <span className="text-muted ">PBV / Book Value:</span>
+                          <span className="font-bold text-ink ">
                             {f.pbv != null ? `${Number(f.pbv).toFixed(2)}x` : '-'} {f.bookValue != null ? ` (Rp ${Math.round(f.bookValue).toLocaleString('id-ID')})` : ''}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">PEG Ratio:</span>
-                          <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                          <span className="text-muted ">PEG Ratio:</span>
+                          <span className="font-bold text-ink ">
                             {f.pegRatio != null 
                               ? Number(f.pegRatio).toFixed(2)
                               : (f.per && proj.cagrPercent && proj.cagrPercent > 0 
@@ -2455,23 +2437,23 @@ export default function StockExplorer({ user }) {
                                   : (proj.cagrPercent != null && proj.cagrPercent <= 0 ? 'N/A (CAGR ≤ 0)' : '-'))}
                           </span>
                         </div>
-                        <div className="flex justify-between pt-1 border-t border-slate-200 dark:border-slate-800">
-                          <span className="text-slate-600 dark:text-slate-400">Graham Number:</span>
-                          <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                        <div className="flex justify-between pt-1 border-t border-line ">
+                          <span className="text-muted ">Graham Number:</span>
+                          <span className="font-bold text-ink ">
                             {proj.grahamNumber ? `Rp ${proj.grahamNumber.toLocaleString('id-ID')}` : '-'}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">Fair Value (Graham):</span>
-                          <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                          <span className="text-muted ">Fair Value (Graham):</span>
+                          <span className="font-bold text-up ">
                             {dynamicFairValue ? `Rp ${dynamicFairValue.toLocaleString('id-ID')}` : '-'}
                           </span>
                         </div>
 
                         {/* Interactive Dynamic SUN 10-Yr Yield Input */}
-                        <div className="flex items-center justify-between pt-1.5 border-t border-dashed border-slate-200 dark:border-slate-800">
-                          <span className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1" title="Imbal hasil obligasi negara acuan formula Graham (dapat diubah dinamis)">
-                            <span>🏛️</span> SUN 10-Yr Yield:
+                        <div className="flex items-center justify-between pt-1.5 border-t border-dashed border-line ">
+                          <span className="text-[11px] text-muted flex items-center gap-1" title="Imbal hasil obligasi negara acuan formula Graham (dapat diubah dinamis)">
+                            <span>▥</span> SUN 10-Yr Yield:
                           </span>
                           <div className="flex items-center gap-1">
                             <input
@@ -2481,114 +2463,114 @@ export default function StockExplorer({ user }) {
                               max="12.0"
                               value={customBondYield}
                               onChange={(e) => setCustomBondYield(parseFloat(e.target.value) || 6.5)}
-                              className="w-14 px-1.5 py-0.5 text-right text-xs font-bold bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-indigo-600 dark:text-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                              className="w-14 px-1.5 py-0.5 text-right text-xs font-bold bg-sunken border border-line rounded text-ink focus:outline-none focus:ring-1 focus:ring-accent"
                             />
-                            <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold">%</span>
+                            <span className="text-xs text-muted font-semibold">%</span>
                           </div>
                         </div>
                       </div>
                     </div>
-                    <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400 flex items-center justify-between">
+                    <div className="mt-3 pt-2 border-t border-line text-[11px] text-muted flex items-center justify-between">
                       <span>Margin of Safety:</span>
                       <span className={`font-bold ${
-                        (dynamicMoS || 0) > 15 
-                          ? 'text-emerald-600 dark:text-emerald-400' 
-                          : (dynamicMoS || 0) < -15 
-                          ? 'text-rose-600 dark:text-rose-400' 
-                          : 'text-slate-900 dark:text-slate-100'
-                      }`}>
+ (dynamicMoS || 0) > 15 
+ ? 'text-up ' 
+ : (dynamicMoS || 0) < -15 
+ ? 'text-down ' 
+ : 'text-ink '
+ }`}>
                         {dynamicMoS != null ? `${dynamicMoS}%` : '-'}
                       </span>
                     </div>
                   </div>
 
                   {/* CARD 2: GROWTH & PROYEKSI */}
-                  <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm hover:border-indigo-400/50 transition-all flex flex-col justify-between">
+                  <div className="bg-surface border border-line rounded-md p-4 shadow-sm hover:border-accent transition-all flex flex-col justify-between">
                     <div>
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-lg">📈</span>
-                          <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                          <span className="text-lg">↗</span>
+                          <h3 className="font-bold text-xs uppercase tracking-wider text-ink ">
                             Growth & Proyeksi
                           </h3>
                         </div>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sunken text-ink ">
                           12 Bulan
                         </span>
                       </div>
 
                       <div className="space-y-2 text-xs">
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">Revenue Growth:</span>
-                          <span className={`font-bold ${f.revenueGrowth > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-slate-100'}`}>
+                          <span className="text-muted ">Revenue Growth:</span>
+                          <span className={`font-bold ${f.revenueGrowth > 0 ? 'text-up ' : 'text-ink '}`}>
                             {f.revenueGrowth != null ? `${Number(f.revenueGrowth).toFixed(1)}%` : '-'}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">Profit CAGR (3th):</span>
-                          <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                          <span className="text-muted ">Profit CAGR (3th):</span>
+                          <span className="font-bold text-up ">
                             {proj.cagrPercent != null ? `+${proj.cagrPercent}%` : '-'}
                           </span>
                         </div>
-                        <div className="flex justify-between pt-1 border-t border-slate-200 dark:border-slate-800">
-                          <span className="text-slate-600 dark:text-slate-400">Target Harga 12M:</span>
-                          <span className="font-bold text-indigo-600 dark:text-indigo-400 text-sm">
+                        <div className="flex justify-between pt-1 border-t border-line ">
+                          <span className="text-muted ">Target Harga 12M:</span>
+                          <span className="font-bold text-ink text-sm">
                             {proj.projectedPrice12m ? `Rp ${proj.projectedPrice12m.toLocaleString('id-ID')}` : '-'}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">Potensi Upside:</span>
-                          <span className={`font-bold ${proj.projectedUpside >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                          <span className="text-muted ">Potensi Upside:</span>
+                          <span className={`font-bold ${proj.projectedUpside >= 0 ? 'text-up ' : 'text-down '}`}>
                             {proj.projectedUpside != null ? `${proj.projectedUpside >= 0 ? '+' : ''}${proj.projectedUpside}%` : '-'}
                           </span>
                         </div>
                       </div>
                     </div>
-                    <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400 flex items-center justify-between">
+                    <div className="mt-3 pt-2 border-t border-line text-[11px] text-muted flex items-center justify-between">
                       <span>Tren Laba:</span>
-                      <span className="font-bold text-slate-900 dark:text-slate-100">
-                        {Array.isArray(f.netProfit) && f.netProfit.length >= 2 && f.netProfit[f.netProfit.length - 1] > f.netProfit[0] ? 'Bertumbuh 🚀' : 'Fluktuatif ⚖️'}
+                      <span className="font-bold text-ink ">
+                        {Array.isArray(f.netProfit) && f.netProfit.length >= 2 && f.netProfit[f.netProfit.length - 1] > f.netProfit[0] ? 'Bertumbuh ↑' : 'Fluktuatif ⇄'}
                       </span>
                     </div>
                   </div>
 
                   {/* CARD 3: DIVIDEN */}
-                  <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm hover:border-indigo-400/50 transition-all flex flex-col justify-between">
+                  <div className="bg-surface border border-line rounded-md p-4 shadow-sm hover:border-accent transition-all flex flex-col justify-between">
                     <div>
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-lg">🏛️</span>
-                          <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                          <span className="text-lg">▥</span>
+                          <h3 className="font-bold text-xs uppercase tracking-wider text-ink ">
                             Dividen
                           </h3>
                         </div>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-up-soft text-up ">
                           Yield {f.dividendYield != null ? `${Number(f.dividendYield).toFixed(1)}%` : '0%'}
                         </span>
                       </div>
 
                       <div className="space-y-2 text-xs">
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">Dividend Yield:</span>
-                          <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                          <span className="text-muted ">Dividend Yield:</span>
+                          <span className="font-bold text-up ">
                             {f.dividendYield != null ? `${Number(f.dividendYield).toFixed(2)}%` : '-'}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">Payout Ratio (DPR):</span>
-                          <span className="font-bold text-slate-900 dark:text-slate-100">
+                          <span className="text-muted ">Payout Ratio (DPR):</span>
+                          <span className="font-bold text-ink ">
                             {f.payoutRatio != null ? `${Number(f.payoutRatio).toFixed(1)}%` : '-'}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">Streak Dividen:</span>
-                          <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                          <span className="text-muted ">Streak Dividen:</span>
+                          <span className="font-bold text-ink ">
                             {f.dividendStreakYears ? `${f.dividendStreakYears} Tahun Beruntun` : 'Tidak rutin'}
                           </span>
                         </div>
-                        <div className="flex justify-between pt-1 border-t border-slate-200 dark:border-slate-800">
-                          <span className="text-slate-600 dark:text-slate-400">Dividen Terakhir:</span>
-                          <span className="font-bold text-slate-900 dark:text-slate-100 font-mono">
+                        <div className="flex justify-between pt-1 border-t border-line ">
+                          <span className="text-muted ">Dividen Terakhir:</span>
+                          <span className="font-bold text-ink font-mono">
                             {stockDetail.dividendSchedule?.dps > 0
                               ? `Rp ${Number(stockDetail.dividendSchedule.dps).toLocaleString('id-ID')} (${stockDetail.dividendSchedule.type?.includes('Interim') ? 'Interim' : 'Final'})`
                               : (stockDetail.historicalDividends?.[0]?.dps > 0
@@ -2598,100 +2580,100 @@ export default function StockExplorer({ user }) {
                         </div>
                       </div>
                     </div>
-                    <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400">
-                      Status: <span className="font-semibold text-slate-900 dark:text-slate-200">{f.dividendYield >= 5 ? 'High Dividend Aristocrat 💎' : f.dividendYield > 0 ? 'Membagikan Dividen ✅' : 'Tanpa Dividen'}</span>
+                    <div className="mt-3 pt-2 border-t border-line text-[11px] text-muted ">
+                      Status: <span className="font-semibold text-ink ">{f.dividendYield >= 5 ? 'High Dividend Aristocrat ◆' : f.dividendYield > 0 ? 'Membagikan Dividen ✓' : 'Tanpa Dividen'}</span>
                     </div>
                   </div>
 
                   {/* CARD 4: ORDER BOOK & SPREAD */}
-                  <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm hover:border-indigo-400/50 transition-all flex flex-col justify-between">
+                  <div className="bg-surface border border-line rounded-md p-4 shadow-sm hover:border-accent transition-all flex flex-col justify-between">
                     <div>
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-lg">📋</span>
-                          <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                          <span className="text-lg">▤</span>
+                          <h3 className="font-bold text-xs uppercase tracking-wider text-ink ">
                             Order Book & Spread
                           </h3>
                         </div>
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          rt.spreadPercent != null && rt.spreadPercent < 0.5 
-                            ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300' 
-                            : 'bg-amber-50 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300'
-                        }`}>
-                          {rt.spreadPercent != null && rt.spreadPercent < 0.5 ? 'Sangat Likuid ⚡' : 'Likuiditas Normal'}
+ rt.spreadPercent != null && rt.spreadPercent < 0.5 
+ ? 'bg-up-soft text-up ' 
+ : 'bg-warn-soft text-warn '
+ }`}>
+                          {rt.spreadPercent != null && rt.spreadPercent < 0.5 ? 'Sangat Likuid »' : 'Likuiditas Normal'}
                         </span>
                       </div>
 
                       <div className="space-y-2 text-xs">
-                        <div className="grid grid-cols-2 gap-2 bg-slate-50 dark:bg-slate-800/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
-                          <div className="text-center border-r border-slate-200 dark:border-slate-700 pr-1">
-                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold block">BEST BID</span>
-                            <span className="text-sm font-black text-slate-900 dark:text-white">
+                        <div className="grid grid-cols-2 gap-2 bg-sunken p-2.5 rounded-sm border border-line ">
+                          <div className="text-center border-r border-line pr-1">
+                            <span className="text-[10px] text-up font-bold block">BEST BID</span>
+                            <span className="text-sm font-black text-ink ">
                               {rt.bid ? `Rp ${rt.bid.toLocaleString('id-ID')}` : '-'}
                             </span>
-                            {rt.bidSize && <span className="text-[10px] text-slate-500 dark:text-slate-400 block">{rt.bidSize} lot</span>}
+                            {rt.bidSize && <span className="text-[10px] text-muted block">{rt.bidSize} lot</span>}
                           </div>
                           <div className="text-center pl-1">
-                            <span className="text-[10px] text-rose-600 dark:text-rose-400 font-bold block">BEST ASK</span>
-                            <span className="text-sm font-black text-slate-900 dark:text-white">
+                            <span className="text-[10px] text-down font-bold block">BEST ASK</span>
+                            <span className="text-sm font-black text-ink ">
                               {rt.ask ? `Rp ${rt.ask.toLocaleString('id-ID')}` : '-'}
                             </span>
-                            {rt.askSize && <span className="text-[10px] text-slate-500 dark:text-slate-400 block">{rt.askSize} lot</span>}
+                            {rt.askSize && <span className="text-[10px] text-muted block">{rt.askSize} lot</span>}
                           </div>
                         </div>
 
                         <div className="flex justify-between pt-1">
-                          <span className="text-slate-600 dark:text-slate-400">Spread:</span>
-                          <span className="font-bold text-slate-900 dark:text-slate-100">
+                          <span className="text-muted ">Spread:</span>
+                          <span className="font-bold text-ink ">
                             {rt.spread != null ? `Rp ${rt.spread} (${rt.spreadPercent}%)` : '-'}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">Turnover Hari Ini:</span>
-                          <span className="font-bold text-slate-900 dark:text-slate-100">
+                          <span className="text-muted ">Turnover Hari Ini:</span>
+                          <span className="font-bold text-ink ">
                             {vol.turnover ? `Rp ${(vol.turnover / 1e9).toFixed(2)} M` : '-'}
                           </span>
                         </div>
                       </div>
                     </div>
-                    <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400">
-                      Frekuensi: <span className="font-semibold text-slate-900 dark:text-slate-100">{vol.frequency ? `${vol.frequency.toLocaleString('id-ID')}x transaksi` : '-'}</span>
+                    <div className="mt-3 pt-2 border-t border-line text-[11px] text-muted ">
+                      Frekuensi: <span className="font-semibold text-ink ">{vol.frequency ? `${vol.frequency.toLocaleString('id-ID')}x transaksi` : '-'}</span>
                     </div>
                   </div>
 
                   {/* CARD 5: FUNDAMENTAL & KUALITAS */}
-                  <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm hover:border-indigo-400/50 transition-all flex flex-col justify-between">
+                  <div className="bg-surface border border-line rounded-md p-4 shadow-sm hover:border-accent transition-all flex flex-col justify-between">
                     <div>
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-lg">🔬</span>
-                          <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                          <span className="text-lg">◉</span>
+                          <h3 className="font-bold text-xs uppercase tracking-wider text-ink ">
                             Fundamental & Kualitas
                           </h3>
                         </div>
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          f.roe != null && f.roe >= 15 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
-                        }`}>
+ f.roe != null && f.roe >= 15 ? 'bg-up-soft text-up ' : 'bg-sunken text-ink '
+ }`}>
                           ROE {f.roe != null ? `${Number(f.roe).toFixed(1)}%` : '-'}
                         </span>
                       </div>
 
                       <div className="space-y-2 text-xs">
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">ROE / ROA:</span>
-                          <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                          <span className="text-muted ">ROE / ROA:</span>
+                          <span className="font-bold text-up ">
                             {f.roe != null ? `${Number(f.roe).toFixed(1)}%` : '-'} {f.roa != null ? ` / ${Number(f.roa).toFixed(1)}%` : ''}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">OPM / NPM:</span>
-                          <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                          <span className="text-muted ">OPM / NPM:</span>
+                          <span className="font-bold text-ink ">
                             {f.opm != null ? `${Number(f.opm).toFixed(1)}%` : '-'} {f.npm != null ? ` / ${Number(f.npm).toFixed(1)}%` : ''}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">Total Revenue:</span>
-                          <span className="font-bold text-slate-900 dark:text-slate-100">
+                          <span className="text-muted ">Total Revenue:</span>
+                          <span className="font-bold text-ink ">
                             {f.totalRevenue != null 
                               ? (Math.abs(Number(f.totalRevenue)) >= 1e12 
                                   ? `Rp ${(Number(f.totalRevenue) / 1e12).toFixed(2)} T` 
@@ -2700,62 +2682,62 @@ export default function StockExplorer({ user }) {
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">DER / Current Ratio:</span>
-                          <span className="font-bold text-slate-900 dark:text-slate-100">
+                          <span className="text-muted ">DER / Current Ratio:</span>
+                          <span className="font-bold text-ink ">
                             {f.der != null ? `${Number(f.der).toFixed(2)}x` : '-'} {f.currentRatio != null ? ` / ${Number(f.currentRatio).toFixed(2)}x` : ''}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">Free Cash Flow:</span>
-                          <span className="font-bold text-slate-900 dark:text-slate-100">
+                          <span className="text-muted ">Free Cash Flow:</span>
+                          <span className="font-bold text-ink ">
                             {f.freeCashflow != null ? `Rp ${(Number(f.freeCashflow) / 1e9).toFixed(1)} M` : '-'}
                           </span>
                         </div>
-                        <div className="flex justify-between pt-1 border-t border-slate-200 dark:border-slate-800">
-                          <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1 cursor-help" title="Estimasi heuristik multi-faktor adaptif berdasarkan kinerja profitabilitas, leverage & likuiditas BEI">
-                            Piotroski F-Score <span className="text-[10px] text-slate-400">ⓘ</span>:
+                        <div className="flex justify-between pt-1 border-t border-line ">
+                          <span className="text-muted flex items-center gap-1 cursor-help" title="Estimasi heuristik multi-faktor adaptif berdasarkan kinerja profitabilitas, leverage & likuiditas BEI">
+                            Piotroski F-Score <span className="text-[10px] text-muted">ⓘ</span>:
                           </span>
                           <span className={`font-bold ${
-                            f.piotroskiFScore != null && f.piotroskiFScore >= 7 ? 'text-emerald-600 dark:text-emerald-400' : f.piotroskiFScore != null && f.piotroskiFScore <= 3 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-slate-100'
-                          }`}>
+ f.piotroskiFScore != null && f.piotroskiFScore >= 7 ? 'text-up ' : f.piotroskiFScore != null && f.piotroskiFScore <= 3 ? 'text-down ' : 'text-ink '
+ }`}>
                             {f.piotroskiFScore != null ? `${f.piotroskiFScore}/9` : '-'}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1 cursor-help" title="Estimasi heuristik rasio kesehatan modal kerja & solvabilitas adaptif untuk emiten IDX">
-                            Altman Z-Score <span className="text-[10px] text-slate-400">ⓘ</span>:
+                          <span className="text-muted flex items-center gap-1 cursor-help" title="Estimasi heuristik rasio kesehatan modal kerja & solvabilitas adaptif untuk emiten IDX">
+                            Altman Z-Score <span className="text-[10px] text-muted">ⓘ</span>:
                           </span>
                           <span className={`font-bold ${
-                            f.altmanZScore != null && f.altmanZScore >= 2.99 ? 'text-emerald-600 dark:text-emerald-400' : f.altmanZScore != null && f.altmanZScore < 1.81 ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'
-                          }`}>
+ f.altmanZScore != null && f.altmanZScore >= 2.99 ? 'text-up ' : f.altmanZScore != null && f.altmanZScore < 1.81 ? 'text-down ' : 'text-warn '
+ }`}>
                             {f.altmanZScore != null ? `${f.altmanZScore} (${f.altmanZScore >= 2.99 ? 'Aman' : f.altmanZScore < 1.81 ? 'Distress' : 'Abu-abu'})` : '-'}
                           </span>
                         </div>
                       </div>
                     </div>
-                    <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400 flex items-center justify-between">
+                    <div className="mt-3 pt-2 border-t border-line text-[11px] text-muted flex items-center justify-between">
                       <span>Kesehatan Neraca:</span>
-                      <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                        {f.altmanZScore != null && f.altmanZScore >= 2.99 ? 'Sangat Sehat 🛡️' : f.altmanZScore != null && f.altmanZScore < 1.81 ? 'Rawan ⚠️' : 'Moderat ⚖️'}
+                      <span className="font-bold text-up ">
+                        {f.altmanZScore != null && f.altmanZScore >= 2.99 ? 'Sangat Sehat ◇' : f.altmanZScore != null && f.altmanZScore < 1.81 ? 'Rawan ▲' : 'Moderat ⇄'}
                       </span>
                     </div>
                   </div>
 
                   {/* CARD 6: TEKNIKAL & VOLUME */}
-                  <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm hover:border-indigo-400/50 transition-all flex flex-col justify-between">
+                  <div className="bg-surface border border-line rounded-md p-4 shadow-sm hover:border-accent transition-all flex flex-col justify-between">
                     <div>
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-lg">⚡</span>
-                          <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                          <span className="text-lg">»</span>
+                          <h3 className="font-bold text-xs uppercase tracking-wider text-ink ">
                             Teknikal & Market
                           </h3>
                         </div>
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          vol.volumeSpikeRatio != null && vol.volumeSpikeRatio >= 1.5 
-                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300' 
-                            : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
-                        }`}>
+ vol.volumeSpikeRatio != null && vol.volumeSpikeRatio >= 1.5 
+ ? 'bg-warn-soft text-warn ' 
+ : 'bg-sunken text-ink '
+ }`}>
                           {vol.volumeStatus || 'Normal'}
                         </span>
                       </div>
@@ -2772,17 +2754,17 @@ export default function StockExplorer({ user }) {
                           <div className="space-y-2 text-xs">
                             <div className="flex flex-col gap-1">
                               <div className="flex justify-between items-center">
-                                <span className="text-slate-600 dark:text-slate-400">52-Week Range:</span>
-                                <span className="font-bold text-slate-900 dark:text-slate-100">
+                                <span className="text-muted ">52-Week Range:</span>
+                                <span className="font-bold text-ink ">
                                   {(low52 != null && high52 != null) 
                                     ? `Rp ${Math.round(low52).toLocaleString('id-ID')} - ${Math.round(high52).toLocaleString('id-ID')}` 
                                     : '-'}
                                 </span>
                               </div>
                               {pct52 != null && (
-                                <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden flex items-center">
+                                <div className="w-full bg-sunken h-1.5 rounded-full overflow-hidden flex items-center">
                                   <div 
-                                    className="bg-indigo-500 h-full rounded-full transition-all" 
+                                    className="bg-accent h-full rounded-full transition-all" 
                                     style={{ width: `${pct52}%` }} 
                                     title={`Posisi harga: ${pct52.toFixed(0)}% dari 52W range`}
                                   />
@@ -2790,28 +2772,28 @@ export default function StockExplorer({ user }) {
                               )}
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-slate-600 dark:text-slate-400">Beta (Volatilitas):</span>
-                              <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                              <span className="text-muted ">Beta (Volatilitas):</span>
+                              <span className="font-bold text-ink ">
                                 {f.beta != null ? `${Number(f.beta).toFixed(2)}x IHSG` : '-'}
                               </span>
                             </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">RSI 14 (Momentum):</span>
+                          <span className="text-muted ">RSI 14 (Momentum):</span>
                           <span className={`font-bold ${
-                            t.rsi14 != null && t.rsi14 >= 70 ? 'text-rose-600 dark:text-rose-400' : t.rsi14 != null && t.rsi14 <= 30 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-slate-100'
-                          }`}>
+ t.rsi14 != null && t.rsi14 >= 70 ? 'text-down ' : t.rsi14 != null && t.rsi14 <= 30 ? 'text-up ' : 'text-ink '
+ }`}>
                             {t.rsi14 != null ? `${Number(t.rsi14).toFixed(1)} (${Number(t.rsi14) >= 70 ? 'Overbought' : Number(t.rsi14) <= 30 ? 'Oversold' : 'Netral'})` : '-'}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">Support / Resist:</span>
-                          <span className="font-bold text-slate-900 dark:text-slate-100">
+                          <span className="text-muted ">Support / Resist:</span>
+                          <span className="font-bold text-ink ">
                             {t.support != null ? `Rp ${Math.round(t.support).toLocaleString('id-ID')}` : '-'} / {t.resistance != null ? `Rp ${Math.round(t.resistance).toLocaleString('id-ID')}` : '-'}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">MA20 / MA50:</span>
-                          <span className="font-bold text-slate-900 dark:text-slate-100">
+                          <span className="text-muted ">MA20 / MA50:</span>
+                          <span className="font-bold text-ink ">
                             {t.ma20 != null ? `${Math.round(t.ma20).toLocaleString('id-ID')}` : '-'} / {t.ma50 != null ? `${Math.round(t.ma50).toLocaleString('id-ID')}` : '-'}
                           </span>
                         </div>
@@ -2819,78 +2801,78 @@ export default function StockExplorer({ user }) {
                     );
                   })()}
                 </div>
-                    <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400 flex items-center justify-between">
+                    <div className="mt-3 pt-2 border-t border-line text-[11px] text-muted flex items-center justify-between">
                       <span>Konfirmasi Volume:</span>
-                      <span className="font-bold text-slate-900 dark:text-slate-100">
-                        {vol.isBreakoutVolume ? 'Breakout Volume 🔥' : 'Volume Stabil'}
+                      <span className="font-bold text-ink ">
+                        {vol.isBreakoutVolume ? 'Breakout Volume ↑' : 'Volume Stabil'}
                       </span>
                     </div>
                   </div>
 
                   {/* CARD 7: BANDARMOLOGI & FLOW */}
-                  <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm hover:border-indigo-400/50 transition-all flex flex-col justify-between">
+                  <div className="bg-surface border border-line rounded-md p-4 shadow-sm hover:border-accent transition-all flex flex-col justify-between">
                     <div>
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-lg">👥</span>
-                          <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                          <span className="text-lg">◫</span>
+                          <h3 className="font-bold text-xs uppercase tracking-wider text-ink ">
                             Bandarmologi & KSEI
                           </h3>
                         </div>
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          (b.bfiScore || 0) >= 3 
-                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300' 
-                            : (b.bfiScore || 0) <= -3 
-                            ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300' 
-                            : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
-                        }`}>
+ (b.bfiScore || 0) >= 3 
+ ? 'bg-up-soft text-up ' 
+ : (b.bfiScore || 0) <= -3 
+ ? 'bg-down-soft text-down ' 
+ : 'bg-sunken text-ink '
+ }`}>
                           BFI {b.bfiScore != null ? Number(b.bfiScore).toFixed(1) : '0.0'}
                         </span>
                       </div>
 
                       <div className="space-y-2 text-xs">
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">Pengendali (PSP):</span>
+                          <span className="text-muted ">Pengendali (PSP):</span>
                           <div className="text-right">
-                            <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                            <span className="font-bold text-ink ">
                               {b.controllerPercent != null && b.controllerPercent > 0 ? `${Number(b.controllerPercent).toFixed(1)}%` : '-'}
                             </span>
                             {b.controllerName && (
-                              <span className="text-[10px] text-slate-500 block truncate max-w-[130px]" title={b.controllerName}>
+                              <span className="text-[10px] text-muted block truncate max-w-[130px]" title={b.controllerName}>
                                 {b.controllerName}
                               </span>
                             )}
                           </div>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">Direksi & Manajemen:</span>
-                          <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                          <span className="text-muted ">Direksi & Manajemen:</span>
+                          <span className="font-bold text-up ">
                             {b.managementTotalPercent != null ? `${Number(b.managementTotalPercent).toFixed(2)}%` : (b.directorsPercent != null ? `${Number(b.directorsPercent).toFixed(2)}%` : '0.00%')}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">Asing (Foreign):</span>
-                          <span className="font-bold text-slate-900 dark:text-slate-100">
+                          <span className="text-muted ">Asing (Foreign):</span>
+                          <span className="font-bold text-ink ">
                             {b.foreignPercent != null ? `${Number(b.foreignPercent).toFixed(1)}%` : '-'}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">Ritel (Domestic):</span>
-                          <span className="font-bold text-slate-900 dark:text-slate-100">
+                          <span className="text-muted ">Ritel (Domestic):</span>
+                          <span className="font-bold text-ink ">
                             {b.retailPercent != null ? `${Number(b.retailPercent).toFixed(1)}%` : '-'}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">Smart Money Flow:</span>
-                          <span className={`font-bold ${b.smartMoneyStatus?.includes('Inflow') ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                          <span className="text-muted ">Smart Money Flow:</span>
+                          <span className={`font-bold ${b.smartMoneyStatus?.includes('Inflow') ? 'text-up ' : 'text-down '}`}>
                             {b.smartMoneyStatus || 'Netral'}
                           </span>
                         </div>
                       </div>
                     </div>
-                    <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400 flex items-center justify-between">
+                    <div className="mt-3 pt-2 border-t border-line text-[11px] text-muted flex items-center justify-between">
                       <span>Wyckoff Phase:</span>
-                      <span className="font-semibold text-slate-900 dark:text-slate-100">{b.wyckoffPhaseName || `Fase ${b.wyckoffPhase || 1}`}</span>
+                      <span className="font-semibold text-ink ">{b.wyckoffPhaseName || `Fase ${b.wyckoffPhase || 1}`}</span>
                     </div>
                   </div>
 
@@ -2904,18 +2886,18 @@ export default function StockExplorer({ user }) {
                     // Bobot Terkalibrasi: Fundamental 45% (Utama), Teknikal 35% (Kedua), Tren 10%, Bandarmologi (KSEI bulanan) 10%
                     const compScore = Math.round((fScore * 0.45) + (tScore * 0.35) + (trendScore * 0.10) + (smartMoneyScore * 0.10));
                     return (
-                      <div className="bg-gradient-to-br from-indigo-50/90 via-purple-50/50 to-slate-50 dark:from-slate-900 dark:via-indigo-950/40 dark:to-slate-900 border border-indigo-200 dark:border-indigo-500/30 rounded-2xl p-4 shadow-sm flex flex-col justify-between">
+                      <div className="border border-line rounded-md p-4 shadow-sm flex flex-col justify-between">
                         <div>
                           <div className="flex items-center justify-between mb-2.5">
                             <div className="flex items-center gap-2">
-                              <span className="text-lg">🎯</span>
+                              <span className="text-lg">◎</span>
                               <div>
-                                <h3 className="font-bold text-xs uppercase tracking-wider text-indigo-950 dark:text-indigo-300">
+                                <h3 className="font-bold text-xs uppercase tracking-wider text-ink ">
                                   Skor Komposit
                                 </h3>
                               </div>
                             </div>
-                            <span className="text-sm font-black text-indigo-600 dark:text-indigo-400">
+                            <span className="text-sm font-black text-ink ">
                               {compScore}/100
                             </span>
                           </div>
@@ -2923,66 +2905,66 @@ export default function StockExplorer({ user }) {
                           <div className="space-y-1.5 text-xs">
                             <div>
                               <div className="flex justify-between text-[11px] mb-0.5">
-                                <span className="text-slate-600 dark:text-slate-400">Fundamental <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">(45% — Utama)</span>:</span>
-                                <span className="font-bold text-slate-900 dark:text-slate-100">{fScore}</span>
+                                <span className="text-muted ">Fundamental <span className="text-[10px] text-up font-bold">(45% — Utama)</span>:</span>
+                                <span className="font-bold text-ink ">{fScore}</span>
                               </div>
-                              <div className="w-full bg-slate-200 dark:bg-slate-700/60 rounded-full h-1.5 overflow-hidden">
-                                <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${fScore}%` }}></div>
-                              </div>
-                            </div>
-
-                            <div>
-                              <div className="flex justify-between text-[11px] mb-0.5">
-                                <span className="text-slate-600 dark:text-slate-400">Teknikal & Volume <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold">(35% — Kedua)</span>:</span>
-                                <span className="font-bold text-slate-900 dark:text-slate-100">{tScore}</span>
-                              </div>
-                              <div className="w-full bg-slate-200 dark:bg-slate-700/60 rounded-full h-1.5 overflow-hidden">
-                                <div className="bg-indigo-500 h-1.5 rounded-full" style={{ width: `${tScore}%` }}></div>
+                              <div className="w-full bg-sunken rounded-full h-1.5 overflow-hidden">
+                                <div className="bg-up h-1.5 rounded-full" style={{ width: `${fScore}%` }}></div>
                               </div>
                             </div>
 
                             <div>
                               <div className="flex justify-between text-[11px] mb-0.5">
-                                <span className="text-slate-600 dark:text-slate-400">Momentum / Tren <span className="text-[10px] text-slate-400">(10%)</span>:</span>
-                                <span className="font-bold text-slate-900 dark:text-slate-100">{trendScore}</span>
+                                <span className="text-muted ">Teknikal & Volume <span className="text-[10px] text-ink font-bold">(35% — Kedua)</span>:</span>
+                                <span className="font-bold text-ink ">{tScore}</span>
                               </div>
-                              <div className="w-full bg-slate-200 dark:bg-slate-700/60 rounded-full h-1.5 overflow-hidden">
-                                <div className="bg-amber-500 h-1.5 rounded-full" style={{ width: `${trendScore}%` }}></div>
-                              </div>
-                            </div>
-
-                            <div>
-                              <div className="flex justify-between text-[11px] mb-0.5">
-                                <span className="text-slate-600 dark:text-slate-400">Bandarmologi / KSEI <span className="text-[10px] text-purple-600 dark:text-purple-400 font-semibold">(10%)</span>:</span>
-                                <span className="font-bold text-slate-900 dark:text-slate-100">{smartMoneyScore}</span>
-                              </div>
-                              <div className="w-full bg-slate-200 dark:bg-slate-700/60 rounded-full h-1.5 overflow-hidden">
-                                <div className="bg-purple-500 h-1.5 rounded-full" style={{ width: `${smartMoneyScore}%` }}></div>
+                              <div className="w-full bg-sunken rounded-full h-1.5 overflow-hidden">
+                                <div className="bg-accent h-1.5 rounded-full" style={{ width: `${tScore}%` }}></div>
                               </div>
                             </div>
 
                             <div>
                               <div className="flex justify-between text-[11px] mb-0.5">
-                                <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1">
-                                  <span>🤖</span> Analisis AI {aiResearch ? (
+                                <span className="text-muted ">Momentum / Tren <span className="text-[10px] text-muted">(10%)</span>:</span>
+                                <span className="font-bold text-ink ">{trendScore}</span>
+                              </div>
+                              <div className="w-full bg-sunken rounded-full h-1.5 overflow-hidden">
+                                <div className="bg-warn h-1.5 rounded-full" style={{ width: `${trendScore}%` }}></div>
+                              </div>
+                            </div>
+
+                            <div>
+                              <div className="flex justify-between text-[11px] mb-0.5">
+                                <span className="text-muted ">Bandarmologi / KSEI <span className="text-[10px] text-ink font-semibold">(10%)</span>:</span>
+                                <span className="font-bold text-ink ">{smartMoneyScore}</span>
+                              </div>
+                              <div className="w-full bg-sunken rounded-full h-1.5 overflow-hidden">
+                                <div className="bg-accent h-1.5 rounded-full" style={{ width: `${smartMoneyScore}%` }}></div>
+                              </div>
+                            </div>
+
+                            <div>
+                              <div className="flex justify-between text-[11px] mb-0.5">
+                                <span className="text-muted flex items-center gap-1">
+                                  <span>◈</span> Analisis AI {aiResearch ? (
                                     <span className={`text-[10px] font-bold ${
-                                      (aiResearch.buyHoldSell === 'BELI' || aiResearch.buyHoldSell === 'BUY') ? 'text-emerald-600 dark:text-emerald-400' :
-                                      (aiResearch.buyHoldSell === 'JUAL' || aiResearch.buyHoldSell === 'SELL') ? 'text-rose-600 dark:text-rose-400' :
-                                      'text-amber-600 dark:text-amber-400'
-                                    }`}>({aiResearch.buyHoldSell === 'BUY' ? 'BELI' : aiResearch.buyHoldSell})</span>
+ (aiResearch.buyHoldSell === 'BELI' || aiResearch.buyHoldSell === 'BUY') ? 'text-up ' :
+ (aiResearch.buyHoldSell === 'JUAL' || aiResearch.buyHoldSell === 'SELL') ? 'text-down ' :
+ 'text-warn '
+ }`}>({aiResearch.buyHoldSell === 'BUY' ? 'BELI' : aiResearch.buyHoldSell})</span>
                                   ) : (
-                                    <span className="text-[10px] text-slate-400">(On-Demand)</span>
+                                    <span className="text-[10px] text-muted">(On-Demand)</span>
                                   )}:
                                 </span>
-                                <span className={`font-bold ${aiResearch ? 'text-violet-600 dark:text-violet-400' : 'text-slate-400 dark:text-slate-500 text-[10px] italic'}`}>
+                                <span className={`font-bold ${aiResearch ? 'text-ink ' : 'text-muted text-[10px] italic'}`}>
                                   {aiResearch
                                     ? `${aiResearch.score ?? ((aiResearch.buyHoldSell === 'BELI' || aiResearch.buyHoldSell === 'BUY') ? 85 : (aiResearch.buyHoldSell === 'JUAL' || aiResearch.buyHoldSell === 'SELL') ? 30 : 50)}/100`
                                     : 'Belum Dianalisis'}
                                 </span>
                               </div>
-                              <div className="w-full bg-slate-200 dark:bg-slate-700/60 rounded-full h-1.5 overflow-hidden">
+                              <div className="w-full bg-sunken rounded-full h-1.5 overflow-hidden">
                                 <div
-                                  className={aiResearch ? "bg-gradient-to-r from-violet-500 to-indigo-500 h-1.5 rounded-full transition-all duration-500" : "bg-slate-300 dark:bg-slate-700 h-1.5 rounded-full"}
+                                  className={aiResearch ? "   h-1.5 rounded-full transition-all duration-500" : "bg-sunken  h-1.5 rounded-full"}
                                   style={{
                                     width: aiResearch
                                       ? `${aiResearch.score ?? ((aiResearch.buyHoldSell === 'BELI' || aiResearch.buyHoldSell === 'BUY') ? 85 : (aiResearch.buyHoldSell === 'JUAL' || aiResearch.buyHoldSell === 'SELL') ? 30 : 50)}%`
@@ -2994,30 +2976,30 @@ export default function StockExplorer({ user }) {
                           </div>
                         </div>
 
-                        <div className="mt-2.5 pt-2 border-t border-indigo-200/80 dark:border-slate-800 space-y-1">
+                        <div className="mt-2.5 pt-2 border-t border-line space-y-1">
                           <div className="flex items-center justify-between text-[11px]">
-                            <span className="text-slate-600 dark:text-slate-400 font-medium">Rekomendasi Algoritma:</span>
+                            <span className="text-muted font-medium">Rekomendasi Algoritma:</span>
                             <span className={`font-bold px-2 py-0.5 rounded-md text-[11px] ${rec.bgClass}`}>
                               {rec.label}
                             </span>
                           </div>
                           {aiResearch && (
                             <div className="flex items-center justify-between text-[11px] pt-0.5">
-                              <span className="text-slate-600 dark:text-slate-400 font-medium flex items-center gap-1">
-                                <span>🤖</span> Rekomendasi AI:
+                              <span className="text-muted font-medium flex items-center gap-1">
+                                <span>◈</span> Rekomendasi AI:
                               </span>
                               <span className={`font-black px-2 py-0.5 rounded-md text-[10px] ${
-                                (aiResearch.buyHoldSell === 'BELI' || aiResearch.buyHoldSell === 'BUY')
-                                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300'
-                                  : (aiResearch.buyHoldSell === 'JUAL' || aiResearch.buyHoldSell === 'SELL')
-                                  ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300'
-                                  : 'bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300'
-                              }`}>
+ (aiResearch.buyHoldSell === 'BELI' || aiResearch.buyHoldSell === 'BUY')
+ ? 'bg-up-soft text-up '
+ : (aiResearch.buyHoldSell === 'JUAL' || aiResearch.buyHoldSell === 'SELL')
+ ? 'bg-down-soft text-down '
+ : 'bg-warn-soft text-warn '
+ }`}>
                                 {aiResearch.buyHoldSell === 'BUY' ? 'BELI' : aiResearch.buyHoldSell}
                               </span>
                             </div>
                           )}
-                          <p className="text-[10px] text-slate-600 dark:text-slate-400 leading-tight">
+                          <p className="text-[10px] text-muted leading-tight">
                             {rec.desc}
                           </p>
                         </div>
@@ -3027,15 +3009,15 @@ export default function StockExplorer({ user }) {
                 </div>
 
                 {/* ── INTERACTIVE CANDLESTICK CHART ────────────────────────────── */}
-                <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm">
+                <div className="bg-surface border border-line rounded-md p-4 md:p-6 shadow-sm">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
-                      <span className="text-xl">📊</span>
+                      <span className="text-xl">▤</span>
                       <div>
-                        <h3 className="font-bold text-slate-900 dark:text-white text-sm md:text-base">
+                        <h3 className="font-bold text-ink text-sm md:text-base">
                           Grafik Interaktif — {stockDetail.ticker}
                         </h3>
-                        <p className="text-xs text-slate-600 dark:text-slate-400">TradingView Pro: Candlestick, Volume, MA (20/50/200), Bollinger Bands, RSI (14), MACD & Deteksi Pola</p>
+                        <p className="text-xs text-muted ">TradingView Pro: Candlestick, Volume, MA (20/50/200), Bollinger Bands, RSI (14), MACD & Deteksi Pola</p>
                       </div>
                     </div>
                   </div>
@@ -3046,31 +3028,31 @@ export default function StockExplorer({ user }) {
 
                 {/* ── ANALYTICAL COCKPIT CATEGORY TABS (OPSI 4) ──────────────── */}
                 <div className="space-y-4 pt-2">
-                  <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-1.5 shadow-sm">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
+                  <div>
+                    <div className="tabs grid grid-cols-2 md:grid-cols-4" role="tablist" aria-label="Kategori analisis">
                       {[
                         {
                           id: 'valuation',
                           label: 'Valuasi & Finansial',
-                          icon: '📐',
+                          icon: '∠',
                           count: (stockDetail.valuationBands ? 1 : 0) + (stockDetail.wacc ? 1 : 0) + 2 + (stockDetail.peers?.length > 0 ? 1 : 0),
                         },
                         {
                           id: 'seasonality',
                           label: 'Musim & Dividen',
-                          icon: '📅',
+                          icon: '▦',
                           count: (stockDetail.monthlySeasonality ? 1 : 0) + (stockDetail.dividendTrap ? 1 : 0) + ((stockDetail.corporateActions?.length > 0 || stockDetail.dividendSchedule || stockDetail.historicalDividends?.length > 0) ? 1 : 0),
                         },
                         {
                           id: 'smartmoney',
                           label: 'Smart Money & Aliran',
-                          icon: '🌊',
+                          icon: '≈',
                           count: ((stockDetail.kseiShift || stockDetail.brokerConcentration || stockDetail.volumeProfile) ? 1 : 0) + (stockDetail.executionLimits ? 1 : 0),
                         },
                         {
                           id: 'ai',
                           label: 'Riset AI & Sentimen',
-                          icon: '🤖',
+                          icon: '◈',
                           count: ((stockDetail.aiResearch || stockDetail.newsSentiment) ? 1 : 0),
                         },
                       ].map((tab) => {
@@ -3079,24 +3061,14 @@ export default function StockExplorer({ user }) {
                           <button
                             key={tab.id}
                             onClick={() => setCockpitTab(tab.id)}
-                            className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 md:gap-2 ${
-                              isActive
-                                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20'
-                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
-                            }`}
+                            role="tab"
+                            aria-selected={isActive}
+                            className="tab min-w-0"
                           >
-                            <span>{tab.icon}</span>
+                            <span className="font-mono" aria-hidden="true">{tab.icon}</span>
                             <span className="truncate">{tab.label}</span>
                             {tab.count > 0 && (
-                              <span
-                                className={`px-1.5 py-0.2 text-[10px] rounded-full font-mono ${
-                                  isActive
-                                    ? 'bg-white/20 text-white'
-                                    : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                                }`}
-                              >
-                                {tab.count}
-                              </span>
+                              <span className="font-mono text-[10px] text-muted">{tab.count}</span>
                             )}
                           </button>
                         );
@@ -3212,26 +3184,26 @@ export default function StockExplorer({ user }) {
                 </div>
               </div>
             ) : !loadingDetail && !detailError ? (
-              <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-10 text-center shadow-sm space-y-3">
-                <div className="w-14 h-14 mx-auto rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/80 dark:border-indigo-800/60 flex items-center justify-center text-2xl">
-                  🔍
+              <div className="bg-surface border border-line rounded-md p-10 text-center shadow-sm space-y-3">
+                <div className="w-14 h-14 mx-auto rounded-md bg-sunken border border-line flex items-center justify-center text-2xl">
+                  ⌕
                 </div>
-                <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">
+                <h3 className="text-base font-bold text-ink ">
                   Pilih Saham untuk Memulai Analisis
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+                <p className="text-xs text-muted max-w-md mx-auto leading-relaxed">
                   Gunakan kolom pencarian di atas atau klik salah satu saham di tab Koleksi Saham untuk melihat chart interaktif, valuasi Graham, seasonality 5 tahun, dan smart money flow.
                 </p>
                 <div className="flex items-center justify-center gap-2 pt-1">
                   <button
                     onClick={() => searchInputRef.current?.focus()}
-                    className="px-4 py-2 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                    className="px-4 py-2 text-xs font-bold rounded-sm bg-accent hover:bg-accent text-on-accent transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                   >
                     Mulai Mencari
                   </button>
                   <button
                     onClick={() => setActiveTab('collections')}
-                    className="px-4 py-2 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                    className="px-4 py-2 text-xs font-bold rounded-sm border border-line text-ink hover:bg-sunken transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                   >
                     Buka Koleksi
                   </button>
@@ -3244,17 +3216,17 @@ export default function StockExplorer({ user }) {
 
       {/* ── 4. PAGE: MULTI-STOCK COMPARE VIEW (MAX 6 STOCKS) ─────────────── */}
       {activeTab === 'compare' && (
-        <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm space-y-6 animate-in fade-in">
+        <div className="bg-surface border border-line rounded-md p-4 md:p-6 shadow-sm space-y-6 animate-in fade-in">
           {/* Compare Toolbar */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-line pb-4">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-2xl">⚖️</span>
-                <h2 className="text-lg md:text-xl font-black text-slate-900 dark:text-white">
+                <span className="text-2xl">⇄</span>
+                <h2 className="text-lg md:text-xl font-black text-ink ">
                   Komparasi Multi-Saham (Head-to-Head)
                 </h2>
               </div>
-              <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 mt-0.5">
+              <p className="text-xs md:text-sm text-muted mt-0.5">
                 Bandingkan hingga 6 saham sekaligus melintasi metrik Valuasi, Fundamental, Pertumbuhan, Teknikal & Bandarmologi
               </p>
             </div>
@@ -3269,21 +3241,21 @@ export default function StockExplorer({ user }) {
                   onChange={(e) => setCompareSearchQuery(e.target.value)}
                   placeholder={compareList.length >= 6 ? 'Maks 6 saham tercapai' : '+ Tambah saham pembanding...'}
                   disabled={compareList.length >= 6}
-                  className="w-full pl-3 pr-8 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+                  className="w-full pl-3 pr-8 py-1.5 bg-sunken border border-line rounded-sm text-xs text-ink placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-50"
                 />
                 {compareSuggestions.length > 0 && (
                   <div
                     ref={compareDropdownRef}
-                    className="absolute z-50 left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden max-h-56 overflow-y-auto"
+                    className="absolute z-50 left-0 right-0 mt-1 bg-surface border border-line rounded-sm shadow-xl overflow-hidden max-h-56 overflow-y-auto"
                   >
                     {compareSuggestions.map((s) => (
                       <button
                         key={s.ticker}
                         onClick={() => handleAddToCompare(s.ticker)}
-                        className="w-full px-3 py-2 text-left flex items-center justify-between hover:bg-indigo-50 dark:hover:bg-slate-700 text-xs border-b border-slate-100 dark:border-slate-700 last:border-0"
+                        className="w-full px-3 py-2 text-left flex items-center justify-between hover:bg-sunken text-xs border-b border-line last:border-0"
                       >
-                        <span className="font-bold text-slate-900 dark:text-white">{s.ticker}</span>
-                        <span className="text-[11px] text-slate-500 truncate max-w-[120px]">{s.name}</span>
+                        <span className="font-bold text-ink ">{s.ticker}</span>
+                        <span className="text-[11px] text-muted truncate max-w-[120px]">{s.name}</span>
                       </button>
                     ))}
                   </div>
@@ -3293,7 +3265,7 @@ export default function StockExplorer({ user }) {
               {compareList.length > 0 && (
                 <button
                   onClick={handleClearCompare}
-                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 text-xs font-bold rounded-xl transition-all"
+                  className="px-3 py-1.5 bg-sunken hover:bg-sunken text-muted text-xs font-bold rounded-sm transition-all"
                 >
                   Reset
                 </button>
@@ -3303,44 +3275,44 @@ export default function StockExplorer({ user }) {
 
           {/* Quick Loading Indicator */}
           {loadingCompare && (
-            <div className="flex items-center gap-2 p-3 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 rounded-xl text-xs text-indigo-700 dark:text-indigo-300 animate-pulse font-medium">
-              <span>⏳</span> Sedang memuat data perbandingan saham...
+            <div className="flex items-center gap-2 p-3 bg-sunken border border-line rounded-sm text-xs text-ink animate-pulse font-medium">
+              <span>…</span> Sedang memuat data perbandingan saham...
             </div>
           )}
 
           {/* Compare Content */}
           {compareList.length === 0 ? (
-            <div className="text-center py-12 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-8 space-y-4">
-              <span className="text-4xl block">⚖️</span>
+            <div className="text-center py-12 border-2 border-dashed border-line rounded-md p-8 space-y-4">
+              <span className="text-4xl block">⇄</span>
               <div>
-                <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">Belum Ada Saham yang Dibandingkan</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
+                <h3 className="text-base font-bold text-ink ">Belum Ada Saham yang Dibandingkan</h3>
+                <p className="text-xs text-muted mt-1 max-w-md mx-auto">
                   Pilih hingga 6 saham dari daftar pencarian atau klik tombol &quot;Bandingkan&quot; di kartu koleksi untuk membandingkan matriks secara langsung.
                 </p>
               </div>
 
               {/* Quick Preset Compare Buttons */}
               <div className="flex items-center justify-center gap-2 flex-wrap pt-2">
-                <span className="text-xs text-slate-400">Contoh Cepat:</span>
+                <span className="text-xs text-muted">Contoh Cepat:</span>
                 <button
                   type="button"
                   onClick={() => handleAddMultipleToCompare(['BBCA', 'BBRI', 'BMRI', 'BBNI'])}
-                  className="px-3 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-lg border border-indigo-200 dark:border-indigo-800 transition-colors"
+                  className="px-3 py-1 bg-sunken hover:bg-sunken text-ink text-xs font-bold rounded-sm border border-line transition-colors"
                 >
-                  🏦 4 Bank Terbesar (Big 4)
+                  ▥ 4 Bank Terbesar (Big 4)
                 </button>
                 <button
                   type="button"
                   onClick={() => handleAddMultipleToCompare(['ADRO', 'PTBA', 'ITMG', 'UNTR'])}
-                  className="px-3 py-1 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 text-xs font-bold rounded-lg border border-amber-200 dark:border-amber-800 transition-colors"
+                  className="px-3 py-1 bg-warn-soft hover:bg-warn-soft text-warn text-xs font-bold rounded-sm border border-warn transition-colors"
                 >
-                  ⛏️ Emiten Batubara & Dividen
+                  ⚒ Emiten Batubara & Dividen
                 </button>
               </div>
             </div>
           ) : (
             /* ── COMPARISON MATRIX TABLE (UP TO 6 COLUMNS) ────────────────── */
-            <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+            <div className="overflow-x-auto rounded-sm border border-line ">
               {(() => {
                 // Ambil data detail seluruh saham yang sedang dikomparasi
                 const stockDetailsList = compareList.map(ticker => compareData[ticker] || {});
@@ -3393,42 +3365,42 @@ export default function StockExplorer({ user }) {
                 return (
                   <table className="w-full text-xs text-left border-collapse">
                     <thead>
-                      <tr className="bg-slate-100 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700">
-                        <th className="p-3.5 font-black text-slate-700 dark:text-slate-300 w-44 min-w-[170px] sticky left-0 bg-slate-100 dark:bg-slate-800 z-10">
+                      <tr className="bg-sunken border-b border-line ">
+                        <th className="p-3.5 font-black text-ink w-44 min-w-[170px] sticky left-0 bg-sunken z-10">
                           Metrik Analisis
                         </th>
                         {compareList.map((ticker) => {
                           const s = compareData[ticker] || {};
                           const isUpStock = (s.changePercent || 0) >= 0;
                           return (
-                            <th key={ticker} className="p-3.5 text-center min-w-[150px] border-l border-slate-200 dark:border-slate-700">
+                            <th key={ticker} className="p-3.5 text-center min-w-[150px] border-l border-line ">
                               <div className="flex items-center justify-between gap-1 mb-1">
-                                <span className="font-black text-base text-slate-900 dark:text-white">{ticker}</span>
+                                <span className="font-black text-base text-ink ">{ticker}</span>
                                 <div className="flex items-center gap-1">
                                   <button
                                     onClick={() => handleSelectStock(ticker, true)}
-                                    className="p-1 text-slate-400 hover:text-indigo-600 text-xs"
+                                    className="p-1 text-muted hover:text-ink text-xs"
                                     title="Lihat Detail Lengkap"
                                   >
-                                    🔍
+                                    ⌕
                                   </button>
                                   <button
                                     onClick={() => handleRemoveFromCompare(ticker)}
-                                    className="p-1 text-slate-400 hover:text-rose-600 text-xs"
+                                    className="p-1 text-muted hover:text-down text-xs"
                                     title="Hapus dari Komparasi"
                                   >
                                     ✕
                                   </button>
                                 </div>
                               </div>
-                              <div className="text-[10px] text-slate-500 truncate mb-1">{s.name || 'Memuat...'}</div>
-                              <div className="font-bold text-slate-900 dark:text-white">
+                              <div className="text-[10px] text-muted truncate mb-1">{s.name || 'Memuat...'}</div>
+                              <div className="font-bold text-ink ">
                                 Rp {s.price ? s.price.toLocaleString('id-ID') : '-'}
                               </div>
                               {s.changePercent != null && (
                                 <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${
-                                  isUpStock ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300' : 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300'
-                                }`}>
+ isUpStock ? 'bg-up-soft text-up ' : 'bg-down-soft text-down '
+ }`}>
                                   {isUpStock ? '+' : ''}{Number(s.changePercent).toFixed(2)}%
                                 </span>
                               )}
@@ -3437,15 +3409,15 @@ export default function StockExplorer({ user }) {
                         })}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
+                    <tbody className="divide-y divide-line text-ink ">
                       {/* SECTION 1: RINGKASAN & SKOR */}
-                      <tr className="bg-indigo-50/50 dark:bg-indigo-950/30 font-bold">
-                        <td colSpan={compareList.length + 1} className="p-2 text-indigo-900 dark:text-indigo-300 text-[11px] uppercase tracking-wider">
-                          🎯 Ringkasan & Skor Komposit
+                      <tr className="bg-sunken font-bold">
+                        <td colSpan={compareList.length + 1} className="p-2 text-ink text-[11px] uppercase tracking-wider">
+                          ◎ Ringkasan & Skor Komposit
                         </td>
                       </tr>
                       <tr>
-                        <td className="p-3 font-semibold sticky left-0 bg-white dark:bg-slate-900 z-10">Skor Komposit (45/35/10/10)</td>
+                        <td className="p-3 font-semibold sticky left-0 bg-surface z-10">Skor Komposit (45/35/10/10)</td>
                         {compareList.map(ticker => {
                           const s = compareData[ticker] || {};
                           const fSc = s.scores?.fundamental ?? 50;
@@ -3455,19 +3427,19 @@ export default function StockExplorer({ user }) {
                           const cScore = Math.round((fSc * 0.45) + (tSc * 0.35) + (trSc * 0.10) + (smSc * 0.10));
                           const isWinner = Boolean(s.scores && cScore === bestCompScore && bestCompScore != null);
                           return (
-                            <td key={ticker} className={`p-3 text-center border-l border-slate-100 dark:border-slate-800 font-bold ${isWinner ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300' : ''}`}>
-                              <span className="text-sm">{cScore}/100</span> {isWinner && '🏆'}
+                            <td key={ticker} className={`p-3 text-center border-l border-line font-bold ${isWinner ? 'bg-up-soft text-up ' : ''}`}>
+                              <span className="text-sm">{cScore}/100</span> {isWinner && '★'}
                             </td>
                           );
                         })}
                       </tr>
                       <tr>
-                        <td className="p-3 font-semibold sticky left-0 bg-white dark:bg-slate-900 z-10">Rekomendasi Algoritma</td>
+                        <td className="p-3 font-semibold sticky left-0 bg-surface z-10">Rekomendasi Algoritma</td>
                         {compareList.map(ticker => {
                           const s = compareData[ticker];
                           const rec = s ? getAlgorithmicRecommendation({ stockDetail: s, scores: s.scores }) : null;
                           return (
-                            <td key={ticker} className="p-3 text-center border-l border-slate-100 dark:border-slate-800">
+                            <td key={ticker} className="p-3 text-center border-l border-line ">
                               {rec ? (
                                 <span className={`inline-block font-bold text-[10px] px-2 py-0.5 rounded ${rec.bgClass}`}>
                                   {rec.label}
@@ -3478,12 +3450,12 @@ export default function StockExplorer({ user }) {
                         })}
                       </tr>
                       <tr>
-                        <td className="p-3 font-semibold sticky left-0 bg-white dark:bg-slate-900 z-10">Market Cap</td>
+                        <td className="p-3 font-semibold sticky left-0 bg-surface z-10">Market Cap</td>
                         {compareList.map(ticker => {
                           const s = compareData[ticker] || {};
                           const mc = s.fundamentals?.marketCap;
                           return (
-                            <td key={ticker} className="p-3 text-center border-l border-slate-100 dark:border-slate-800 font-medium">
+                            <td key={ticker} className="p-3 text-center border-l border-line font-medium">
                               {mc ? `Rp ${(mc / 1e12).toFixed(2)} T` : '-'}
                             </td>
                           );
@@ -3491,140 +3463,140 @@ export default function StockExplorer({ user }) {
                       </tr>
 
                       {/* SECTION 2: VALUASI & MARGIN OF SAFETY */}
-                      <tr className="bg-indigo-50/50 dark:bg-indigo-950/30 font-bold">
-                        <td colSpan={compareList.length + 1} className="p-2 text-indigo-900 dark:text-indigo-300 text-[11px] uppercase tracking-wider">
-                          📊 Valuasi Harga
+                      <tr className="bg-sunken font-bold">
+                        <td colSpan={compareList.length + 1} className="p-2 text-ink text-[11px] uppercase tracking-wider">
+                          ▤ Valuasi Harga
                         </td>
                       </tr>
                       <tr>
-                        <td className="p-3 font-semibold sticky left-0 bg-white dark:bg-slate-900 z-10">EPS (Laba Bersih / Lembar)</td>
+                        <td className="p-3 font-semibold sticky left-0 bg-surface z-10">EPS (Laba Bersih / Lembar)</td>
                         {compareList.map(ticker => {
                           const s = compareData[ticker] || {};
                           const val = s.fundamentals?.eps;
                           const isWinner = val === bestEps && bestEps != null;
                           return (
-                            <td key={ticker} className={`p-3 text-center border-l border-slate-100 dark:border-slate-800 font-bold ${isWinner ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                              {val != null ? `Rp ${Number(val).toLocaleString('id-ID')}` : '-'} {isWinner && '👑'}
+                            <td key={ticker} className={`p-3 text-center border-l border-line font-bold ${isWinner ? 'bg-up-soft text-up ' : 'text-up '}`}>
+                              {val != null ? `Rp ${Number(val).toLocaleString('id-ID')}` : '-'} {isWinner && '★'}
                             </td>
                           );
                         })}
                       </tr>
                       <tr>
-                        <td className="p-3 font-semibold sticky left-0 bg-white dark:bg-slate-900 z-10">PER (Price to Earning)</td>
+                        <td className="p-3 font-semibold sticky left-0 bg-surface z-10">PER (Price to Earning)</td>
                         {compareList.map(ticker => {
                           const s = compareData[ticker] || {};
                           const val = s.fundamentals?.per;
                           const isWinner = val === bestPer && bestPer != null;
                           return (
-                            <td key={ticker} className={`p-3 text-center border-l border-slate-100 dark:border-slate-800 font-bold ${isWinner ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300' : ''}`}>
-                              {val != null ? `${Number(val).toFixed(2)}x` : '-'} {isWinner && '✨'}
+                            <td key={ticker} className={`p-3 text-center border-l border-line font-bold ${isWinner ? 'bg-up-soft text-up ' : ''}`}>
+                              {val != null ? `${Number(val).toFixed(2)}x` : '-'} {isWinner && '✦'}
                             </td>
                           );
                         })}
                       </tr>
                       <tr>
-                        <td className="p-3 font-semibold sticky left-0 bg-white dark:bg-slate-900 z-10">PBV (Price to Book)</td>
+                        <td className="p-3 font-semibold sticky left-0 bg-surface z-10">PBV (Price to Book)</td>
                         {compareList.map(ticker => {
                           const s = compareData[ticker] || {};
                           const val = s.fundamentals?.pbv;
                           const isWinner = val === bestPbv && bestPbv != null;
                           return (
-                            <td key={ticker} className={`p-3 text-center border-l border-slate-100 dark:border-slate-800 font-bold ${isWinner ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300' : ''}`}>
+                            <td key={ticker} className={`p-3 text-center border-l border-line font-bold ${isWinner ? 'bg-up-soft text-up ' : ''}`}>
                               {val != null ? `${Number(val).toFixed(2)}x` : '-'}
                             </td>
                           );
                         })}
                       </tr>
                       <tr>
-                        <td className="p-3 font-semibold sticky left-0 bg-white dark:bg-slate-900 z-10">Fair Value (DCF)</td>
+                        <td className="p-3 font-semibold sticky left-0 bg-surface z-10">Fair Value (DCF)</td>
                         {compareList.map(ticker => {
                           const s = compareData[ticker] || {};
                           const fv = s.projections?.fairValue;
                           return (
-                            <td key={ticker} className="p-3 text-center border-l border-slate-100 dark:border-slate-800 font-bold text-emerald-600 dark:text-emerald-400">
+                            <td key={ticker} className="p-3 text-center border-l border-line font-bold text-up ">
                               {fv ? `Rp ${fv.toLocaleString('id-ID')}` : '-'}
                             </td>
                           );
                         })}
                       </tr>
                       <tr>
-                        <td className="p-3 font-semibold sticky left-0 bg-white dark:bg-slate-900 z-10">Margin of Safety (MoS)</td>
+                        <td className="p-3 font-semibold sticky left-0 bg-surface z-10">Margin of Safety (MoS)</td>
                         {compareList.map(ticker => {
                           const s = compareData[ticker] || {};
                           const mos = s.projections?.marginOfSafety;
                           const isWinner = mos === bestMos && bestMos != null;
                           return (
-                            <td key={ticker} className={`p-3 text-center border-l border-slate-100 dark:border-slate-800 font-black ${isWinner ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300' : (mos || 0) > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                              {mos != null ? `${mos > 0 ? '+' : ''}${mos}%` : '-'} {isWinner && '💎'}
+                            <td key={ticker} className={`p-3 text-center border-l border-line font-black ${isWinner ? 'bg-up-soft text-up ' : (mos || 0) > 0 ? 'text-up ' : 'text-down '}`}>
+                              {mos != null ? `${mos > 0 ? '+' : ''}${mos}%` : '-'} {isWinner && '◆'}
                             </td>
                           );
                         })}
                       </tr>
 
                       {/* SECTION 3: FUNDAMENTAL & KUALITAS */}
-                      <tr className="bg-indigo-50/50 dark:bg-indigo-950/30 font-bold">
-                        <td colSpan={compareList.length + 1} className="p-2 text-indigo-900 dark:text-indigo-300 text-[11px] uppercase tracking-wider">
-                          🔬 Fundamental & Kualitas Keuangan
+                      <tr className="bg-sunken font-bold">
+                        <td colSpan={compareList.length + 1} className="p-2 text-ink text-[11px] uppercase tracking-wider">
+                          ◉ Fundamental & Kualitas Keuangan
                         </td>
                       </tr>
                       <tr>
-                        <td className="p-3 font-semibold sticky left-0 bg-white dark:bg-slate-900 z-10">ROE (Return on Equity)</td>
+                        <td className="p-3 font-semibold sticky left-0 bg-surface z-10">ROE (Return on Equity)</td>
                         {compareList.map(ticker => {
                           const s = compareData[ticker] || {};
                           const val = s.fundamentals?.roe;
                           const isWinner = val === bestRoe && bestRoe != null;
                           return (
-                            <td key={ticker} className={`p-3 text-center border-l border-slate-100 dark:border-slate-800 font-bold ${isWinner ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                              {val != null ? `${Number(val).toFixed(1)}%` : '-'} {isWinner && '👑'}
+                            <td key={ticker} className={`p-3 text-center border-l border-line font-bold ${isWinner ? 'bg-up-soft text-up ' : 'text-up '}`}>
+                              {val != null ? `${Number(val).toFixed(1)}%` : '-'} {isWinner && '★'}
                             </td>
                           );
                         })}
                       </tr>
                       <tr>
-                        <td className="p-3 font-semibold sticky left-0 bg-white dark:bg-slate-900 z-10">OPM (Operating Margin)</td>
+                        <td className="p-3 font-semibold sticky left-0 bg-surface z-10">OPM (Operating Margin)</td>
                         {compareList.map(ticker => {
                           const s = compareData[ticker] || {};
                           const val = s.fundamentals?.opm;
                           const isWinner = val === bestOpm && bestOpm != null;
                           return (
-                            <td key={ticker} className={`p-3 text-center border-l border-slate-100 dark:border-slate-800 font-bold ${isWinner ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300' : 'text-indigo-600 dark:text-indigo-400'}`}>
-                              {val != null ? `${Number(val).toFixed(1)}%` : '-'} {isWinner && '👑'}
+                            <td key={ticker} className={`p-3 text-center border-l border-line font-bold ${isWinner ? 'bg-sunken text-ink ' : 'text-ink '}`}>
+                              {val != null ? `${Number(val).toFixed(1)}%` : '-'} {isWinner && '★'}
                             </td>
                           );
                         })}
                       </tr>
                       <tr>
-                        <td className="p-3 font-semibold sticky left-0 bg-white dark:bg-slate-900 z-10">DER (Rasio Hutang)</td>
+                        <td className="p-3 font-semibold sticky left-0 bg-surface z-10">DER (Rasio Hutang)</td>
                         {compareList.map(ticker => {
                           const s = compareData[ticker] || {};
                           const val = s.fundamentals?.der;
                           return (
-                            <td key={ticker} className={`p-3 text-center border-l border-slate-100 dark:border-slate-800 font-bold ${val != null && val > 2 ? 'text-amber-600' : ''}`}>
+                            <td key={ticker} className={`p-3 text-center border-l border-line font-bold ${val != null && val > 2 ? 'text-warn' : ''}`}>
                               {val != null ? `${Number(val).toFixed(2)}x` : '-'}
                             </td>
                           );
                         })}
                       </tr>
                       <tr>
-                        <td className="p-3 font-semibold sticky left-0 bg-white dark:bg-slate-900 z-10">Piotroski F-Score (0-9)</td>
+                        <td className="p-3 font-semibold sticky left-0 bg-surface z-10">Piotroski F-Score (0-9)</td>
                         {compareList.map(ticker => {
                           const s = compareData[ticker] || {};
                           const val = s.fundamentals?.piotroskiFScore;
                           const isWinner = val === bestFScore && bestFScore != null;
                           return (
-                            <td key={ticker} className={`p-3 text-center border-l border-slate-100 dark:border-slate-800 font-bold ${isWinner ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300' : ''}`}>
+                            <td key={ticker} className={`p-3 text-center border-l border-line font-bold ${isWinner ? 'bg-up-soft text-up ' : ''}`}>
                               {val != null ? `${val}/9` : '-'}
                             </td>
                           );
                         })}
                       </tr>
                       <tr>
-                        <td className="p-3 font-semibold sticky left-0 bg-white dark:bg-slate-900 z-10">Altman Z-Score</td>
+                        <td className="p-3 font-semibold sticky left-0 bg-surface z-10">Altman Z-Score</td>
                         {compareList.map(ticker => {
                           const s = compareData[ticker] || {};
                           const val = s.fundamentals?.altmanZScore;
                           return (
-                            <td key={ticker} className="p-3 text-center border-l border-slate-100 dark:border-slate-800 font-bold">
+                            <td key={ticker} className="p-3 text-center border-l border-line font-bold">
                               {val != null ? `${val} (${val >= 2.99 ? 'Aman' : val < 1.81 ? 'Rawan' : 'Moderat'})` : '-'}
                             </td>
                           );
@@ -3632,43 +3604,43 @@ export default function StockExplorer({ user }) {
                       </tr>
 
                       {/* SECTION 4: DIVIDEN & GROWTH */}
-                      <tr className="bg-indigo-50/50 dark:bg-indigo-950/30 font-bold">
-                        <td colSpan={compareList.length + 1} className="p-2 text-indigo-900 dark:text-indigo-300 text-[11px] uppercase tracking-wider">
-                          🏛️ Dividen & Pertumbuhan
+                      <tr className="bg-sunken font-bold">
+                        <td colSpan={compareList.length + 1} className="p-2 text-ink text-[11px] uppercase tracking-wider">
+                          ▥ Dividen & Pertumbuhan
                         </td>
                       </tr>
                       <tr>
-                        <td className="p-3 font-semibold sticky left-0 bg-white dark:bg-slate-900 z-10">Dividend Yield</td>
+                        <td className="p-3 font-semibold sticky left-0 bg-surface z-10">Dividend Yield</td>
                         {compareList.map(ticker => {
                           const s = compareData[ticker] || {};
                           const val = s.fundamentals?.dividendYield;
                           const isWinner = val === bestYield && bestYield != null;
                           return (
-                            <td key={ticker} className={`p-3 text-center border-l border-slate-100 dark:border-slate-800 font-bold ${isWinner ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                              {val != null ? `${Number(val).toFixed(2)}%` : '0%'} {isWinner && '💰'}
+                            <td key={ticker} className={`p-3 text-center border-l border-line font-bold ${isWinner ? 'bg-up-soft text-up ' : 'text-up '}`}>
+                              {val != null ? `${Number(val).toFixed(2)}%` : '0%'} {isWinner && '¤'}
                             </td>
                           );
                         })}
                       </tr>
                       <tr>
-                        <td className="p-3 font-semibold sticky left-0 bg-white dark:bg-slate-900 z-10">Payout Ratio (DPR)</td>
+                        <td className="p-3 font-semibold sticky left-0 bg-surface z-10">Payout Ratio (DPR)</td>
                         {compareList.map(ticker => {
                           const s = compareData[ticker] || {};
                           const val = s.fundamentals?.payoutRatio;
                           return (
-                            <td key={ticker} className="p-3 text-center border-l border-slate-100 dark:border-slate-800 font-medium">
+                            <td key={ticker} className="p-3 text-center border-l border-line font-medium">
                               {val != null ? `${Number(val).toFixed(1)}%` : '-'}
                             </td>
                           );
                         })}
                       </tr>
                       <tr>
-                        <td className="p-3 font-semibold sticky left-0 bg-white dark:bg-slate-900 z-10">Profit CAGR (3th)</td>
+                        <td className="p-3 font-semibold sticky left-0 bg-surface z-10">Profit CAGR (3th)</td>
                         {compareList.map(ticker => {
                           const s = compareData[ticker] || {};
                           const cagr = s.projections?.cagrPercent;
                           return (
-                            <td key={ticker} className="p-3 text-center border-l border-slate-100 dark:border-slate-800 font-bold text-emerald-600 dark:text-emerald-400">
+                            <td key={ticker} className="p-3 text-center border-l border-line font-bold text-up ">
                               {cagr != null ? `+${cagr}%` : '-'}
                             </td>
                           );
@@ -3676,104 +3648,104 @@ export default function StockExplorer({ user }) {
                       </tr>
 
                       {/* SECTION 5: TEKNIKAL & BANDARMOLOGI */}
-                      <tr className="bg-indigo-50/50 dark:bg-indigo-950/30 font-bold">
-                        <td colSpan={compareList.length + 1} className="p-2 text-indigo-900 dark:text-indigo-300 text-[11px] uppercase tracking-wider">
-                          ⚡ Teknikal, Volume & Bandarmologi
+                      <tr className="bg-sunken font-bold">
+                        <td colSpan={compareList.length + 1} className="p-2 text-ink text-[11px] uppercase tracking-wider">
+                          » Teknikal, Volume & Bandarmologi
                         </td>
                       </tr>
                       <tr>
-                        <td className="p-3 font-semibold sticky left-0 bg-white dark:bg-slate-900 z-10">RSI 14 (Momentum)</td>
+                        <td className="p-3 font-semibold sticky left-0 bg-surface z-10">RSI 14 (Momentum)</td>
                         {compareList.map(ticker => {
                           const s = compareData[ticker] || {};
                           const val = s.technicals?.rsi14;
                           return (
-                            <td key={ticker} className="p-3 text-center border-l border-slate-100 dark:border-slate-800 font-bold">
+                            <td key={ticker} className="p-3 text-center border-l border-line font-bold">
                               {val != null ? `${Number(val).toFixed(1)} (${val >= 70 ? 'Overbought' : val <= 30 ? 'Oversold' : 'Netral'})` : '-'}
                             </td>
                           );
                         })}
                       </tr>
                       <tr>
-                        <td className="p-3 font-semibold sticky left-0 bg-white dark:bg-slate-900 z-10">Volume Spike Ratio</td>
+                        <td className="p-3 font-semibold sticky left-0 bg-surface z-10">Volume Spike Ratio</td>
                         {compareList.map(ticker => {
                           const s = compareData[ticker] || {};
                           const val = s.volumeAnalysis?.volumeSpikeRatio;
                           return (
-                            <td key={ticker} className="p-3 text-center border-l border-slate-100 dark:border-slate-800 font-bold text-indigo-600 dark:text-indigo-400">
+                            <td key={ticker} className="p-3 text-center border-l border-line font-bold text-ink ">
                               {val != null ? `${val}x` : '-'}
                             </td>
                           );
                         })}
                       </tr>
                       <tr>
-                        <td className="p-3 font-semibold sticky left-0 bg-white dark:bg-slate-900 z-10">BFI (Bandar Flow Index)</td>
+                        <td className="p-3 font-semibold sticky left-0 bg-surface z-10">BFI (Bandar Flow Index)</td>
                         {compareList.map(ticker => {
                           const s = compareData[ticker] || {};
                           const bfi = s.bandarmologi?.bfiScore;
                           return (
-                            <td key={ticker} className={`p-3 text-center border-l border-slate-100 dark:border-slate-800 font-bold ${(bfi || 0) >= 2 ? 'text-emerald-600' : (bfi || 0) <= -2 ? 'text-rose-600' : ''}`}>
+                            <td key={ticker} className={`p-3 text-center border-l border-line font-bold ${(bfi || 0) >= 2 ? 'text-up' : (bfi || 0) <= -2 ? 'text-down' : ''}`}>
                               {bfi != null ? Number(bfi).toFixed(1) : '-'}
                             </td>
                           );
                         })}
                       </tr>
                       <tr>
-                        <td className="p-3 font-semibold sticky left-0 bg-white dark:bg-slate-900 z-10">Smart Money Status</td>
+                        <td className="p-3 font-semibold sticky left-0 bg-surface z-10">Smart Money Status</td>
                         {compareList.map(ticker => {
                           const s = compareData[ticker] || {};
                           const status = s.bandarmologi?.smartMoneyStatus;
                           return (
-                            <td key={ticker} className="p-3 text-center border-l border-slate-100 dark:border-slate-800 font-bold">
+                            <td key={ticker} className="p-3 text-center border-l border-line font-bold">
                               {status || '-'}
                             </td>
                           );
                         })}
                       </tr>
                       <tr>
-                        <td className="p-3 font-semibold sticky left-0 bg-white dark:bg-slate-900 z-10">Saham Pengendali (PSP)</td>
+                        <td className="p-3 font-semibold sticky left-0 bg-surface z-10">Saham Pengendali (PSP)</td>
                         {compareList.map(ticker => {
                           const s = compareData[ticker] || {};
                           const cp = s.bandarmologi?.controllerPercent;
                           const name = s.bandarmologi?.controllerName;
                           return (
-                            <td key={ticker} className="p-3 text-center border-l border-slate-100 dark:border-slate-800 font-bold text-indigo-600 dark:text-indigo-400">
+                            <td key={ticker} className="p-3 text-center border-l border-line font-bold text-ink ">
                               <div>{cp != null && cp > 0 ? `${Number(cp).toFixed(1)}%` : '-'}</div>
-                              {name && <div className="text-[10px] text-slate-500 font-normal truncate max-w-[110px] mx-auto" title={name}>{name}</div>}
+                              {name && <div className="text-[10px] text-muted font-normal truncate max-w-[110px] mx-auto" title={name}>{name}</div>}
                             </td>
                           );
                         })}
                       </tr>
                       <tr>
-                        <td className="p-3 font-semibold sticky left-0 bg-white dark:bg-slate-900 z-10">Kepemilikan Direksi</td>
+                        <td className="p-3 font-semibold sticky left-0 bg-surface z-10">Kepemilikan Direksi</td>
                         {compareList.map(ticker => {
                           const s = compareData[ticker] || {};
                           const dp = s.bandarmologi?.managementTotalPercent ?? s.bandarmologi?.directorsPercent;
                           return (
-                            <td key={ticker} className="p-3 text-center border-l border-slate-100 dark:border-slate-800 font-medium text-emerald-600 dark:text-emerald-400">
+                            <td key={ticker} className="p-3 text-center border-l border-line font-medium text-up ">
                               {dp != null ? `${Number(dp).toFixed(2)}%` : '0.00%'}
                             </td>
                           );
                         })}
                       </tr>
                       <tr>
-                        <td className="p-3 font-semibold sticky left-0 bg-white dark:bg-slate-900 z-10">Kepemilikan Asing</td>
+                        <td className="p-3 font-semibold sticky left-0 bg-surface z-10">Kepemilikan Asing</td>
                         {compareList.map(ticker => {
                           const s = compareData[ticker] || {};
                           const fp = s.bandarmologi?.foreignPercent;
                           return (
-                            <td key={ticker} className="p-3 text-center border-l border-slate-100 dark:border-slate-800 font-medium">
+                            <td key={ticker} className="p-3 text-center border-l border-line font-medium">
                               {fp != null ? `${Number(fp).toFixed(1)}%` : '-'}
                             </td>
                           );
                         })}
                       </tr>
                       <tr>
-                        <td className="p-3 font-semibold sticky left-0 bg-white dark:bg-slate-900 z-10">Kepemilikan Ritel</td>
+                        <td className="p-3 font-semibold sticky left-0 bg-surface z-10">Kepemilikan Ritel</td>
                         {compareList.map(ticker => {
                           const s = compareData[ticker] || {};
                           const rp = s.bandarmologi?.retailPercent;
                           return (
-                            <td key={ticker} className="p-3 text-center border-l border-slate-100 dark:border-slate-800 font-medium">
+                            <td key={ticker} className="p-3 text-center border-l border-line font-medium">
                               {rp != null ? `${Number(rp).toFixed(1)}%` : '-'}
                             </td>
                           );
@@ -3791,45 +3763,45 @@ export default function StockExplorer({ user }) {
       {/* ── MODAL: CREATE COLLECTION ─────────────────────────────────── */}
       {showCreateModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in"
+          className="modal-backdrop animate-in fade-in"
           onClick={() => setShowCreateModal(false)}
         >
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="create-collection-title"
-            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
+            className="modal-panel p-4 sm:p-6 space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
-              <h3 id="create-collection-title" className="text-base font-black text-slate-900 dark:text-white">📁 Buat Koleksi Baru</h3>
-              <button onClick={() => setShowCreateModal(false)} className="text-slate-400 hover:text-slate-600">✕</button>
+              <h3 id="create-collection-title" className="text-base font-black text-ink ">▤ Buat Koleksi Baru</h3>
+              <button onClick={() => setShowCreateModal(false)} className="text-muted hover:text-ink">✕</button>
             </div>
 
             <form onSubmit={handleCreateCollection} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Nama Koleksi</label>
+                <label className="block text-xs font-bold text-ink mb-1">Nama Koleksi</label>
                 <input
                   type="text"
                   required
                   placeholder="Contoh: Saham Dividen Aristokrat, Blue Chip 2026..."
                   value={newCollectionName}
                   onChange={(e) => setNewCollectionName(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 bg-sunken border border-line rounded-sm text-sm text-ink focus:ring-2 focus:ring-accent"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Emoji / Ikon</label>
+                <label className="block text-xs font-bold text-ink mb-1">Emoji / Ikon</label>
                 <div className="flex items-center gap-2">
-                  {['📁', '💎', '🚀', '🏛️', '🛡️', '⚡', '📊', '🔥'].map((em) => (
+                  {['▤', '◆', '↑', '▥', '◇', '»', '▤', '↑'].map((em) => (
                     <button
                       key={em}
                       type="button"
                       onClick={() => setNewCollectionEmoji(em)}
-                      className={`text-xl p-2 rounded-xl border transition-all ${
-                        newCollectionEmoji === em ? 'bg-indigo-50 dark:bg-indigo-950 border-indigo-500 scale-110' : 'border-slate-200 dark:border-slate-700'
-                      }`}
+                      className={`text-xl p-2 rounded-sm border transition-all ${
+ newCollectionEmoji === em ? 'bg-sunken border-accent scale-110' : 'border-line '
+ }`}
                     >
                       {em}
                     </button>
@@ -3838,13 +3810,13 @@ export default function StockExplorer({ user }) {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Deskripsi (Opsional)</label>
+                <label className="block text-xs font-bold text-ink mb-1">Deskripsi (Opsional)</label>
                 <textarea
                   rows={2}
                   placeholder="Catatan strategi atau fokus portofolio koleksi ini..."
                   value={newCollectionDesc}
                   onChange={(e) => setNewCollectionDesc(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 bg-sunken border border-line rounded-sm text-sm text-ink focus:ring-2 focus:ring-accent"
                 />
               </div>
 
@@ -3852,13 +3824,13 @@ export default function StockExplorer({ user }) {
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-xl"
+                  className="px-4 py-2 bg-sunken text-muted text-xs font-bold rounded-sm"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl"
+                  className="px-4 py-2 bg-accent hover:bg-accent text-on-accent text-xs font-bold rounded-sm"
                 >
                   Simpan Koleksi
                 </button>
@@ -3871,30 +3843,30 @@ export default function StockExplorer({ user }) {
       {/* ── MODAL: SAVE STOCK TO COLLECTION (WITH TARGET BUY & SELL) ───── */}
       {showSaveModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in"
+          className="modal-backdrop animate-in fade-in"
           onClick={() => setShowSaveModal(false)}
         >
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="save-to-collection-title"
-            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
+            className="modal-panel p-4 sm:p-6 space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
-              <h3 id="save-to-collection-title" className="text-base font-black text-slate-900 dark:text-white">
-                💾 Simpan {selectedStock} ke Koleksi
+              <h3 id="save-to-collection-title" className="text-base font-black text-ink ">
+                ⇩ Simpan {selectedStock} ke Koleksi
               </h3>
-              <button onClick={() => setShowSaveModal(false)} className="text-slate-400 hover:text-slate-600">✕</button>
+              <button onClick={() => setShowSaveModal(false)} className="text-muted hover:text-ink">✕</button>
             </div>
 
             <form onSubmit={handleSaveStockToCollection} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Pilih Koleksi Tujuan</label>
+                <label className="block text-xs font-bold text-ink mb-1">Pilih Koleksi Tujuan</label>
                 <select
                   value={targetCollectionId}
                   onChange={(e) => setTargetCollectionId(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 bg-sunken border border-line rounded-sm text-sm text-ink focus:ring-2 focus:ring-accent"
                 >
                   {collections.map((col) => (
                     <option key={col.id} value={col.id}>
@@ -3912,14 +3884,14 @@ export default function StockExplorer({ user }) {
                 const autoPct = (rec.targetBuy && rec.targetSell && rec.targetBuy > 0) ? (((rec.targetSell - rec.targetBuy) / rec.targetBuy) * 100) : null;
 
                 return (
-                  <div className="bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 rounded-xl p-3 space-y-2.5">
+                  <div className="bg-sunken border border-line rounded-sm p-3 space-y-2.5">
                     <div className="flex items-center justify-between">
                       <div>
-                        <span className="text-xs font-bold text-indigo-900 dark:text-indigo-300 flex items-center gap-1">
-                          <span>⚡</span> Rekomendasi Target Algoritma (Otomatis)
+                        <span className="text-xs font-bold text-ink flex items-center gap-1">
+                          <span>»</span> Rekomendasi Target Algoritma (Otomatis)
                         </span>
                         {autoDiff != null && (
-                          <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 block mt-0.5">
+                          <span className="text-[11px] font-bold text-up block mt-0.5">
                             Potensi Gain: +Rp {autoDiff.toLocaleString('id-ID')} (+{autoPct.toFixed(2)}%)
                           </span>
                         )}
@@ -3931,9 +3903,9 @@ export default function StockExplorer({ user }) {
                           if (rec.targetSell) setSaveTargetSell(rec.targetSell.toString());
                           if (autoPct != null) setSaveTargetPercent(autoPct.toFixed(2));
                         }}
-                        className="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-black rounded-lg shadow-sm transition-all flex items-center gap-1 hover:scale-105 active:scale-95"
+                        className="px-2.5 py-1.5 bg-accent hover:bg-accent text-on-accent text-[11px] font-black rounded-sm shadow-sm transition-all flex items-center gap-1 hover:scale-105 active:scale-95"
                       >
-                        <span>⚡ Terapkan Otomatis</span>
+                        <span>» Terapkan Otomatis</span>
                       </button>
                     </div>
 
@@ -3943,10 +3915,10 @@ export default function StockExplorer({ user }) {
                         onClick={() => {
                           if (rec.targetBuy) handleSaveBuyChange(rec.targetBuy.toString());
                         }}
-                        className="text-left p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-emerald-500 transition-all group"
+                        className="text-left p-2 rounded-sm bg-surface border border-line hover:border-up transition-all group"
                       >
-                        <span className="text-slate-500 dark:text-slate-400 text-[10px] block truncate">Target Beli ({rec.buyLabel}):</span>
-                        <span className="font-bold text-emerald-600 dark:text-emerald-400 group-hover:underline">
+                        <span className="text-muted text-[10px] block truncate">Target Beli ({rec.buyLabel}):</span>
+                        <span className="font-bold text-up group-hover:underline">
                           Rp {rec.targetBuy?.toLocaleString('id-ID')}
                         </span>
                       </button>
@@ -3956,10 +3928,10 @@ export default function StockExplorer({ user }) {
                         onClick={() => {
                           if (rec.targetSell) handleSaveSellChange(rec.targetSell.toString());
                         }}
-                        className="text-left p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-rose-500 transition-all group"
+                        className="text-left p-2 rounded-sm bg-surface border border-line hover:border-down transition-all group"
                       >
-                        <span className="text-slate-500 dark:text-slate-400 text-[10px] block truncate">Target Jual ({rec.sellLabel}):</span>
-                        <span className="font-bold text-rose-600 dark:text-rose-400 group-hover:underline">
+                        <span className="text-muted text-[10px] block truncate">Target Jual ({rec.sellLabel}):</span>
+                        <span className="font-bold text-down group-hover:underline">
                           Rp {rec.targetSell?.toLocaleString('id-ID')}
                         </span>
                       </button>
@@ -3972,34 +3944,34 @@ export default function StockExplorer({ user }) {
               <div className="space-y-2">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                      🎯 Target Beli (Rp)
+                    <label className="block text-xs font-bold text-ink mb-1">
+                      ◎ Target Beli (Rp)
                     </label>
                     <input
                       type="number"
                       placeholder="Contoh: 10000"
                       value={saveTargetBuy}
                       onChange={(e) => handleSaveBuyChange(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-3 py-2 bg-sunken border border-line rounded-sm text-sm text-ink focus:ring-2 focus:ring-accent"
                     />
-                    <span className="text-[10px] text-slate-400 mt-0.5 block">Harga entry ideal</span>
+                    <span className="text-[10px] text-muted mt-0.5 block">Harga entry ideal</span>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                      🚀 Target Jual (Rp)
+                    <label className="block text-xs font-bold text-ink mb-1">
+                      ↑ Target Jual (Rp)
                     </label>
                     <input
                       type="number"
                       placeholder="Contoh: 11500"
                       value={saveTargetSell}
                       onChange={(e) => handleSaveSellChange(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-3 py-2 bg-sunken border border-line rounded-sm text-sm text-ink focus:ring-2 focus:ring-accent"
                     />
-                    <span className="text-[10px] text-slate-400 mt-0.5 block">Target Take Profit</span>
+                    <span className="text-[10px] text-muted mt-0.5 block">Target Take Profit</span>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                      📊 Target Gain (%)
+                    <label className="block text-xs font-bold text-ink mb-1">
+                      ▤ Target Gain (%)
                     </label>
                     <div className="relative">
                       <input
@@ -4008,27 +3980,27 @@ export default function StockExplorer({ user }) {
                         placeholder="Contoh: 15"
                         value={saveTargetPercent}
                         onChange={(e) => handleSavePercentChange(e.target.value)}
-                        className="w-full px-3 py-2 pr-7 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-3 py-2 pr-7 bg-sunken border border-line rounded-sm text-sm font-semibold text-ink focus:ring-2 focus:ring-accent"
                       />
-                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-muted">%</span>
                     </div>
-                    <span className="text-[10px] text-slate-400 mt-0.5 block">Kalkulasi otomatis</span>
+                    <span className="text-[10px] text-muted mt-0.5 block">Kalkulasi otomatis</span>
                   </div>
                 </div>
 
                 {/* Preset Persentase Keuntungan Cepat */}
                 <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                  <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 mr-0.5">Preset Gain:</span>
+                  <span className="text-[10px] font-semibold text-muted mr-0.5">Preset Gain:</span>
                   {[3, 5, 7, 10, 15, 20, 25].map((pct) => (
                     <button
                       key={pct}
                       type="button"
                       onClick={() => handleSavePercentChange(pct.toString())}
-                      className={`px-2 py-0.5 text-[10px] font-bold rounded-lg border transition-all ${
-                        parseFloat(saveTargetPercent) === pct
-                          ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs'
-                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400'
-                      }`}
+                      className={`px-2 py-0.5 text-[10px] font-bold rounded-sm border transition-all ${
+ parseFloat(saveTargetPercent) === pct
+ ? 'bg-accent border-accent text-on-accent shadow-xs'
+ : 'bg-surface border-line text-ink hover:border-accent hover:text-ink '
+ }`}
                     >
                       +{pct}%
                     </button>
@@ -4046,27 +4018,27 @@ export default function StockExplorer({ user }) {
                   const isProfit = diff > 0;
                   const isLoss = diff < 0;
                   return (
-                    <div className={`p-2.5 rounded-xl border flex items-center justify-between text-xs transition-all duration-200 ${
-                      isProfit 
-                        ? 'bg-emerald-50/90 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/50 text-emerald-800 dark:text-emerald-300' 
-                        : isLoss 
-                        ? 'bg-rose-50/90 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/50 text-rose-800 dark:text-rose-300' 
-                        : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
-                    }`}>
+                    <div className={`p-2.5 rounded-sm border flex items-center justify-between text-xs transition-all duration-200 ${
+ isProfit 
+ ? 'bg-up-soft border-up text-up ' 
+ : isLoss 
+ ? 'bg-down-soft border-down text-down ' 
+ : 'bg-sunken border-line text-ink '
+ }`}>
                       <div className="flex items-center gap-1.5 font-medium">
-                        <span>{isProfit ? '📈 Potensi Keuntungan:' : isLoss ? '📉 Potensi Kerugian:' : '⚖️ Impas (BEP):'}</span>
+                        <span>{isProfit ? '↗ Potensi Keuntungan:' : isLoss ? '↘ Potensi Kerugian:' : '⇄ Impas (BEP):'}</span>
                       </div>
                       <div className="font-bold font-mono text-right flex items-center gap-1.5">
                         <span>
                           {isProfit ? '+' : isLoss ? '-' : ''}Rp {Math.abs(diff).toLocaleString('id-ID')}
                         </span>
                         <span className={`px-1.5 py-0.5 rounded text-[11px] font-semibold ${
-                          isProfit 
-                            ? 'bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300' 
-                            : isLoss 
-                            ? 'bg-rose-100 dark:bg-rose-900/60 text-rose-700 dark:text-rose-300' 
-                            : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
-                        }`}>
+ isProfit 
+ ? 'bg-up-soft text-up ' 
+ : isLoss 
+ ? 'bg-down-soft text-down ' 
+ : 'bg-sunken text-ink '
+ }`}>
                           {isProfit ? '+' : ''}{pct.toFixed(2)}%
                         </span>
                       </div>
@@ -4077,13 +4049,13 @@ export default function StockExplorer({ user }) {
               })()}
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Catatan Analisis (Opsional)</label>
+                <label className="block text-xs font-bold text-ink mb-1">Catatan Analisis (Opsional)</label>
                 <textarea
                   rows={2}
                   placeholder="Alasan beli, target harga, catatan fundamental..."
                   value={stockNote}
                   onChange={(e) => setStockNote(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 bg-sunken border border-line rounded-sm text-sm text-ink focus:ring-2 focus:ring-accent"
                 />
               </div>
 
@@ -4091,13 +4063,13 @@ export default function StockExplorer({ user }) {
                 <button
                   type="button"
                   onClick={() => setShowSaveModal(false)}
-                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-xl"
+                  className="px-4 py-2 bg-sunken text-muted text-xs font-bold rounded-sm"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl"
+                  className="px-4 py-2 bg-accent hover:bg-accent text-on-accent text-xs font-bold rounded-sm"
                 >
                   Simpan Saham
                 </button>
@@ -4110,24 +4082,24 @@ export default function StockExplorer({ user }) {
       {/* ── MODAL: EDIT COLLECTION ITEM (NOTES, TARGET BUY, TARGET SELL) ── */}
       {showEditItemModal && editingItem && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in"
+          className="modal-backdrop animate-in fade-in"
           onClick={() => setShowEditItemModal(false)}
         >
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="edit-item-title"
-            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
+            className="modal-panel p-4 sm:p-6 space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="text-xl">✏️</span>
-                <h3 id="edit-item-title" className="text-base font-black text-slate-900 dark:text-white">
+                <span className="text-xl">✎</span>
+                <h3 id="edit-item-title" className="text-base font-black text-ink ">
                   Edit Saham: {editingItem.ticker}
                 </h3>
               </div>
-              <button onClick={() => setShowEditItemModal(false)} className="text-slate-400 hover:text-slate-600">✕</button>
+              <button onClick={() => setShowEditItemModal(false)} className="text-muted hover:text-ink">✕</button>
             </div>
 
             <form onSubmit={handleSaveEditItem} className="space-y-4">
@@ -4140,14 +4112,14 @@ export default function StockExplorer({ user }) {
                 const autoPct = (rec.targetBuy && rec.targetSell && rec.targetBuy > 0) ? (((rec.targetSell - rec.targetBuy) / rec.targetBuy) * 100) : null;
 
                 return (
-                  <div className="bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 rounded-xl p-3 space-y-2.5">
+                  <div className="bg-sunken border border-line rounded-sm p-3 space-y-2.5">
                     <div className="flex items-center justify-between">
                       <div>
-                        <span className="text-xs font-bold text-indigo-900 dark:text-indigo-300 flex items-center gap-1">
-                          <span>⚡</span> Rekomendasi Target Algoritma (Otomatis)
+                        <span className="text-xs font-bold text-ink flex items-center gap-1">
+                          <span>»</span> Rekomendasi Target Algoritma (Otomatis)
                         </span>
                         {autoDiff != null && (
-                          <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 block mt-0.5">
+                          <span className="text-[11px] font-bold text-up block mt-0.5">
                             Potensi Gain: +Rp {autoDiff.toLocaleString('id-ID')} (+{autoPct.toFixed(2)}%)
                           </span>
                         )}
@@ -4159,9 +4131,9 @@ export default function StockExplorer({ user }) {
                           if (rec.targetSell) setEditItemTargetSell(rec.targetSell.toString());
                           if (autoPct != null) setEditItemTargetPercent(autoPct.toFixed(2));
                         }}
-                        className="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-black rounded-lg shadow-sm transition-all flex items-center gap-1 hover:scale-105 active:scale-95"
+                        className="px-2.5 py-1.5 bg-accent hover:bg-accent text-on-accent text-[11px] font-black rounded-sm shadow-sm transition-all flex items-center gap-1 hover:scale-105 active:scale-95"
                       >
-                        <span>⚡ Terapkan Otomatis</span>
+                        <span>» Terapkan Otomatis</span>
                       </button>
                     </div>
 
@@ -4171,10 +4143,10 @@ export default function StockExplorer({ user }) {
                         onClick={() => {
                           if (rec.targetBuy) handleEditBuyChange(rec.targetBuy.toString());
                         }}
-                        className="text-left p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-emerald-500 transition-all group"
+                        className="text-left p-2 rounded-sm bg-surface border border-line hover:border-up transition-all group"
                       >
-                        <span className="text-slate-500 dark:text-slate-400 text-[10px] block truncate">Target Beli ({rec.buyLabel}):</span>
-                        <span className="font-bold text-emerald-600 dark:text-emerald-400 group-hover:underline">
+                        <span className="text-muted text-[10px] block truncate">Target Beli ({rec.buyLabel}):</span>
+                        <span className="font-bold text-up group-hover:underline">
                           Rp {rec.targetBuy?.toLocaleString('id-ID')}
                         </span>
                       </button>
@@ -4184,10 +4156,10 @@ export default function StockExplorer({ user }) {
                         onClick={() => {
                           if (rec.targetSell) handleEditSellChange(rec.targetSell.toString());
                         }}
-                        className="text-left p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-rose-500 transition-all group"
+                        className="text-left p-2 rounded-sm bg-surface border border-line hover:border-down transition-all group"
                       >
-                        <span className="text-slate-500 dark:text-slate-400 text-[10px] block truncate">Target Jual ({rec.sellLabel}):</span>
-                        <span className="font-bold text-rose-600 dark:text-rose-400 group-hover:underline">
+                        <span className="text-muted text-[10px] block truncate">Target Jual ({rec.sellLabel}):</span>
+                        <span className="font-bold text-down group-hover:underline">
                           Rp {rec.targetSell?.toLocaleString('id-ID')}
                         </span>
                       </button>
@@ -4200,38 +4172,38 @@ export default function StockExplorer({ user }) {
               <div className="space-y-2">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                      🎯 Target Beli (Rp)
+                    <label className="block text-xs font-bold text-ink mb-1">
+                      ◎ Target Beli (Rp)
                     </label>
                     <input
                       type="number"
                       placeholder="Contoh: 10000"
                       value={editItemTargetBuy}
                       onChange={(e) => handleEditBuyChange(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-3 py-2 bg-sunken border border-line rounded-sm text-sm text-ink focus:ring-2 focus:ring-accent"
                     />
-                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-0.5 block font-semibold">
+                    <span className="text-[10px] text-up mt-0.5 block font-semibold">
                       Harga entry ideal
                     </span>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                      🚀 Target Jual (Rp)
+                    <label className="block text-xs font-bold text-ink mb-1">
+                      ↑ Target Jual (Rp)
                     </label>
                     <input
                       type="number"
                       placeholder="Contoh: 11500"
                       value={editItemTargetSell}
                       onChange={(e) => handleEditSellChange(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-3 py-2 bg-sunken border border-line rounded-sm text-sm text-ink focus:ring-2 focus:ring-accent"
                     />
-                    <span className="text-[10px] text-rose-600 dark:text-rose-400 mt-0.5 block font-semibold">
+                    <span className="text-[10px] text-down mt-0.5 block font-semibold">
                       Target Take Profit
                     </span>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                      📊 Target Gain (%)
+                    <label className="block text-xs font-bold text-ink mb-1">
+                      ▤ Target Gain (%)
                     </label>
                     <div className="relative">
                       <input
@@ -4240,27 +4212,27 @@ export default function StockExplorer({ user }) {
                         placeholder="Contoh: 15"
                         value={editItemTargetPercent}
                         onChange={(e) => handleEditPercentChange(e.target.value)}
-                        className="w-full px-3 py-2 pr-7 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-3 py-2 pr-7 bg-sunken border border-line rounded-sm text-sm font-semibold text-ink focus:ring-2 focus:ring-accent"
                       />
-                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-muted">%</span>
                     </div>
-                    <span className="text-[10px] text-slate-400 mt-0.5 block">Kalkulasi otomatis</span>
+                    <span className="text-[10px] text-muted mt-0.5 block">Kalkulasi otomatis</span>
                   </div>
                 </div>
 
                 {/* Preset Persentase Keuntungan Cepat */}
                 <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                  <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 mr-0.5">Preset Gain:</span>
+                  <span className="text-[10px] font-semibold text-muted mr-0.5">Preset Gain:</span>
                   {[3, 5, 7, 10, 15, 20, 25].map((pct) => (
                     <button
                       key={pct}
                       type="button"
                       onClick={() => handleEditPercentChange(pct.toString())}
-                      className={`px-2 py-0.5 text-[10px] font-bold rounded-lg border transition-all ${
-                        parseFloat(editItemTargetPercent) === pct
-                          ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs'
-                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400'
-                      }`}
+                      className={`px-2 py-0.5 text-[10px] font-bold rounded-sm border transition-all ${
+ parseFloat(editItemTargetPercent) === pct
+ ? 'bg-accent border-accent text-on-accent shadow-xs'
+ : 'bg-surface border-line text-ink hover:border-accent hover:text-ink '
+ }`}
                     >
                       +{pct}%
                     </button>
@@ -4278,27 +4250,27 @@ export default function StockExplorer({ user }) {
                   const isProfit = diff > 0;
                   const isLoss = diff < 0;
                   return (
-                    <div className={`p-2.5 rounded-xl border flex items-center justify-between text-xs transition-all duration-200 ${
-                      isProfit 
-                        ? 'bg-emerald-50/90 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/50 text-emerald-800 dark:text-emerald-300' 
-                        : isLoss 
-                        ? 'bg-rose-50/90 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/50 text-rose-800 dark:text-rose-300' 
-                        : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
-                    }`}>
+                    <div className={`p-2.5 rounded-sm border flex items-center justify-between text-xs transition-all duration-200 ${
+ isProfit 
+ ? 'bg-up-soft border-up text-up ' 
+ : isLoss 
+ ? 'bg-down-soft border-down text-down ' 
+ : 'bg-sunken border-line text-ink '
+ }`}>
                       <div className="flex items-center gap-1.5 font-medium">
-                        <span>{isProfit ? '📈 Potensi Keuntungan:' : isLoss ? '📉 Potensi Kerugian:' : '⚖️ Impas (BEP):'}</span>
+                        <span>{isProfit ? '↗ Potensi Keuntungan:' : isLoss ? '↘ Potensi Kerugian:' : '⇄ Impas (BEP):'}</span>
                       </div>
                       <div className="font-bold font-mono text-right flex items-center gap-1.5">
                         <span>
                           {isProfit ? '+' : isLoss ? '-' : ''}Rp {Math.abs(diff).toLocaleString('id-ID')}
                         </span>
                         <span className={`px-1.5 py-0.5 rounded text-[11px] font-semibold ${
-                          isProfit 
-                            ? 'bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300' 
-                            : isLoss 
-                            ? 'bg-rose-100 dark:bg-rose-900/60 text-rose-700 dark:text-rose-300' 
-                            : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
-                        }`}>
+ isProfit 
+ ? 'bg-up-soft text-up ' 
+ : isLoss 
+ ? 'bg-down-soft text-down ' 
+ : 'bg-sunken text-ink '
+ }`}>
                           {isProfit ? '+' : ''}{pct.toFixed(2)}%
                         </span>
                       </div>
@@ -4309,13 +4281,13 @@ export default function StockExplorer({ user }) {
               })()}
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Catatan Analisis</label>
+                <label className="block text-xs font-bold text-ink mb-1">Catatan Analisis</label>
                 <textarea
                   rows={3}
                   placeholder="Tulis alasan beli, rencana cut loss, atau target valuasi..."
                   value={editItemNotes}
                   onChange={(e) => setEditItemNotes(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 bg-sunken border border-line rounded-sm text-sm text-ink focus:ring-2 focus:ring-accent"
                 />
               </div>
 
@@ -4323,14 +4295,14 @@ export default function StockExplorer({ user }) {
                 <button
                   type="button"
                   onClick={() => setShowEditItemModal(false)}
-                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-xl"
+                  className="px-4 py-2 bg-sunken text-muted text-xs font-bold rounded-sm"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={savingEditItem}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl disabled:opacity-50"
+                  className="px-4 py-2 bg-accent hover:bg-accent text-on-accent text-xs font-bold rounded-sm disabled:opacity-50"
                 >
                   {savingEditItem ? 'Menyimpan...' : 'Simpan Perubahan'}
                 </button>
@@ -4342,23 +4314,23 @@ export default function StockExplorer({ user }) {
 
       {/* ── MODAL: EDIT COLLECTION METADATA ────────────────────────────── */}
       {showEditModal && editingCollection && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="modal-backdrop animate-in fade-in">
+          <div className="modal-panel p-4 sm:p-6 space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-2xl">{newCollectionEmoji || '📁'}</span>
                 <div>
-                  <h3 className="text-base font-black text-slate-900 dark:text-white">✏️ Edit Koleksi</h3>
-                  <p className="text-xs text-slate-500">Ubah nama, deskripsi, atau ikon koleksi</p>
+                  <h3 className="text-base font-black text-ink ">✎ Edit Koleksi</h3>
+                  <p className="text-xs text-muted">Ubah nama, deskripsi, atau ikon koleksi</p>
                 </div>
               </div>
-              <button onClick={() => setShowEditModal(false)} className="text-slate-400 hover:text-slate-600">✕</button>
+              <button onClick={() => setShowEditModal(false)} className="text-muted hover:text-ink">✕</button>
             </div>
 
             <form onSubmit={handleUpdateCollection} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Nama Koleksi <span className="text-rose-500">*</span>
+                <label className="block text-xs font-bold text-ink mb-1">
+                  Nama Koleksi <span className="text-down">*</span>
                 </label>
                 <input
                   type="text"
@@ -4366,23 +4338,23 @@ export default function StockExplorer({ user }) {
                   placeholder="Misal: Dividen Blue Chip, Growth Saham, dsb."
                   value={newCollectionName}
                   onChange={(e) => setNewCollectionName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  className="w-full px-3.5 py-2.5 bg-sunken border border-line rounded-sm text-sm font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-accent"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Pilih Ikon / Emoji</label>
-                <div className="grid grid-cols-8 gap-1.5 p-2 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700">
-                  {['📁', '💎', '🚀', '📈', '🏛️', '🛡️', '⚡', '📊', '🔥', '💰', '🏆', '⭐', '🎯', '🐂', '🏦', '🌾'].map((em) => (
+                <label className="block text-xs font-bold text-ink mb-1.5">Pilih Ikon / Emoji</label>
+                <div className="grid grid-cols-8 gap-1.5 p-2 bg-sunken rounded-sm border border-line ">
+                  {['▤', '◆', '↑', '↗', '▥', '◇', '»', '▤', '↑', '¤', '★', '★', '◎', '↑', '▥', '≋'].map((em) => (
                     <button
                       key={em}
                       type="button"
                       onClick={() => setNewCollectionEmoji(em)}
-                      className={`text-lg p-1.5 rounded-lg border transition-all flex items-center justify-center ${
-                        newCollectionEmoji === em
-                          ? 'bg-indigo-100 dark:bg-indigo-950 border-indigo-500 scale-110 shadow-sm'
-                          : 'border-transparent hover:bg-white dark:hover:bg-slate-700'
-                      }`}
+                      className={`text-lg p-1.5 rounded-sm border transition-all flex items-center justify-center ${
+ newCollectionEmoji === em
+ ? 'bg-sunken border-accent scale-110 shadow-sm'
+ : 'border-transparent hover:bg-surface '
+ }`}
                     >
                       {em}
                     </button>
@@ -4391,40 +4363,40 @@ export default function StockExplorer({ user }) {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Deskripsi Koleksi (Opsional)</label>
+                <label className="block text-xs font-bold text-ink mb-1">Deskripsi Koleksi (Opsional)</label>
                 <textarea
                   rows={2}
                   placeholder="Tulis tujuan koleksi atau strategi investasi di sini..."
                   value={newCollectionDesc}
                   onChange={(e) => setNewCollectionDesc(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  className="w-full px-3.5 py-2.5 bg-sunken border border-line rounded-sm text-xs text-ink focus:outline-none focus:ring-2 focus:ring-accent"
                 />
               </div>
 
-              <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
+              <div className="flex items-center justify-between p-3 bg-sunken rounded-sm border border-line ">
                 <div>
-                  <span className="text-xs font-bold text-slate-900 dark:text-white block">Koleksi Publik</span>
-                  <span className="text-[10px] text-slate-500">Dapat dibagikan kepada orang lain via link</span>
+                  <span className="text-xs font-bold text-ink block">Koleksi Publik</span>
+                  <span className="text-[10px] text-muted">Dapat dibagikan kepada orang lain via link</span>
                 </div>
                 <input
                   type="checkbox"
                   checked={isCollectionPublic}
                   onChange={(e) => setIsCollectionPublic(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                  className="h-4 w-4 rounded border-line text-ink focus:ring-accent cursor-pointer"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+              <div className="flex justify-end gap-2 pt-2 border-t border-line ">
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-xl transition-colors"
+                  className="px-4 py-2 bg-sunken hover:bg-sunken text-muted text-xs font-bold rounded-sm transition-colors"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-md transition-all"
+                  className="px-5 py-2 bg-accent hover:bg-accent text-on-accent text-xs font-bold rounded-sm shadow-md transition-all"
                 >
                   Simpan Perubahan
                 </button>
@@ -4435,57 +4407,57 @@ export default function StockExplorer({ user }) {
       )}
       {showMoveModal && movingItem && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in"
+          className="modal-backdrop animate-in fade-in"
           onClick={() => setShowMoveModal(false)}
         >
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="move-stock-title"
-            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
+            className="modal-panel p-4 sm:p-6 space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="text-2xl">📦</span>
+                <span className="text-2xl">⇢</span>
                 <div>
-                  <h3 id="move-stock-title" className="text-base font-black text-slate-900 dark:text-white">Pindahkan Saham</h3>
-                  <p className="text-xs text-slate-500">Pindahkan {movingItem.ticker} dari koleksi saat ini ke koleksi lain</p>
+                  <h3 id="move-stock-title" className="text-base font-black text-ink ">Pindahkan Saham</h3>
+                  <p className="text-xs text-muted">Pindahkan {movingItem.ticker} dari koleksi saat ini ke koleksi lain</p>
                 </div>
               </div>
-              <button onClick={() => setShowMoveModal(false)} className="text-slate-400 hover:text-slate-600">✕</button>
+              <button onClick={() => setShowMoveModal(false)} className="text-muted hover:text-ink">✕</button>
             </div>
 
             <form onSubmit={handleExecuteMove} className="space-y-4">
-              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+              <div className="p-3 bg-sunken rounded-sm border border-line flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-slate-500 block">Koleksi Asal:</span>
-                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                  <span className="text-[10px] uppercase font-bold text-muted block">Koleksi Asal:</span>
+                  <span className="text-xs font-bold text-ink ">
                     {selectedCollection?.emoji || '📁'} {selectedCollection?.name}
                   </span>
                 </div>
                 <div className="text-right">
-                  <span className="text-[10px] uppercase font-bold text-slate-500 block">Saham:</span>
-                  <span className="text-sm font-black text-indigo-600 dark:text-indigo-400">
+                  <span className="text-[10px] uppercase font-bold text-muted block">Saham:</span>
+                  <span className="text-sm font-black text-ink ">
                     {movingItem.ticker}
                   </span>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Pilih Koleksi Tujuan <span className="text-rose-500">*</span>
+                <label className="block text-xs font-bold text-ink mb-1">
+                  Pilih Koleksi Tujuan <span className="text-down">*</span>
                 </label>
                 {collections.filter(c => c.id !== selectedCollection?.id).length === 0 ? (
-                  <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl text-xs text-amber-800 dark:text-amber-300">
-                    ⚠️ Anda belum memiliki koleksi lain untuk memindahkan saham. Silakan buat koleksi baru terlebih dahulu.
+                  <div className="p-3 bg-warn-soft border border-warn rounded-sm text-xs text-warn ">
+                    ▲ Anda belum memiliki koleksi lain untuk memindahkan saham. Silakan buat koleksi baru terlebih dahulu.
                   </div>
                 ) : (
                   <select
                     required
                     value={moveTargetCollectionId}
                     onChange={(e) => setMoveTargetCollectionId(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3.5 py-2.5 bg-sunken border border-line rounded-sm text-xs font-bold text-ink focus:ring-2 focus:ring-accent"
                   >
                     {collections
                       .filter(c => c.id !== selectedCollection?.id)
@@ -4499,26 +4471,26 @@ export default function StockExplorer({ user }) {
               </div>
 
               {movingItem.notes && (
-                <div className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/40 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
-                  <span className="font-semibold block text-[10px] uppercase text-slate-400 mb-0.5">Catatan Bawaan:</span>
-                  📝 {movingItem.notes}
+                <div className="text-xs text-muted bg-sunken p-2.5 rounded-sm border border-line ">
+                  <span className="font-semibold block text-[10px] uppercase text-muted mb-0.5">Catatan Bawaan:</span>
+                  ✎ {movingItem.notes}
                 </div>
               )}
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+              <div className="flex justify-end gap-2 pt-2 border-t border-line ">
                 <button
                   type="button"
                   onClick={() => setShowMoveModal(false)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-xl transition-colors"
+                  className="px-4 py-2 bg-sunken hover:bg-sunken text-muted text-xs font-bold rounded-sm transition-colors"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={movingStockLoading || collections.filter(c => c.id !== selectedCollection?.id).length === 0}
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-md transition-all disabled:opacity-50 flex items-center gap-1.5"
+                  className="px-5 py-2 bg-accent hover:bg-accent text-on-accent text-xs font-bold rounded-sm shadow-md transition-all disabled:opacity-50 flex items-center gap-1.5"
                 >
-                  {movingStockLoading ? 'Memindahkan...' : '📦 Pindahkan Sekarang'}
+                  {movingStockLoading ? 'Memindahkan...' : '⇢ Pindahkan Sekarang'}
                 </button>
               </div>
             </form>
@@ -4529,46 +4501,46 @@ export default function StockExplorer({ user }) {
       {/* ── MODAL: CUSTOM POPUP DUPLICATE CONFIRMATION (NO BROWSER ALERT) ── */}
       {duplicateModal && duplicateModal.isOpen && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/65 backdrop-blur-sm p-4 animate-in fade-in"
+          className="modal-backdrop z-[60] animate-in fade-in"
           onClick={duplicateModal.onCancel}
         >
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="duplicate-modal-title"
-            className="bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700/80 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95"
+            className="modal-panel p-4 sm:p-6 space-y-4 border-warn"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xl shrink-0">
-                ⚠️
+              <div className="w-10 h-10 rounded-sm bg-warn-soft text-warn flex items-center justify-center text-xl shrink-0">
+                ▲
               </div>
               <div className="space-y-1">
-                <h3 id="duplicate-modal-title" className="text-base font-black text-slate-900 dark:text-white">
+                <h3 id="duplicate-modal-title" className="text-base font-black text-ink ">
                   {duplicateModal.title || 'Saham Sudah Ada di Koleksi'}
                 </h3>
-                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                <p className="text-xs text-muted leading-relaxed">
                   {duplicateModal.message}
                 </p>
               </div>
             </div>
 
-            <div className="p-3 bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 rounded-xl text-[11px] text-amber-900 dark:text-amber-200 font-medium">
-              💡 <span className="font-bold">Konfirmasi Tindakan:</span> Memilih lanjut akan menyinkronkan catatan dan target beli/jual ke koleksi tujuan.
+            <div className="p-3 bg-warn-soft border border-warn rounded-sm text-[11px] text-warn font-medium">
+              ✦ <span className="font-bold">Konfirmasi Tindakan:</span> Memilih lanjut akan menyinkronkan catatan dan target beli/jual ke koleksi tujuan.
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+            <div className="flex justify-end gap-2 pt-2 border-t border-line ">
               <button
                 type="button"
                 onClick={duplicateModal.onCancel}
-                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition-colors"
+                className="px-4 py-2 bg-sunken hover:bg-sunken text-ink text-xs font-bold rounded-sm transition-colors"
               >
                 {duplicateModal.cancelLabel || 'Batalkan'}
               </button>
               <button
                 type="button"
                 onClick={duplicateModal.onConfirm}
-                className="px-5 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center gap-1"
+                className="px-5 py-2 bg-warn hover:bg-warn text-on-accent text-xs font-bold rounded-sm shadow-md transition-all flex items-center gap-1"
               >
                 {duplicateModal.confirmLabel || 'Ya, Lanjutkan'}
               </button>
@@ -4580,50 +4552,50 @@ export default function StockExplorer({ user }) {
       {/* ── MODAL: CONFIRMATION DIALOG (DELETE ACTIONS) ───────────────── */}
       {confirmDialog && confirmDialog.isOpen && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/65 backdrop-blur-sm p-4 animate-in fade-in"
+          className="modal-backdrop z-[60] animate-in fade-in"
           onClick={confirmDialog.onCancel}
         >
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="confirm-dialog-title"
-            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95"
+            className="modal-panel p-4 sm:p-6 space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start gap-3">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 ${
-                confirmDialog.confirmStyle === 'danger'
-                  ? 'bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400'
-                  : 'bg-indigo-100 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400'
-              }`}>
-                {confirmDialog.confirmStyle === 'danger' ? '🗑️' : '❓'}
+              <div className={`w-10 h-10 rounded-sm flex items-center justify-center text-xl shrink-0 ${
+ confirmDialog.confirmStyle === 'danger'
+ ? 'bg-down-soft text-down '
+ : 'bg-sunken text-ink '
+ }`}>
+                {confirmDialog.confirmStyle === 'danger' ? '⌫' : '?'}
               </div>
               <div className="space-y-1">
-                <h3 id="confirm-dialog-title" className="text-base font-black text-slate-900 dark:text-white">
+                <h3 id="confirm-dialog-title" className="text-base font-black text-ink ">
                   {confirmDialog.title}
                 </h3>
-                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                <p className="text-xs text-muted leading-relaxed">
                   {confirmDialog.message}
                 </p>
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+            <div className="flex justify-end gap-2 pt-2 border-t border-line ">
               <button
                 type="button"
                 onClick={confirmDialog.onCancel}
-                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition-colors"
+                className="px-4 py-2 bg-sunken hover:bg-sunken text-ink text-xs font-bold rounded-sm transition-colors"
               >
                 {confirmDialog.cancelLabel || 'Batalkan'}
               </button>
               <button
                 type="button"
                 onClick={confirmDialog.onConfirm}
-                className={`px-5 py-2 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center gap-1 ${
-                  confirmDialog.confirmStyle === 'danger'
-                    ? 'bg-rose-600 hover:bg-rose-500'
-                    : 'bg-indigo-600 hover:bg-indigo-500'
-                }`}
+                className={`px-5 py-2 text-on-accent text-xs font-bold rounded-sm shadow-md transition-all flex items-center gap-1 ${
+ confirmDialog.confirmStyle === 'danger'
+ ? 'bg-down hover:bg-down'
+ : 'bg-accent hover:bg-accent'
+ }`}
               >
                 {confirmDialog.confirmLabel || 'Ya, Lanjutkan'}
               </button>
@@ -4635,33 +4607,33 @@ export default function StockExplorer({ user }) {
       {/* ── MODAL: PANTAU SAHAM & CATAT KE WIN RATE DASHBOARD ────────────── */}
       {monitorModal && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/65 backdrop-blur-sm p-4 animate-in fade-in"
+          className="modal-backdrop z-[60] animate-in fade-in"
           onClick={() => setMonitorModal(null)}
         >
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="monitor-modal-title"
-            className="bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700/80 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95"
+            className="modal-panel p-4 sm:p-6 space-y-4 border-up"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl shrink-0">
-                  🎯
+                <div className="w-10 h-10 rounded-sm bg-up-soft text-up flex items-center justify-center text-xl shrink-0">
+                  ◎
                 </div>
                 <div>
-                  <h3 id="monitor-modal-title" className="text-base font-black text-slate-900 dark:text-white">
+                  <h3 id="monitor-modal-title" className="text-base font-black text-ink ">
                     Pantau {monitorModal.ticker}
                   </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">
+                  <p className="text-xs text-muted line-clamp-1">
                     {monitorModal.name}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setMonitorModal(null)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm font-bold"
+                className="text-muted hover:text-ink text-sm font-bold"
               >
                 ✕
               </button>
@@ -4669,8 +4641,8 @@ export default function StockExplorer({ user }) {
 
             <form onSubmit={handleExecuteSaveMonitor} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Harga Entry / Beli (Rp) <span className="text-rose-500">*</span>
+                <label className="block text-xs font-bold text-ink mb-1">
+                  Harga Entry / Beli (Rp) <span className="text-down">*</span>
                 </label>
                 <input
                   type="number"
@@ -4678,13 +4650,13 @@ export default function StockExplorer({ user }) {
                   value={monitorEntryPrice}
                   onChange={(e) => setMonitorEntryPrice(e.target.value)}
                   placeholder="Misal: 10825"
-                  className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-3.5 py-2 bg-sunken border border-line rounded-sm text-xs font-bold text-ink focus:ring-2 focus:ring-up"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-xs font-bold text-ink mb-1">
                     Target Harga / TP (Rp)
                   </label>
                   <input
@@ -4692,11 +4664,11 @@ export default function StockExplorer({ user }) {
                     value={monitorTargetPrice}
                     onChange={(e) => setMonitorTargetPrice(e.target.value)}
                     placeholder="Auto: +5%"
-                    className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3.5 py-2 bg-sunken border border-line rounded-sm text-xs font-bold text-ink focus:ring-2 focus:ring-up"
                   />
                   {/* Preset TP Cepat */}
                   <div className="flex flex-wrap items-center gap-1 mt-1.5">
-                    <span className="text-[10px] text-slate-400 font-medium">Preset TP:</span>
+                    <span className="text-[10px] text-muted font-medium">Preset TP:</span>
                     {[3, 5, 7, 10, 15].map((pct) => (
                       <button
                         key={pct}
@@ -4707,7 +4679,7 @@ export default function StockExplorer({ user }) {
                             setMonitorTargetPrice(roundToIDXTick(entry * (1 + pct / 100)).toString());
                           }
                         }}
-                        className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-slate-100 hover:bg-emerald-100 dark:bg-slate-800 dark:hover:bg-emerald-950/60 text-slate-700 hover:text-emerald-700 dark:text-slate-300 dark:hover:text-emerald-300 transition-colors"
+                        className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-sunken hover:bg-up-soft text-ink hover:text-up transition-colors"
                       >
                         +{pct}%
                       </button>
@@ -4715,7 +4687,7 @@ export default function StockExplorer({ user }) {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-xs font-bold text-ink mb-1">
                     Stop Loss / SL (Rp)
                   </label>
                   <input
@@ -4723,11 +4695,11 @@ export default function StockExplorer({ user }) {
                     value={monitorStopLoss}
                     onChange={(e) => setMonitorStopLoss(e.target.value)}
                     placeholder="Auto: -5%"
-                    className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3.5 py-2 bg-sunken border border-line rounded-sm text-xs font-bold text-ink focus:ring-2 focus:ring-up"
                   />
                   {/* Preset SL Cepat */}
                   <div className="flex flex-wrap items-center gap-1 mt-1.5">
-                    <span className="text-[10px] text-slate-400 font-medium">Preset SL:</span>
+                    <span className="text-[10px] text-muted font-medium">Preset SL:</span>
                     {[2, 3, 5, 7].map((pct) => (
                       <button
                         key={pct}
@@ -4738,7 +4710,7 @@ export default function StockExplorer({ user }) {
                             setMonitorStopLoss(roundToIDXTick(entry * (1 - pct / 100)).toString());
                           }
                         }}
-                        className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-slate-100 hover:bg-rose-100 dark:bg-slate-800 dark:hover:bg-rose-950/60 text-slate-700 hover:text-rose-700 dark:text-slate-300 dark:hover:text-rose-300 transition-colors"
+                        className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-sunken hover:bg-down-soft text-ink hover:text-down transition-colors"
                       >
                         -{pct}%
                       </button>
@@ -4752,18 +4724,18 @@ export default function StockExplorer({ user }) {
                 const calc = calculateMonitorMetrics(monitorEntryPrice, monitorTargetPrice, monitorStopLoss);
                 if (!calc.validEntry) {
                   return (
-                    <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 text-[11px] text-slate-500 dark:text-slate-400 text-center">
-                      💡 Masukkan harga entry untuk melihat kalkulasi keuntungan & risiko kerugian secara real-time
+                    <div className="p-2.5 rounded-sm bg-sunken border border-line text-[11px] text-muted text-center">
+                      ✦ Masukkan harga entry untuk melihat kalkulasi keuntungan & risiko kerugian secara real-time
                     </div>
                   );
                 }
 
                 return (
-                  <div className="space-y-2 p-3 rounded-xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/70 text-xs">
-                    <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700/60 pb-1.5">
+                  <div className="space-y-2 p-3 rounded-sm bg-sunken border border-line text-xs">
+                    <div className="flex items-center justify-between text-[11px] font-bold text-muted border-b border-line pb-1.5">
                       <span>Kalkulasi Rencana Pantauan:</span>
                       {calc.rrRatio != null && (
-                        <span className="px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 font-bold">
+                        <span className="px-1.5 py-0.5 rounded bg-sunken text-ink border border-line font-bold">
                           Risk/Reward: 1 : {calc.rrRatio}x
                         </span>
                       )}
@@ -4771,13 +4743,13 @@ export default function StockExplorer({ user }) {
 
                     <div className="grid grid-cols-2 gap-2">
                       {/* Potensi Untung */}
-                      <div className={`p-2 rounded-lg border transition-all ${
-                        calc.hasProfit && calc.profitNominal > 0
-                          ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300'
-                          : calc.hasProfit && calc.profitNominal < 0
-                          ? 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/40 text-rose-800 dark:text-rose-300'
-                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400'
-                      }`}>
+                      <div className={`p-2 rounded-sm border transition-all ${
+ calc.hasProfit && calc.profitNominal > 0
+ ? 'bg-up-soft border-up text-up '
+ : calc.hasProfit && calc.profitNominal < 0
+ ? 'bg-down-soft border-down text-down '
+ : 'bg-surface border-line text-muted '
+ }`}>
                         <div className="text-[10px] font-medium opacity-80 mb-0.5">Potensi Untung (TP)</div>
                         <div className="font-mono font-black text-xs flex flex-col">
                           <span>
@@ -4790,13 +4762,13 @@ export default function StockExplorer({ user }) {
                       </div>
 
                       {/* Risiko Kerugian */}
-                      <div className={`p-2 rounded-lg border transition-all ${
-                        calc.hasLoss && calc.lossNominal > 0
-                          ? 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/40 text-rose-800 dark:text-rose-300'
-                          : calc.hasLoss && calc.lossNominal < 0
-                          ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300'
-                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400'
-                      }`}>
+                      <div className={`p-2 rounded-sm border transition-all ${
+ calc.hasLoss && calc.lossNominal > 0
+ ? 'bg-down-soft border-down text-down '
+ : calc.hasLoss && calc.lossNominal < 0
+ ? 'bg-up-soft border-up text-up '
+ : 'bg-surface border-line text-muted '
+ }`}>
                         <div className="text-[10px] font-medium opacity-80 mb-0.5">Risiko Rugi (SL)</div>
                         <div className="font-mono font-black text-xs flex flex-col">
                           <span>
@@ -4813,64 +4785,64 @@ export default function StockExplorer({ user }) {
               })()}
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-bold text-ink mb-1">
                   Gaya Trading (Style)
                 </label>
                 <select
                   value={monitorStyle}
                   onChange={(e) => setMonitorStyle(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-3.5 py-2 bg-sunken border border-line rounded-sm text-xs font-bold text-ink focus:ring-2 focus:ring-up"
                 >
-                  <option value="swing">🌊 Swing Trading (Beberapa Hari - Minggu)</option>
-                  <option value="day">⚡ Day Trading (Harian)</option>
-                  <option value="invest">💎 Investing (Jangka Panjang)</option>
-                  <option value="scalp">🔥 Scalping (Menit - Jam)</option>
+                  <option value="swing">≈ Swing Trading (Beberapa Hari - Minggu)</option>
+                  <option value="day">» Day Trading (Harian)</option>
+                  <option value="invest">◆ Investing (Jangka Panjang)</option>
+                  <option value="scalp">↑ Scalping (Menit - Jam)</option>
                 </select>
               </div>
 
               {/* Checkbox Sudah Beli */}
-              <label className="flex items-start gap-2.5 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 cursor-pointer select-none">
+              <label className="flex items-start gap-2.5 p-3 rounded-sm border border-line bg-sunken cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={monitorAlreadyBought}
                   onChange={(e) => setMonitorAlreadyBought(e.target.checked)}
-                  className="w-4 h-4 mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 dark:border-slate-600 cursor-pointer"
+                  className="w-4 h-4 mt-0.5 rounded text-up focus:ring-up border-line cursor-pointer"
                 />
                 <div className="space-y-0.5">
-                  <div className="text-xs font-bold text-slate-900 dark:text-white">
+                  <div className="text-xs font-bold text-ink ">
                     Sudah Beli di Harga Ini (Bukan Antri)
                   </div>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
+                  <p className="text-[10px] text-muted leading-tight">
                     {monitorAlreadyBought 
-                      ? '✅ Posisi langsung aktif (OPEN) & mulai pantau Target TP/SL.' 
-                      : '⏳ Default: Antri Beli. Sistem akan menunggu harga pasar turun ke level beli sebelum memantau Win/Loss.'}
+                      ? '✓ Posisi langsung aktif (OPEN) & mulai pantau Target TP/SL.' 
+                      : '… Default: Antri Beli. Sistem akan menunggu harga pasar turun ke level beli sebelum memantau Win/Loss.'}
                   </p>
                 </div>
               </label>
 
-              <div className="p-3 bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-[11px] font-medium flex items-center justify-between">
-                <span className="font-bold text-slate-900 dark:text-white">
-                  {monitorAlreadyBought ? '📈 Status Awal: OPEN (Posisi Aktif)' : '⏳ Status Awal: WAITING_BUY (Antri Beli)'}
+              <div className="p-3 bg-sunken border border-line rounded-sm text-[11px] font-medium flex items-center justify-between">
+                <span className="font-bold text-ink ">
+                  {monitorAlreadyBought ? '↗ Status Awal: OPEN (Posisi Aktif)' : '… Status Awal: WAITING_BUY (Antri Beli)'}
                 </span>
-                <span className="text-slate-500 dark:text-slate-400 font-medium">
-                  {monitorAlreadyBought ? '🏆 Langsung pantau TP/SL' : '🎯 Aktif saat antrean match'}
+                <span className="text-muted font-medium">
+                  {monitorAlreadyBought ? '★ Langsung pantau TP/SL' : '◎ Aktif saat antrean match'}
                 </span>
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+              <div className="flex justify-end gap-2 pt-2 border-t border-line ">
                 <button
                   type="button"
                   onClick={() => setMonitorModal(null)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition-colors"
+                  className="px-4 py-2 bg-sunken hover:bg-sunken text-ink text-xs font-bold rounded-sm transition-colors"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={savingMonitor}
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center gap-1.5 disabled:opacity-50"
+                  className="px-5 py-2 bg-up hover:bg-up text-on-accent text-xs font-bold rounded-sm shadow-md transition-all flex items-center gap-1.5 disabled:opacity-50"
                 >
-                  {savingMonitor ? 'Menyimpan...' : '🎯 Mulai Pantau'}
+                  {savingMonitor ? 'Menyimpan...' : '◎ Mulai Pantau'}
                 </button>
               </div>
             </form>
@@ -4879,12 +4851,12 @@ export default function StockExplorer({ user }) {
       )}
 
       {showAiModal && aiResearch && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/65 backdrop-blur-sm p-4 animate-in fade-in" onClick={() => setShowAiModal(false)}>
-          <div role="dialog" aria-modal="true" aria-labelledby="ai-research-title" className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-2xl max-h-[85vh] flex flex-col animate-in zoom-in-95" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800">
+        <div className="modal-backdrop z-[60] animate-in fade-in" onClick={() => setShowAiModal(false)}>
+          <div role="dialog" aria-modal="true" aria-labelledby="ai-research-title" className="modal-panel sm:max-w-2xl max-h-[85vh] flex flex-col animate-in zoom-in-95" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-line ">
               <div className="flex items-center gap-2.5">
-                <h3 id="ai-research-title" className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                  <span>✨</span> Riset AI — {aiResearch.ticker}
+                <h3 id="ai-research-title" className="text-sm font-bold text-ink flex items-center gap-2">
+                  <span>✦</span> Riset AI — {aiResearch.ticker}
                 </h3>
                 {(() => {
                   const v = (aiResearch.buyHoldSell || '').toUpperCase();
@@ -4892,10 +4864,10 @@ export default function StockExplorer({ user }) {
                   const isSell = v === 'JUAL' || v === 'SELL';
                   return (
                     <span className={`px-2.5 py-0.5 rounded-full text-xs font-black uppercase ${
-                      isBuy ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800' :
-                      isSell ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-300 dark:border-rose-800' :
-                      'bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
-                    }`}>
+ isBuy ? 'bg-up-soft text-up border border-up ' :
+ isSell ? 'bg-down-soft text-down border border-down ' :
+ 'bg-warn-soft text-warn border border-warn '
+ }`}>
                       {isBuy ? 'BELI' : isSell ? 'JUAL' : 'HOLD'}
                     </span>
                   );
@@ -4908,15 +4880,15 @@ export default function StockExplorer({ user }) {
                     setShowAiModal(false);
                   }}
                   disabled={isAiLoading || aiStatus === 'PENDING' || aiStatus === 'PROCESSING'}
-                  className="px-2.5 py-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 rounded-lg border border-indigo-200 dark:border-indigo-800 transition-colors flex items-center gap-1"
+                  className="px-2.5 py-1 text-[11px] font-bold text-ink hover:bg-sunken rounded-sm border border-line transition-colors flex items-center gap-1"
                   title="Paksa AI menganalisis ulang saham ini dengan data dan berita paling baru"
                 >
-                  <span>🔄</span> Perbarui Riset
+                  <span>↻</span> Perbarui Riset
                 </button>
-                <button onClick={() => setShowAiModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg leading-none p-1">✕</button>
+                <button onClick={() => setShowAiModal(false)} className="text-muted hover:text-ink text-lg leading-none p-1">✕</button>
               </div>
             </div>
-            <div className="px-6 py-5 overflow-y-auto text-xs leading-relaxed text-slate-700 dark:text-slate-300 space-y-2">
+            <div className="px-6 py-5 overflow-y-auto text-xs leading-relaxed text-ink space-y-2">
               {renderAiMarkdown(aiResearch.content)}
             </div>
           </div>
@@ -4926,16 +4898,16 @@ export default function StockExplorer({ user }) {
       {/* ── TOAST NOTIFICATION BANNER ───────────────────────────────────── */}
       {toast && (
         <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5 duration-200">
-          <div className={`px-4 py-3 rounded-2xl shadow-2xl border text-xs font-bold flex items-center gap-2.5 backdrop-blur-md ${
-            toast.type === 'error'
-              ? 'bg-rose-50/95 dark:bg-rose-950/95 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200'
-              : toast.type === 'warning'
-              ? 'bg-amber-50/95 dark:bg-amber-950/95 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200'
-              : 'bg-emerald-50/95 dark:bg-emerald-950/95 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200'
-          }`}>
-            <span>{toast.type === 'error' ? '❌' : toast.type === 'warning' ? '⚠️' : '✅'}</span>
+          <div className={`px-4 py-3 rounded-md shadow-2xl border text-xs font-bold flex items-center gap-2.5 ${
+ toast.type === 'error'
+ ? 'bg-down-soft border-down text-down '
+ : toast.type === 'warning'
+ ? 'bg-warn-soft border-warn text-warn '
+ : 'bg-up-soft border-up text-up '
+ }`}>
+            <span>{toast.type === 'error' ? '×' : toast.type === 'warning' ? '▲' : '✓'}</span>
             <span>{toast.message}</span>
-            <button onClick={() => setToast(null)} className="ml-2 text-slate-400 hover:text-slate-600 text-xs">✕</button>
+            <button onClick={() => setToast(null)} className="ml-2 text-muted hover:text-ink text-xs">✕</button>
           </div>
         </div>
       )}

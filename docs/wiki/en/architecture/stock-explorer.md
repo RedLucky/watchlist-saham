@@ -13,6 +13,8 @@ version: "1.0.0"
 
 Code: `src/components/StockExplorer.jsx` (state `activeTab`: `'collections' | 'explorer' | 'compare'`).
 
+Look: "Bursa 1985" tokens ([Design System](./design-system.md)). The page title and the three tabs stay sticky under the mobile header (`top-12`, `top-0` on desktop). The analysis cockpit uses the standard `.tabs` / `.tab` classes; all 9 dialogs use `.modal-backdrop` / `.modal-panel` (bottom sheet on phones). In the stock banner "Simpan ke Koleksi" is the only primary button.
+
 ---
 
 ## 1. Koleksi Saham (default tab)

@@ -4,6 +4,11 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-10-07] feat | Stock Explorer Migrated to Bursa 1985
+- ~1,900 palette classes, 8 gradients, 120 large radii and 145 lines of UI emoji in `StockExplorer.jsx` replaced by theme tokens and Unicode symbols (user-chosen collection emoji are kept).
+- Sticky newspaper-style page title + standard tabs; cockpit tabs use `.tabs/.tab` (`role="tab"`); all 9 dialogs use `.modal-*` (bottom sheet on phones); banner buttons follow one-primary hierarchy.
+- Guard test now covers `StockExplorer.jsx` and catches side radii (`rounded-r-xl`).
+
 ## [2026-10-07] feat | Analisis Saham Page Migrated (StockTable, RRG)
 - `StockTable`: token styling, segmented quick filters, sortable header buttons, keyboard-expandable rows; desktop column grid from 768px, phone cards with a 3-column trade-level strip.
 - `SectorRrgPanel`: quadrant filter as tabs, flat legend and sector cards.

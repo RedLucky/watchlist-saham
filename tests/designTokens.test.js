@@ -26,14 +26,19 @@ const MIGRATED_FILES = [
   // TASK-8835: Analisis Saham page
   'src/components/StockTable.jsx',
   'src/components/SectorRrgPanel.jsx',
+  // TASK-4102: Stock Explorer
+  'src/components/StockExplorer.jsx',
 ];
+
+/** Lines that handle user-chosen collection emoji (data, not UI icons) may contain emoji. */
+const USER_EMOJI_LINE = /emoji/i;
 
 /** Patterns that belong to the old look and must not appear in migrated files. */
 const FORBIDDEN = [
   { name: 'raw palette colour', pattern: /\b(?:bg|text|border|ring|from|via|to|fill|stroke|shadow|outline|divide|accent|decoration)-(?:slate|gray|zinc|indigo|blue|sky|cyan|violet|purple|fuchsia|pink|rose|red|orange|amber|yellow|lime|green|emerald|teal)-\d{2,3}\b/ },
   { name: 'gradient', pattern: /\bbg-gradient-to-|\blinear-gradient\(/ },
   { name: 'glass blur', pattern: /\bbackdrop-blur/ },
-  { name: 'large radius', pattern: /\brounded-(?:xl|2xl|3xl)\b/ },
+  { name: 'large radius', pattern: /\brounded-(?:[trblse]{1,2}-)?(?:xl|2xl|3xl)\b/ },
   { name: 'hard-coded hex colour in className', pattern: /className=[^\n]*#[0-9a-fA-F]{3,6}\b/ },
   { name: 'colour emoji', pattern: /\p{Emoji_Presentation}|\uFE0F/u },
 ];
@@ -45,6 +50,7 @@ for (const file of MIGRATED_FILES) {
 
     source.split('\n').forEach((line, index) => {
       for (const { name, pattern } of FORBIDDEN) {
+        if (name === 'colour emoji' && USER_EMOJI_LINE.test(line)) continue;
         if (pattern.test(line)) problems.push(`line ${index + 1}: ${name}: ${line.trim().slice(0, 120)}`);
       }
     });

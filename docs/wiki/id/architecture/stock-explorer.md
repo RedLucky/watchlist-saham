@@ -13,6 +13,8 @@ version: "1.0.0"
 
 Kode: `src/components/StockExplorer.jsx` (state `activeTab`: `'collections' | 'explorer' | 'compare'`).
 
+Tampilan: token "Bursa 1985" ([Design System](./design-system.md)). Judul halaman dan tiga tab tetap menempel (sticky) di bawah header mobile (`top-12`, `top-0` di desktop). Cockpit analisis memakai class standar `.tabs` / `.tab`; kesembilan dialog memakai `.modal-backdrop` / `.modal-panel` (bottom sheet di HP). Di banner saham, "Simpan ke Koleksi" adalah satu-satunya tombol utama.
+
 ---
 
 ## 1. Koleksi Saham (tab default)
