@@ -11,7 +11,11 @@ import { calculateVolumeMA } from '../indicators.js';
 import { calculateRawDividendYield } from '../scoring/dividend.js';
 import { getExchangeRateSync } from '../currencyService.js';
 import { getBandarmologiVerdict } from '../scoring/smartMoney.js';
-import { calculateTransactionFlows } from '../transactionFlowEngine.js';
+import {
+  calculateTransactionFlows,
+  aggregateMarketTransactionFlows,
+  generateMarketBriefing,
+} from '../transactionFlowEngine.js';
 
 // In-Memory TTL Cache (30s) to prevent repetitive JSON parsing of thousands of records
 const STOCKS_CACHE_TTL_MS = 30 * 1000;
@@ -87,13 +91,40 @@ export class DatabaseProvider extends DataProvider {
         }
       }
 
-      return {
+      // Market Transaction Flow Aggregation & Executive Briefing
+      let stocksForFlow = cachedStocksResult || [];
+      if (stocksForFlow.length === 0) {
+        try {
+          stocksForFlow = await this.getStocks();
+        } catch (_) {}
+      }
+
+      const ihsgStock = ihsg ? {
+        ticker: '^JKSE',
+        name: 'IHSG Composite',
+        price: Number(ihsg.price || 7200),
+        volume: Number(ihsg.volume || 0),
+        avgVolume3mo: Number(ihsg.avgVolume3mo || 0),
+        technicals: ihsgTech,
+      } : null;
+
+      const transactionFlow = aggregateMarketTransactionFlows(stocksForFlow, ihsgStock);
+
+      const baseMarket = {
         indexName: 'IHSG',
         indexValue: ihsg?.price || 7200,
         indexChange: ihsgChange,
         indexTrend,
         volumeVsAvg: Number(volumeVsAvg.toFixed(4)),
         advanceDecline: { advance, decline, unchanged },
+      };
+
+      const briefing = generateMarketBriefing(baseMarket, transactionFlow);
+
+      return {
+        ...baseMarket,
+        transactionFlow,
+        briefing,
       };
     } catch (e) {
       console.error("DatabaseProvider Market Error:", e);
@@ -103,7 +134,9 @@ export class DatabaseProvider extends DataProvider {
         indexChange: 0,
         indexTrend: 'sideways',
         volumeVsAvg: 1,
-        advanceDecline: { advance: 1, decline: 1, unchanged: 1 }
+        advanceDecline: { advance: 1, decline: 1, unchanged: 1 },
+        transactionFlow: aggregateMarketTransactionFlows([], null),
+        briefing: generateMarketBriefing({ indexValue: 7000, indexChange: 0, indexTrend: 'sideways' }, null),
       };
     }
   }

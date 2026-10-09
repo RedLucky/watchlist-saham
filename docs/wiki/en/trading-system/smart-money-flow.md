@@ -52,9 +52,10 @@ Computes **Inflow (Gross Buy)**, **Outflow (Gross Sell)**, and **Netflow (Net Bu
 3. **Units & Dominant Flow Classification**:
    - Every window outputs **Rupiah (`Rp`)**, **Lot** ($\text{shares} / 100$), and **% of Total Turnover** (`shareOfTurnoverPct`, `netflowPct`), plus a `dominantPlayer` badge (`FOREIGN_ACCUMULATION`, `DOMESTIC_ACCUMULATION`, `FOREIGN_DISTRIBUTION`, `DOMESTIC_DISTRIBUTION`, or `BALANCED`).
 4. **Provider & API Exposure**:
-   - `src/lib/providers/DatabaseProvider.js` attaches `transactionFlow` to every mapped stock in the 30-second in-memory cache (`getStocks()`).
+   - `src/lib/providers/DatabaseProvider.js` attaches `transactionFlow` to every mapped stock in the 30-second in-memory cache (`getStocks()`), and attaches `transactionFlow` and `briefing` in `getMarketData()`.
    - `GET /api/stocks` exposes `transactionFlow` on both candidate list items and `?ticker=XXXX` single-stock lookups (used by Analisis Saham `DetailPanel`).
    - `GET /api/stocks/[ticker]` exposes `transactionFlow` in the full stock dossier response (used by `StockExplorer`).
+   - `GET /api/market` exposes `transactionFlow` (multi-period IHSG composite flow) and `briefing` (executive daily market summary and tactical advice).
 5. **UI Presentation & Component Integration**:
    - `src/lib/transactionFlowPresenter.js` provides pure Rupiah (`formatFlowRupiah`), BEI Lot (`formatFlowLots`), buy/sell pressure split (`computeGrossSplitPct`), and Bursa 1985 semantic badge helpers (`getNetflowTone`, `getDominantFlowBadge`, `getFlowSourceBadge`).
    - `src/components/TransactionFlowPanel.jsx` renders interactive `1d`/`1w`/`1m`/`1y` timeframe tabs, 3-column Foreign / Domestic / Active Market cards with Gross Buy, Gross Sell, buy/sell pressure bars, Netflow box, and a 4-period side-by-side comparison matrix table in both `DetailPanel.jsx` (Analisis Saham) and `StockExplorer.jsx` (`Smart Money & KSEI` tab).

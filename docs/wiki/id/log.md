@@ -4,6 +4,11 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-10-09] feat | Integrasi Arus Transaksi IHSG Komposit & Rangkuman Harian ke /api/market (`TASK-9251`)
+- Memperbarui `DatabaseProvider.getMarketData()` dan `YahooProvider.getMarketData()` agar melampirkan `transactionFlow` multi-periode (`1d`, `1w`, `1m`, `1y`) dan `briefing` (poin penting pasar dan panduan taktis harian).
+- Mengekspos properti `transactionFlow` dan `briefing` pada respons JSON `GET /api/market`.
+- Menambahkan 2 unit test di `tests/marketTransactionFlowApi.test.js` untuk menguji kalkulasi provider dan serialisasi muatan API.
+
 ## [2026-10-09] feat | Mesin Agregasi Arus Transaksi Pasar Keseluruhan & Ringkasan Harian Pasar (`TASK-8142`)
 - Menambahkan `aggregateMarketTransactionFlows(stocks, ihsgStock)` pada `src/lib/transactionFlowEngine.js` untuk menjumlahkan Inflow, Outflow, dan Netflow Asing, Domestik, serta Arus Aktif dari seluruh emiten aktif pada rentang `1d`, `1w`, `1m`, dan `1y`, dengan fallback ke indeks `^JKSE`.
 - Menambahkan `generateMarketBriefing(marketData, marketFlow)` untuk mensintesis pergerakan IHSG, kedalaman pasar (advance/decline), aktivitas volume vs rata-rata 3 bulan, dan netflow asing menjadi status sentimen pasar serta 4 poin rangkuman eksekutif dan panduan taktis harian.

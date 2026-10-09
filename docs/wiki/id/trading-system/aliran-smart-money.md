@@ -52,9 +52,10 @@ Menghitung **Inflow (Gross Buy)**, **Outflow (Gross Sell)**, dan **Netflow (Net 
 3. **Satuan & Klasifikasi Pelaku Dominan**:
    - Setiap periode menyajikan nilai dalam **Rupiah (`Rp`)**, **Lot** ($\text{lembar} / 100$), dan **% terhadap Total Nilai Transaksi** (`shareOfTurnoverPct`, `netflowPct`), lengkap dengan penanda `dominantPlayer` (`FOREIGN_ACCUMULATION`, `DOMESTIC_ACCUMULATION`, `FOREIGN_DISTRIBUTION`, `DOMESTIC_DISTRIBUTION`, atau `BALANCED`).
 4. **Integrasi Provider & Endpoint API**:
-   - `src/lib/providers/DatabaseProvider.js` menyertakan objek `transactionFlow` pada setiap saham di cache memori 30 detik (`getStocks()`).
+   - `src/lib/providers/DatabaseProvider.js` menyertakan objek `transactionFlow` pada setiap saham di cache memori 30 detik (`getStocks()`), serta melampirkan `transactionFlow` dan `briefing` pada `getMarketData()`.
    - `GET /api/stocks` mengirimkan `transactionFlow` baik pada daftar kandidat maupun pencarian tunggal `?ticker=XXXX` (digunakan oleh `DetailPanel` di halaman Analisis Saham).
    - `GET /api/stocks/[ticker]` menyertakan `transactionFlow` pada respons detail lengkap emiten (digunakan oleh `StockExplorer`).
+   - `GET /api/market` mengekspos `transactionFlow` (arus pasar komposit IHSG multi-periode) dan `briefing` (rangkuman eksekutif harian pasar dan panduan taktis).
 5. **Presentasi UI & Integrasi Komponen**:
    - `src/lib/transactionFlowPresenter.js` menyediakan helper murni pemformatan Rupiah (`formatFlowRupiah`), Lot BEI (`formatFlowLots`), rasio tekanan beli/jual (`computeGrossSplitPct`), serta lencana semantik Bursa 1985 (`getNetflowTone`, `getDominantFlowBadge`, `getFlowSourceBadge`).
    - `src/components/TransactionFlowPanel.jsx` menampilkan tab interaktif `1d`/`1w`/`1m`/`1y`, 3 kartu Investor Asing / Investor Domestik / Arus Uang Aktif (Gross Buy, Gross Sell, bar tekanan beli/jual, kotak Netflow), serta tabel matriks perbandingan 4 periode berdampingan di `DetailPanel.jsx` (Analisis Saham) dan `StockExplorer.jsx` (tab `Smart Money & KSEI`).

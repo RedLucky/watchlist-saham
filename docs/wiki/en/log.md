@@ -4,6 +4,11 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-10-09] feat | Expose IHSG Composite Transaction Flow & Briefing in /api/market (`TASK-9251`)
+- Updated `DatabaseProvider.getMarketData()` and `YahooProvider.getMarketData()` to attach multi-period `transactionFlow` (`1d`, `1w`, `1m`, `1y`) and `briefing` (executive daily market takeaways and tactical advice).
+- Exposed `transactionFlow` and `briefing` in `GET /api/market` JSON response.
+- Added 2 unit tests in `tests/marketTransactionFlowApi.test.js` validating provider calculations and API payload serialization.
+
 ## [2026-10-09] feat | Aggregate Market Transaction Flow Engine & Executive Daily Briefing (`TASK-8142`)
 - Added `aggregateMarketTransactionFlows(stocks, ihsgStock)` to `src/lib/transactionFlowEngine.js` to sum bottom-up Foreign, Domestic, and Active Market Inflows, Outflows, and Netflows across all active stocks for `1d`, `1w`, `1m`, and `1y` timeframes, with index ticker `^JKSE` fallback.
 - Added `generateMarketBriefing(marketData, marketFlow)` to synthesize index change, advance/decline breadth, volume activity vs 3-month average, and net foreign flow into actionable market sentiment and 4 executive daily takeaways.

@@ -31,6 +31,8 @@ export async function GET() {
       emoji: modeConfig.emoji,
       description: modeConfig.description,
     },
+    transactionFlow: marketData.transactionFlow || null,
+    briefing: marketData.briefing || null,
     lastUpdated: new Date().toISOString(),
   });
 }

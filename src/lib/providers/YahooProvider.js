@@ -1,6 +1,10 @@
 import { DataProvider } from './DataProvider';
 import { yahooFinance } from '../yahooClient';
 import { getSectorByTicker } from '../sectorUniverse';
+import {
+  aggregateMarketTransactionFlows,
+  generateMarketBriefing,
+} from '../transactionFlowEngine';
 
 // Daftar gabungan dari indeks ISSI, Kompas100, LQ45, dan IDX80
 const TARGET_TICKERS = [
@@ -72,13 +76,29 @@ export class YahooProvider extends DataProvider {
           ? 'down'
           : 'sideways';
 
-      const marketData = {
+      const baseMarket = {
         indexName: 'IHSG',
         indexValue: quote.regularMarketPrice || 7000,
         indexChange,
         indexTrend,
         volumeVsAvg: (quote.regularMarketVolume || 1) / (quote.averageDailyVolume10Day || 1),
         advanceDecline: { advance, decline, unchanged },
+      };
+
+      const ihsgStock = {
+        ticker: '^JKSE',
+        name: 'IHSG Composite',
+        price: quote.regularMarketPrice || 7000,
+        volume: quote.regularMarketVolume || 0,
+      };
+
+      const transactionFlow = aggregateMarketTransactionFlows(stocks, ihsgStock);
+      const briefing = generateMarketBriefing(baseMarket, transactionFlow);
+
+      const marketData = {
+        ...baseMarket,
+        transactionFlow,
+        briefing,
       };
 
       this.cache.market = marketData;
@@ -91,7 +111,9 @@ export class YahooProvider extends DataProvider {
         indexChange: 0,
         indexTrend: 'sideways',
         volumeVsAvg: 1,
-        advanceDecline: { advance: 1, decline: 1, unchanged: 1 }
+        advanceDecline: { advance: 1, decline: 1, unchanged: 1 },
+        transactionFlow: aggregateMarketTransactionFlows([], null),
+        briefing: generateMarketBriefing({ indexValue: 7000, indexChange: 0, indexTrend: 'sideways' }, null),
       };
     }
   }
