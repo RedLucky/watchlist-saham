@@ -10,6 +10,7 @@ import DividendTrapPanel from './DividendTrapPanel';
 import CorporateActionsPanel from './CorporateActionsPanel';
 import AutoRejectionLadderPanel from './AutoRejectionLadderPanel';
 import SmartMoneyLiquidityPanel from './SmartMoneyLiquidityPanel';
+import TransactionFlowPanel from './TransactionFlowPanel';
 import BloombergIntelligencePanel from './BloombergIntelligencePanel';
 import MonthlySeasonalityPanel from './MonthlySeasonalityPanel';
 import FinancialMatrixPanel from './FinancialMatrixPanel';
@@ -3045,7 +3046,7 @@ export default function StockExplorer({ user }) {
                           id: 'smartmoney',
                           label: 'Smart Money & Aliran',
                           icon: '≈',
-                          count: ((stockDetail.kseiShift || stockDetail.brokerConcentration || stockDetail.volumeProfile) ? 1 : 0) + (stockDetail.executionLimits ? 1 : 0),
+                          count: (stockDetail.transactionFlow ? 1 : 0) + ((stockDetail.kseiShift || stockDetail.brokerConcentration || stockDetail.volumeProfile) ? 1 : 0) + (stockDetail.executionLimits ? 1 : 0),
                         },
                         {
                           id: 'ai',
@@ -3144,6 +3145,13 @@ export default function StockExplorer({ user }) {
                   {/* TAB 3: SMART MONEY & ALIRAN */}
                   {cockpitTab === 'smartmoney' && (
                     <div className="space-y-6 animate-in fade-in">
+                      {/* MULTI-TIMEFRAME INFLOW, OUTFLOW & NETFLOW (DOMESTIK VS ASING: 1D/1W/1M/1Y) */}
+                      <TransactionFlowPanel
+                        transactionFlow={stockDetail?.transactionFlow}
+                        stock={stockDetail}
+                        ticker={stockDetail?.ticker}
+                      />
+
                       {/* BLOOMBERG OWN, BRKR, & GP: SMART MONEY & LIQUIDITY */}
                       {(stockDetail?.kseiShift || stockDetail?.brokerConcentration || stockDetail?.volumeProfile) && (
                         <SmartMoneyLiquidityPanel

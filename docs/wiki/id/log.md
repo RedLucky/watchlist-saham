@@ -4,6 +4,11 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-10-09] feat | Panel Arus Transaksi Multi-Periode di Analisis Saham & Stock Explorer (`TASK-7915`)
+- Menambahkan `src/lib/transactionFlowPresenter.js` dan `src/components/TransactionFlowPanel.jsx` sesuai aturan token Bursa 1985 untuk menampilkan **Inflow (Gross Buy)**, **Outflow (Gross Sell)**, dan **Netflow (Net Buy/Sell)** Investor Asing, Domestik, serta Arus Uang Aktif pada tab Harian (`1d`), Mingguan (`1w`), Bulanan (`1m`), dan Tahunan (`1y`), lengkap dengan tabel matriks perbandingan 4 periode.
+- Memasang `<TransactionFlowPanel />` di `src/components/DetailPanel.jsx` (Analisis Saham) dan `src/components/StockExplorer.jsx` (tab `Smart Money & KSEI`).
+- Menambahkan 12 unit test di `tests/transactionFlowPresenter.test.js` (cakupan baris, cabang, dan fungsi 100%).
+
 ## [2026-10-09] feat | Integrasi Arus Transaksi Multi-Periode ke DatabaseProvider & Endpoint API Saham (`TASK-6341`)
 - Memperbarui `src/lib/providers/DatabaseProvider.js` untuk menormalisasi `technicals.idxFlow` dan menyertakan `transactionFlow` (`1d`, `1w`, `1m`, `1y` Inflow/Outflow/Netflow Domestik & Asing) pada setiap objek saham.
 - Mengekspos `transactionFlow` di `src/app/api/stocks/route.js` (daftar kandidat maupun pencarian `?ticker=`) serta `src/app/api/stocks/[ticker]/route.js`.

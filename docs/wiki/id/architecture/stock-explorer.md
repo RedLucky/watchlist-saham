@@ -3,8 +3,8 @@ title: "Halaman Stock Explorer"
 description: "Tata letak dan perilaku tab Stock Explorer: Koleksi Saham, Pencarian Saham IDX, dan Komparasi"
 category: "architecture"
 tags: ["frontend", "stock-explorer", "collections", "ui"]
-last_updated: "2026-10-07"
-version: "1.0.0"
+last_updated: "2026-10-09"
+version: "1.1.0"
 ---
 
 # Halaman Stock Explorer
@@ -48,6 +48,7 @@ Kotak pencarian dengan autocomplete (8 hasil teratas berdasarkan ticker atau nam
 
 * Saat pertama dibuka, BBCA dimuat **diam-diam** (pengguna tetap di tab Koleksi).
 * Bila saham dibuka dari koleksi, muncul tombol **← Kembali ke Koleksi** beserta nama koleksinya. Memilih saham dari saran pencarian menyembunyikan tombol ini.
+* Tab cockpit **Smart Money & Aliran** menampilkan `TransactionFlowPanel` (`src/components/TransactionFlowPanel.jsx`, yang juga dipasang di `DetailPanel.jsx` pada halaman Analisis Saham) untuk menyajikan Inflow, Outflow, dan Netflow Harian (`1HK`), Mingguan (`5HK`), Bulanan (`20HK`), hingga Tahunan (`250HK`) bagi Investor Asing, Domestik, dan Arus Pasar Aktif, diikuti oleh `SmartMoneyLiquidityPanel` dan `AutoRejectionLadderPanel`.
 
 ## 3. Komparasi
 

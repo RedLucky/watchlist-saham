@@ -3,8 +3,8 @@ title: "Stock Explorer Pages"
 description: "Layout and behaviour of the Stock Explorer tabs: Koleksi Saham, Pencarian Saham IDX and Komparasi"
 category: "architecture"
 tags: ["frontend", "stock-explorer", "collections", "ui"]
-last_updated: "2026-10-07"
-version: "1.0.0"
+last_updated: "2026-10-09"
+version: "1.1.0"
 ---
 
 # Stock Explorer Pages
@@ -48,6 +48,7 @@ Search box with autocomplete (top 8 matches on ticker or company name), then the
 
 * On first load BBCA is preloaded **silently** (the user stays on the Koleksi tab).
 * When the stock was opened from a collection, a **← Kembali ke Koleksi** button shows the source collection. Picking a stock from the search suggestions hides it.
+* The **Smart Money & Aliran** cockpit tab renders `TransactionFlowPanel` (`src/components/TransactionFlowPanel.jsx`, also mounted in Analisis Saham `DetailPanel.jsx`) showing Daily (`1HK`), Weekly (`5HK`), Monthly (`20HK`), and Yearly (`250HK`) Inflow, Outflow, and Netflow for Foreign, Domestic, and Active Market participants, followed by `SmartMoneyLiquidityPanel` and `AutoRejectionLadderPanel`.
 
 ## 3. Komparasi
 

@@ -4,6 +4,11 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-10-09] feat | Multi-Timeframe Transaction Flow Panel in Stock Analysis & Explorer (`TASK-7915`)
+- Added `src/lib/transactionFlowPresenter.js` and `src/components/TransactionFlowPanel.jsx` following Bursa 1985 token rules to display Domestic, Foreign, and Active Market **Inflow (Gross Buy)**, **Outflow (Gross Sell)**, and **Netflow (Net Buy/Sell)** across Daily (`1d`), Weekly (`1w`), Monthly (`1m`), and Yearly (`1y`) tabs plus a 4-period comparison matrix table.
+- Mounted `<TransactionFlowPanel />` in `src/components/DetailPanel.jsx` (Analisis Saham) and `src/components/StockExplorer.jsx` (`Smart Money & KSEI` tab).
+- Added 12 unit tests in `tests/transactionFlowPresenter.test.js` (100% line, branch, and function coverage).
+
 ## [2026-10-09] feat | Wire Multi-Period Transaction Flows into DatabaseProvider & Stock APIs (`TASK-6341`)
 - Updated `src/lib/providers/DatabaseProvider.js` to normalize `technicals.idxFlow` and attach `transactionFlow` (`1d`, `1w`, `1m`, `1y` Domestic & Foreign Inflow/Outflow/Netflow) on every mapped stock.
 - Exposed `transactionFlow` in `src/app/api/stocks/route.js` (candidate list and `?ticker=` lookup) and `src/app/api/stocks/[ticker]/route.js`.

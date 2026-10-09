@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import ScoreBar from './ScoreBar';
 import Tooltip from './Tooltip';
 import StockChart from './StockChart';
+import TransactionFlowPanel from './TransactionFlowPanel';
 import { roundToIDXTick, calculateMonitorMetrics } from '@/lib/tradeSetup';
 
 export default function DetailPanel({ stock, mode, styleName }) {
@@ -447,6 +448,15 @@ export default function DetailPanel({ stock, mode, styleName }) {
         )}
       </div>
     </div>
+  </div>
+
+  {/* Multi-Timeframe Transaction Flow (Inflow, Outflow & Netflow: Domestik vs Asing) */}
+  <div className="lg:col-span-3 mt-2">
+    <TransactionFlowPanel
+      transactionFlow={stock.transactionFlow}
+      stock={stock}
+      ticker={stock.ticker}
+    />
   </div>
   </div>
   </div>

@@ -55,3 +55,6 @@ Menghitung **Inflow (Gross Buy)**, **Outflow (Gross Sell)**, dan **Netflow (Net 
    - `src/lib/providers/DatabaseProvider.js` menyertakan objek `transactionFlow` pada setiap saham di cache memori 30 detik (`getStocks()`).
    - `GET /api/stocks` mengirimkan `transactionFlow` baik pada daftar kandidat maupun pencarian tunggal `?ticker=XXXX` (digunakan oleh `DetailPanel` di halaman Analisis Saham).
    - `GET /api/stocks/[ticker]` menyertakan `transactionFlow` pada respons detail lengkap emiten (digunakan oleh `StockExplorer`).
+5. **Presentasi UI & Integrasi Komponen**:
+   - `src/lib/transactionFlowPresenter.js` menyediakan helper murni pemformatan Rupiah (`formatFlowRupiah`), Lot BEI (`formatFlowLots`), rasio tekanan beli/jual (`computeGrossSplitPct`), serta lencana semantik Bursa 1985 (`getNetflowTone`, `getDominantFlowBadge`, `getFlowSourceBadge`).
+   - `src/components/TransactionFlowPanel.jsx` menampilkan tab interaktif `1d`/`1w`/`1m`/`1y`, 3 kartu Investor Asing / Investor Domestik / Arus Uang Aktif (Gross Buy, Gross Sell, bar tekanan beli/jual, kotak Netflow), serta tabel matriks perbandingan 4 periode berdampingan di `DetailPanel.jsx` (Analisis Saham) dan `StockExplorer.jsx` (tab `Smart Money & KSEI`).

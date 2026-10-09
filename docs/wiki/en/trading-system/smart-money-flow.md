@@ -55,3 +55,6 @@ Computes **Inflow (Gross Buy)**, **Outflow (Gross Sell)**, and **Netflow (Net Bu
    - `src/lib/providers/DatabaseProvider.js` attaches `transactionFlow` to every mapped stock in the 30-second in-memory cache (`getStocks()`).
    - `GET /api/stocks` exposes `transactionFlow` on both candidate list items and `?ticker=XXXX` single-stock lookups (used by Analisis Saham `DetailPanel`).
    - `GET /api/stocks/[ticker]` exposes `transactionFlow` in the full stock dossier response (used by `StockExplorer`).
+5. **UI Presentation & Component Integration**:
+   - `src/lib/transactionFlowPresenter.js` provides pure Rupiah (`formatFlowRupiah`), BEI Lot (`formatFlowLots`), buy/sell pressure split (`computeGrossSplitPct`), and Bursa 1985 semantic badge helpers (`getNetflowTone`, `getDominantFlowBadge`, `getFlowSourceBadge`).
+   - `src/components/TransactionFlowPanel.jsx` renders interactive `1d`/`1w`/`1m`/`1y` timeframe tabs, 3-column Foreign / Domestic / Active Market cards with Gross Buy, Gross Sell, buy/sell pressure bars, Netflow box, and a 4-period side-by-side comparison matrix table in both `DetailPanel.jsx` (Analisis Saham) and `StockExplorer.jsx` (`Smart Money & KSEI` tab).
