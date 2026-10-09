@@ -279,6 +279,52 @@ async function syncIdxStockSummaryFlow(options = {}) {
           entry.raw.idxFlow = mergeIdxFlowHistory(entry.raw.idxFlow, row, MAX_IDX_FLOW_DAYS);
           entry.raw.idxFlowUpdatedAt = new Date().toISOString();
           entry.dirty = true;
+
+          // Upsert into relational StockDailyFlow table
+          if (db.stockDailyFlow && typeof db.stockDailyFlow.upsert === 'function') {
+            const dateObj = new Date(`${row.date}T00:00:00.000Z`);
+            const vol = BigInt(row.volume || 0);
+            const val = BigInt(row.value || 0);
+            const fb = BigInt(row.foreignBuy || 0);
+            const fs = BigInt(row.foreignSell || 0);
+            const dbBuy = vol >= fb ? vol - fb : 0n;
+            const dbSell = vol >= fs ? vol - fs : 0n;
+
+            await db.stockDailyFlow.upsert({
+              where: {
+                ticker_date: {
+                  ticker: row.ticker,
+                  date: dateObj,
+                },
+              },
+              update: {
+                close: Number(row.close || 0),
+                high: row.high != null ? Number(row.high) : Number(row.close || 0),
+                low: row.low != null ? Number(row.low) : Number(row.close || 0),
+                volume: vol,
+                value: val,
+                foreignBuy: fb,
+                foreignSell: fs,
+                domesticBuy: dbBuy,
+                domesticSell: dbSell,
+                source: 'idx',
+              },
+              create: {
+                ticker: row.ticker,
+                date: dateObj,
+                close: Number(row.close || 0),
+                high: row.high != null ? Number(row.high) : Number(row.close || 0),
+                low: row.low != null ? Number(row.low) : Number(row.close || 0),
+                volume: vol,
+                value: val,
+                foreignBuy: fb,
+                foreignSell: fs,
+                domesticBuy: dbBuy,
+                domesticSell: dbSell,
+                source: 'idx',
+              },
+            }).catch(() => {});
+          }
         }
       } catch (dateErr) {
         console.warn(`[IDX-FLOW] Skip date ${iso}: ${dateErr.message}`);

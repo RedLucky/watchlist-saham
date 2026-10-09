@@ -4,6 +4,13 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-10-09] feat | Idempotent IDX Flow Migration Script & Relational Scraper Sync (`TASK-6438`)
+- Created `src/scripts/migrate-idx-flow-to-table.js` to parse `StockData.technicals.idxFlow` JSON arrays and insert records idempotently into `StockDailyFlow` using `createMany({ skipDuplicates: true })`.
+- Executed migration live against PostgreSQL database, migrating all 832 stocks (832 daily records) into the relational table.
+- Updated `src/scripts/sync-idx-flow.js` to upsert daily scraped BEI records directly into `StockDailyFlow` on each run alongside preserving the rolling JSON window in `StockData.technicals`.
+- Added unit tests in `tests/stockDailyFlowMigration.test.js` validating idempotent JSON-to-table migration, duplicate handling, and UTC midnight date parsing.
+- Updated bilingual wiki documentation in `docs/wiki/en/trading-system/smart-money-flow.md` and `docs/wiki/id/trading-system/aliran-smart-money.md`.
+
 ## [2026-10-09] feat | Relational StockDailyFlow Prisma Schema & DB Push (`TASK-5120`)
 - Added relational model `StockDailyFlow` to `prisma/schema.prisma` with foreign key relation to `StockData`, composite unique constraint `@@unique([ticker, date])`, and indexes on `[ticker, date]`, `[date]`, and `[ticker]`.
 - Synchronized PostgreSQL database using `prisma db push` and regenerated Prisma Client with full typing for `stockDailyFlow`.

@@ -4,6 +4,13 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-10-09] feat | Skrip Migrasi Idempoten Arus Transaksi BEI & Sinkronisasi Scraper Relasional (`TASK-6438`)
+- Membuat `src/scripts/migrate-idx-flow-to-table.js` untuk mem-parsing array JSON `StockData.technicals.idxFlow` dan memasukkannya secara idempoten ke tabel `StockDailyFlow` menggunakan `createMany({ skipDuplicates: true })`.
+- Menjalankan migrasi langsung terhadap database PostgreSQL, berhasil memigrasikan 832 saham (832 catatan harian) ke tabel relasional baru.
+- Memperbarui `src/scripts/sync-idx-flow.js` agar langsung menyimpan baris harian hasil scrape BEI ke `StockDailyFlow` via `upsert` sekaligus mempertahankan jendela bergulir JSON pada `StockData.technicals`.
+- Menambahkan unit test di `tests/stockDailyFlowMigration.test.js` untuk memvalidasi migrasi idempoten, penanganan duplikasi, dan normalisasi tanggal UTC tengah malam.
+- Memperbarui dokumentasi dwibahasa di `docs/wiki/en/trading-system/smart-money-flow.md` dan `docs/wiki/id/trading-system/aliran-smart-money.md`.
+
 ## [2026-10-09] feat | Skema Prisma Relasional StockDailyFlow & Sinkronisasi DB (`TASK-5120`)
 - Menambahkan model relasional `StockDailyFlow` pada `prisma/schema.prisma` dengan relasi *foreign key* ke `StockData`, batasan unik komposit `@@unique([ticker, date])`, serta indeks pada `[ticker, date]`, `[date]`, dan `[ticker]`.
 - Menyinkronkan database PostgreSQL via `prisma db push` dan meregenerasi Prisma Client untuk model `stockDailyFlow`.
