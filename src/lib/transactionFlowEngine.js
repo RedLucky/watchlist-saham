@@ -495,3 +495,271 @@ export function calculateTransactionFlows(stockInput = {}) {
   };
 }
 
+/**
+ * Formats a Rupiah number into compact Indonesian notation (T, M, Jt, Rb).
+ * Internal helper for market briefing generation without circular dependencies.
+ *
+ * @param {number} amountRp - Value in Rupiah.
+ * @param {boolean} [withSign=false] - Whether to prefix positive values with '+'.
+ * @returns {string} Formatted compact string.
+ */
+function formatCompactRupiah(amountRp, withSign = false) {
+  const num = Number(amountRp);
+  if (!Number.isFinite(num) || num === 0) return 'Rp 0';
+  const abs = Math.abs(num);
+  const sign = num > 0 ? (withSign ? '+' : '') : '-';
+
+  if (abs >= 1e12) {
+    return `${sign}Rp ${(abs / 1e12).toFixed(1).replace('.', ',')} T`;
+  }
+  if (abs >= 1e9) {
+    return `${sign}Rp ${(abs / 1e9).toFixed(1).replace('.', ',')} M`;
+  }
+  if (abs >= 1e6) {
+    return `${sign}Rp ${(abs / 1e6).toFixed(1).replace('.', ',')} Jt`;
+  }
+  return `${sign}Rp ${abs.toLocaleString('id-ID')}`;
+}
+
+/**
+ * Aggregates multi-timeframe transaction flows across the entire market (IHSG).
+ * Sums bottom-up from active stocks if available, otherwise falls back to index stock (^JKSE).
+ *
+ * @param {Array<object>} [stocks=[]] - Array of stocks, ideally with pre-calculated `transactionFlow`.
+ * @param {object} [ihsgStock=null] - Index stock object (^JKSE) for fallback or comparison.
+ * @returns {object} Aggregated market transaction flow report (`periods['1d'|'1w'|'1m'|'1y']`).
+ */
+export function aggregateMarketTransactionFlows(stocks = [], ihsgStock = null) {
+  const safeStocks = Array.isArray(stocks) ? stocks : [];
+  const periods = {};
+
+  // Extract or compute flows for all stocks
+  const stockFlows = [];
+  for (const s of safeStocks) {
+    if (!s) continue;
+    if (s.transactionFlow && s.transactionFlow.periods) {
+      stockFlows.push(s.transactionFlow);
+    } else if (s.technicals || s.price != null) {
+      try {
+        stockFlows.push(calculateTransactionFlows(s));
+      } catch (_) {}
+    }
+  }
+
+  for (const periodKey of Object.keys(FLOW_PERIOD_DAYS)) {
+    let totalTurnoverRp = 0;
+    let totalVolumeShares = 0;
+    let fInRp = 0;
+    let fOutRp = 0;
+    let fInShares = 0;
+    let fOutShares = 0;
+    let dInRp = 0;
+    let dOutRp = 0;
+    let dInShares = 0;
+    let dOutShares = 0;
+    let actInRp = 0;
+    let actOutRp = 0;
+    let actInShares = 0;
+    let actOutShares = 0;
+    let idxCount = 0;
+    let validStockCount = 0;
+
+    for (const flow of stockFlows) {
+      const p = flow?.periods?.[periodKey];
+      if (!p) continue;
+      validStockCount++;
+
+      totalTurnoverRp += Number(p.totalTurnoverRp || 0);
+      totalVolumeShares += Number(p.totalVolumeShares || (p.totalLots ? p.totalLots * SHARES_PER_LOT : 0));
+
+      fInRp += Number(p.foreign?.inflowRp || 0);
+      fOutRp += Number(p.foreign?.outflowRp || 0);
+      fInShares += Number((p.foreign?.inflowLots || 0) * SHARES_PER_LOT);
+      fOutShares += Number((p.foreign?.outflowLots || 0) * SHARES_PER_LOT);
+
+      dInRp += Number(p.domestic?.inflowRp || 0);
+      dOutRp += Number(p.domestic?.outflowRp || 0);
+      dInShares += Number((p.domestic?.inflowLots || 0) * SHARES_PER_LOT);
+      dOutShares += Number((p.domestic?.outflowLots || 0) * SHARES_PER_LOT);
+
+      actInRp += Number(p.activeFlow?.inflowRp || 0);
+      actOutRp += Number(p.activeFlow?.outflowRp || 0);
+      actInShares += Number((p.activeFlow?.inflowLots || 0) * SHARES_PER_LOT);
+      actOutShares += Number((p.activeFlow?.outflowLots || 0) * SHARES_PER_LOT);
+
+      if (p.source === 'idx') idxCount++;
+    }
+
+    if (validStockCount === 0) {
+      if (ihsgStock) {
+        try {
+          const fallbackFlow = calculateTransactionFlows(ihsgStock);
+          periods[periodKey] = fallbackFlow?.periods?.[periodKey] || createEmptyWindowSummary(periodKey);
+          continue;
+        } catch (_) {}
+      }
+      periods[periodKey] = createEmptyWindowSummary(periodKey);
+      continue;
+    }
+
+    const source = idxCount === validStockCount
+      ? 'idx'
+      : (idxCount > 0 ? 'hybrid' : 'estimated');
+
+    const foreign = buildParticipantSummary({
+      inflowRp: fInRp,
+      outflowRp: fOutRp,
+      inflowShares: fInShares,
+      outflowShares: fOutShares,
+      totalTurnoverRp,
+    });
+
+    const domestic = buildParticipantSummary({
+      inflowRp: dInRp,
+      outflowRp: dOutRp,
+      inflowShares: dInShares,
+      outflowShares: dOutShares,
+      totalTurnoverRp,
+    });
+
+    const activeFlow = buildParticipantSummary({
+      inflowRp: actInRp,
+      outflowRp: actOutRp,
+      inflowShares: actInShares,
+      outflowShares: actOutShares,
+      totalTurnoverRp,
+    });
+
+    periods[periodKey] = {
+      period: periodKey,
+      label: FLOW_PERIOD_LABELS[periodKey] || periodKey,
+      days: FLOW_PERIOD_DAYS[periodKey],
+      idxDays: idxCount,
+      source,
+      totalTurnoverRp,
+      totalVolumeShares,
+      totalLots: sharesToLots(totalVolumeShares),
+      foreign,
+      domestic,
+      activeFlow,
+      dominantPlayer: classifyDominantFlow(foreign, domestic),
+      stockCount: validStockCount,
+    };
+  }
+
+  const hasIdx = Object.values(periods).some((p) => p.source === 'idx' || p.source === 'hybrid');
+
+  return {
+    ticker: '^JKSE',
+    name: 'IHSG Composite',
+    updatedAt: new Date().toISOString(),
+    hasIdxData: hasIdx,
+    periods,
+  };
+}
+
+/**
+ * Generates an executive daily market briefing synthesizing index trend,
+ * market breadth, liquidity, and domestic/foreign transaction flows.
+ *
+ * @param {object} [marketData={}] - Market summary from getMarketData().
+ * @param {object} [marketFlow=null] - Aggregated market transaction flow.
+ * @returns {object} Executive market briefing with headline, bullets, tone, and action guidance.
+ */
+export function generateMarketBriefing(marketData = {}, marketFlow = null) {
+  const indexValue = Number(marketData?.indexValue || marketData?.index?.value || 0);
+  const indexChange = Number(marketData?.indexChange ?? marketData?.index?.change ?? 0);
+  const indexTrend = marketData?.indexTrend || marketData?.index?.trend || (indexChange > 0 ? 'up' : indexChange < 0 ? 'down' : 'sideways');
+
+  const advance = Number(marketData?.advanceDecline?.advance || 0);
+  const decline = Number(marketData?.advanceDecline?.decline || 0);
+  const unchanged = Number(marketData?.advanceDecline?.unchanged || 0);
+  const totalStocks = advance + decline + unchanged || 1;
+  const advancePct = Math.round((advance / totalStocks) * 100);
+
+  const volRatio = Number(marketData?.volumeVsAvg || marketData?.volume?.vsAverage || 1);
+  const flow1d = marketFlow?.periods?.['1d'] || null;
+  const flow1w = marketFlow?.periods?.['1w'] || null;
+  const foreignNet1d = Number(flow1d?.foreign?.netflowRp || 0);
+  const foreignNet1w = Number(flow1w?.foreign?.netflowRp || 0);
+  const totalTurnover1d = Number(flow1d?.totalTurnoverRp || 0);
+
+  let sentimentTone = 'neutral';
+  let status = 'sideways_neutral';
+  let summaryBadge = 'Pasar Berimbang';
+
+  if (indexChange > 0.1 && foreignNet1d > 0) {
+    sentimentTone = 'up';
+    status = 'bullish_accumulation';
+    summaryBadge = 'Bullish Akumulasi Asing';
+  } else if (indexChange > 0.1 && foreignNet1d <= 0) {
+    sentimentTone = 'warn';
+    status = 'bullish_divergence';
+    summaryBadge = 'Penguatan Didorong Domestik';
+  } else if (indexChange < -0.1 && foreignNet1d < 0) {
+    sentimentTone = 'down';
+    status = 'bearish_distribution';
+    summaryBadge = 'Distribusi Asing';
+  } else if (indexChange < -0.1 && foreignNet1d >= 0) {
+    sentimentTone = 'warn';
+    status = 'bearish_accumulation';
+    summaryBadge = 'Koreksi Ditampung Asing';
+  } else {
+    sentimentTone = indexChange >= 0 ? 'up' : 'down';
+    status = 'sideways_consolidation';
+    summaryBadge = 'Konsolidasi Pasar';
+  }
+
+  const changeFormatted = `${indexChange >= 0 ? '+' : ''}${indexChange.toFixed(2)}%`;
+  const fNetFmt = formatCompactRupiah(foreignNet1d, true);
+  const fAction = foreignNet1d > 0 ? 'net buy (akumulasi)' : foreignNet1d < 0 ? 'net sell (distribusi)' : 'berimbang';
+  const flow1wNote = flow1w ? ` (${formatCompactRupiah(foreignNet1w, true)} dalam 5 hari bursa terakhir)` : '';
+
+  const keyPoints = [
+    {
+      category: 'Indeks & Kedalaman',
+      text: `IHSG di level ${indexValue.toLocaleString('id-ID', { maximumFractionDigits: 0 })} (${changeFormatted}) dengan ${advance} saham menguat (${advancePct}%) vs ${decline} saham melemah.`,
+      tone: indexChange >= 0 ? 'up' : 'down',
+    },
+    {
+      category: 'Arus Investor Asing',
+      text: `Investor Asing mencatatkan ${fAction} sebesar ${fNetFmt} hari ini${flow1wNote}.`,
+      tone: foreignNet1d > 0 ? 'up' : foreignNet1d < 0 ? 'down' : 'muted',
+    },
+    {
+      category: 'Likuiditas Pasar',
+      text: `Aktivitas perdagangan berada di level ${volRatio.toFixed(2)}x rata-rata 3 bulan${totalTurnover1d > 0 ? ` dengan perputaran pasar ${formatCompactRupiah(totalTurnover1d)}` : ''}.`,
+      tone: volRatio >= 1.0 ? 'ink' : 'muted',
+    },
+  ];
+
+  let tacticalAdvice = 'Prioritaskan saham berfundamental kuat dengan likuiditas memadai.';
+  if (status === 'bullish_accumulation') {
+    tacticalAdvice = 'Momentum pasar kondusif didukung inflow asing; fokus pada saham uptrend di sektor pemimpin (leading sector).';
+  } else if (status === 'bullish_divergence') {
+    tacticalAdvice = 'IHSG menguat namun asing melepas saham; waspadai potensi false breakout dan pasang trailing stop ketat.';
+  } else if (status === 'bearish_distribution') {
+    tacticalAdvice = 'Tekanan jual dan outflow asing mendominasi; batasi eksposur agresif, amankan modal, dan prioritaskan saham defensif/dividen.';
+  } else if (status === 'bearish_accumulation') {
+    tacticalAdvice = 'Indeks terkoreksi namun asing mulai menampung; cermati peluang buy-on-weakness di area support kuat.';
+  } else {
+    tacticalAdvice = 'Pasar berkonsolidasi sideways; terapkan strategi swing trading jangka pendek di batas support-resistance teruji.';
+  }
+
+  keyPoints.push({
+    category: 'Panduan Taktis',
+    text: tacticalAdvice,
+    tone: 'ink',
+  });
+
+  return {
+    status,
+    summaryBadge,
+    sentimentTone,
+    headline: `Rangkuman Pasar: IHSG ${changeFormatted}, Asing ${fNetFmt}`,
+    keyPoints,
+    tacticalAdvice,
+    updatedAt: new Date().toISOString(),
+  };
+}
+

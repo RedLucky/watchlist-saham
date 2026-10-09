@@ -4,6 +4,11 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-10-09] feat | Aggregate Market Transaction Flow Engine & Executive Daily Briefing (`TASK-8142`)
+- Added `aggregateMarketTransactionFlows(stocks, ihsgStock)` to `src/lib/transactionFlowEngine.js` to sum bottom-up Foreign, Domestic, and Active Market Inflows, Outflows, and Netflows across all active stocks for `1d`, `1w`, `1m`, and `1y` timeframes, with index ticker `^JKSE` fallback.
+- Added `generateMarketBriefing(marketData, marketFlow)` to synthesize index change, advance/decline breadth, volume activity vs 3-month average, and net foreign flow into actionable market sentiment and 4 executive daily takeaways.
+- Added 6 comprehensive unit tests in `tests/marketTransactionFlowEngine.test.js` (99.71% line coverage, 100% function coverage).
+
 ## [2026-10-09] feat | Multi-Timeframe Transaction Flow Panel in Stock Analysis & Explorer (`TASK-7915`)
 - Added `src/lib/transactionFlowPresenter.js` and `src/components/TransactionFlowPanel.jsx` following Bursa 1985 token rules to display Domestic, Foreign, and Active Market **Inflow (Gross Buy)**, **Outflow (Gross Sell)**, and **Netflow (Net Buy/Sell)** across Daily (`1d`), Weekly (`1w`), Monthly (`1m`), and Yearly (`1y`) tabs plus a 4-period comparison matrix table.
 - Mounted `<TransactionFlowPanel />` in `src/components/DetailPanel.jsx` (Analisis Saham) and `src/components/StockExplorer.jsx` (`Smart Money & KSEI` tab).

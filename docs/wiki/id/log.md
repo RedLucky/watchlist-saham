@@ -4,6 +4,11 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-10-09] feat | Mesin Agregasi Arus Transaksi Pasar Keseluruhan & Ringkasan Harian Pasar (`TASK-8142`)
+- Menambahkan `aggregateMarketTransactionFlows(stocks, ihsgStock)` pada `src/lib/transactionFlowEngine.js` untuk menjumlahkan Inflow, Outflow, dan Netflow Asing, Domestik, serta Arus Aktif dari seluruh emiten aktif pada rentang `1d`, `1w`, `1m`, dan `1y`, dengan fallback ke indeks `^JKSE`.
+- Menambahkan `generateMarketBriefing(marketData, marketFlow)` untuk mensintesis pergerakan IHSG, kedalaman pasar (advance/decline), aktivitas volume vs rata-rata 3 bulan, dan netflow asing menjadi status sentimen pasar serta 4 poin rangkuman eksekutif dan panduan taktis harian.
+- Menambahkan 6 unit test di `tests/marketTransactionFlowEngine.test.js` (cakupan baris 99.71%, fungsi 100%).
+
 ## [2026-10-09] feat | Panel Arus Transaksi Multi-Periode di Analisis Saham & Stock Explorer (`TASK-7915`)
 - Menambahkan `src/lib/transactionFlowPresenter.js` dan `src/components/TransactionFlowPanel.jsx` sesuai aturan token Bursa 1985 untuk menampilkan **Inflow (Gross Buy)**, **Outflow (Gross Sell)**, dan **Netflow (Net Buy/Sell)** Investor Asing, Domestik, serta Arus Uang Aktif pada tab Harian (`1d`), Mingguan (`1w`), Bulanan (`1m`), dan Tahunan (`1y`), lengkap dengan tabel matriks perbandingan 4 periode.
 - Memasang `<TransactionFlowPanel />` di `src/components/DetailPanel.jsx` (Analisis Saham) dan `src/components/StockExplorer.jsx` (tab `Smart Money & KSEI`).
