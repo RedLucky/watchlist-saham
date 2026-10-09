@@ -4,6 +4,11 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-10-09] feat | Skema Prisma Relasional StockDailyFlow & Sinkronisasi DB (`TASK-5120`)
+- Menambahkan model relasional `StockDailyFlow` pada `prisma/schema.prisma` dengan relasi *foreign key* ke `StockData`, batasan unik komposit `@@unique([ticker, date])`, serta indeks pada `[ticker, date]`, `[date]`, dan `[ticker]`.
+- Menyinkronkan database PostgreSQL via `prisma db push` dan meregenerasi Prisma Client untuk model `stockDailyFlow`.
+- Mendokumentasikan arsitektur relasional pada `docs/wiki/en/architecture/database-models.md` dan `docs/wiki/id/architecture/model-database.md`.
+
 ## [2026-10-09] feat | Pemasangan Arus Transaksi IHSG & Ringkasan Harian di Halaman Analisis Saham (`TASK-6819`)
 - Membuat `src/components/MarketBriefingCard.jsx` yang sepenuhnya mematuhi token desain Bursa 1985 untuk menyajikan 4 poin eksekutif pasar (Indeks & Kedalaman, Netflow Asing, Likuiditas, dan Rekomendasi Taktis AI).
 - Memasang `MarketBriefingCard` dan `TransactionFlowPanel` komposit pasar (`ticker="IHSG"`) pada halaman utama Analisis Saham (`src/components/Dashboard.jsx`).

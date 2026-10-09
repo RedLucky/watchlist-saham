@@ -4,6 +4,11 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-10-09] feat | Relational StockDailyFlow Prisma Schema & DB Push (`TASK-5120`)
+- Added relational model `StockDailyFlow` to `prisma/schema.prisma` with foreign key relation to `StockData`, composite unique constraint `@@unique([ticker, date])`, and indexes on `[ticker, date]`, `[date]`, and `[ticker]`.
+- Synchronized PostgreSQL database using `prisma db push` and regenerated Prisma Client with full typing for `stockDailyFlow`.
+- Documented relational schema in `docs/wiki/en/architecture/database-models.md` and `docs/wiki/id/architecture/model-database.md`.
+
 ## [2026-10-09] feat | Mount IHSG Transaction Flow & Executive Daily Briefing in Stock Analysis (`TASK-6819`)
 - Created `src/components/MarketBriefingCard.jsx` conforming strictly to Bursa 1985 design tokens to display executive daily takeaways (Index & Breadth, Foreign Netflow, Liquidity, and AI Tactical Advice).
 - Mounted `MarketBriefingCard` and whole-market `TransactionFlowPanel` (with `ticker="IHSG"`) directly in `src/components/Dashboard.jsx` under the Stock Analysis (`watchlist`) tab.

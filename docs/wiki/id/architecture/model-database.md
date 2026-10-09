@@ -24,6 +24,18 @@ Tabel utama yang menyimpan seluruh data emiten saham di Indonesia:
 * `fundamentals`: Objek JSON berisi rasio finansial lengkap.
 * `technicals`: Objek JSON berisi deret indikator teknikal (RSI, DEMA, Supertrend, Volume).
 * `kseiLatest`, `kseiHistory`: Data histori kepemilikan efek dari KSEI.
+* `dailyFlows`: Relasi *one-to-many* ke model relasional `StockDailyFlow`.
+
+### 2. `StockDailyFlow`
+Model database relasional khusus untuk histori arus transaksi harian dari data resmi *Ringkasan Saham* BEI:
+* `ticker`: Kode saham relasi *foreign key* ke `StockData.ticker`.
+* `date`: Tanggal perdagangan bursa (`@db.Date`).
+* `close`, `high`, `low`: Harga penutupan, tertinggi, dan terendah harian.
+* `volume`, `value`: Total lembar saham dan nilai transaksi perputaran pasar (Rupiah).
+* `foreignBuy`, `foreignSell`: Jumlah lembar beli dan jual resmi investor asing BEI.
+* `domesticBuy`, `domesticSell`: Porsi beli dan jual investor domestik.
+* `source`: Sumber data (`"idx"` | `"estimated"`).
+* Batasan unik: `@@unique([ticker, date])` lengkap dengan indeks komposit untuk query rentang waktu super cepat.
 
 ### 2. `Recommendation`
 Tabel pencatatan rekam jejak sinyal dan saham yang dipantau pengguna:

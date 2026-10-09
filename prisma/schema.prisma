@@ -95,6 +95,7 @@ model StockData {
   kseiLatest      String?  @db.Text
   kseiHistory     String?  @db.Text
   isDelisted      Boolean  @default(false)
+  dailyFlows      StockDailyFlow[]
 
   @@index([ticker])
   @@index([sector])
@@ -104,6 +105,31 @@ model StockData {
   @@index([isDelisted])
   @@index([lastPriceSync])
   @@index([lastDeepSync])
+}
+
+/// Relational daily transaction flow per stock from BEI Ringkasan Saham.
+model StockDailyFlow {
+  id           Int       @id @default(autoincrement())
+  ticker       String
+  date         DateTime  @db.Date
+  close        Float
+  high         Float?
+  low          Float?
+  volume       BigInt
+  value        BigInt
+  foreignBuy   BigInt
+  foreignSell  BigInt
+  domesticBuy  BigInt?
+  domesticSell BigInt?
+  source       String    @default("idx") // "idx" | "estimated"
+  createdAt    DateTime  @default(now())
+
+  stock        StockData @relation(fields: [ticker], references: [ticker], onDelete: Cascade)
+
+  @@unique([ticker, date])
+  @@index([ticker, date])
+  @@index([date])
+  @@index([ticker])
 }
 
 model PensionRecord {

@@ -24,6 +24,18 @@ The primary table for all Indonesian listed stocks:
 * `fundamentals` (Text/JSON): Parsed financial ratios (ROE, DER, OPM, EPS, PER, PBV, Net Profit array).
 * `technicals` (Text/JSON): RSI, Supertrend, DEMA, MACD, Volume series.
 * `kseiLatest`, `kseiHistory` (Text/JSON): Scriptless shareholding distribution.
+* `dailyFlows` (Relation): One-to-many relation to `StockDailyFlow`.
+
+### 2. `StockDailyFlow`
+Dedicated relational model for historical daily transaction flows scraped from official BEI *Ringkasan Saham*:
+* `ticker` (String): Foreign key referencing `StockData.ticker`.
+* `date` (DateTime, `@db.Date`): Trading date on BEI.
+* `close` (Float), `high` (Float?), `low` (Float?): Price quotes.
+* `volume`, `value` (BigInt): Total traded share count and turnover in Rupiah.
+* `foreignBuy`, `foreignSell` (BigInt): Official BEI foreign gross buy and sell shares.
+* `domesticBuy`, `domesticSell` (BigInt?): Derived domestic market clearing volume.
+* `source` (String, default: `"idx"`): Data origin identifier (`"idx"` | `"estimated"`).
+* Unique constraint: `@@unique([ticker, date])` with composite indexes for lightning-fast range queries.
 
 ### 2. `Recommendation`
 Persists the real-world performance record of stock picks and user-monitored tickers:
