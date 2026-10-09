@@ -4,6 +4,12 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-10-09] feat | Pemasangan Arus Transaksi IHSG & Ringkasan Harian di Halaman Analisis Saham (`TASK-6819`)
+- Membuat `src/components/MarketBriefingCard.jsx` yang sepenuhnya mematuhi token desain Bursa 1985 untuk menyajikan 4 poin eksekutif pasar (Indeks & Kedalaman, Netflow Asing, Likuiditas, dan Rekomendasi Taktis AI).
+- Memasang `MarketBriefingCard` dan `TransactionFlowPanel` komposit pasar (`ticker="IHSG"`) pada halaman utama Analisis Saham (`src/components/Dashboard.jsx`).
+- Menambahkan dukungan kustomisasi `title` dan `subtitle` pada `src/components/TransactionFlowPanel.jsx`.
+- Menambahkan unit test di `tests/transactionFlowPresenter.test.js` untuk memvalidasi integrasi komponen UI.
+
 ## [2026-10-09] feat | Integrasi Arus Transaksi IHSG Komposit & Rangkuman Harian ke /api/market (`TASK-9251`)
 - Memperbarui `DatabaseProvider.getMarketData()` dan `YahooProvider.getMarketData()` agar melampirkan `transactionFlow` multi-periode (`1d`, `1w`, `1m`, `1y`) dan `briefing` (poin penting pasar dan panduan taktis harian).
 - Mengekspos properti `transactionFlow` dan `briefing` pada respons JSON `GET /api/market`.

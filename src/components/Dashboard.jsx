@@ -23,7 +23,8 @@ import StockExplorer from './StockExplorer';
 import CorporateCalendar from './CorporateCalendar';
 import AiConsultationPanel from './AiConsultationPanel';
 import AuthModal from './AuthModal';
-import { hasPreviousMonthKseiData } from '@/lib/navigation';
+import MarketBriefingCard from './MarketBriefingCard';
+import TransactionFlowPanel from './TransactionFlowPanel';
 import { PageShell, PageHeader, SectionTitle } from './ui/PageShell';
 
 export default function Dashboard() {
@@ -236,11 +237,31 @@ export default function Dashboard() {
                 badge={lastUpdated ? <span className="badge badge-outline">Diperbarui {lastUpdated}</span> : null}
               />
 
+              {/* Executive Market Briefing */}
+              {market?.briefing && (
+                <section>
+                  <MarketBriefingCard briefing={market.briefing} />
+                </section>
+              )}
+
               {/* Market condition cards */}
               <section>
                 <SectionTitle note="data real-time BEI">Kondisi Pasar</SectionTitle>
                 <MarketBadge market={market} />
               </section>
+
+              {/* Whole Market IHSG Transaction Flow */}
+              {market?.transactionFlow && (
+                <section>
+                  <SectionTitle note="kumulatif seluruh pasar saham BEI">Arus Transaksi IHSG (Domestik &amp; Asing)</SectionTitle>
+                  <TransactionFlowPanel
+                    transactionFlow={market.transactionFlow}
+                    ticker="IHSG"
+                    title="Arus Transaksi IHSG Keseluruhan (Domestik vs Asing)"
+                    subtitle="Kumulatif perputaran Gross Buy (Inflow), Gross Sell (Outflow), dan Netflow seluruh pasar saham BEI lintas periode Harian (1HK), Mingguan (5HK), Bulanan (20HK), dan Tahunan (250HK)."
+                  />
+                </section>
+              )}
 
               {/* Strategy controls sit side by side on wide screens instead of stacked full width */}
               <section className="grid gap-3 xl:grid-cols-2 xl:items-start">

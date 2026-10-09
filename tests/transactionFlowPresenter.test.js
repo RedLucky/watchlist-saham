@@ -68,7 +68,7 @@ describe('transactionFlowPresenter — formatting & tone helpers', () => {
   });
 });
 
-describe('TransactionFlowPanel — UI mounting in DetailPanel and StockExplorer', () => {
+describe('TransactionFlowPanel & MarketBriefingCard — UI mounting in DetailPanel, StockExplorer, and Dashboard', () => {
   it('mounts TransactionFlowPanel in DetailPanel.jsx and StockExplorer.jsx', () => {
     const detailPanelSrc = readFileSync('src/components/DetailPanel.jsx', 'utf8');
     const stockExplorerSrc = readFileSync('src/components/StockExplorer.jsx', 'utf8');
@@ -80,6 +80,20 @@ describe('TransactionFlowPanel — UI mounting in DetailPanel and StockExplorer'
     assert.match(stockExplorerSrc, /<TransactionFlowPanel/);
     assert.match(panelSrc, /Investor Asing \(Foreign\)/);
     assert.match(panelSrc, /Investor Domestik \(Lokal\)/);
+    assert.match(panelSrc, /displayTitle/);
+  });
+
+  it('mounts MarketBriefingCard and whole-market TransactionFlowPanel in Dashboard.jsx', () => {
+    const dashboardSrc = readFileSync('src/components/Dashboard.jsx', 'utf8');
+    const briefingCardSrc = readFileSync('src/components/MarketBriefingCard.jsx', 'utf8');
+
+    assert.match(dashboardSrc, /import MarketBriefingCard from '\.\/MarketBriefingCard'/);
+    assert.match(dashboardSrc, /import TransactionFlowPanel from '\.\/TransactionFlowPanel'/);
+    assert.match(dashboardSrc, /<MarketBriefingCard briefing=\{market\.briefing\}/);
+    assert.match(dashboardSrc, /<TransactionFlowPanel[\s\S]*?ticker="IHSG"/);
+
+    assert.match(briefingCardSrc, /Ringkasan Perkembangan Pasar Hari Ini/);
+    assert.match(briefingCardSrc, /Rekomendasi AI/);
   });
 });
 

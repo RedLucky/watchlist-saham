@@ -130,9 +130,17 @@ function ParticipantFlowCard({ title, subtitle, icon, flow }) {
  * @param {object} [props.transactionFlow] - Pre-calculated transactionFlow object from API.
  * @param {object} [props.stock] - Fallback stock object if transactionFlow is not passed directly.
  * @param {string} [props.ticker] - Optional ticker symbol for header display.
+ * @param {string} [props.title] - Optional custom title for header.
+ * @param {string} [props.subtitle] - Optional custom subtitle for header.
  * @returns {React.ReactElement|null} TransactionFlowPanel component.
  */
-export default function TransactionFlowPanel({ transactionFlow, stock, ticker }) {
+export default function TransactionFlowPanel({
+  transactionFlow,
+  stock,
+  ticker,
+  title,
+  subtitle,
+}) {
   const [selectedPeriod, setSelectedPeriod] = useState('1d');
 
   const flowReport = useMemo(() => {
@@ -156,6 +164,14 @@ export default function TransactionFlowPanel({ transactionFlow, stock, ticker })
   const sourceBadge = getFlowSourceBadge(activeWindow.source);
   const resolvedTicker = ticker || stock?.ticker || '';
 
+  const displayTitle = title || (
+    resolvedTicker
+      ? `Arus Transaksi Inflow & Netflow (Domestik vs Asing) — ${resolvedTicker}`
+      : 'Arus Transaksi Inflow & Netflow (Domestik vs Asing)'
+  );
+
+  const displaySubtitle = subtitle || 'Rincian Gross Buy (Inflow), Gross Sell (Outflow), dan Net Buy/Sell (Netflow) Harian, Mingguan, Bulanan hingga Tahunan.';
+
   return (
     <div className="bg-surface border border-line rounded-md p-4 sm:p-5 shadow-sm space-y-4">
       {/* Header & Badges */}
@@ -163,13 +179,10 @@ export default function TransactionFlowPanel({ transactionFlow, stock, ticker })
         <div>
           <h4 className="text-xs sm:text-sm font-bold text-ink uppercase tracking-wider flex items-center gap-2">
             <span className="font-mono">≈</span>
-            <span>
-              Arus Transaksi Inflow &amp; Netflow (Domestik vs Asing)
-              {resolvedTicker ? ` — ${resolvedTicker}` : ''}
-            </span>
+            <span>{displayTitle}</span>
           </h4>
           <p className="text-[11px] text-muted mt-0.5">
-            Rincian Gross Buy (Inflow), Gross Sell (Outflow), dan Net Buy/Sell (Netflow) Harian, Mingguan, Bulanan hingga Tahunan.
+            {displaySubtitle}
           </p>
         </div>
 

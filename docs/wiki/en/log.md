@@ -4,6 +4,12 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-10-09] feat | Mount IHSG Transaction Flow & Executive Daily Briefing in Stock Analysis (`TASK-6819`)
+- Created `src/components/MarketBriefingCard.jsx` conforming strictly to Bursa 1985 design tokens to display executive daily takeaways (Index & Breadth, Foreign Netflow, Liquidity, and AI Tactical Advice).
+- Mounted `MarketBriefingCard` and whole-market `TransactionFlowPanel` (with `ticker="IHSG"`) directly in `src/components/Dashboard.jsx` under the Stock Analysis (`watchlist`) tab.
+- Added custom `title` and `subtitle` support to `src/components/TransactionFlowPanel.jsx`.
+- Added unit tests in `tests/transactionFlowPresenter.test.js` validating component rendering and UI integration.
+
 ## [2026-10-09] feat | Expose IHSG Composite Transaction Flow & Briefing in /api/market (`TASK-9251`)
 - Updated `DatabaseProvider.getMarketData()` and `YahooProvider.getMarketData()` to attach multi-period `transactionFlow` (`1d`, `1w`, `1m`, `1y`) and `briefing` (executive daily market takeaways and tactical advice).
 - Exposed `transactionFlow` and `briefing` in `GET /api/market` JSON response.
