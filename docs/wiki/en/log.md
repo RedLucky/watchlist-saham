@@ -4,6 +4,11 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-10-09] feat | Wire Multi-Period Transaction Flows into DatabaseProvider & Stock APIs (`TASK-6341`)
+- Updated `src/lib/providers/DatabaseProvider.js` to normalize `technicals.idxFlow` and attach `transactionFlow` (`1d`, `1w`, `1m`, `1y` Domestic & Foreign Inflow/Outflow/Netflow) on every mapped stock.
+- Exposed `transactionFlow` in `src/app/api/stocks/route.js` (candidate list and `?ticker=` lookup) and `src/app/api/stocks/[ticker]/route.js`.
+- Added unit test suite `tests/transactionFlowApiWiring.test.js` with mocked Prisma boundaries.
+
 ## [2026-10-09] feat | IDX Stock Summary Daily Foreign/Domestic Flow Scraper (`TASK-5792`)
 - Added `src/scripts/sync-idx-flow.js` (`parseIdxStockSummaryPayload`, `mergeIdxFlowHistory`, `syncIdxStockSummaryFlow`) to scrape daily BEI *Ringkasan Saham* (`ForeignBuy`, `ForeignSell`, `Volume`, `Value`) and maintain a rolling 250-trading-day history in `StockData.technicals.idxFlow`.
 - Registered `sync-idx-flow.js` in `src/scripts/scraper-cron.js` daily scraper pipeline (`[3/3]`) and updated `deepSyncStockOnce` in `src/lib/syncService.js` to preserve existing `technicals.idxFlow` and `technicals.idxFlowUpdatedAt` during fundamental/technical refreshes.

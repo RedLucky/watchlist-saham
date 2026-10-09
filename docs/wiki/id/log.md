@@ -4,6 +4,11 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-10-09] feat | Integrasi Arus Transaksi Multi-Periode ke DatabaseProvider & Endpoint API Saham (`TASK-6341`)
+- Memperbarui `src/lib/providers/DatabaseProvider.js` untuk menormalisasi `technicals.idxFlow` dan menyertakan `transactionFlow` (`1d`, `1w`, `1m`, `1y` Inflow/Outflow/Netflow Domestik & Asing) pada setiap objek saham.
+- Mengekspos `transactionFlow` di `src/app/api/stocks/route.js` (daftar kandidat maupun pencarian `?ticker=`) serta `src/app/api/stocks/[ticker]/route.js`.
+- Menambahkan unit test `tests/transactionFlowApiWiring.test.js` dengan mock penuh pada batas Prisma.
+
 ## [2026-10-09] feat | Scraper Harian Arus Transaksi Asing/Domestik Ringkasan Saham BEI (`TASK-5792`)
 - Menambahkan `src/scripts/sync-idx-flow.js` (`parseIdxStockSummaryPayload`, `mergeIdxFlowHistory`, `syncIdxStockSummaryFlow`) untuk menarik data harian *Ringkasan Saham* BEI (`ForeignBuy`, `ForeignSell`, `Volume`, `Value`) dan menjaga histori bergulir 250 hari bursa di dalam `StockData.technicals.idxFlow`.
 - Mendaftarkan `sync-idx-flow.js` ke urutan scraper harian di `src/scripts/scraper-cron.js` (`[3/3]`) serta memperbarui `deepSyncStockOnce` di `src/lib/syncService.js` agar `technicals.idxFlow` dan `technicals.idxFlowUpdatedAt` tetap terjaga saat pembaruan fundamental/teknikal.

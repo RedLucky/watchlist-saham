@@ -59,6 +59,7 @@ export async function GET(request) {
         kseiHistory: s.kseiHistory || [],
         ownership: s.ownership || null,
         smartMoney: s.smartMoney || null,
+        transactionFlow: s.transactionFlow || null,
       });
     }
   }
@@ -205,6 +206,7 @@ export async function GET(request) {
       sectorBoost: s.sectorBoost,
       shareholders: s.rawData?.shareholders || [],
       smartMoney: s.rawData?.smartMoney || null,
+      transactionFlow: s.rawData?.transactionFlow || null,
       explanations,
     };
   });

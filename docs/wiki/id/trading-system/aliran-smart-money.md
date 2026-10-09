@@ -51,4 +51,7 @@ Menghitung **Inflow (Gross Buy)**, **Outflow (Gross Sell)**, dan **Netflow (Net 
    - Total volume dibagi antara Asing dan Domestik menggunakan `kseiLatest.foreignPercent` (dibatasi pada $[5\%, 85\%]$, bawaan $35\%$) disertai kemiringan arah beli (`resolveKseiFlowWeights`) dari delta bulanan KSEI.
 3. **Satuan & Klasifikasi Pelaku Dominan**:
    - Setiap periode menyajikan nilai dalam **Rupiah (`Rp`)**, **Lot** ($\text{lembar} / 100$), dan **% terhadap Total Nilai Transaksi** (`shareOfTurnoverPct`, `netflowPct`), lengkap dengan penanda `dominantPlayer` (`FOREIGN_ACCUMULATION`, `DOMESTIC_ACCUMULATION`, `FOREIGN_DISTRIBUTION`, `DOMESTIC_DISTRIBUTION`, atau `BALANCED`).
-
+4. **Integrasi Provider & Endpoint API**:
+   - `src/lib/providers/DatabaseProvider.js` menyertakan objek `transactionFlow` pada setiap saham di cache memori 30 detik (`getStocks()`).
+   - `GET /api/stocks` mengirimkan `transactionFlow` baik pada daftar kandidat maupun pencarian tunggal `?ticker=XXXX` (digunakan oleh `DetailPanel` di halaman Analisis Saham).
+   - `GET /api/stocks/[ticker]` menyertakan `transactionFlow` pada respons detail lengkap emiten (digunakan oleh `StockExplorer`).

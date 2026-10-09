@@ -51,4 +51,7 @@ Computes **Inflow (Gross Buy)**, **Outflow (Gross Sell)**, and **Netflow (Net Bu
    - Total volume is partitioned between Foreign and Domestic using `kseiLatest.foreignPercent` (clamped to $[5\%, 85\%]$, default $35\%$) with directional buy-ratio tilts (`resolveKseiFlowWeights`) scaled from monthly KSEI foreign and domestic institutional deltas.
 3. **Units & Dominant Flow Classification**:
    - Every window outputs **Rupiah (`Rp`)**, **Lot** ($\text{shares} / 100$), and **% of Total Turnover** (`shareOfTurnoverPct`, `netflowPct`), plus a `dominantPlayer` badge (`FOREIGN_ACCUMULATION`, `DOMESTIC_ACCUMULATION`, `FOREIGN_DISTRIBUTION`, `DOMESTIC_DISTRIBUTION`, or `BALANCED`).
-
+4. **Provider & API Exposure**:
+   - `src/lib/providers/DatabaseProvider.js` attaches `transactionFlow` to every mapped stock in the 30-second in-memory cache (`getStocks()`).
+   - `GET /api/stocks` exposes `transactionFlow` on both candidate list items and `?ticker=XXXX` single-stock lookups (used by Analisis Saham `DetailPanel`).
+   - `GET /api/stocks/[ticker]` exposes `transactionFlow` in the full stock dossier response (used by `StockExplorer`).

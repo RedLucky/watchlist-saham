@@ -19,6 +19,7 @@ import { calculateBrokerConcentration } from '@/lib/brokerConcentrationEngine';
 import { calculateVolumeProfile } from '@/lib/volumeProfileEngine';
 import { analyzeNewsSentiment } from '@/lib/newsSentimentEngine';
 import { calculateMonthlySeasonality } from '@/lib/monthlySeasonalityEngine';
+import { calculateTransactionFlows } from '@/lib/transactionFlowEngine';
 
 export const dynamic = 'force-dynamic';
 
@@ -593,6 +594,13 @@ export async function GET(request, { params }) {
       console.warn('[Seasonality] Error calculating monthly seasonality:', seasErr.message);
     }
 
+    let transactionFlow = null;
+    try {
+      transactionFlow = calculateTransactionFlows(enrichedStock);
+    } catch (flowErr) {
+      console.warn('[FLOW] Error calculating transaction flows:', flowErr.message);
+    }
+
     const responseData = {
       ...enrichedStock,
       kseiLatest,
@@ -620,6 +628,7 @@ export async function GET(request, { params }) {
       aiResearch,
       newsSentiment,
       monthlySeasonality,
+      transactionFlow,
       scores: {
         fundamental: fundamentalScore,
         technical: technicalScore,

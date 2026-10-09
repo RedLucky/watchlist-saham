@@ -11,6 +11,7 @@ import { calculateVolumeMA } from '../indicators.js';
 import { calculateRawDividendYield } from '../scoring/dividend.js';
 import { getExchangeRateSync } from '../currencyService.js';
 import { getBandarmologiVerdict } from '../scoring/smartMoney.js';
+import { calculateTransactionFlows } from '../transactionFlowEngine.js';
 
 // In-Memory TTL Cache (30s) to prevent repetitive JSON parsing of thousands of records
 const STOCKS_CACHE_TTL_MS = 30 * 1000;
@@ -292,9 +293,17 @@ export class DatabaseProvider extends DataProvider {
           macd: technicals.macd ?? { macdLine: 0, signalLine: 0, histogram: 0 },
           bollinger: technicals.bollinger ?? technicals.bollingerBands ?? { upper: s.price, middle: s.price, lower: s.price, bandwidth: 0 },
           bollingerBands: technicals.bollingerBands ?? technicals.bollinger ?? { upper: s.price, middle: s.price, lower: s.price, bandwidth: 0 },
+          idxFlow: Array.isArray(technicals.idxFlow) ? technicals.idxFlow : [],
+          idxFlowUpdatedAt: technicals.idxFlowUpdatedAt ?? null,
         };
 
         const brokerData = deriveBrokerData(normalizedTechnicals, Number(s.price || 0));
+        const transactionFlow = calculateTransactionFlows({
+          price: Number(s.price || 0),
+          volume: Number(s.volume || 0),
+          technicals: normalizedTechnicals,
+          kseiLatest,
+        });
         
         // Accurate market cap calculation from KSEI Listed Shares
         const sharesOutstanding = s.sharesOutstanding ? Number(s.sharesOutstanding) : (kseiLatest?.secNum ?? fundamentals.sharesOutstanding ?? null);
@@ -435,6 +444,7 @@ export class DatabaseProvider extends DataProvider {
           },
           technicals: normalizedTechnicals,
           brokerData,
+          transactionFlow,
           shareholders,
           ownership,
           insiderTrades,
