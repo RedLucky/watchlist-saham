@@ -4,6 +4,11 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-10-09] feat | Mesin Hibrida Arus Transaksi Domestik & Asing (`TASK-4108`)
+- Menambahkan `src/lib/transactionFlowEngine.js` (`calculateTransactionFlows`) untuk menghitung **Inflow (Gross Buy)**, **Outflow (Gross Sell)**, dan **Netflow (Net Buy/Sell)** Investor Asing, Domestik, serta Arus Uang Aktif pada jendela Harian (`1d` / 1HK), Mingguan (`1w` / 5HK), Bulanan (`1m` / 20HK), dan Tahunan (`1y` / 250HK).
+- Mendukung data resmi *Ringkasan Saham* BEI (`foreignBuy`, `foreignSell`, `volume`, `value`) ketika tersedia (`source: 'idx'`) dan beralih otomatis ke estimasi Close Location Value (CLV) + momentum harga logistik yang dikalibrasi dengan rasio kepemilikan asing dan delta bulanan KSEI (`source: 'estimated'` / `'hybrid'`).
+- Menyajikan seluruh metrik dalam satuan Rupiah (`Rp`), Lot BEI (`lembar / 100`), dan `% terhadap Total Nilai Transaksi`, lengkap dengan 13 unit test di `tests/transactionFlowEngine.test.js` (cakupan baris dan fungsi 100%).
+
 ## [2026-10-07] fix | Garis Moving Average Tidak Lagi Dua Nuansa Abu-Abu
 - **Masalah:** MA20 memakai `ink` dan MA50 memakai `muted` — dua-duanya abu-abu netral, jadi kedua garis sulit dibedakan dan terbaca sebagai satu garis.
 - MA20 sekarang biru kehijauan dan MA50 ungu, sementara MA200 tetap amber. kedua warna baru tidak bertabrakan dengan hijau (naik), merah (turun), maupun amber (warn), jadi warna garis tidak pernah menyiratkan arah harga — dan itulah yang sebelumnya disalahartikan.

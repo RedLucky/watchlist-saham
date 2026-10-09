@@ -38,7 +38,7 @@
 ## 🎯 Trading System & Market Operations
 
 * [Order Lifecycle & Win Rate Tracking](./trading-system/order-lifecycle.md) — Real-world order simulation: WAITING_BUY (queue/limit) -> OPEN (matched) -> WIN/LOSS/EXPIRED, and win rate calculation.
-* [Smart Money Flow & KSEI](./trading-system/smart-money-flow.md) — Institutional distribution tracking, foreign flow estimation, scriptless shareholder analysis from KSEI.
+* [Smart Money Flow & KSEI](./trading-system/smart-money-flow.md) — Institutional distribution tracking, hybrid Domestic/Foreign inflow & netflow engine (1D/1W/1M/1Y), and scriptless shareholder analysis from KSEI.
 * [Interactive Discord Bot & Alerts](./trading-system/discord-bot.md) — Two-way NLP conversational ticker queries, 30-day cache policy, rich embeds, and automated trade notification webhooks.
 * [Auto-Rejection Limits & Tick Ladder (ARA / ARB)](./trading-system/auto-rejection-ladder.md) — BEI official price limits, precision tick distance counting, and 7-step execution ladder.
 * [Portfolio Risk & Macro Stress Testing (PORT / MARS)](./trading-system/portfolio-risk-stress-test.md) — Weighted Portfolio Beta, 1-Day VaR 95%, and multi-scenario macro shock testing.

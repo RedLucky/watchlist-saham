@@ -38,7 +38,7 @@
 ## 🎯 Sistem Trading & Pasar Modal
 
 * [Siklus Hidup Order & Pelacakan Win Rate](./trading-system/siklus-hidup-order.md) — Simulasi order antre beli: WAITING_BUY -> OPEN -> WIN / LOSS / EXPIRED, dan rumus Win Rate riil.
-* [Aliran Smart Money & KSEI](./trading-system/aliran-smart-money.md) — Pelacakan kepemilikan institusi KSEI, foreign flow, dan deteksi akumulasi bandarmologi.
+* [Aliran Smart Money & KSEI](./trading-system/aliran-smart-money.md) — Pelacakan kepemilikan institusi KSEI, mesin hibrida inflow & netflow Domestik/Asing (1D/1W/1M/1Y), dan deteksi akumulasi bandarmologi.
 * [Bot Interaktif Discord & Notifikasi](./trading-system/bot-discord.md) — Ekstraksi kode saham alami (NLP), cache pintar 30 hari, format rich embed, dan peringatan webhook transaksi otomatis.
 * [Batas Auto-Rejection & Tangga Fraksi (ARA / ARB)](./trading-system/tangga-auto-rejection.md) — Batas harga regulasi BEI, perhitungan presisi jarak fraksi, dan tangga harga 7 tingkat.
 * [Manajemen Risiko Portofolio & Stress Testing (PORT / MARS)](./trading-system/manajemen-risiko-portofolio.md) — Weighted Beta portofolio, VaR 95% 1-hari, dan uji ketahanan skenario guncangan makro.

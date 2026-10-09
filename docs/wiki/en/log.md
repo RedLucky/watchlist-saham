@@ -4,6 +4,11 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-10-09] feat | Hybrid Domestic & Foreign Transaction Flow Engine (`TASK-4108`)
+- Added `src/lib/transactionFlowEngine.js` (`calculateTransactionFlows`) to compute Domestic, Foreign, and Active Money **Inflow (Gross Buy)**, **Outflow (Gross Sell)**, and **Netflow (Net Buy/Sell)** across Daily (`1d` / 1HK), Weekly (`1w` / 5HK), Monthly (`1m` / 20HK), and Yearly (`1y` / 250HK) windows.
+- Supports official IDX *Ringkasan Saham* daily rows (`foreignBuy`, `foreignSell`, `volume`, `value`) when present (`source: 'idx'`) and falls back to OHLCV Close Location Value + logistic price momentum calibrated with KSEI foreign ownership percentage and monthly institutional deltas (`source: 'estimated'` / `'hybrid'`).
+- Outputs all metrics in Rupiah (`Rp`), BEI Lots (`shares / 100`), and `% of Total Turnover`, with 13 unit tests in `tests/transactionFlowEngine.test.js` (100% line and function coverage).
+
 ## [2026-10-07] fix | Moving Average Lines Are No Longer Two Shades Of Grey
 - **Problem:** MA20 used `ink` and MA50 used `muted` — both neutral greys, so the two lines were hard to tell apart and read as one.
 - MA20 is now teal and MA50 violet, with MA200 staying amber. Neither new hue collides with the semantic green (up), red (down) or amber (warn), so a line colour never implies a price direction — which is what the greys were being mistaken for.
