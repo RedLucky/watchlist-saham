@@ -4,6 +4,13 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-10-09] feat | Optimize DatabaseProvider and Stock Detail API with Relational StockDailyFlow (`TASK-8391`)
+- Added `mapRelationalFlowRecord` helper to normalize PostgreSQL `StockDailyFlow` rows into the numeric format expected by `transactionFlowEngine`.
+- Updated `DatabaseProvider.getStocks()` to query `dailyFlows` directly via Prisma relation, prioritizing relational records with seamless fallback to `technicals.idxFlow` JSON.
+- Updated `src/app/api/stocks/[ticker]/route.js` to include `dailyFlows` on both initial lookup and fresh sync reloads, with automatic JSON fallback.
+- Added unit tests in `tests/stockDailyFlowMigration.test.js` validating relational record normalization and fallback compatibility.
+- Updated bilingual database architecture documentation in `docs/wiki/en/architecture/database-models.md` and `docs/wiki/id/architecture/model-database.md`.
+
 ## [2026-10-09] feat | Idempotent IDX Flow Migration Script & Relational Scraper Sync (`TASK-6438`)
 - Created `src/scripts/migrate-idx-flow-to-table.js` to parse `StockData.technicals.idxFlow` JSON arrays and insert records idempotently into `StockDailyFlow` using `createMany({ skipDuplicates: true })`.
 - Executed migration live against PostgreSQL database, migrating all 832 stocks (832 daily records) into the relational table.

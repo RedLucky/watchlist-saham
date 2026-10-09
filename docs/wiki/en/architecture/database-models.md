@@ -36,6 +36,7 @@ Dedicated relational model for historical daily transaction flows scraped from o
 * `domesticBuy`, `domesticSell` (BigInt?): Derived domestic market clearing volume.
 * `source` (String, default: `"idx"`): Data origin identifier (`"idx"` | `"estimated"`).
 * Unique constraint: `@@unique([ticker, date])` with composite indexes for lightning-fast range queries.
+* Query pattern: Loaded directly via `dailyFlows` relation in `DatabaseProvider.getStocks()` and `api/stocks/[ticker]/route.js`, automatically falling back to `technicals.idxFlow` JSON for legacy records.
 
 ### 2. `Recommendation`
 Persists the real-world performance record of stock picks and user-monitored tickers:

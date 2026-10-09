@@ -20,6 +20,7 @@ import { calculateVolumeProfile } from '@/lib/volumeProfileEngine';
 import { analyzeNewsSentiment } from '@/lib/newsSentimentEngine';
 import { calculateMonthlySeasonality } from '@/lib/monthlySeasonalityEngine';
 import { calculateTransactionFlows } from '@/lib/transactionFlowEngine';
+import { mapRelationalFlowRecord } from '@/lib/providers/DatabaseProvider';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,6 +53,25 @@ export async function GET(request, { params }) {
 
     const stock = await prisma.stockData.findUnique({
       where: { ticker },
+      include: {
+        dailyFlows: {
+          orderBy: { date: 'asc' },
+          take: 250,
+          select: {
+            date: true,
+            close: true,
+            high: true,
+            low: true,
+            volume: true,
+            value: true,
+            foreignBuy: true,
+            foreignSell: true,
+            domesticBuy: true,
+            domesticSell: true,
+            source: true,
+          },
+        },
+      },
     });
 
     if (!stock) {
@@ -61,6 +81,12 @@ export async function GET(request, { params }) {
     // Parse cached fields
     let fundamentals = parseJsonField(stock.fundamentals) || {};
     let technicals = parseJsonField(stock.technicals) || {};
+
+    // Prioritize relational StockDailyFlow records; fallback to JSON technicals.idxFlow
+    if (Array.isArray(stock.dailyFlows) && stock.dailyFlows.length > 0) {
+      technicals.idxFlow = stock.dailyFlows.map(mapRelationalFlowRecord).filter(Boolean);
+    }
+
     let kseiLatest = parseJsonField(stock.kseiLatest) || {};
     let kseiHistory = parseJsonField(stock.kseiHistory) || [];
     let ownership = parseJsonField(stock.ownership) || {};
@@ -80,17 +106,42 @@ export async function GET(request, { params }) {
       try {
         const syncResult = await deepSyncStock(ticker);
         if (syncResult?.success) {
-          const freshStock = await prisma.stockData.findUnique({ where: { ticker } });
+          const freshStock = await prisma.stockData.findUnique({
+            where: { ticker },
+            include: {
+              dailyFlows: {
+                orderBy: { date: 'asc' },
+                take: 250,
+                select: {
+                  date: true,
+                  close: true,
+                  high: true,
+                  low: true,
+                  volume: true,
+                  value: true,
+                  foreignBuy: true,
+                  foreignSell: true,
+                  domesticBuy: true,
+                  domesticSell: true,
+                  source: true,
+                },
+              },
+            },
+          });
           if (freshStock) {
             Object.assign(stock, freshStock);
             fundamentals = parseJsonField(freshStock.fundamentals) || {};
             technicals = parseJsonField(freshStock.technicals) || {};
+            if (Array.isArray(freshStock.dailyFlows) && freshStock.dailyFlows.length > 0) {
+              technicals.idxFlow = freshStock.dailyFlows.map(mapRelationalFlowRecord).filter(Boolean);
+            }
             dividendHistory = parseJsonField(freshStock.dividendHistory) || [];
             ownership = parseJsonField(freshStock.ownership) || {};
             kseiLatest = parseJsonField(freshStock.kseiLatest) || {};
             kseiHistory = parseJsonField(freshStock.kseiHistory) || [];
             insiderTrades = parseJsonField(freshStock.insiderTrades) || [];
           }
+
         }
       } catch (err) {
         console.error(`[StockDetail] Auto deep-sync failed for ${ticker}:`, err.message);

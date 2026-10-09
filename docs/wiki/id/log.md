@@ -4,6 +4,13 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-10-09] feat | Optimasi DatabaseProvider dan API Detail Saham dengan StockDailyFlow Relasional (`TASK-8391`)
+- Menambahkan helper `mapRelationalFlowRecord` untuk menormalisasi baris tabel PostgreSQL `StockDailyFlow` ke format numerik yang dibutuhkan oleh `transactionFlowEngine`.
+- Memperbarui `DatabaseProvider.getStocks()` agar mengambil data `dailyFlows` secara relasional via Prisma, memprioritaskan data relasional dan beralih halus ke JSON `technicals.idxFlow` bila belum termigrasi.
+- Memperbarui `src/app/api/stocks/[ticker]/route.js` untuk menyertakan `dailyFlows` baik pada pencarian langsung maupun setelah deep-sync selesai, dengan *fallback* otomatis ke JSON.
+- Menambahkan unit test di `tests/stockDailyFlowMigration.test.js` untuk memverifikasi normalisasi data relasional dan kompatibilitas *fallback*.
+- Memperbarui dokumentasi dwibahasa di `docs/wiki/en/architecture/database-models.md` dan `docs/wiki/id/architecture/model-database.md`.
+
 ## [2026-10-09] feat | Skrip Migrasi Idempoten Arus Transaksi BEI & Sinkronisasi Scraper Relasional (`TASK-6438`)
 - Membuat `src/scripts/migrate-idx-flow-to-table.js` untuk mem-parsing array JSON `StockData.technicals.idxFlow` dan memasukkannya secara idempoten ke tabel `StockDailyFlow` menggunakan `createMany({ skipDuplicates: true })`.
 - Menjalankan migrasi langsung terhadap database PostgreSQL, berhasil memigrasikan 832 saham (832 catatan harian) ke tabel relasional baru.

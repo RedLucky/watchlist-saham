@@ -27,6 +27,33 @@ export function invalidateStocksCache() {
   lastStocksCacheTime = 0;
 }
 
+/**
+ * Normalizes a relational StockDailyFlow row to the format expected by transactionFlowEngine.
+ *
+ * @param {object} row - Prisma StockDailyFlow record.
+ * @returns {object} Normalized flow object with ISO date string and numeric values.
+ */
+export function mapRelationalFlowRecord(row) {
+  if (!row) return null;
+  const dateStr = row.date instanceof Date
+    ? row.date.toISOString().split('T')[0]
+    : String(row.date || '').split('T')[0];
+
+  return {
+    date: dateStr,
+    close: Number(row.close || 0),
+    high: Number(row.high || 0),
+    low: Number(row.low || 0),
+    volume: Number(row.volume || 0),
+    value: Number(row.value || 0),
+    foreignBuy: Number(row.foreignBuy || 0),
+    foreignSell: Number(row.foreignSell || 0),
+    domesticBuy: Number(row.domesticBuy || 0),
+    domesticSell: Number(row.domesticSell || 0),
+    source: row.source || 'idx',
+  };
+}
+
 export class DatabaseProvider extends DataProvider {
   async getMarketData() {
     try {
@@ -257,6 +284,24 @@ export class DatabaseProvider extends DataProvider {
           dividendHistory: true,
           kseiLatest: true,
           sharesOutstanding: true,
+          // Relational IDX daily transaction flows (up to 250 daily bars for multi-timeframe analytics)
+          dailyFlows: {
+            orderBy: { date: 'asc' },
+            take: 250,
+            select: {
+              date: true,
+              close: true,
+              high: true,
+              low: true,
+              volume: true,
+              value: true,
+              foreignBuy: true,
+              foreignSell: true,
+              domesticBuy: true,
+              domesticSell: true,
+              source: true,
+            },
+          },
           // Exclude massive blobs: historicalRaw and kseiHistory (saves ~420MB of heap RAM)
         }
       });
@@ -326,7 +371,10 @@ export class DatabaseProvider extends DataProvider {
           macd: technicals.macd ?? { macdLine: 0, signalLine: 0, histogram: 0 },
           bollinger: technicals.bollinger ?? technicals.bollingerBands ?? { upper: s.price, middle: s.price, lower: s.price, bandwidth: 0 },
           bollingerBands: technicals.bollingerBands ?? technicals.bollinger ?? { upper: s.price, middle: s.price, lower: s.price, bandwidth: 0 },
-          idxFlow: Array.isArray(technicals.idxFlow) ? technicals.idxFlow : [],
+          // Prioritize relational StockDailyFlow records; fallback to JSON technicals.idxFlow
+          idxFlow: Array.isArray(s.dailyFlows) && s.dailyFlows.length > 0
+            ? s.dailyFlows.map(mapRelationalFlowRecord).filter(Boolean)
+            : (Array.isArray(technicals.idxFlow) ? technicals.idxFlow : []),
           idxFlowUpdatedAt: technicals.idxFlowUpdatedAt ?? null,
         };
 

@@ -36,6 +36,7 @@ Model database relasional khusus untuk histori arus transaksi harian dari data r
 * `domesticBuy`, `domesticSell`: Porsi beli dan jual investor domestik.
 * `source`: Sumber data (`"idx"` | `"estimated"`).
 * Batasan unik: `@@unique([ticker, date])` lengkap dengan indeks komposit untuk query rentang waktu super cepat.
+* Pola akses: Dibaca langsung melalui relasi `dailyFlows` di `DatabaseProvider.getStocks()` dan `api/stocks/[ticker]/route.js`, dengan *fallback* otomatis ke JSON `technicals.idxFlow` bila catatan relasional kosong.
 
 ### 2. `Recommendation`
 Tabel pencatatan rekam jejak sinyal dan saham yang dipantau pengguna:

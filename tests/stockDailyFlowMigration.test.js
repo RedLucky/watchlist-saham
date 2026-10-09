@@ -8,8 +8,37 @@ import {
   parseDateToUtcMidnight,
   migrateIdxFlowJsonToTable,
 } from '../src/scripts/migrate-idx-flow-to-table.js';
+import { mapRelationalFlowRecord } from '../src/lib/providers/DatabaseProvider.js';
 
 describe('StockDailyFlow Migration — Date Parsing & Logic', () => {
+  it('mapRelationalFlowRecord correctly normalizes DB row to engine flow format', () => {
+    assert.equal(mapRelationalFlowRecord(null), null);
+
+    const mapped = mapRelationalFlowRecord({
+      date: new Date('2026-10-07T00:00:00.000Z'),
+      close: 6050,
+      high: 6100,
+      low: 5975,
+      volume: 162690800n,
+      value: 982525082500n,
+      foreignBuy: 93011500n,
+      foreignSell: 142705300n,
+      domesticBuy: 69679300n,
+      domesticSell: 19985500n,
+      source: 'idx',
+    });
+
+    assert.equal(mapped.date, '2026-10-07');
+    assert.equal(mapped.close, 6050);
+    assert.equal(mapped.volume, 162690800);
+    assert.equal(mapped.value, 982525082500);
+    assert.equal(mapped.foreignBuy, 93011500);
+    assert.equal(mapped.foreignSell, 142705300);
+    assert.equal(mapped.domesticBuy, 69679300);
+    assert.equal(mapped.domesticSell, 19985500);
+    assert.equal(mapped.source, 'idx');
+  });
+
   it('parseDateToUtcMidnight correctly normalizes dates and rejects invalid inputs', () => {
     const d1 = parseDateToUtcMidnight('2026-10-08');
     assert.ok(d1 instanceof Date);
