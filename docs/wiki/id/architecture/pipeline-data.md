@@ -1,10 +1,10 @@
 ---
 title: "Pipeline Data & Layanan Sinkronisasi"
-description: "Arsitektur penarikan data pasar, antrean sinkronisasi latar belakang, dan integrasi Yahoo Finance"
+description: "Arsitektur penarikan data pasar, antrean sinkronisasi latar belakang, integrasi Yahoo Finance, dan penarikan arus transaksi Ringkasan Saham BEI"
 category: "architecture"
-tags: ["pipeline-data", "yahoo-finance", "sinkronisasi", "ksei"]
-last_updated: "2026-09-03"
-version: "1.0.0"
+tags: ["pipeline-data", "yahoo-finance", "sinkronisasi", "ksei", "idx-flow"]
+last_updated: "2026-10-09"
+version: "1.1.0"
 ---
 
 # Pipeline Data & Layanan Sinkronisasi
@@ -31,7 +31,7 @@ Aplikasi menerapkan sistem sinkronisasi data bertingkat untuk menjaga kesegaran 
   - Rasio profitabilitas: Margin Operasional (OPM), Margin Laba Bersih (NPM), ROE, ROA.
   - Rasio solvabilitas & valuasi: DER, Current Ratio, PER, PBV, PEG Ratio, Nilai Buku.
   - Laporan Arus Kas: Free Cash Flow, histori laba bersih tahunan, dan pertumbuhan pendapatan.
-* **Penyimpanan**: Disimpan sebagai string JSON di PostgreSQL (`StockData.fundamentals`, `StockData.technicals`, dll).
+* **Penyimpanan**: Disimpan sebagai string JSON di PostgreSQL (`StockData.fundamentals`, `StockData.technicals`, dll). Mempertahankan `technicals.idxFlow` dan `technicals.idxFlowUpdatedAt` yang sudah tersimpan saat melakukan pembaruan deep sync.
 
 ---
 
@@ -43,3 +43,15 @@ Aplikasi menerapkan sistem sinkronisasi data bertingkat untuk menjaga kesegaran 
   - Rasio kepemilikan institusi lokal vs asing (Perbankan, Reksadana, Asuransi, Dana Pensiun).
   - Konsentrasi saham pengendali vs investor ritel.
   - Aliran akumulasi dana pintar (*Smart Money Flow*).
+
+---
+
+## 💸 4. Sinkronisasi Harian Arus Transaksi Ringkasan Saham BEI (`sync-idx-flow.js`)
+
+* **Sumber**: Bursa Efek Indonesia (*Ringkasan Saham BEI* — `TradingSummary/GetStockSummary`).
+* **Skrip**: `src/scripts/sync-idx-flow.js` (dijalankan setiap hari melalui `src/scripts/scraper-cron.js`).
+* **Mekanisme**:
+  - Mengambil payload ringkasan saham hari kerja terbaru melalui Puppeteer (`parseIdxStockSummaryPayload`).
+  - Mengekstrak data resmi `ForeignBuy`, `ForeignSell`, `Volume`, `Value`, `Close`, `High`, dan `Low` untuk setiap emiten 4 huruf.
+  - Melakukan deduplikasi berdasarkan tanggal perdagangan dan menyimpan histori bergulir 250 hari bursa (`mergeIdxFlowHistory`) di dalam `StockData.technicals.idxFlow` tanpa memerlukan migrasi skema database.
+

@@ -319,10 +319,10 @@ async function deepSyncStockOnce(fullTicker) {
   const period1 = new Date();
   period1.setFullYear(period1.getFullYear() - 5); // 5 years of historical data for long-term pension analysis
   
-  // OPTIMIZATION: Check existing 10-year dividend history in DB
+  // OPTIMIZATION: Check existing 10-year dividend history and scraped IDX flow in DB
   const existingDbStock = await prisma.stockData.findUnique({ 
     where: { ticker: tickerClean }, 
-    select: { fundamentals: true, ownership: true }
+    select: { fundamentals: true, ownership: true, technicals: true }
   });
   
   let existingDivHistory = [];
@@ -333,6 +333,18 @@ async function deepSyncStockOnce(fullTicker) {
           existingDivHistory = fund.yahooDividendHistory;
        }
      } catch (e) {}
+  }
+
+  let existingIdxFlow = undefined;
+  let existingIdxFlowUpdatedAt = undefined;
+  if (existingDbStock?.technicals) {
+    try {
+      const prevTech = JSON.parse(existingDbStock.technicals);
+      if (Array.isArray(prevTech.idxFlow) && prevTech.idxFlow.length > 0) {
+        existingIdxFlow = prevTech.idxFlow;
+        existingIdxFlowUpdatedAt = prevTech.idxFlowUpdatedAt || null;
+      }
+    } catch (e) {}
   }
 
   const periodDiv = new Date();
@@ -651,6 +663,7 @@ async function deepSyncStockOnce(fullTicker) {
     macd,
     bollinger: bb,
     bollingerBands: bb,
+    ...(existingIdxFlow ? { idxFlow: existingIdxFlow, idxFlowUpdatedAt: existingIdxFlowUpdatedAt } : {}),
   };
 
   // ── Persist to Database ───────────────────────────────────────────────

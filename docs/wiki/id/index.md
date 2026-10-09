@@ -7,7 +7,7 @@
 ## 🏛️ Arsitektur Sistem
 
 * [Ringkasan Sistem](./architecture/ringkasan-sistem.md) — Gambaran arsitektur teknologi (Next.js 16, Turbopack, Tailwind CSS, PostgreSQL, Prisma, IBM Plex).
-* [Pipeline & Sinkronisasi Data](./architecture/pipeline-data.md) — Sinkronisasi harga kilat, deep sync fundamental, integrasi Yahoo Finance, dan antrean round-robin.
+* [Pipeline & Sinkronisasi Data](./architecture/pipeline-data.md) — Sinkronisasi harga kilat, deep sync fundamental, scraper arus transaksi harian Ringkasan Saham BEI, integrasi Yahoo Finance, dan antrean round-robin.
 * [Model & Skema Database](./architecture/model-database.md) — Definisi skema Prisma, serialisasi BigInt, integritas relasi, dan indexing.
 * [Design System (Bursa 1985)](./architecture/design-system.md) — Token warna, tipografi IBM Plex, dan class standar untuk judul, tombol, form, badge, alert, tab, modal, dan tabel.
 * [Kerangka Aplikasi & Navigasi](./architecture/app-shell-navigation.md) — Sidebar desktop (bisa diciutkan), header mobile, bar bawah ramping dengan lembar "Lainnya", footer, dan konfigurasi menu bersama.

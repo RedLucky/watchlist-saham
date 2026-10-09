@@ -4,6 +4,11 @@ Seluruh riwayat perubahan, penambahan materi (*ingest*), dan pemutakhiran basis 
 
 ---
 
+## [2026-10-09] feat | Scraper Harian Arus Transaksi Asing/Domestik Ringkasan Saham BEI (`TASK-5792`)
+- Menambahkan `src/scripts/sync-idx-flow.js` (`parseIdxStockSummaryPayload`, `mergeIdxFlowHistory`, `syncIdxStockSummaryFlow`) untuk menarik data harian *Ringkasan Saham* BEI (`ForeignBuy`, `ForeignSell`, `Volume`, `Value`) dan menjaga histori bergulir 250 hari bursa di dalam `StockData.technicals.idxFlow`.
+- Mendaftarkan `sync-idx-flow.js` ke urutan scraper harian di `src/scripts/scraper-cron.js` (`[3/3]`) serta memperbarui `deepSyncStockOnce` di `src/lib/syncService.js` agar `technicals.idxFlow` dan `technicals.idxFlowUpdatedAt` tetap terjaga saat pembaruan fundamental/teknikal.
+- Menambahkan 7 unit test di `tests/syncIdxFlow.test.js` dengan mock penuh pada batas Prisma dan fetcher (cakupan baris 88.58%).
+
 ## [2026-10-09] feat | Mesin Hibrida Arus Transaksi Domestik & Asing (`TASK-4108`)
 - Menambahkan `src/lib/transactionFlowEngine.js` (`calculateTransactionFlows`) untuk menghitung **Inflow (Gross Buy)**, **Outflow (Gross Sell)**, dan **Netflow (Net Buy/Sell)** Investor Asing, Domestik, serta Arus Uang Aktif pada jendela Harian (`1d` / 1HK), Mingguan (`1w` / 5HK), Bulanan (`1m` / 20HK), dan Tahunan (`1y` / 250HK).
 - Mendukung data resmi *Ringkasan Saham* BEI (`foreignBuy`, `foreignSell`, `volume`, `value`) ketika tersedia (`source: 'idx'`) dan beralih otomatis ke estimasi Close Location Value (CLV) + momentum harga logistik yang dikalibrasi dengan rasio kepemilikan asing dan delta bulanan KSEI (`source: 'estimated'` / `'hybrid'`).

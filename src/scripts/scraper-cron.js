@@ -36,13 +36,19 @@ function runDiscordNotifier() {
   proc.stderr.on('data', (data) => console.error(data.trim()));
 }
 
+/**
+ * Runs the daily scraper pipeline sequentially:
+ * 1. KSEI scriptless ownership ZIP sync
+ * 2. IDX Company Profile ownership & insider news scraper
+ * 3. IDX Stock Summary (Ringkasan Saham) daily foreign/domestic transaction flow scraper
+ */
 function runDailyScrapers() {
   if (isDailyScraperRunning) {
     console.warn(`\n[SCRAPER-SKIP] Scraping harian sebelumnya masih berjalan.`);
     return;
   }
   isDailyScraperRunning = true;
-  console.log('\n[1/2] Memulai Sinkronisasi Otomatis Data ZIP KSEI...');
+  console.log('\n[1/3] Memulai Sinkronisasi Otomatis Data ZIP KSEI...');
   const kseiProc = exec('node --max-old-space-size=896 src/scripts/sync-ksei.js', (kseiErr) => {
     if (kseiErr) {
       console.error(`[KSEI-CRASH] Sinkronisasi KSEI gagal: ${kseiErr.message}`);
@@ -51,14 +57,27 @@ function runDailyScrapers() {
     }
 
     // Lanjutkan ke IDX Ownership Scraper
-    console.log('\n[2/2] Memulai Sinkronisasi Ownership & Insider IDX...');
+    console.log('\n[2/3] Memulai Sinkronisasi Ownership & Insider IDX...');
     const ownProc = exec('node --max-old-space-size=896 src/scripts/sync-ownership.js', (ownErr) => {
-      isDailyScraperRunning = false;
       if (ownErr) {
         console.error(`[OWNERSHIP-CRASH] Scraping ownership gagal: ${ownErr.message}`);
-        return;
+      } else {
+        console.log(`[OWNERSHIP-SUCCESS] Scraping ownership selesai.`);
       }
-      console.log(`[SUCCESS] Semua proses scraping harian selesai!`);
+
+      // Lanjutkan ke IDX Ringkasan Saham (Foreign & Domestic Flow) Scraper
+      console.log('\n[3/3] Memulai Sinkronisasi Inflow/Netflow Ringkasan Saham BEI...');
+      const flowProc = exec('node --max-old-space-size=896 src/scripts/sync-idx-flow.js', (flowErr) => {
+        isDailyScraperRunning = false;
+        if (flowErr) {
+          console.error(`[IDX-FLOW-CRASH] Scraping Ringkasan Saham BEI gagal: ${flowErr.message}`);
+          return;
+        }
+        console.log(`[SUCCESS] Semua proses scraping harian selesai!`);
+      });
+
+      flowProc.stdout.on('data', (data) => console.log(data.trim()));
+      flowProc.stderr.on('data', (data) => console.error(data.trim()));
     });
 
     ownProc.stdout.on('data', (data) => console.log(data.trim()));

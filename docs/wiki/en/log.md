@@ -4,6 +4,11 @@ All changes, ingests, and architectural evolutions of the wiki are recorded here
 
 ---
 
+## [2026-10-09] feat | IDX Stock Summary Daily Foreign/Domestic Flow Scraper (`TASK-5792`)
+- Added `src/scripts/sync-idx-flow.js` (`parseIdxStockSummaryPayload`, `mergeIdxFlowHistory`, `syncIdxStockSummaryFlow`) to scrape daily BEI *Ringkasan Saham* (`ForeignBuy`, `ForeignSell`, `Volume`, `Value`) and maintain a rolling 250-trading-day history in `StockData.technicals.idxFlow`.
+- Registered `sync-idx-flow.js` in `src/scripts/scraper-cron.js` daily scraper pipeline (`[3/3]`) and updated `deepSyncStockOnce` in `src/lib/syncService.js` to preserve existing `technicals.idxFlow` and `technicals.idxFlowUpdatedAt` during fundamental/technical refreshes.
+- Added 7 unit tests in `tests/syncIdxFlow.test.js` with mocked Prisma and fetcher boundaries (88.58% line coverage).
+
 ## [2026-10-09] feat | Hybrid Domestic & Foreign Transaction Flow Engine (`TASK-4108`)
 - Added `src/lib/transactionFlowEngine.js` (`calculateTransactionFlows`) to compute Domestic, Foreign, and Active Money **Inflow (Gross Buy)**, **Outflow (Gross Sell)**, and **Netflow (Net Buy/Sell)** across Daily (`1d` / 1HK), Weekly (`1w` / 5HK), Monthly (`1m` / 20HK), and Yearly (`1y` / 250HK) windows.
 - Supports official IDX *Ringkasan Saham* daily rows (`foreignBuy`, `foreignSell`, `volume`, `value`) when present (`source: 'idx'`) and falls back to OHLCV Close Location Value + logistic price momentum calibrated with KSEI foreign ownership percentage and monthly institutional deltas (`source: 'estimated'` / `'hybrid'`).

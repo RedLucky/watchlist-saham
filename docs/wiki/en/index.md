@@ -7,7 +7,7 @@
 ## 🏛️ System Architecture
 
 * [System Overview](./architecture/system-overview.md) — High-level stack overview (Next.js 16, Turbopack, Tailwind CSS, PostgreSQL, Prisma, IBM Plex).
-* [Data Pipeline & Sync](./architecture/data-pipeline.md) — Fast price synchronization, deep financial statement sync, Yahoo Finance integration, and round-robin queues.
+* [Data Pipeline & Sync](./architecture/data-pipeline.md) — Fast price synchronization, deep financial statement sync, IDX Stock Summary daily flow scraper, Yahoo Finance integration, and round-robin queues.
 * [Database Models & Schemas](./architecture/database-models.md) — Complete Prisma schema definitions, BigInt serialization rules, relational integrity, and indices.
 * [Design System (Bursa 1985)](./architecture/design-system.md) — Colour tokens, IBM Plex typography, and standard classes for headings, buttons, forms, badges, alerts, tabs, modals and tables.
 * [App Shell & Navigation](./architecture/app-shell-navigation.md) — Desktop sidebar (collapsible), mobile header, slim bottom bar with "Lainnya" sheet, footer, and the shared menu config.
